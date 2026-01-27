@@ -24,6 +24,7 @@ import {
   registerAnalyzeChromeLogsTool,
   registerDeleteDlpRuleTool,
   registerCreateUrlListTool,
+  registerGetConnectorPolicyTool,
 } from './register-tools.js';
 
 export const registerTools = (
@@ -39,6 +40,7 @@ export const registerTools = (
   registerAnalyzeChromeLogsTool(server, options);
   registerDeleteDlpRuleTool(server, options);
   registerCreateUrlListTool(server, options);
+  registerGetConnectorPolicyTool(server, options);
 };
 
 export const registerToolsRemote = (
@@ -54,4 +56,5 @@ export const registerToolsRemote = (
   registerAnalyzeChromeLogsTool(server, options);
   registerDeleteDlpRuleTool(server, options);
   registerCreateUrlListTool(server, options);
+  registerGetConnectorPolicyTool(server, options);
 };
