@@ -285,7 +285,8 @@ function registerHelloTool(server, options) {
       description: 'Returns hello',
       inputSchema: {},
     },
-    async () => {
+    // Wrap the handler with gcpTool
+    gcpTool(options.gcpCredentialsAvailable, async () => {
       return {
         content: [
           {
@@ -294,7 +295,7 @@ function registerHelloTool(server, options) {
           },
         ],
       };
-    }
+    })
   );
 }
 
