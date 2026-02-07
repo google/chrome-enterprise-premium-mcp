@@ -277,28 +277,6 @@ function registerListDlpRulesTool(server, options) {
   );
 }
 
-// Tool that returns hello
-function registerHelloTool(server, options) {
-  server.registerTool(
-    'hello',
-    {
-      description: 'Returns hello',
-      inputSchema: {},
-    },
-    // Wrap the handler with gcpTool
-    gcpTool(options.gcpCredentialsAvailable, async () => {
-      return {
-        content: [
-          {
-            type: 'text',
-            text: 'hello',
-          },
-        ],
-      };
-    })
-  );
-}
-
 // Tool to create a new DLP rule
 function registerCreateDlpRuleTool(server, options) {
   const triggerMapping = {
@@ -723,4 +701,4 @@ function registerGetConnectorPolicyTool(server, options) {
   );
 }
 
-export { registerCountBrowserVersionsTool, registerHelloTool, registerCustomerProfileTool, registerListDlpRulesTool, registerCreateDlpRuleTool, registerGetChromeActivityLogTool, registerAnalyzeChromeLogsTool, registerDeleteDlpRuleTool, registerCreateUrlListTool, registerGetConnectorPolicyTool };
+export { registerCountBrowserVersionsTool, registerCustomerProfileTool, registerListDlpRulesTool, registerCreateDlpRuleTool, registerGetChromeActivityLogTool, registerAnalyzeChromeLogsTool, registerDeleteDlpRuleTool, registerCreateUrlListTool, registerGetConnectorPolicyTool };

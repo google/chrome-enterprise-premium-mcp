@@ -16,7 +16,6 @@ limitations under the License.
 
 import {
   registerCountBrowserVersionsTool,
-  registerHelloTool,
   registerCustomerProfileTool,
   registerListDlpRulesTool,
   registerCreateDlpRuleTool,
@@ -32,7 +31,6 @@ export const registerTools = (
   options = {}
 ) => {
   registerCountBrowserVersionsTool(server, options);
-  registerHelloTool(server, options);
   registerCustomerProfileTool(server, options);
   registerListDlpRulesTool(server, options);
   registerCreateDlpRuleTool(server, options);
@@ -48,7 +46,6 @@ export const registerToolsRemote = (
   options = {}
 ) => {
   registerCountBrowserVersionsTool(server, options);
-  registerHelloTool(server, options);
   registerCustomerProfileTool(server, options);
   registerListDlpRulesTool(server, options);
   registerCreateDlpRuleTool(server, options);

@@ -38,7 +38,6 @@ describe('CEP Tool Registration and Units', () => {
     );
     const expectedToolNames = [
       'count_browser_versions',
-      'hello',
       'list_customer_profiles',
       'list_dlp_rules',
       'create_dlp_rule',
@@ -53,29 +52,6 @@ describe('CEP Tool Registration and Units', () => {
       expectedToolNames,
       'The list of registered tool names does not match the expected list.'
     );
-  });
-
-  // Unit tests for the 'hello' tool.
-  describe('hello Tool', () => {
-    // Test the basic success path.
-    it('should return hello', async () => {
-      const { registerTools } = await esmock('../../tools/tools.js');
-      registerTools(server, { gcpCredentialsAvailable: true });
-
-      const handler = server.registerTool.mock.calls.find(
-        (call) => call.arguments[0] === 'hello'
-      ).arguments[2];
-
-      const result = await handler({}, { sendNotification: mock.fn() }); // Added mock context
-      assert.deepStrictEqual(result, {
-        content: [
-          {
-            type: 'text',
-            text: 'hello',
-          },
-        ],
-      });
-    });
   });
 
   // Unit tests for the 'count_browser_versions' tool.
