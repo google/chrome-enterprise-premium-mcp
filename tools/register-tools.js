@@ -220,7 +220,7 @@ function registerListDlpRulesTool(server, options) {
   server.registerTool(
     'list_dlp_rules',
     {
-      description: 'Lists all DLP rules or detectors for a given customer.',
+      description: 'Lists all DLP rules or detectors for a given customer. The tool returns rules with multiple attributes, parse them and return names, summarize the action',
       inputSchema: {
         type: z
           .enum(['rule', 'detector'])

@@ -13,3 +13,8 @@ coverage/
 
 # Settings
 .gemini/
+
+# ADK
+__pycache__/
+session.db
+.adk/
