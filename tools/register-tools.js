@@ -1,5 +1,5 @@
 /*
-Copyright 2026 Google LLC
+Copyright 2025 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,8 +16,11 @@ limitations under the License.
 
 import { z } from 'zod';
 import { countBrowserVersions, listCustomerProfiles, listDlpPolicies, createDlpRule, deleteDlpRule, createUrlList, getConnectorPolicy, ConnectorPolicyFilter } from '../lib/cloud-api/chromemanagement.js';
-import { listChromeActivities } from '../lib/cloud-api/reports.js';
-import { analyzeChromeActivity } from '../lib/activity-analyzer.js';
+import { listChromeActivities, listOrgUnits, getCustomerId } from '../lib/cloud-api/reports.js';
+
+function getAuthToken(requestInfo) {
+  return requestInfo?.headers?.authorization ? requestInfo.headers.authorization.split(' ')[1] : null;
+}
 
 function createProgressCallback(sendNotification) {
   return (progress) => {
@@ -29,16 +32,16 @@ function createProgressCallback(sendNotification) {
 }
 function gcpTool(gcpCredentialsAvailable, fn) {
   if (!gcpCredentialsAvailable) {
-    return () => ({
-      content: [
-        {
-          type: 'text',
-          text: 'GCP credentials are not available. Please configure your environment.',
-        },
-      ],
-    });
+    console.log('GCP credentials are not available.');
   }
   return fn;
+}
+
+function validateAndGetOrgUnitId(orgUnitId) {
+  if (typeof orgUnitId === 'string' && orgUnitId.startsWith('id:')) {
+    return orgUnitId.substring(3);
+  }
+  return orgUnitId;
 }
 
 // Tool to count Chrome browser versions
@@ -68,6 +71,7 @@ function registerCountBrowserVersionsTool(server, options) {
         if (customerId === 'me') {
           customerId = undefined;
         }
+        orgUnitId = validateAndGetOrgUnitId(orgUnitId);
         if (customerId && typeof customerId !== 'string') {
           return {
             content: [
@@ -226,15 +230,17 @@ function registerListDlpRulesTool(server, options) {
     },
     gcpTool(
       options.gcpCredentialsAvailable,
-      async ({type }, { sendNotification }) => {
+      async ({type}, { requestInfo, sendNotification}) => {
         try {
           const progressCallback = createProgressCallback(sendNotification);
+          const authToken = getAuthToken(requestInfo);
           // Default to 'rule' if not specified, since the tool name implies rules
           const policyType = type || 'rule';
 
           const policies = await listDlpPolicies(
             policyType,
-            progressCallback
+            progressCallback,
+            authToken
           );
 
           const filteredPolicies = policies.filter(policy => {
@@ -310,10 +316,11 @@ function registerCreateDlpRuleTool(server, options) {
 
     gcpTool(
       options.gcpCredentialsAvailable,
-      async ({ customerId, orgUnitId, displayName, description, triggers, condition, action, state, validateOnly, customMessage, watermarkMessage, blockScreenshot, saveContent }, { sendNotification }) => {
+      async ({ customerId, orgUnitId, displayName, description, triggers, condition, action, state, validateOnly, customMessage, watermarkMessage, blockScreenshot, saveContent }, { requestInfo, sendNotification }) => {
         if (customerId === 'me') {
           customerId = undefined;
         }
+        orgUnitId = validateAndGetOrgUnitId(orgUnitId);
         if (customerId && typeof customerId !== 'string') {
           return {
             content: [{ type: 'text', text: 'Error: Customer ID must be a string.' }],
@@ -326,6 +333,7 @@ function registerCreateDlpRuleTool(server, options) {
         }
 
         try {
+          const authToken = getAuthToken(requestInfo);
           const fullTriggers = triggers.map(t => triggerMapping[t]);
           const ruleConfig = {
             displayName,
@@ -367,7 +375,7 @@ function registerCreateDlpRuleTool(server, options) {
               break;
           }
 
-          const createdPolicy = await createDlpRule(customerId, orgUnitId, ruleConfig, validateOnly);
+          const createdPolicy = await createDlpRule(customerId, orgUnitId, ruleConfig, validateOnly, authToken);
 
           if (validateOnly) {
             return {
@@ -433,15 +441,16 @@ function registerGetChromeActivityLogTool(server, options) {
     },
     gcpTool(
       options.gcpCredentialsAvailable,
-      async ({ userKey, eventName, startTime, endTime, maxResults }, { sendNotification }) => {
+      async ({ userKey, eventName, startTime, endTime, maxResults }, { requestInfo, sendNotification }) => {
         try {
+          const authToken = getAuthToken(requestInfo);
           const activities = await listChromeActivities({
             userKey,
             eventName,
             startTime,
             endTime,
             maxResults,
-          });
+          }, authToken);
           if (!activities || activities.length === 0) {
             return {
               content: [
@@ -497,13 +506,14 @@ function registerAnalyzeChromeLogsTool(server, options) {
     },
     gcpTool(
       options.gcpCredentialsAvailable,
-      async ({ userKey, startTime, endTime }, { sendNotification }) => {
+      async ({ userKey, startTime, endTime }, { requestInfo, sendNotification }) => {
         try {
+          const authToken = getAuthToken(requestInfo);
           const activities = await listChromeActivities({
             userKey,
             startTime,
             endTime,
-          });
+          }, authToken);
           if (!activities || activities.length === 0) {
             return {
               content: [
@@ -514,25 +524,7 @@ function registerAnalyzeChromeLogsTool(server, options) {
               ],
             };
           }
-          const riskyActivities = analyzeChromeActivity(activities);
-          if (riskyActivities.length === 0) {
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: 'No risky Chrome activity found.',
-                },
-              ],
-            };
-          }
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Risky Chrome activity:\n${JSON.stringify(riskyActivities, null, 2)}`,
-              },
-            ],
-          };
+          return activities
         } catch (error) {
           return {
             content: [
@@ -560,9 +552,10 @@ function registerDeleteDlpRuleTool(server, options) {
     },
     gcpTool(
       options.gcpCredentialsAvailable,
-      async ({ policyName }, { sendNotification }) => {
+      async ({ policyName }, { requestInfo, sendNotification }) => {
         try {
-          const result = await deleteDlpRule(policyName);
+          const authToken = getAuthToken(requestInfo);
+          const result = await deleteDlpRule(policyName, authToken);
           return {
             content: [
               {
@@ -600,10 +593,11 @@ function registerCreateUrlListTool(server, options) {
     },
     gcpTool(
       options.gcpCredentialsAvailable,
-      async ({ customerId, orgUnitId, displayName, urls }, { sendNotification }) => {
+      async ({ customerId, orgUnitId, displayName, urls }, { requestInfo, sendNotification }) => {
         if (customerId === 'me') {
           customerId = undefined;
         }
+        orgUnitId = validateAndGetOrgUnitId(orgUnitId);
         if (customerId && typeof customerId !== 'string') {
           return {
             content: [{ type: 'text', text: 'Error: Customer ID must be a string.' }],
@@ -616,12 +610,13 @@ function registerCreateUrlListTool(server, options) {
         }
 
         try {
+          const authToken = getAuthToken(requestInfo);
           const urlListConfig = {
             display_name: displayName,
             urls: urls,
           };
 
-          const createdPolicy = await createUrlList(customerId, orgUnitId, urlListConfig);
+          const createdPolicy = await createUrlList(customerId, orgUnitId, urlListConfig, authToken);
 
           return {
             content: [
@@ -659,10 +654,11 @@ function registerGetConnectorPolicyTool(server, options) {
     },
     gcpTool(
       options.gcpCredentialsAvailable,
-      async ({ customerId, orgUnitId, policy }, { sendNotification }) => {
+      async ({ customerId, orgUnitId, policy }, { requestInfo, sendNotification }) => {
         if (customerId === 'me') {
           customerId = undefined;
         }
+        orgUnitId = validateAndGetOrgUnitId(orgUnitId);
         if (customerId && typeof customerId !== 'string') {
           return {
             content: [{ type: 'text', text: 'Error: Customer ID must be a string.' }],
@@ -675,8 +671,9 @@ function registerGetConnectorPolicyTool(server, options) {
         }
 
         try {
+          const authToken = getAuthToken(requestInfo);
           const policySchemaFilter = ConnectorPolicyFilter[policy];
-          const policies = await getConnectorPolicy(customerId, orgUnitId, policySchemaFilter);
+          const policies = await getConnectorPolicy(customerId, orgUnitId, policySchemaFilter, null, authToken);
 
           return {
             content: [
@@ -701,4 +698,96 @@ function registerGetConnectorPolicyTool(server, options) {
   );
 }
 
-export { registerCountBrowserVersionsTool, registerCustomerProfileTool, registerListDlpRulesTool, registerCreateDlpRuleTool, registerGetChromeActivityLogTool, registerAnalyzeChromeLogsTool, registerDeleteDlpRuleTool, registerCreateUrlListTool, registerGetConnectorPolicyTool };
+function registerListOrgUnitsTool(server, options) {
+  server.registerTool(
+    'list_org_units',
+    {
+      description: 'Lists all organizational units for a given customer. This tool should be used whenever another tool requires an org unit ID. It provides users with a list of organizational unit names, so they do not need to manually search for the org unit ID.',
+      inputSchema: {},
+    },
+    gcpTool(
+      options.gcpCredentialsAvailable,
+      async ({}, { requestInfo, sendNotification }) => {
+        try {
+          const authToken = getAuthToken(requestInfo);
+          const orgUnits = await listOrgUnits({}, authToken);
+          if (!orgUnits || orgUnits.length === 0) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: 'No organizational units found for the specified criteria.',
+                },
+              ],
+            };
+          }
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Organizational Units:\n${JSON.stringify(orgUnits, null, 2)}`,
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Error listing organizational units: ${error.message}`,
+              },
+            ],
+          };
+        }
+      }
+    )
+  );
+}
+
+function registerGetCustomerIdTool(server, options) {
+  server.registerTool(
+    'get_customer_id',
+    {
+      description: 'Gets the customer ID for the authenticated user. All other tools that require a customer ID should get it using this tool instead of asking the user for it.',
+      inputSchema: {},
+    },
+    gcpTool(
+      options.gcpCredentialsAvailable,
+      async ({}, { requestInfo, sendNotification }) => {
+        try {
+          const authToken = getAuthToken(requestInfo);
+          const customer = await getCustomerId(authToken);
+          if (!customer) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: 'Could not retrieve customer ID.',
+                },
+              ],
+            };
+          }
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Customer ID: ${customer.id}`,
+              },
+            ],
+          };
+        } catch (error) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Error getting customer ID: ${error.message}`,
+              },
+            ],
+          };
+        }
+      }
+    )
+  );
+}
+
+export { registerCountBrowserVersionsTool, registerCustomerProfileTool, registerListDlpRulesTool, registerCreateDlpRuleTool, registerGetChromeActivityLogTool, registerAnalyzeChromeLogsTool, registerDeleteDlpRuleTool, registerCreateUrlListTool, registerGetConnectorPolicyTool, registerListOrgUnitsTool, registerGetCustomerIdTool };

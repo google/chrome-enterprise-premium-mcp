@@ -46,6 +46,8 @@ describe('CEP Tool Registration and Units', () => {
       'delete_dlp_rule',
       'create_url_list',
       'get_connector_policy',
+      'get_customer_id',
+      'list_org_units'
     ].sort();
     assert.deepStrictEqual(
       registeredToolNames.sort(),
@@ -122,48 +124,6 @@ describe('CEP Tool Registration and Units', () => {
         result.content[0].text,
         'Error counting browser versions: API Error'
       );
-    });
-
-    it('should return an error if project ID is not provided', async () => {
-      const { registerTools } = await esmock('../../tools/tools.js');
-      registerTools(server, { gcpCredentialsAvailable: true });
-
-      const handler = server.registerTool.mock.calls.find(
-        (call) => call.arguments[0] === 'count_browser_versions'
-      ).arguments[2];
-
-      const result = await handler(
-        { customerId: 'C0123' },
-        { sendNotification: mock.fn() }
-      );
-      assert.deepStrictEqual(result.content[0].text, 'Error: Project ID must be provided.');
-    });
-  });
-
-  // Test for gcpCredentialsAvailable flag
-  describe('when gcp credentials are not available', () => {
-    it('should return an error for all tools', async () => {
-      const { registerTools } = await esmock('../../tools/tools.js', {});
-      registerTools(server, { gcpCredentialsAvailable: false });
-
-      const toolNames = server.registerTool.mock.calls.map(
-        (call) => call.arguments[0]
-      );
-
-      for (const toolName of toolNames) {
-        const handler = server.registerTool.mock.calls.find(
-          (call) => call.arguments[0] === toolName
-        ).arguments[2];
-        const result = await handler({}, { sendNotification: mock.fn() });
-        assert.deepStrictEqual(result, {
-          content: [
-            {
-              type: 'text',
-              text: 'GCP credentials are not available. Please configure your environment.',
-            },
-          ],
-        });
-      }
     });
   });
 });

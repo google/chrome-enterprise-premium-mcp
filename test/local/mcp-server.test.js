@@ -56,8 +56,10 @@ describe('MCP Server in stdio mode', () => {
         'delete_dlp_rule',
         'get_chrome_activity_log',
         'get_connector_policy',
+        'get_customer_id',
         'list_customer_profiles',
         'list_dlp_rules',
+        'list_org_units'
       ].sort()
     );
   });

@@ -18,6 +18,7 @@ limitations under the License.
 
 import express from 'express';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 // Support stdio, as it is easier to use locally
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
@@ -117,7 +118,6 @@ if (shouldStartStdio()) {
   app.use(express.json());
 
   app.post('/mcp', async (req, res) => {
-    console.log('/mcp Received:', req.body);
     const server = await getServer();
     try {
       const transport = new StreamableHTTPServerTransport({
@@ -171,6 +171,36 @@ if (shouldStartStdio()) {
         id: null,
       })
     );
+  });
+
+  // Support SSE for baackward compatibility
+  const sseTransports = {};
+
+  // Legacy SSE endpoint for older clients
+  app.get('/sse', async (req, res) => {
+    console.log('/sse Received:', req.body);
+    const server = await getServer();
+    // Create SSE transport for legacy clients
+    const transport = new SSEServerTransport('/messages', res);
+    sseTransports[transport.sessionId] = transport;
+
+    res.on('close', () => {
+      delete sseTransports[transport.sessionId];
+    });
+
+    await server.connect(transport);
+  });
+
+  // Legacy message endpoint for older clients
+  app.post('/messages', async (req, res) => {
+    console.log('/messages Received:', req.body);
+    const sessionId = req.query.sessionId;
+    const transport = sseTransports[sessionId];
+    if (transport) {
+      await transport.handlePostMessage(req, res, req.body);
+    } else {
+      res.status(400).send('No transport found for sessionId');
+    }
   });
 
   // Start the server

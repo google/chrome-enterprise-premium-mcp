@@ -24,6 +24,8 @@ import {
   registerDeleteDlpRuleTool,
   registerCreateUrlListTool,
   registerGetConnectorPolicyTool,
+  registerListOrgUnitsTool,
+  registerGetCustomerIdTool,
 } from './register-tools.js';
 
 export const registerTools = (
@@ -39,6 +41,8 @@ export const registerTools = (
   registerDeleteDlpRuleTool(server, options);
   registerCreateUrlListTool(server, options);
   registerGetConnectorPolicyTool(server, options);
+  registerListOrgUnitsTool(server, options);
+  registerGetCustomerIdTool(server, options);
 };
 
 export const registerToolsRemote = (
@@ -54,4 +58,6 @@ export const registerToolsRemote = (
   registerDeleteDlpRuleTool(server, options);
   registerCreateUrlListTool(server, options);
   registerGetConnectorPolicyTool(server, options);
+  registerListOrgUnitsTool(server, options);
+  registerGetCustomerIdTool(server, options);
 };
