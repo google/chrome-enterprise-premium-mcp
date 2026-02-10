@@ -415,7 +415,7 @@ function registerGetChromeActivityLogTool(server, options) {
   server.registerTool(
     'get_chrome_activity_log',
     {
-      description: 'Gets a log of Chrome browser activity for a given user.',
+      description: 'Gets a log of Chrome browser activity for a given user. By default, it retrieves events from the last 10 days unless a specific start time is provided. Do not prompt users for additional inputs; use the defaults if no values are provided.',
       inputSchema: {
         userKey: z
           .string()
@@ -428,11 +428,11 @@ function registerGetChromeActivityLogTool(server, options) {
         startTime: z
           .string()
           .optional()
-          .describe('The start time of the range to get activities for (RFC3339 timestamp).'),
+          .describe('The start time of the range to get activities for (RFC3339 timestamp). Defaults to 10 days ago if not specified.'),
         endTime: z
           .string()
           .optional()
-          .describe('The end time of the range to get activities for (RFC3339 timestamp).'),
+          .describe('The end time of the range to get activities for (RFC3339 timestamp). Defaults to now.'),
         maxResults: z
           .number()
           .optional()
@@ -444,6 +444,13 @@ function registerGetChromeActivityLogTool(server, options) {
       async ({ userKey, eventName, startTime, endTime, maxResults }, { requestInfo, sendNotification }) => {
         try {
           const authToken = getAuthToken(requestInfo);
+          if (!startTime) {
+            const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
+            startTime = tenDaysAgo.toISOString();
+          }
+          if (!endTime) {
+            endTime = new Date().toISOString();
+          }
           const activities = await listChromeActivities({
             userKey,
             eventName,
