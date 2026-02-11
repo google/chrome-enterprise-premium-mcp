@@ -83,11 +83,12 @@ describe('Chrome Management API', () => {
       );
     });
   });
+
   describe('list_customer_profiles Tool', () => {
     it('should call listCustomerProfiles and return formatted result', async () => {
       const mockListCustomerProfiles = mock.fn(async () => [
-        { name: 'profile1', customerId: 'C0123' },
-        { name: 'profile2', customerId: 'C0123' },
+        { name: 'profile1', value: 'value1' },
+        { name: 'profile2', value: 'value2' },
       ]);
 
       const { registerTools } = await esmock(
@@ -108,17 +109,16 @@ describe('Chrome Management API', () => {
       const sendNotificationMock = mock.fn();
       const result = await handler(
         { customerId: 'C0123' },
-        { sendNotification: sendNotificationMock } // Added mock context
+        { sendNotification: sendNotificationMock }
       );
 
       assert.strictEqual(mockListCustomerProfiles.mock.callCount(), 1);
       const expectedText =
         'Browser versions for customer C0123:\n' +
-        '[{"name":"profile1","customerId":"C0123"},{"name":"profile2","customerId":"C0123"}]';
+        '[{"name":"profile1","value":"value1"},{"name":"profile2","value":"value2"}]';
       assert.deepStrictEqual(result.content[0].text, expectedText);
     });
 
-    // Test error handling when the API call fails.
     it('should return an error message if API call fails', async () => {
       const mockListCustomerProfiles = mock.fn(async () => {
         throw new Error('API Error');
@@ -142,11 +142,11 @@ describe('Chrome Management API', () => {
       const sendNotificationMock = mock.fn();
       const result = await handler(
         { customerId: 'C0123' },
-        { sendNotification: sendNotificationMock } // Added mock context
+        { sendNotification: sendNotificationMock }
       );
       assert.deepStrictEqual(
         result.content[0].text,
-        'Error counting browser versions: API Error'
+        'Error listing customer profiles: API Error'
       );
     });
   });

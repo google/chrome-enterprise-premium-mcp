@@ -199,7 +199,7 @@ function registerCustomerProfileTool(server, options) {
             content: [
               {
                 type: 'text',
-                text: `Error counting browser versions: ${error.message}`,
+                text: `Error listing customer profiles: ${error.message}`,
               },
             ],
           };
