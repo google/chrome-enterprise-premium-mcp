@@ -24,14 +24,6 @@ function getAuthToken(requestInfo) {
   return requestInfo?.headers?.authorization ? requestInfo.headers.authorization.split(' ')[1] : null;
 }
 
-function createProgressCallback(sendNotification) {
-  return (progress) => {
-    sendNotification({
-      method: 'notifications/message',
-      params: { level: progress.level || 'info', data: progress.data },
-    });
-  };
-}
 function gcpTool(gcpCredentialsAvailable, fn) {
   if (!gcpCredentialsAvailable) {
     console.log('GCP credentials are not available.');
@@ -53,10 +45,6 @@ function registerCountBrowserVersionsTool(server, options) {
     {
       description: 'Counts Chrome browser versions reported by devices.',
       inputSchema: {
-        project: z
-          .string()
-          .describe('Google Cloud project ID')
-          .default(options.defaultProjectId),
         customerId: z
           .string()
           .optional()
@@ -69,7 +57,7 @@ function registerCountBrowserVersionsTool(server, options) {
     },
     gcpTool(
       options.gcpCredentialsAvailable,
-      async ({ project, customerId, orgUnitId }, { sendNotification }) => {
+      async ({ customerId, orgUnitId }) => {
         if (customerId === 'me') {
           customerId = undefined;
         }
@@ -84,23 +72,10 @@ function registerCountBrowserVersionsTool(server, options) {
             ],
           };
         }
-        if (typeof project !== 'string') {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: 'Error: Project ID must be provided.',
-              },
-            ],
-          };
-        }
         try {
-          const progressCallback = createProgressCallback(sendNotification);
           const versions = await countBrowserVersions(
-            project,
             customerId,
-            orgUnitId,
-            progressCallback
+            orgUnitId
           );
           if (!versions || versions.length === 0) {
             return {
@@ -156,7 +131,7 @@ function registerCustomerProfileTool(server, options) {
     },
     gcpTool(
       options.gcpCredentialsAvailable,
-      async ({ customerId }, { sendNotification }) => {
+      async ({ customerId }) => {
         if (customerId === 'me') {
           customerId = undefined;
         }
@@ -171,10 +146,8 @@ function registerCustomerProfileTool(server, options) {
           };
         }
         try {
-          const progressCallback = createProgressCallback(sendNotification);
           const profiles = await listCustomerProfiles(
-            customerId,
-            progressCallback
+            customerId
           );
           if (!profiles || profiles.length === 0) {
             return {
@@ -232,16 +205,14 @@ function registerListDlpRulesTool(server, options) {
     },
     gcpTool(
       options.gcpCredentialsAvailable,
-      async ({type}, { requestInfo, sendNotification}) => {
+      async ({type}, { requestInfo }) => {
         try {
-          const progressCallback = createProgressCallback(sendNotification);
           const authToken = getAuthToken(requestInfo);
           // Default to 'rule' if not specified, since the tool name implies rules
           const policyType = type || 'rule';
 
           const policies = await listDlpPolicies(
             policyType,
-            progressCallback,
             authToken
           );
 
@@ -318,7 +289,7 @@ function registerCreateDlpRuleTool(server, options) {
 
     gcpTool(
       options.gcpCredentialsAvailable,
-      async ({ customerId, orgUnitId, displayName, description, triggers, condition, action, state, validateOnly, customMessage, watermarkMessage, blockScreenshot, saveContent }, { requestInfo, sendNotification }) => {
+      async ({ customerId, orgUnitId, displayName, description, triggers, condition, action, state, validateOnly, customMessage, watermarkMessage, blockScreenshot, saveContent }, { requestInfo }) => {
         if (customerId === 'me') {
           customerId = undefined;
         }
@@ -443,7 +414,7 @@ function registerGetChromeActivityLogTool(server, options) {
     },
     gcpTool(
       options.gcpCredentialsAvailable,
-      async ({ userKey, eventName, startTime, endTime, maxResults }, { requestInfo, sendNotification }) => {
+      async ({ userKey, eventName, startTime, endTime, maxResults }, { requestInfo }) => {
         try {
           const authToken = getAuthToken(requestInfo);
           if (!startTime) {
@@ -515,7 +486,7 @@ function registerAnalyzeChromeLogsTool(server, options) {
     },
     gcpTool(
       options.gcpCredentialsAvailable,
-      async ({ userKey, startTime, endTime }, { requestInfo, sendNotification }) => {
+      async ({ userKey, startTime, endTime }, { requestInfo }) => {
         try {
           const authToken = getAuthToken(requestInfo);
           const activities = await listChromeActivities({
@@ -561,7 +532,7 @@ function registerDeleteDlpRuleTool(server, options) {
     },
     gcpTool(
       options.gcpCredentialsAvailable,
-      async ({ policyName }, { requestInfo, sendNotification }) => {
+      async ({ policyName }, { requestInfo }) => {
         try {
           const authToken = getAuthToken(requestInfo);
           const result = await deleteDlpRule(policyName, authToken);
@@ -602,7 +573,7 @@ function registerCreateUrlListTool(server, options) {
     },
     gcpTool(
       options.gcpCredentialsAvailable,
-      async ({ customerId, orgUnitId, displayName, urls }, { requestInfo, sendNotification }) => {
+      async ({ customerId, orgUnitId, displayName, urls }, { requestInfo }) => {
         if (customerId === 'me') {
           customerId = undefined;
         }
@@ -663,7 +634,7 @@ function registerGetConnectorPolicyTool(server, options) {
     },
     gcpTool(
       options.gcpCredentialsAvailable,
-      async ({ customerId, orgUnitId, policy }, { requestInfo, sendNotification }) => {
+      async ({ customerId, orgUnitId, policy }, { requestInfo }) => {
         if (customerId === 'me') {
           customerId = undefined;
         }
@@ -682,7 +653,7 @@ function registerGetConnectorPolicyTool(server, options) {
         try {
           const authToken = getAuthToken(requestInfo);
           const policySchemaFilter = ConnectorPolicyFilter[policy];
-          const policies = await getConnectorPolicy(customerId, orgUnitId, policySchemaFilter, null, authToken);
+          const policies = await getConnectorPolicy(customerId, orgUnitId, policySchemaFilter, authToken);
 
           return {
             content: [
@@ -716,7 +687,7 @@ function registerListOrgUnitsTool(server, options) {
     },
     gcpTool(
       options.gcpCredentialsAvailable,
-      async ({}, { requestInfo, sendNotification }) => {
+      async ({}, { requestInfo }) => {
         try {
           const authToken = getAuthToken(requestInfo);
           const orgUnits = await listOrgUnits({}, authToken);
@@ -762,7 +733,7 @@ function registerGetCustomerIdTool(server, options) {
     },
     gcpTool(
       options.gcpCredentialsAvailable,
-      async ({}, { requestInfo, sendNotification }) => {
+      async ({}, { requestInfo }) => {
         try {
           const authToken = getAuthToken(requestInfo);
           const customer = await getCustomerId(authToken);

@@ -63,10 +63,9 @@ describe('Cloud Identity API', () => {
         (call) => call.arguments[0] === 'list_dlp_rules'
       ).arguments[2];
 
-      const sendNotificationMock = mock.fn();
       const result = await handler(
         { type: 'rule' },
-        { sendNotification: sendNotificationMock, requestInfo: {} }
+        { requestInfo: {} }
       );
 
       assert.strictEqual(mockListDlpPolicies.mock.callCount(), 1);
@@ -116,10 +115,9 @@ describe('Cloud Identity API', () => {
         (call) => call.arguments[0] === 'list_dlp_rules'
       ).arguments[2];
 
-      const sendNotificationMock = mock.fn();
       const result = await handler(
         { type: 'rule' },
-        { sendNotification: sendNotificationMock, requestInfo: {} }
+        { requestInfo: {} }
       );
       assert.deepStrictEqual(
         result.content[0].text,
@@ -149,7 +147,6 @@ describe('Cloud Identity API', () => {
         (call) => call.arguments[0] === 'create_dlp_rule'
       ).arguments[2];
 
-      const sendNotificationMock = mock.fn();
       const result = await handler(
         {
           customerId: 'C0123',
@@ -159,7 +156,7 @@ describe('Cloud Identity API', () => {
           condition: 'true',
           action: 'BLOCK',
         },
-        { sendNotification: sendNotificationMock, requestInfo: {} }
+        { requestInfo: {} }
       );
 
       assert.strictEqual(mockCreateDlpRule.mock.callCount(), 1);
@@ -192,7 +189,6 @@ Details:
         (call) => call.arguments[0] === 'create_dlp_rule'
       ).arguments[2];
 
-      const sendNotificationMock = mock.fn();
       const result = await handler(
         {
           customerId: 'C0123',
@@ -202,7 +198,7 @@ Details:
           condition: 'true',
           action: 'BLOCK',
         },
-        { sendNotification: sendNotificationMock, requestInfo: {} }
+        { requestInfo: {} }
       );
       assert.deepStrictEqual(
         result.content[0].text,

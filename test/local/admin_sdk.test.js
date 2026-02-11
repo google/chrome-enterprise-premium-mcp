@@ -7,7 +7,7 @@ You may obtain a copy of the License at
 
     https://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law_sdk or agreed to in writing, software
+Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
@@ -48,10 +48,9 @@ describe('Admin SDK API', () => {
         (call) => call.arguments[0] === 'get_customer_id'
       ).arguments[2];
 
-      const sendNotificationMock = mock.fn();
       const result = await handler(
         {},
-        { sendNotification: sendNotificationMock } // Added mock context
+        {} // Added mock context
       );
 
       assert.strictEqual(mockGetCustomerId.mock.callCount(), 1);
@@ -79,10 +78,9 @@ describe('Admin SDK API', () => {
         (call) => call.arguments[0] === 'get_customer_id'
       ).arguments[2];
 
-      const sendNotificationMock = mock.fn();
       const result = await handler(
         {},
-        { sendNotification: sendNotificationMock } // Added mock context
+        {} // Added mock context
       );
       assert.deepStrictEqual(
         result.content[0].text,
@@ -115,10 +113,9 @@ describe('Admin SDK API', () => {
         (call) => call.arguments[0] === 'list_org_units'
       ).arguments[2];
 
-      const sendNotificationMock = mock.fn();
       const result = await handler(
         {},
-        { sendNotification: sendNotificationMock } // Added mock context
+        {} // Added mock context
       );
 
       assert.strictEqual(mockListOrgUnits.mock.callCount(), 1);
@@ -159,10 +156,9 @@ describe('Admin SDK API', () => {
         (call) => call.arguments[0] === 'list_org_units'
       ).arguments[2];
 
-      const sendNotificationMock = mock.fn();
       const result = await handler(
         {},
-        { sendNotification: sendNotificationMock } // Added mock context
+        {} // Added mock context
       );
       assert.deepStrictEqual(
         result.content[0].text,

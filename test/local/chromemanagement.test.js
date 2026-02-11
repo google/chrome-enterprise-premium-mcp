@@ -1,4 +1,3 @@
-
 import assert from 'node:assert/strict';
 import { describe, it, mock, beforeEach } from 'node:test';
 import esmock from 'esmock';
@@ -37,10 +36,9 @@ describe('Chrome Management API', () => {
         (call) => call.arguments[0] === 'count_browser_versions'
       ).arguments[2];
 
-      const sendNotificationMock = mock.fn();
       const result = await handler(
         { project: 'test-project', customerId: 'C0123' },
-        { sendNotification: sendNotificationMock } // Added mock context
+        {} // Added mock context
       );
 
       assert.strictEqual(mockCountBrowserVersions.mock.callCount(), 1);
@@ -72,10 +70,9 @@ describe('Chrome Management API', () => {
         (call) => call.arguments[0] === 'count_browser_versions'
       ).arguments[2];
 
-      const sendNotificationMock = mock.fn();
       const result = await handler(
         { project: 'test-project', customerId: 'C0123' },
-        { sendNotification: sendNotificationMock } // Added mock context
+        {} // Added mock context
       );
       assert.deepStrictEqual(
         result.content[0].text,
@@ -106,10 +103,9 @@ describe('Chrome Management API', () => {
         (call) => call.arguments[0] === 'list_customer_profiles'
       ).arguments[2];
 
-      const sendNotificationMock = mock.fn();
       const result = await handler(
         { customerId: 'C0123' },
-        { sendNotification: sendNotificationMock }
+        {}
       );
 
       assert.strictEqual(mockListCustomerProfiles.mock.callCount(), 1);
@@ -139,10 +135,9 @@ describe('Chrome Management API', () => {
         (call) => call.arguments[0] === 'list_customer_profiles'
       ).arguments[2];
 
-      const sendNotificationMock = mock.fn();
       const result = await handler(
         { customerId: 'C0123' },
-        { sendNotification: sendNotificationMock }
+        {}
       );
       assert.deepStrictEqual(
         result.content[0].text,
