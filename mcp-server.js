@@ -25,11 +25,9 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { registerTools, registerToolsRemote } from './tools/tools.js';
 import { SetLevelRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { checkGCP } from './lib/util/gcp.js';
-import { ensureGCPCredentials } from './lib/util/auth.js';
 import 'dotenv/config';
 
 const gcpInfo = await checkGCP();
-let gcpCredentialsAvailable = false;
 
 /**
  * Ensure that console.log and console.error are compatible with stdio.
@@ -86,7 +84,6 @@ async function getServer() {
     await registerTools(server, {
       defaultProjectId: effectiveProjectId,
       defaultRegion: effectiveRegion,
-      gcpCredentialsAvailable,
     });
   } else {
     console.log(
@@ -96,7 +93,6 @@ async function getServer() {
     await registerToolsRemote(server, {
       defaultProjectId: effectiveProjectId,
       defaultRegion: effectiveRegion,
-      gcpCredentialsAvailable,
     });
   }
 
@@ -105,7 +101,6 @@ async function getServer() {
 
 // stdio
 if (shouldStartStdio()) {
-  gcpCredentialsAvailable = await ensureGCPCredentials();
   const stdioTransport = new StdioServerTransport();
   const server = await getServer();
   await server.connect(stdioTransport);
@@ -113,7 +108,6 @@ if (shouldStartStdio()) {
 } else {
   // non-stdio mode
   console.log('Stdio transport mode is turned off.');
-  gcpCredentialsAvailable = await ensureGCPCredentials();
   const app = express();
   app.use(express.json());
 
