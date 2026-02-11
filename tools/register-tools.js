@@ -15,8 +15,10 @@ limitations under the License.
 */
 
 import { z } from 'zod';
-import { countBrowserVersions, listCustomerProfiles, listDlpPolicies, createDlpRule, deleteDlpRule, createUrlList, getConnectorPolicy, ConnectorPolicyFilter } from '../lib/cloud-api/chromemanagement.js';
-import { listChromeActivities, listOrgUnits, getCustomerId } from '../lib/cloud-api/reports.js';
+import { countBrowserVersions, listCustomerProfiles } from '../lib/api/chromemanagement.js';
+import { listDlpPolicies, createDlpRule, deleteDlpRule, createUrlList } from '../lib/api/cloudidentity.js';
+import { getConnectorPolicy, ConnectorPolicyFilter } from '../lib/api/chromepolicy.js';
+import { listChromeActivities, listOrgUnits, getCustomerId } from '../lib/api/admin_sdk.js';
 
 function getAuthToken(requestInfo) {
   return requestInfo?.headers?.authorization ? requestInfo.headers.authorization.split(' ')[1] : null;

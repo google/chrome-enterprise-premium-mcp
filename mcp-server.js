@@ -24,8 +24,8 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { registerTools, registerToolsRemote } from './tools/tools.js';
 import { SetLevelRequestSchema } from '@modelcontextprotocol/sdk/types.js';
-import { checkGCP } from './lib/cloud-api/metadata.js';
-import { ensureGCPCredentials } from './lib/cloud-api/auth.js';
+import { checkGCP } from './lib/util/gcp.js';
+import { ensureGCPCredentials } from './lib/util/auth.js';
 import 'dotenv/config';
 
 const gcpInfo = await checkGCP();
