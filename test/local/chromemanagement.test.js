@@ -83,4 +83,71 @@ describe('Chrome Management API', () => {
       );
     });
   });
+  describe('list_customer_profiles Tool', () => {
+    it('should call listCustomerProfiles and return formatted result', async () => {
+      const mockListCustomerProfiles = mock.fn(async () => [
+        { name: 'profile1', customerId: 'C0123' },
+        { name: 'profile2', customerId: 'C0123' },
+      ]);
+
+      const { registerTools } = await esmock(
+        '../../tools/tools.js',
+        {},
+        {
+          '../../lib/api/chromemanagement.js': {
+            listCustomerProfiles: mockListCustomerProfiles,
+          },
+        }
+      );
+      registerTools(server, { gcpCredentialsAvailable: true });
+
+      const handler = server.registerTool.mock.calls.find(
+        (call) => call.arguments[0] === 'list_customer_profiles'
+      ).arguments[2];
+
+      const sendNotificationMock = mock.fn();
+      const result = await handler(
+        { customerId: 'C0123' },
+        { sendNotification: sendNotificationMock } // Added mock context
+      );
+
+      assert.strictEqual(mockListCustomerProfiles.mock.callCount(), 1);
+      const expectedText =
+        'Browser versions for customer C0123:\n' +
+        '[{"name":"profile1","customerId":"C0123"},{"name":"profile2","customerId":"C0123"}]';
+      assert.deepStrictEqual(result.content[0].text, expectedText);
+    });
+
+    // Test error handling when the API call fails.
+    it('should return an error message if API call fails', async () => {
+      const mockListCustomerProfiles = mock.fn(async () => {
+        throw new Error('API Error');
+      });
+
+      const { registerTools } = await esmock(
+        '../../tools/tools.js',
+        {},
+        {
+          '../../lib/api/chromemanagement.js': {
+            listCustomerProfiles: mockListCustomerProfiles,
+          },
+        }
+      );
+      registerTools(server, { gcpCredentialsAvailable: true });
+
+      const handler = server.registerTool.mock.calls.find(
+        (call) => call.arguments[0] === 'list_customer_profiles'
+      ).arguments[2];
+
+      const sendNotificationMock = mock.fn();
+      const result = await handler(
+        { customerId: 'C0123' },
+        { sendNotification: sendNotificationMock } // Added mock context
+      );
+      assert.deepStrictEqual(
+        result.content[0].text,
+        'Error counting browser versions: API Error'
+      );
+    });
+  });
 });
