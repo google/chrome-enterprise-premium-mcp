@@ -92,4 +92,112 @@ describe('Auth', () => {
     consoleLogMock.mock.restore();
     consoleErrorMock.mock.restore();
   });
+
+  describe('getAuthErrorMessage', () => {
+    it('should suggest project with enabled API if found', async () => {
+      const mockExecFileSync = mock.fn((cmd, args) => {
+        if (cmd === 'gcloud' && args.includes('--version')) return 'Google Cloud SDK';
+        if (cmd === 'gcloud' && args.includes('config') && args.includes('get-value')) return '(unset)\n';
+        
+        // Return 3 projects
+        if (cmd === 'gcloud' && args.includes('projects') && args.includes('list') && args.includes('--limit=10')) {
+          return 'proj-1\nproj-2\nproj-3\n';
+        }
+
+        // Check for services list on specific projects
+        if (cmd === 'gcloud' && args.includes('services') && args.includes('list')) {
+          const projectIndex = args.indexOf('--project') + 1;
+          const projectId = args[projectIndex];
+          
+          if (projectId === 'proj-1') return ''; // Not enabled on proj-1
+          if (projectId === 'proj-2') return 'admin.googleapis.com\n'; // Enabled on proj-2
+          return '';
+        }
+
+        return '';
+      });
+
+      const { getAuthErrorMessage } = await esmock('../../lib/util/auth.js', {
+        'node:child_process': {
+          execFileSync: mockExecFileSync,
+        },
+      });
+
+      const error = new Error('The admin.googleapis.com API requires a quota project, which is not set by default.');
+      const message = getAuthErrorMessage(error);
+
+      assert.match(message, /We found a potential quota project "proj-2"/);
+      assert.match(message, /gcloud auth application-default set-quota-project proj-2/);
+    });
+
+    it('should fallback to most recent project if API check fails or not found', async () => {
+      const mockExecFileSync = mock.fn((cmd, args) => {
+        if (cmd === 'gcloud' && args.includes('--version')) return 'Google Cloud SDK';
+        if (cmd === 'gcloud' && args.includes('config') && args.includes('get-value')) return '(unset)\n';
+        
+        if (cmd === 'gcloud' && args.includes('projects') && args.includes('list') && args.includes('--limit=10')) {
+          return 'proj-1\nproj-2\n';
+        }
+
+        if (cmd === 'gcloud' && args.includes('services') && args.includes('list')) {
+          return ''; // Not enabled on any
+        }
+
+        return '';
+      });
+
+      const { getAuthErrorMessage } = await esmock('../../lib/util/auth.js', {
+        'node:child_process': {
+          execFileSync: mockExecFileSync,
+        },
+      });
+
+      const error = new Error('The admin.googleapis.com API requires a quota project, which is not set by default.');
+      const message = getAuthErrorMessage(error);
+
+      assert.match(message, /We found a potential quota project "proj-1"/); // Fallback to first (most recent)
+    });
+
+    it('should fall back to generic message with console URL if no project is found', async () => {
+      const mockExecFileSync = mock.fn((cmd, args) => {
+        if (cmd === 'gcloud' && args.includes('--version')) return 'Google Cloud SDK';
+        if (cmd === 'gcloud' && args.includes('config') && args.includes('get-value')) return '(unset)\n';
+        if (cmd === 'gcloud' && args.includes('projects') && args.includes('list')) return '';
+        return '';
+      });
+
+      const { getAuthErrorMessage } = await esmock('../../lib/util/auth.js', {
+        'node:child_process': {
+          execFileSync: mockExecFileSync,
+        },
+      });
+
+      const error = new Error('The admin.googleapis.com API requires a quota project, which is not set by default.');
+      const message = getAuthErrorMessage(error);
+
+      assert.match(message, /Google Cloud Console/);
+      assert.match(message, /console.cloud.google.com\/cloud-resource-manager/);
+      assert.doesNotMatch(message, /gcloud projects list/);
+    });
+    
+    it('should use configured project if available', async () => {
+      const mockExecFileSync = mock.fn((cmd, args) => {
+        if (cmd === 'gcloud' && args.includes('--version')) return 'Google Cloud SDK';
+        if (cmd === 'gcloud' && args.includes('config') && args.includes('get-value')) return 'configured-project\n';
+        return '';
+      });
+
+      const { getAuthErrorMessage } = await esmock('../../lib/util/auth.js', {
+        'node:child_process': {
+          execFileSync: mockExecFileSync,
+        },
+      });
+
+      const error = new Error('The admin.googleapis.com API requires a quota project, which is not set by default.');
+      const message = getAuthErrorMessage(error);
+
+      assert.match(message, /We found a potential quota project "configured-project"/);
+      assert.match(message, /gcloud auth application-default set-quota-project configured-project/);
+    });
+  });
 });

@@ -18,3 +18,5 @@ coverage/
 __pycache__/
 session.db
 .adk/
+
+.DS_Store

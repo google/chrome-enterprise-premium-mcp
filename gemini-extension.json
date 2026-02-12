@@ -6,7 +6,9 @@
   "mcpServers": {
     "cep-server": {
       "command": "node",
-      "args": ["${extensionPath}${/}mcp-server.js"],
+      "args": [
+        "${extensionPath}${/}mcp-server.js"
+      ],
       "cwd": "${extensionPath}"
     }
   },
@@ -15,6 +17,7 @@
     "https://www.googleapis.com/auth/cloud-platform",
     "https://www.googleapis.com/auth/chrome.management.profiles.readonly",
     "https://www.googleapis.com/auth/cloud-identity.policies",
-    "https://www.googleapis.com/auth/admin.reports.audit.readonly"
+    "https://www.googleapis.com/auth/admin.reports.audit.readonly",
+    "https://www.googleapis.com/auth/cloud-platform"
   ]
 }
