@@ -44,4 +44,52 @@ describe('Auth', () => {
     const client = await getAuthClient([]);
     assert.ok(client);
   });
+
+  it('should return true when ADC credentials are valid', async () => {
+    // Mock console.log/error to suppress output during test
+    const consoleLogMock = mock.method(console, 'log', () => {});
+    const consoleErrorMock = mock.method(console, 'error', () => {});
+
+    const { ensureADCCredentials } = await esmock('../../lib/util/auth.js', {
+      'google-auth-library': {
+        GoogleAuth: class {
+          async getClient() {
+            return {
+              getAccessToken: async () => ({ token: 'mock-token' }),
+            };
+          }
+        },
+      },
+    });
+
+    const result = await ensureADCCredentials();
+    assert.equal(result, true);
+    
+    // Restore console mocks
+    consoleLogMock.mock.restore();
+    consoleErrorMock.mock.restore();
+  });
+
+  it('should return false when ADC credentials are missing or invalid', async () => {
+    // Mock console.log/error to suppress output during test
+    const consoleLogMock = mock.method(console, 'log', () => {});
+    const consoleErrorMock = mock.method(console, 'error', () => {});
+
+    const { ensureADCCredentials } = await esmock('../../lib/util/auth.js', {
+      'google-auth-library': {
+        GoogleAuth: class {
+          async getClient() {
+            throw new Error('No ADC found');
+          }
+        },
+      },
+    });
+
+    const result = await ensureADCCredentials();
+    assert.equal(result, false);
+
+    // Restore console mocks
+    consoleLogMock.mock.restore();
+    consoleErrorMock.mock.restore();
+  });
 });

@@ -25,9 +25,6 @@ function getAuthToken(requestInfo) {
 }
 
 function gcpTool(gcpCredentialsAvailable, fn) {
-  if (!gcpCredentialsAvailable) {
-    console.log('GCP credentials are not available.');
-  }
   return fn;
 }
 

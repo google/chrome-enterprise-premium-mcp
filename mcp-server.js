@@ -25,6 +25,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { registerTools, registerToolsRemote } from './tools/tools.js';
 import { SetLevelRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { checkGCP } from './lib/util/gcp.js';
+import { ensureADCCredentials } from './lib/util/auth.js';
 import 'dotenv/config';
 
 const gcpInfo = await checkGCP();
@@ -80,6 +81,7 @@ async function getServer() {
 
   if (shouldStartStdio() || !(gcpInfo && gcpInfo.project)) {
     console.log('Using tools optimized for local or stdio mode.');
+    await ensureADCCredentials();
     // Pass the determined defaults to the local tool registration
     await registerTools(server, {
       defaultProjectId: effectiveProjectId,

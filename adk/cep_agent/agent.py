@@ -20,17 +20,31 @@ to the CEP MCP server for further processing.
 
 from __future__ import annotations
 import os
+import google.auth
+from google.auth.exceptions import DefaultCredentialsError
 from google.adk.agents import LlmAgent
 from google.adk.tools.agent_tool import AgentTool
 from google.adk.tools.mcp_tool.mcp_toolset import McpToolset
 from google.adk.tools.mcp_tool.mcp_toolset import StdioServerParameters
-
+from .auth_utils import get_auth_instructions
 
 # Get the directory of the current Python file
 current_file_dir = os.path.dirname(os.path.abspath(__file__))
 
 # Construct the path to mcp-server.js relative to this file
 mcp_server_path = os.path.join(current_file_dir, '../../mcp-server.js')
+
+def check_credentials():
+    """Checks for Google Cloud Application Default Credentials."""
+    try:
+        google.auth.default()
+    except DefaultCredentialsError as e:
+        print(get_auth_instructions(e))
+    except Exception as e:
+        print(f"An unexpected error occurred during credential check: {e}")
+
+# Verify credentials before proceeding
+check_credentials()
 
 cep_tools_local = McpToolset(
     connection_params=StdioServerParameters(

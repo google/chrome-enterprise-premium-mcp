@@ -1,9 +1,0 @@
-{
-  "oauth_scopes": [
-    "https://www.googleapis.com/auth/chrome.management.reports.readonly",
-    "https://www.googleapis.com/auth/cloud-platform",
-    "https://www.googleapis.com/auth/chrome.management.profiles.readonly",
-    "https://www.googleapis.com/auth/cloud-identity.policies",
-    "https://www.googleapis.com/auth/admin.reports.audit.readonly"
-  ]
-}
