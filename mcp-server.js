@@ -23,6 +23,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 // Support stdio, as it is easier to use locally
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { registerTools, registerToolsRemote } from './tools/tools.js';
+import { registerCommands } from './lib/commands.js';
 import { SetLevelRequestSchema } from '@modelcontextprotocol/sdk/types.js';
 import { checkGCP } from './lib/util/gcp.js';
 import { ensureADCCredentials } from './lib/util/auth.js';
@@ -87,6 +88,7 @@ async function getServer() {
       defaultProjectId: effectiveProjectId,
       defaultRegion: effectiveRegion,
     });
+    registerCommands(server);
   } else {
     console.log(
       `Running on GCP project: ${effectiveProjectId}, region: ${effectiveRegion}. Using tools optimized for remote use.`
@@ -96,6 +98,7 @@ async function getServer() {
       defaultProjectId: effectiveProjectId,
       defaultRegion: effectiveRegion,
     });
+    registerCommands(server);
   }
 
   return server;
