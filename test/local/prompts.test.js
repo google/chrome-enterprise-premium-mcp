@@ -14,71 +14,66 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { describe, it, before, after } from 'node:test';
-import assert from 'node:assert/strict';
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
-import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
+import { describe, it, before, after } from 'node:test'
+import assert from 'node:assert/strict'
+import { Client } from '@modelcontextprotocol/sdk/client/index.js'
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
+import { fileURLToPath } from 'url'
+import { dirname, resolve } from 'path'
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-const SERVER_PATH = resolve(__dirname, '../../mcp-server.js');
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+const SERVER_PATH = resolve(__dirname, '../../mcp-server.js')
 
 describe('MCP Prompts', () => {
-  let client;
-  let transport;
+    let client
+    let transport
 
-  before(async () => {
-    transport = new StdioClientTransport({
-      command: 'node',
-      args: [SERVER_PATH],
-      env: { ...process.env, GCP_STDIO: 'true' },
-    });
-    client = new Client(
-      {
-        name: 'test-client',
-        version: '1.0.0',
-      },
-      {
-        capabilities: {
-          prompts: {},
-        },
-      }
-    );
-    await client.connect(transport);
-  });
+    before(async () => {
+        transport = new StdioClientTransport({
+            command: 'node',
+            args: [SERVER_PATH],
+            env: { ...process.env, GCP_STDIO: 'true' },
+        })
+        client = new Client(
+            {
+                name: 'test-client',
+                version: '1.0.0',
+            },
+            {
+                capabilities: {
+                    prompts: {},
+                },
+            },
+        )
+        await client.connect(transport)
+    })
 
-  after(async () => {
-    await client.close();
-  });
+    after(async () => {
+        await client.close()
+    })
 
-  it('should list all registered prompts', async () => {
-    const result = await client.listPrompts();
-    const promptNames = result.prompts.map((p) => p.name).sort();
-    
-    assert.deepStrictEqual(promptNames, [
-      'cep',
-      'cep:diagnose',
-      'cep:maturity',
-      'cep:noise'
-    ].sort());
-  });
+    it('should list all registered prompts', async () => {
+        const result = await client.listPrompts()
+        const promptNames = result.prompts.map(p => p.name).sort()
 
-  it('should retrieve the "cep" prompt content (defaulting to diagnostics)', async () => {
-    const result = await client.getPrompt({ name: 'cep' });
-    
-    assert.ok(result.messages);
-    assert.equal(result.messages.length, 1);
-    assert.equal(result.messages[0].role, 'user');
-    assert.ok(result.messages[0].content.text.includes('List the organizational units'));
-    assert.ok(result.messages[0].content.text.includes('Chrome Enterprise Premium'));
-  });
+        assert.deepStrictEqual(promptNames, ['cep', 'cep:diagnose', 'cep:maturity', 'cep:noise'].sort())
+    })
 
-  it('should retrieve the "cep:diagnose" prompt content', async () => {
-    const result = await client.getPrompt({ name: 'cep:diagnose' });
-    
-    assert.ok(result.messages);
-    assert.ok(result.messages[0].content.text.includes('List the organizational units'));
-  });
-});
+    it('should retrieve the "cep" prompt content (defaulting to diagnostics)', async () => {
+        const result = await client.getPrompt({ name: 'cep' })
+
+        assert.ok(result.messages)
+        assert.equal(result.messages.length, 1)
+        assert.equal(result.messages[0].role, 'user')
+        assert.ok(result.messages[0].content.text.includes('List the organizational units'))
+        assert.ok(result.messages[0].content.text.includes('Chrome Enterprise Premium'))
+    })
+
+    it('should retrieve the "cep:diagnose" prompt content', async () => {
+        const result = await client.getPrompt({ name: 'cep:diagnose' })
+
+        assert.ok(result.messages)
+        assert.ok(result.messages[0].content.text.includes('List the organizational units'))
+    })
+})

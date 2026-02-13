@@ -18,80 +18,84 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { MCP_SERVER_PATH, PROJECT_ROOT } from "../constants.js";
+import { Client } from '@modelcontextprotocol/sdk/client/index.js'
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
+import { MCP_SERVER_PATH, PROJECT_ROOT } from '../constants.js'
 
 /**
  * Wraps the MCP Client and Transport to manage the connection to the MCP Server.
  */
 export class McpClientWrapper {
-  private client: Client;
-  private transport: StdioClientTransport;
-  private isConnected: boolean = false;
+    private client: Client
+    private transport: StdioClientTransport
+    private isConnected: boolean = false
 
-  /**
-   * Initializes the MCP Client Wrapper.
-   */
-  constructor() {
-    this.transport = new StdioClientTransport({
-      command: "node",
-      args: [MCP_SERVER_PATH],
-      env: { ...process.env, GCP_STDIO: "true" },
-      cwd: PROJECT_ROOT,
-    });
+    /**
+     * Initializes the MCP Client Wrapper.
+     */
+    constructor() {
+        this.transport = new StdioClientTransport({
+            command: 'node',
+            args: [MCP_SERVER_PATH],
+            env: { ...process.env, GCP_STDIO: 'true' },
+            cwd: PROJECT_ROOT,
+        })
 
-    this.client = new Client(
-      {
-        name: "cep-agent-ts-client",
-        version: "1.0.0",
-      },
-      {
-        capabilities: {},
-      }
-    );
-  }
+        this.client = new Client(
+            {
+                name: 'cep-agent-ts-client',
+                version: '1.0.0',
+            },
+            {
+                capabilities: {},
+            },
+        )
+    }
 
-  /**
-   * Connects to the MCP Server if not already connected.
-   */
-  async connect(): Promise<void> {
-    if (this.isConnected) return;
-    
-    await this.client.connect(this.transport);
-    this.isConnected = true;
-    console.log(`[mcp] Connected to server at ${MCP_SERVER_PATH}`);
-  }
+    /**
+     * Connects to the MCP Server if not already connected.
+     */
+    async connect(): Promise<void> {
+        if (this.isConnected) {
+            return
+        }
 
-  /**
-   * Lists the available tools from the MCP Server.
-   * @returns The list of tools.
-   */
-  async listTools() {
-    await this.connect();
-    return await this.client.listTools();
-  }
+        await this.client.connect(this.transport)
+        this.isConnected = true
+        console.log(`[mcp] Connected to server at ${MCP_SERVER_PATH}`)
+    }
 
-  /**
-   * Calls a tool on the MCP Server.
-   * @param name The name of the tool to call.
-   * @param args The arguments to pass to the tool.
-   * @returns The result of the tool call.
-   */
-  async callTool(name: string, args: any) {
-    await this.connect();
-    return await this.client.callTool({
-      name,
-      arguments: args,
-    });
-  }
+    /**
+     * Lists the available tools from the MCP Server.
+     * @returns The list of tools.
+     */
+    async listTools() {
+        await this.connect()
+        return await this.client.listTools()
+    }
 
-  /**
-   * Closes the connection to the MCP Server.
-   */
-  async close(): Promise<void> {
-    if (!this.isConnected) return;
-    await this.client.close();
-    this.isConnected = false;
-  }
+    /**
+     * Calls a tool on the MCP Server.
+     * @param name The name of the tool to call.
+     * @param args The arguments to pass to the tool.
+     * @returns The result of the tool call.
+     */
+    async callTool(name: string, args: any) {
+        await this.connect()
+        return await this.client.callTool({
+            name,
+            arguments: args,
+        })
+    }
+
+    /**
+     * Closes the connection to the MCP Server.
+     */
+    async close(): Promise<void> {
+        if (!this.isConnected) {
+            return
+        }
+        await this.client.close()
+        this.isConnected = false
+    }
 }

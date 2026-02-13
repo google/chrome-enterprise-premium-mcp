@@ -9,30 +9,30 @@ MCP server for further processing.
 The CEP agent is designed to assist with Chrome Enterprise Premium administration.
 It can be configured in two ways:
 
-*   **Single Agent**: A single agent that can handle all tasks, including
-    onboarding, troubleshooting, and metadata retrieval.
-*   **Multi-agent**: A multi-agent system with a root agent that delegates tasks
-    to specialized agents for onboarding, troubleshooting, and metadata
-    retrieval.
+- **Single Agent**: A single agent that can handle all tasks, including
+  onboarding, troubleshooting, and metadata retrieval.
+- **Multi-agent**: A multi-agent system with a root agent that delegates tasks
+  to specialized agents for onboarding, troubleshooting, and metadata
+  retrieval.
 
 The agent uses the `gemini-2.0-flash` model and interacts with the CEP MCP server
 via a toolset.
 
 ## Features
 
-*   **Onboarding**: Assists with setting up and configuring Chrome Enterprise
-    Premium.
-*   **Troubleshooting**: Helps diagnose and resolve issues with DLP rules and
-    other configurations.
-*   **Metadata Retrieval**: Fetches customer and organizational unit IDs.
+- **Onboarding**: Assists with setting up and configuring Chrome Enterprise
+  Premium.
+- **Troubleshooting**: Helps diagnose and resolve issues with DLP rules and
+  other configurations.
+- **Metadata Retrieval**: Fetches customer and organizational unit IDs.
 
 ## Getting Started
 
 To get started with the CEP agent, you need to have the following prerequisites:
 
-*   Node.js installed
-*   gcloud CLI installed
-*   Agent development kit installed
+- Node.js installed
+- gcloud CLI installed
+- Agent development kit installed
 
 ### Running Locally
 
