@@ -7,13 +7,12 @@
  * - Validating organizational unit IDs.
  */
 
-import { z } from 'zod';
+import { z } from 'zod'
 
-import { getCustomerId } from '../lib/api/admin_sdk.js';
-import { TAGS } from '../lib/constants.js';
+import { getCustomerId } from '../lib/api/admin_sdk.js'
+import { TAGS } from '../lib/constants.js'
 
-let cachedCustomerId = null;
-
+let cachedCustomerId = null
 
 /**
  * Sets the global cached Customer ID.
@@ -21,27 +20,17 @@ let cachedCustomerId = null;
  * @param {string} id - The customer ID to cache
  */
 export function setGlobalCustomerId(id) {
-  cachedCustomerId = id;
+    cachedCustomerId = id
 }
-
 
 /**
  * Reusable Zod schema definitions.
  */
 export const commonSchemas = {
-  customerId: z
-    .string()
-    .optional()
-    .describe('The Chrome customer ID (e.g. C012345)'),
-  orgUnitId: z
-    .string()
-    .describe('The ID of the organizational unit.'),
-  orgUnitIdOptional: z
-    .string()
-    .optional()
-    .describe('The ID of the organizational unit to filter results.'),
-};
-
+    customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
+    orgUnitId: z.string().describe('The ID of the organizational unit.'),
+    orgUnitIdOptional: z.string().optional().describe('The ID of the organizational unit to filter results.'),
+}
 
 /**
  * Extracts the authentication token from the request headers.
@@ -50,55 +39,73 @@ export const commonSchemas = {
  * @returns {string|null} The Bearer token if present, otherwise null
  */
 export function getAuthToken(requestInfo) {
-  return requestInfo?.headers?.authorization
-    ? requestInfo.headers.authorization.split(' ')[1]
-    : null;
+    return requestInfo?.headers?.authorization ? requestInfo.headers.authorization.split(' ')[1] : null
 }
-
 
 /**
- * Wraps a tool implementation with common GCP logic.
+ * Implements the guardrail model for write operations.
  *
- * Automatically resolves the `customerId` if it's missing or set to 'me',
- * unless `skipAutoResolve` is true. Caches the resolved ID for future calls.
- *
- * @param {boolean} gcpCredentialsAvailable - Whether GCP credentials are available (unused, kept for signature compatibility)
- * @param {Function} fn - The tool implementation function
- * @param {object} [options] - Configuration options
- * @param {boolean} [options.skipAutoResolve=false] - If true, skips automatic customer ID resolution
- * @returns {Function} The wrapped tool function
+ * @param {object} definition - The tool definition object.
+ * @param {Function} definition.validate - The validation function.
+ * @param {Function} definition.transform - The transformation function.
+ * @param {Function} definition.handler - The handler function.
+ * @returns {Function} The wrapped tool function.
  */
-export function gcpTool(gcpCredentialsAvailable, fn, options = {}) {
-  return async (args, context) => {
-    // Attempt to auto-resolve customerId if applicable
-    const shouldResolve =
-      !options.skipAutoResolve &&
-      args &&
-      (args.customerId === undefined || args.customerId === 'me');
-
-    if (shouldResolve) {
-      if (cachedCustomerId) {
-        args.customerId = cachedCustomerId;
-      } else {
-        try {
-          const authToken = getAuthToken(context?.requestInfo);
-          const customer = await getCustomerId(authToken);
-          
-          if (customer && customer.id) {
-            cachedCustomerId = customer.id;
-            args.customerId = cachedCustomerId;
-          }
-        } catch (error) {
-          // Log but don't fail; the tool might validate the missing ID itself or work without it.
-          console.error(`${TAGS.MCP} ⚠️ Failed to auto-resolve customerId:`, error.message);
-        }
-      }
+function commonTransform(params) {
+    const newParams = { ...params }
+    if (newParams.orgUnitId) {
+        newParams.orgUnitId = validateAndGetOrgUnitId(newParams.orgUnitId)
     }
-
-    return fn(args, context);
-  };
+    return newParams
 }
 
+export function guardedToolCall({ validate, transform, handler, skipAutoResolve = false }) {
+  return async (params, context) => {
+    try {
+      if (params.customerId) {
+        cachedCustomerId = params.customerId;
+      }
+
+            if (!skipAutoResolve && params.customerId === undefined) {
+                if (cachedCustomerId) {
+                    params.customerId = cachedCustomerId
+                } else {
+                    try {
+                        const authToken = getAuthToken(context?.requestInfo)
+                        const customer = await getCustomerId(authToken)
+
+                        if (customer && customer.id) {
+                            cachedCustomerId = customer.id
+                            params.customerId = cachedCustomerId
+                        }
+                    } catch (error) {
+                        console.error(`${TAGS.MCP} ⚠️ Failed to auto-resolve customerId:`, error.message)
+                    }
+                }
+            }
+
+            // 1. COMMON TRANSFORMATION
+            let transformedParams = commonTransform(params)
+
+            // 2. CUSTOM TRANSFORMATION
+            if (transform) {
+                transformedParams = transform(transformedParams)
+            }
+
+            // 3. VALIDATION
+            if (validate) {
+                validate(transformedParams)
+            }
+
+            // 4. EXECUTION
+            return await handler(transformedParams, context)
+        } catch (error) {
+            return {
+                content: [{ type: 'text', text: `Error: ${error.message}` }],
+            }
+        }
+    }
+}
 
 /**
  * Validates and normalizes an Organizational Unit ID.
@@ -109,8 +116,8 @@ export function gcpTool(gcpCredentialsAvailable, fn, options = {}) {
  * @returns {string} The normalized ID
  */
 export function validateAndGetOrgUnitId(orgUnitId) {
-  if (typeof orgUnitId === 'string' && orgUnitId.startsWith('id:')) {
-    return orgUnitId.substring(3);
-  }
-  return orgUnitId;
+    if (typeof orgUnitId === 'string' && orgUnitId.startsWith('id:')) {
+        return orgUnitId.substring(3)
+    }
+    return orgUnitId
 }

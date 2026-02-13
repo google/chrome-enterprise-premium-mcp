@@ -18,29 +18,29 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { FunctionDeclaration, FunctionDeclarationSchemaType } from "@google-cloud/vertexai";
-import { ListToolsResult } from "@modelcontextprotocol/sdk/types.js";
+import { FunctionDeclaration, FunctionDeclarationSchemaType } from '@google-cloud/vertexai'
+import { ListToolsResult } from '@modelcontextprotocol/sdk/types.js'
 
 /**
  * Converts MCP tools to Vertex AI function declarations.
  */
 export function convertMcpToolsToVertexAi(mcpTools: ListToolsResult): FunctionDeclaration[] {
-  return mcpTools.tools.map((tool) => ({
-    name: tool.name,
-    description: tool.description,
-    parameters: convertSchema(tool.inputSchema),
-  }));
+    return mcpTools.tools.map(tool => ({
+        name: tool.name,
+        description: tool.description,
+        parameters: convertSchema(tool.inputSchema),
+    }))
 }
 
 /**
  * Converts a JSON schema to a Vertex AI compatible schema.
  */
 function convertSchema(schema: any): any {
-  // Simple pass-through for now as Vertex AI accepts JSON Schema
-  // We might need to adjust types if strict checks fail
-  return {
-    type: FunctionDeclarationSchemaType.OBJECT,
-    properties: schema.properties || {},
-    required: schema.required || [],
-  };
+    // Simple pass-through for now as Vertex AI accepts JSON Schema
+    // We might need to adjust types if strict checks fail
+    return {
+        type: FunctionDeclarationSchemaType.OBJECT,
+        properties: schema.properties || {},
+        required: schema.required || [],
+    }
 }

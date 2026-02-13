@@ -14,190 +14,230 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import assert from 'node:assert/strict';
-import { describe, it, mock } from 'node:test';
-import esmock from 'esmock';
+import assert from 'node:assert/strict'
+import { describe, it, mock } from 'node:test'
+import esmock from 'esmock'
 
 describe('Auth', () => {
-  it('should return an auth client when an auth token is provided', async () => {
-    const { getAuthClient } = await esmock('../../lib/util/auth.js', {
-      'google-auth-library': {
-        OAuth2Client: class {
-          setCredentials() {}
-        },
-      },
-    });
-    const client = await getAuthClient([], 'test-token');
-    assert.ok(client);
-  });
+    it('should return an auth client when an auth token is provided', async () => {
+        const { getAuthClient } = await esmock('../../lib/util/auth.js', {
+            'google-auth-library': {
+                OAuth2Client: class {
+                    setCredentials() {}
+                },
+            },
+        })
+        const client = await getAuthClient([], 'test-token')
+        assert.ok(client)
+    })
 
-  it('should return an auth client when no auth token is provided', async () => {
-    const { getAuthClient } = await esmock('../../lib/util/auth.js', {
-      'google-auth-library': {
-        GoogleAuth: class {
-          async getClient() {
-            return {};
-          }
-        },
-      },
-    });
-    const client = await getAuthClient([]);
-    assert.ok(client);
-  });
+    it('should return an auth client when no auth token is provided', async () => {
+        const { getAuthClient } = await esmock('../../lib/util/auth.js', {
+            'google-auth-library': {
+                GoogleAuth: class {
+                    async getClient() {
+                        return {}
+                    }
+                },
+            },
+        })
+        const client = await getAuthClient([])
+        assert.ok(client)
+    })
 
-  it('should return true when ADC credentials are valid', async () => {
-    // Mock console.log/error to suppress output during test
-    const consoleLogMock = mock.method(console, 'log', () => {});
-    const consoleErrorMock = mock.method(console, 'error', () => {});
+    it('should return true when ADC credentials are valid', async () => {
+        // Mock console.log/error to suppress output during test
+        const consoleLogMock = mock.method(console, 'log', () => {})
+        const consoleErrorMock = mock.method(console, 'error', () => {})
 
-    const { ensureADCCredentials } = await esmock('../../lib/util/auth.js', {
-      'google-auth-library': {
-        GoogleAuth: class {
-          async getClient() {
-            return {
-              getAccessToken: async () => ({ token: 'mock-token' }),
-            };
-          }
-        },
-      },
-    });
+        const { ensureADCCredentials } = await esmock('../../lib/util/auth.js', {
+            'google-auth-library': {
+                GoogleAuth: class {
+                    async getClient() {
+                        return {
+                            getAccessToken: async () => ({ token: 'mock-token' }),
+                        }
+                    }
+                },
+            },
+        })
 
-    const result = await ensureADCCredentials();
-    assert.equal(result, true);
-    
-    // Restore console mocks
-    consoleLogMock.mock.restore();
-    consoleErrorMock.mock.restore();
-  });
+        const result = await ensureADCCredentials()
+        assert.equal(result, true)
 
-  it('should return false when ADC credentials are missing or invalid', async () => {
-    // Mock console.log/error to suppress output during test
-    const consoleLogMock = mock.method(console, 'log', () => {});
-    const consoleErrorMock = mock.method(console, 'error', () => {});
+        // Restore console mocks
+        consoleLogMock.mock.restore()
+        consoleErrorMock.mock.restore()
+    })
 
-    const { ensureADCCredentials } = await esmock('../../lib/util/auth.js', {
-      'google-auth-library': {
-        GoogleAuth: class {
-          async getClient() {
-            throw new Error('No ADC found');
-          }
-        },
-      },
-    });
+    it('should return false when ADC credentials are missing or invalid', async () => {
+        // Mock console.log/error to suppress output during test
+        const consoleLogMock = mock.method(console, 'log', () => {})
+        const consoleErrorMock = mock.method(console, 'error', () => {})
 
-    const result = await ensureADCCredentials();
-    assert.equal(result, false);
+        const { ensureADCCredentials } = await esmock('../../lib/util/auth.js', {
+            'google-auth-library': {
+                GoogleAuth: class {
+                    async getClient() {
+                        throw new Error('No ADC found')
+                    }
+                },
+            },
+        })
 
-    // Restore console mocks
-    consoleLogMock.mock.restore();
-    consoleErrorMock.mock.restore();
-  });
+        const result = await ensureADCCredentials()
+        assert.equal(result, false)
 
-  describe('getAuthErrorMessage', () => {
-    it('should suggest project with enabled API if found', async () => {
-      const mockExecFileSync = mock.fn((cmd, args) => {
-        if (cmd === 'gcloud' && args.includes('--version')) return 'Google Cloud SDK';
-        if (cmd === 'gcloud' && args.includes('config') && args.includes('get-value')) return '(unset)\n';
-        
-        // Return 3 projects
-        if (cmd === 'gcloud' && args.includes('projects') && args.includes('list') && args.includes('--limit=10')) {
-          return 'proj-1\nproj-2\nproj-3\n';
-        }
+        // Restore console mocks
+        consoleLogMock.mock.restore()
+        consoleErrorMock.mock.restore()
+    })
 
-        // Check for services list on specific projects
-        if (cmd === 'gcloud' && args.includes('services') && args.includes('list')) {
-          const projectIndex = args.indexOf('--project') + 1;
-          const projectId = args[projectIndex];
-          
-          if (projectId === 'proj-1') return ''; // Not enabled on proj-1
-          if (projectId === 'proj-2') return 'admin.googleapis.com\n'; // Enabled on proj-2
-          return '';
-        }
+    describe('getAuthErrorMessage', () => {
+        it('should suggest project with enabled API if found', async () => {
+            const mockExecFileSync = mock.fn((cmd, args) => {
+                if (cmd === 'gcloud' && args.includes('--version')) {
+                    return 'Google Cloud SDK'
+                }
+                if (cmd === 'gcloud' && args.includes('config') && args.includes('get-value')) {
+                    return '(unset)\n'
+                }
 
-        return '';
-      });
+                // Return 3 projects
+                if (
+                    cmd === 'gcloud' &&
+                    args.includes('projects') &&
+                    args.includes('list') &&
+                    args.includes('--limit=10')
+                ) {
+                    return 'proj-1\nproj-2\nproj-3\n'
+                }
 
-      const { getAuthErrorMessage } = await esmock('../../lib/util/auth.js', {
-        'node:child_process': {
-          execFileSync: mockExecFileSync,
-        },
-      });
+                // Check for services list on specific projects
+                if (cmd === 'gcloud' && args.includes('services') && args.includes('list')) {
+                    const projectIndex = args.indexOf('--project') + 1
+                    const projectId = args[projectIndex]
 
-      const error = new Error('The admin.googleapis.com API requires a quota project, which is not set by default.');
-      const message = getAuthErrorMessage(error);
+                    if (projectId === 'proj-1') {
+                        return ''
+                    } // Not enabled on proj-1
+                    if (projectId === 'proj-2') {
+                        return 'admin.googleapis.com\n'
+                    } // Enabled on proj-2
+                    return ''
+                }
 
-      assert.match(message, /We found a potential quota project "proj-2"/);
-      assert.match(message, /gcloud auth application-default set-quota-project proj-2/);
-    });
+                return ''
+            })
 
-    it('should fallback to most recent project if API check fails or not found', async () => {
-      const mockExecFileSync = mock.fn((cmd, args) => {
-        if (cmd === 'gcloud' && args.includes('--version')) return 'Google Cloud SDK';
-        if (cmd === 'gcloud' && args.includes('config') && args.includes('get-value')) return '(unset)\n';
-        
-        if (cmd === 'gcloud' && args.includes('projects') && args.includes('list') && args.includes('--limit=10')) {
-          return 'proj-1\nproj-2\n';
-        }
+            const { getAuthErrorMessage } = await esmock('../../lib/util/auth.js', {
+                'node:child_process': {
+                    execFileSync: mockExecFileSync,
+                },
+            })
 
-        if (cmd === 'gcloud' && args.includes('services') && args.includes('list')) {
-          return ''; // Not enabled on any
-        }
+            const error = new Error(
+                'The admin.googleapis.com API requires a quota project, which is not set by default.',
+            )
+            const message = getAuthErrorMessage(error)
 
-        return '';
-      });
+            assert.match(message, /We found a potential quota project "proj-2"/)
+            assert.match(message, /gcloud auth application-default set-quota-project proj-2/)
+        })
 
-      const { getAuthErrorMessage } = await esmock('../../lib/util/auth.js', {
-        'node:child_process': {
-          execFileSync: mockExecFileSync,
-        },
-      });
+        it('should fallback to most recent project if API check fails or not found', async () => {
+            const mockExecFileSync = mock.fn((cmd, args) => {
+                if (cmd === 'gcloud' && args.includes('--version')) {
+                    return 'Google Cloud SDK'
+                }
+                if (cmd === 'gcloud' && args.includes('config') && args.includes('get-value')) {
+                    return '(unset)\n'
+                }
 
-      const error = new Error('The admin.googleapis.com API requires a quota project, which is not set by default.');
-      const message = getAuthErrorMessage(error);
+                if (
+                    cmd === 'gcloud' &&
+                    args.includes('projects') &&
+                    args.includes('list') &&
+                    args.includes('--limit=10')
+                ) {
+                    return 'proj-1\nproj-2\n'
+                }
 
-      assert.match(message, /We found a potential quota project "proj-1"/); // Fallback to first (most recent)
-    });
+                if (cmd === 'gcloud' && args.includes('services') && args.includes('list')) {
+                    return '' // Not enabled on any
+                }
 
-    it('should fall back to generic message with console URL if no project is found', async () => {
-      const mockExecFileSync = mock.fn((cmd, args) => {
-        if (cmd === 'gcloud' && args.includes('--version')) return 'Google Cloud SDK';
-        if (cmd === 'gcloud' && args.includes('config') && args.includes('get-value')) return '(unset)\n';
-        if (cmd === 'gcloud' && args.includes('projects') && args.includes('list')) return '';
-        return '';
-      });
+                return ''
+            })
 
-      const { getAuthErrorMessage } = await esmock('../../lib/util/auth.js', {
-        'node:child_process': {
-          execFileSync: mockExecFileSync,
-        },
-      });
+            const { getAuthErrorMessage } = await esmock('../../lib/util/auth.js', {
+                'node:child_process': {
+                    execFileSync: mockExecFileSync,
+                },
+            })
 
-      const error = new Error('The admin.googleapis.com API requires a quota project, which is not set by default.');
-      const message = getAuthErrorMessage(error);
+            const error = new Error(
+                'The admin.googleapis.com API requires a quota project, which is not set by default.',
+            )
+            const message = getAuthErrorMessage(error)
 
-      assert.match(message, /Google Cloud Console/);
-      assert.match(message, /console.cloud.google.com\/cloud-resource-manager/);
-      assert.doesNotMatch(message, /gcloud projects list/);
-    });
-    
-    it('should use configured project if available', async () => {
-      const mockExecFileSync = mock.fn((cmd, args) => {
-        if (cmd === 'gcloud' && args.includes('--version')) return 'Google Cloud SDK';
-        if (cmd === 'gcloud' && args.includes('config') && args.includes('get-value')) return 'configured-project\n';
-        return '';
-      });
+            assert.match(message, /We found a potential quota project "proj-1"/) // Fallback to first (most recent)
+        })
 
-      const { getAuthErrorMessage } = await esmock('../../lib/util/auth.js', {
-        'node:child_process': {
-          execFileSync: mockExecFileSync,
-        },
-      });
+        it('should fall back to generic message with console URL if no project is found', async () => {
+            const mockExecFileSync = mock.fn((cmd, args) => {
+                if (cmd === 'gcloud' && args.includes('--version')) {
+                    return 'Google Cloud SDK'
+                }
+                if (cmd === 'gcloud' && args.includes('config') && args.includes('get-value')) {
+                    return '(unset)\n'
+                }
+                if (cmd === 'gcloud' && args.includes('projects') && args.includes('list')) {
+                    return ''
+                }
+                return ''
+            })
 
-      const error = new Error('The admin.googleapis.com API requires a quota project, which is not set by default.');
-      const message = getAuthErrorMessage(error);
+            const { getAuthErrorMessage } = await esmock('../../lib/util/auth.js', {
+                'node:child_process': {
+                    execFileSync: mockExecFileSync,
+                },
+            })
 
-      assert.match(message, /We found a potential quota project "configured-project"/);
-      assert.match(message, /gcloud auth application-default set-quota-project configured-project/);
-    });
-  });
-});
+            const error = new Error(
+                'The admin.googleapis.com API requires a quota project, which is not set by default.',
+            )
+            const message = getAuthErrorMessage(error)
+
+            assert.match(message, /Google Cloud Console/)
+            assert.match(message, /console.cloud.google.com\/cloud-resource-manager/)
+            assert.doesNotMatch(message, /gcloud projects list/)
+        })
+
+        it('should use configured project if available', async () => {
+            const mockExecFileSync = mock.fn((cmd, args) => {
+                if (cmd === 'gcloud' && args.includes('--version')) {
+                    return 'Google Cloud SDK'
+                }
+                if (cmd === 'gcloud' && args.includes('config') && args.includes('get-value')) {
+                    return 'configured-project\n'
+                }
+                return ''
+            })
+
+            const { getAuthErrorMessage } = await esmock('../../lib/util/auth.js', {
+                'node:child_process': {
+                    execFileSync: mockExecFileSync,
+                },
+            })
+
+            const error = new Error(
+                'The admin.googleapis.com API requires a quota project, which is not set by default.',
+            )
+            const message = getAuthErrorMessage(error)
+
+            assert.match(message, /We found a potential quota project "configured-project"/)
+            assert.match(message, /gcloud auth application-default set-quota-project configured-project/)
+        })
+    })
+})

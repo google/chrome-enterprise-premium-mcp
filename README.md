@@ -70,23 +70,45 @@ npm run mcp-inspector
 npm test
 ```
 
+## Linting and Formatting
+
+This project uses ESLint for linting and Prettier for code formatting.
+
+**Check for linting errors:**
+
+```bash
+npm run lint
+```
+
+**Automatically fix fixable linting errors:**
+
+```bash
+npm run lint -- --fix
+```
+
+**Format all files in the project:**
+
+```bash
+npm run format
+```
+
 ## Available Commands (Prompts)
 
-| Command | Description |
-| :--- | :--- |
-| `cep` | **Main Entry Point**. Launches the diagnostics prompt. |
-| `cep:diagnose` | Runs a comprehensive **Health Check** of the Chrome Enterprise environment. |
-| `cep:maturity` | Assesses the **DLP Maturity** level based on rule configuration and events. |
-| `cep:noise` | Analyzes **Rule Noise** (false positives/overrides) and recommends optimizations. |
+| Command        | Description                                                                       |
+| :------------- | :-------------------------------------------------------------------------------- |
+| `cep`          | **Main Entry Point**. Launches the diagnostics prompt.                            |
+| `cep:diagnose` | Runs a comprehensive **Health Check** of the Chrome Enterprise environment.       |
+| `cep:maturity` | Assesses the **DLP Maturity** level based on rule configuration and events.       |
+| `cep:noise`    | Analyzes **Rule Noise** (false positives/overrides) and recommends optimizations. |
 
 ## Environment Variables
 
-| Variable | Description | Default |
-| :--- | :--- | :--- |
-| `GOOGLE_CLOUD_PROJECT` | GCP Project ID (overrides metadata server). | `undefined` |
-| `GOOGLE_CLOUD_REGION` | GCP Region (overrides metadata server). | `europe-west1` |
-| `GCP_STDIO` | Force Stdio mode (`true`) or SSE mode (`false`). | Auto-detected |
-| `PORT` | Port for SSE/HTTP server. | `3000` |
+| Variable               | Description                                      | Default        |
+| :--------------------- | :----------------------------------------------- | :------------- |
+| `GOOGLE_CLOUD_PROJECT` | GCP Project ID (overrides metadata server).      | `undefined`    |
+| `GOOGLE_CLOUD_REGION`  | GCP Region (overrides metadata server).          | `europe-west1` |
+| `GCP_STDIO`            | Force Stdio mode (`true`) or SSE mode (`false`). | Auto-detected  |
+| `PORT`                 | Port for SSE/HTTP server.                        | `3000`         |
 
 ## License
 

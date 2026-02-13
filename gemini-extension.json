@@ -1,23 +1,21 @@
 {
-  "name": "chrome-enterprise-premium",
-  "version": "1.0.0",
-  "description": "Chrome Enterprise Premium management tools for policies, DLP, and activity analysis.",
-  "contextFileName": "gemini-extension/GEMINI.md",
-  "mcpServers": {
-    "cep-server": {
-      "command": "node",
-      "args": [
-        "${extensionPath}${/}mcp-server.js"
-      ],
-      "cwd": "${extensionPath}"
-    }
-  },
-  "oauth_scopes": [
-    "https://www.googleapis.com/auth/chrome.management.reports.readonly",
-    "https://www.googleapis.com/auth/cloud-platform",
-    "https://www.googleapis.com/auth/chrome.management.profiles.readonly",
-    "https://www.googleapis.com/auth/cloud-identity.policies",
-    "https://www.googleapis.com/auth/admin.reports.audit.readonly",
-    "https://www.googleapis.com/auth/cloud-platform"
-  ]
+    "name": "chrome-enterprise-premium",
+    "version": "1.0.0",
+    "description": "Chrome Enterprise Premium management tools for policies, DLP, and activity analysis.",
+    "contextFileName": "gemini-extension/GEMINI.md",
+    "mcpServers": {
+        "cep-server": {
+            "command": "node",
+            "args": ["${extensionPath}${/}mcp-server.js"],
+            "cwd": "${extensionPath}"
+        }
+    },
+    "oauth_scopes": [
+        "https://www.googleapis.com/auth/chrome.management.reports.readonly",
+        "https://www.googleapis.com/auth/cloud-platform",
+        "https://www.googleapis.com/auth/chrome.management.profiles.readonly",
+        "https://www.googleapis.com/auth/cloud-identity.policies",
+        "https://www.googleapis.com/auth/admin.reports.audit.readonly",
+        "https://www.googleapis.com/auth/cloud-platform"
+    ]
 }

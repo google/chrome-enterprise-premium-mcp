@@ -14,156 +14,146 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import assert from 'node:assert/strict';
-import { describe, it, mock, beforeEach } from 'node:test';
-import esmock from 'esmock';
+import assert from 'node:assert/strict'
+import { describe, it, mock, beforeEach } from 'node:test'
+import esmock from 'esmock'
 
 describe('Admin SDK API', () => {
-  let server;
+    let server
 
-  beforeEach(async () => {
-    server = {
-      registerTool: mock.fn(),
-    };
-  });
-
-  describe('get_customer_id Tool', () => {
-    it('should call getCustomerId and return formatted result', async () => {
-      const mockGetCustomerId = mock.fn(async () => ({
-        id: 'C0123',
-      }));
-
-      const { registerTools } = await esmock(
-        '../../tools/tools.js',
-        {},
-        {
-          '../../lib/api/admin_sdk.js': {
-            getCustomerId: mockGetCustomerId,
-          },
+    beforeEach(async () => {
+        server = {
+            registerTool: mock.fn(),
         }
-      );
-      registerTools(server, { gcpCredentialsAvailable: true });
+    })
 
-      const handler = server.registerTool.mock.calls.find(
-        (call) => call.arguments[0] === 'get_customer_id'
-      ).arguments[2];
+    describe('get_customer_id Tool', () => {
+        it('should call getCustomerId and return formatted result', async () => {
+            const mockGetCustomerId = mock.fn(async () => ({
+                id: 'C0123',
+            }))
 
-      const result = await handler(
-        {},
-        {} // Added mock context
-      );
+            const { registerTools } = await esmock(
+                '../../tools/tools.js',
+                {},
+                {
+                    '../../lib/api/admin_sdk.js': {
+                        getCustomerId: mockGetCustomerId,
+                    },
+                },
+            )
+            registerTools(server, { gcpCredentialsAvailable: true })
 
-      assert.strictEqual(mockGetCustomerId.mock.callCount(), 1);
-      const expectedText = 'Customer ID: C0123';
-      assert.deepStrictEqual(result.content[0].text, expectedText);
-    });
+            const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_customer_id')
+                .arguments[2]
 
-    it('should return an error message if API call fails', async () => {
-      const mockGetCustomerId = mock.fn(async () => {
-        throw new Error('API Error');
-      });
+            const result = await handler(
+                {},
+                {}, // Added mock context
+            )
 
-      const { registerTools } = await esmock(
-        '../../tools/tools.js',
-        {},
-        {
-          '../../lib/api/admin_sdk.js': {
-            getCustomerId: mockGetCustomerId,
-          },
-        }
-      );
-      registerTools(server, { gcpCredentialsAvailable: true });
+            assert.strictEqual(mockGetCustomerId.mock.callCount(), 1)
+            const expectedText = 'Customer ID: C0123'
+            assert.deepStrictEqual(result.content[0].text, expectedText)
+        })
 
-      const handler = server.registerTool.mock.calls.find(
-        (call) => call.arguments[0] === 'get_customer_id'
-      ).arguments[2];
+        it('should return an error message if API call fails', async () => {
+            const mockGetCustomerId = mock.fn(async () => {
+                throw new Error('API Error')
+            })
 
-      const result = await handler(
-        {},
-        {} // Added mock context
-      );
-      assert.deepStrictEqual(
-        result.content[0].text,
-        'Error getting customer ID: API Error'
-      );
-    });
-  });
+            const { registerTools } = await esmock(
+                '../../tools/tools.js',
+                {},
+                {
+                    '../../lib/api/admin_sdk.js': {
+                        getCustomerId: mockGetCustomerId,
+                    },
+                },
+            )
+            registerTools(server, { gcpCredentialsAvailable: true })
 
-  describe('list_org_units Tool', () => {
-    it('should call listOrgUnits and return formatted result', async () => {
-      const mockListOrgUnits = mock.fn(async () => ({
-        organizationUnits: [
-          { name: 'ou1', orgUnitId: 'ou1' },
-          { name: 'ou2', orgUnitId: 'ou2' },
-        ],
-      }));
+            const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_customer_id')
+                .arguments[2]
 
-      const { registerTools } = await esmock(
-        '../../tools/tools.js',
-        {},
-        {
-          '../../lib/api/admin_sdk.js': {
-            listOrgUnits: mockListOrgUnits,
-          },
-        }
-      );
-      registerTools(server, { gcpCredentialsAvailable: true });
+            const result = await handler(
+                {},
+                {}, // Added mock context
+            )
+            assert.deepStrictEqual(result.content[0].text, 'Error: API Error')
+        })
+    })
 
-      const handler = server.registerTool.mock.calls.find(
-        (call) => call.arguments[0] === 'list_org_units'
-      ).arguments[2];
+    describe('list_org_units Tool', () => {
+        it('should call listOrgUnits and return formatted result', async () => {
+            const mockListOrgUnits = mock.fn(async () => ({
+                organizationUnits: [
+                    { name: 'ou1', orgUnitId: 'ou1' },
+                    { name: 'ou2', orgUnitId: 'ou2' },
+                ],
+            }))
 
-      const result = await handler(
-        {},
-        {} // Added mock context
-      );
+            const { registerTools } = await esmock(
+                '../../tools/tools.js',
+                {},
+                {
+                    '../../lib/api/admin_sdk.js': {
+                        listOrgUnits: mockListOrgUnits,
+                    },
+                },
+            )
+            registerTools(server, { gcpCredentialsAvailable: true })
 
-      assert.strictEqual(mockListOrgUnits.mock.callCount(), 1);
-      const expectedText =
-        'Organizational Units:\n' +
-        '{\n' +
-        '  "organizationUnits": [\n' +
-        '    {\n' +
-        '      "name": "ou1",\n' +
-        '      "orgUnitId": "ou1"\n' +
-        '    },\n' +
-        '    {\n' +
-        '      "name": "ou2",\n' +
-        '      "orgUnitId": "ou2"\n' +
-        '    }\n' +
-        '  ]\n' +
-        '}';
-      assert.deepStrictEqual(result.content[0].text, expectedText);
-    });
+            const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'list_org_units')
+                .arguments[2]
 
-    it('should return an error message if API call fails', async () => {
-      const mockListOrgUnits = mock.fn(async () => {
-        throw new Error('API Error');
-      });
+            const result = await handler(
+                {},
+                {}, // Added mock context
+            )
 
-      const { registerTools } = await esmock(
-        '../../tools/tools.js',
-        {},
-        {
-          '../../lib/api/admin_sdk.js': {
-            listOrgUnits: mockListOrgUnits,
-          },
-        }
-      );
-      registerTools(server, { gcpCredentialsAvailable: true });
+            assert.strictEqual(mockListOrgUnits.mock.callCount(), 1)
+            const expectedText =
+                'Organizational Units:\n' +
+                '{\n' +
+                '  "organizationUnits": [\n' +
+                '    {\n' +
+                '      "name": "ou1",\n' +
+                '      "orgUnitId": "ou1"\n' +
+                '    },\n' +
+                '    {\n' +
+                '      "name": "ou2",\n' +
+                '      "orgUnitId": "ou2"\n' +
+                '    }\n' +
+                '  ]\n' +
+                '}'
+            assert.deepStrictEqual(result.content[0].text, expectedText)
+        })
 
-      const handler = server.registerTool.mock.calls.find(
-        (call) => call.arguments[0] === 'list_org_units'
-      ).arguments[2];
+        it('should return an error message if API call fails', async () => {
+            const mockListOrgUnits = mock.fn(async () => {
+                throw new Error('API Error')
+            })
 
-      const result = await handler(
-        {},
-        {} // Added mock context
-      );
-      assert.deepStrictEqual(
-        result.content[0].text,
-        'Error listing organizational units: API Error'
-      );
-    });
-  });
-});
+            const { registerTools } = await esmock(
+                '../../tools/tools.js',
+                {},
+                {
+                    '../../lib/api/admin_sdk.js': {
+                        listOrgUnits: mockListOrgUnits,
+                    },
+                },
+            )
+            registerTools(server, { gcpCredentialsAvailable: true })
+
+            const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'list_org_units')
+                .arguments[2]
+
+            const result = await handler(
+                {},
+                {}, // Added mock context
+            )
+            assert.deepStrictEqual(result.content[0].text, 'Error: API Error')
+        })
+    })
+})

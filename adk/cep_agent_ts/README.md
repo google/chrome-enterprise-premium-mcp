@@ -22,9 +22,9 @@ adk/cep_agent_ts/
 
 ## Prerequisites
 
-*   Node.js (v18 or higher)
-*   npm
-*   Google Cloud Project with Vertex AI API enabled
+- Node.js (v18 or higher)
+- npm
+- Google Cloud Project with Vertex AI API enabled
 
 ## Setup
 
@@ -54,14 +54,14 @@ npm start
 
 This will launch the interactive agent shell. You can type queries like:
 
-*   "Run a health check"
-*   "My download rules are broken"
-*   "Help me onboard"
+- "Run a health check"
+- "My download rules are broken"
+- "Help me onboard"
 
 ## Development
 
-*   **Build:** The project uses `tsx` for direct execution during development. To compile to JS (for production), you can add a build script in `package.json` using `tsc`.
-*   **Testing:** Run `npm test` to execute tests.
+- **Build:** The project uses `tsx` for direct execution during development. To compile to JS (for production), you can add a build script in `package.json` using `tsc`.
+- **Testing:** Run `npm test` to execute tests.
 
 ## License
 
