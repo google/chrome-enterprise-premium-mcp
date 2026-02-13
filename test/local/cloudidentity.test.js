@@ -121,12 +121,77 @@ describe('Cloud Identity API', () => {
       );
       assert.deepStrictEqual(
         result.content[0].text,
-        'Error listing DLP policies: API Error'
+        'Error: API Error'
       );
     });
   });
 
   describe('create_dlp_rule Tool', () => {
+    it('should throw an error if action is "BLOCK"', async () => {
+      const { registerTools } = await esmock(
+        '../../tools/tools.js',
+        {},
+        {
+          '../../lib/api/cloudidentity.js': {
+            createDlpRule: mock.fn(),
+          },
+        }
+      );
+      registerTools(server, { gcpCredentialsAvailable: true });
+
+      const handler = server.registerTool.mock.calls.find(
+        (call) => call.arguments[0] === 'create_dlp_rule'
+      ).arguments[2];
+
+      const result = await handler(
+        {
+          action: 'BLOCK',
+          triggers: ['FILE_UPLOAD'],
+        },
+        { requestInfo: {} }
+      );
+      assert.deepStrictEqual(
+        result.content[0].text,
+        'Error: Creating DLP rules in "BLOCK" mode is not permitted. Supported actions are "AUDIT" and "WARN".'
+      );
+    });
+
+    it('should prefix the displayName', async () => {
+      const mockCreateDlpRule = mock.fn(
+        async () => ({ name: 'policies/123' })
+      );
+
+      const { registerTools } = await esmock(
+        '../../tools/tools.js',
+        {},
+        {
+          '../../lib/api/cloudidentity.js': {
+            createDlpRule: mockCreateDlpRule,
+          },
+        }
+      );
+      registerTools(server, { gcpCredentialsAvailable: true });
+
+      const handler = server.registerTool.mock.calls.find(
+        (call) => call.arguments[0] === 'create_dlp_rule'
+      ).arguments[2];
+
+      await handler(
+        {
+          customerId: 'C0123',
+          orgUnitId: 'ou1',
+          displayName: 'Test Rule',
+          triggers: ['FILE_UPLOAD'],
+          condition: 'true',
+          action: 'WARN',
+        },
+        { requestInfo: {} }
+      );
+
+      const passedConfig = mockCreateDlpRule.mock.calls[0].arguments[2];
+      assert.strictEqual(passedConfig.displayName, '🤖 Test Rule');
+    });
+
     it('should call createDlpRule and return formatted result', async () => {
       const mockCreateDlpRule = mock.fn(
         async () => ({ name: 'policies/123' })
@@ -154,7 +219,7 @@ describe('Cloud Identity API', () => {
           displayName: 'Test Rule',
           triggers: ['FILE_UPLOAD'],
           condition: 'true',
-          action: 'BLOCK',
+          action: 'WARN',
         },
         { requestInfo: {} }
       );
@@ -196,13 +261,13 @@ Details:
           displayName: 'Test Rule',
           triggers: ['FILE_UPLOAD'],
           condition: 'true',
-          action: 'BLOCK',
+          action: 'WARN',
         },
         { requestInfo: {} }
       );
       assert.deepStrictEqual(
         result.content[0].text,
-        'Error creating DLP rule: API Error'
+        'Error: API Error'
       );
     });
   });

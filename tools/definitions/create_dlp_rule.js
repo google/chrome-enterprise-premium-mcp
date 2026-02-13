@@ -5,7 +5,7 @@
 import { z } from 'zod';
 
 import { createDlpRule } from '../../lib/api/cloudidentity.js';
-import { gcpTool, getAuthToken, validateAndGetOrgUnitId, commonSchemas } from '../utils.js';
+import { guardedToolCall, getAuthToken, validateAndGetOrgUnitId, commonSchemas } from '../utils.js';
 
 const TRIGGER_MAPPING = {
   FILE_UPLOAD: 'google.workspace.chrome.file.v1.upload',
@@ -51,112 +51,97 @@ export function registerCreateDlpRuleTool(server, options) {
       },
     },
 
-    gcpTool(
-      options.gcpCredentialsAvailable,
-      async ({ 
-        customerId, 
-        orgUnitId, 
-        displayName, 
-        description, 
-        triggers, 
-        condition, 
-        action, 
-        state, 
-        validateOnly, 
-        customMessage, 
-        watermarkMessage, 
-        blockScreenshot, 
-        saveContent 
-      }, { requestInfo }) => {
-        const normalizedCustomerId = customerId === 'me' ? undefined : customerId;
-        const normalizedOrgUnitId = validateAndGetOrgUnitId(orgUnitId);
-
-        if (normalizedCustomerId && typeof normalizedCustomerId !== 'string') {
-          return {
-            content: [{ type: 'text', text: 'Error: Customer ID must be a string.' }],
-          };
+    guardedToolCall({
+      transform: (params) => {
+        const newDisplayName = `🤖 ${params.displayName}`;
+        return { ...params, displayName: newDisplayName };
+      },
+      validate: (params) => {
+        if (params.action === ACTION_TYPES.BLOCK) {
+          throw new Error('Creating DLP rules in "BLOCK" mode is not permitted. Supported actions are "AUDIT" and "WARN".');
         }
+        return true;
+      },
+      handler: async (params, { requestInfo }) => {
+        const {
+          customerId,
+          orgUnitId,
+          displayName,
+          description,
+          triggers,
+          condition,
+          action,
+          state,
+          validateOnly,
+          customMessage,
+          watermarkMessage,
+          blockScreenshot,
+          saveContent
+        } = params;
+
+        const authToken = getAuthToken(requestInfo);
+        const fullTriggers = triggers.map(t => TRIGGER_MAPPING[t]);
         
-        if (typeof normalizedOrgUnitId !== 'string') {
-          return {
-            content: [{ type: 'text', text: 'Error: Org Unit ID is required.' }],
-          };
+        const ruleConfig = {
+          displayName,
+          description,
+          triggers: fullTriggers,
+          condition,
+          state
+        };
+
+        const actionParams = {};
+        if (customMessage) actionParams.customEndUserMessage = { unsafeHtmlMessageBody: customMessage };
+        if (watermarkMessage) actionParams.watermarkMessage = watermarkMessage;
+        if (blockScreenshot) actionParams.blockScreenshot = blockScreenshot;
+        if (saveContent) actionParams.saveContent = saveContent;
+
+        switch (action) {
+          case ACTION_TYPES.BLOCK:
+            ruleConfig.action = { chromeAction: { blockContent: {} } };
+            if (Object.keys(actionParams).length > 0) {
+              ruleConfig.action.chromeAction.blockContent.actionParams = actionParams;
+            }
+            break;
+          case ACTION_TYPES.WARN:
+            ruleConfig.action = { chromeAction: { warnUser: {} } };
+            if (Object.keys(actionParams).length > 0) {
+              ruleConfig.action.chromeAction.warnUser.actionParams = actionParams;
+            }
+            break;
+          case ACTION_TYPES.AUDIT:
+            ruleConfig.action = { chromeAction: { auditOnly: {} } };
+            break;
         }
 
-        try {
-          const authToken = getAuthToken(requestInfo);
-          const fullTriggers = triggers.map(t => TRIGGER_MAPPING[t]);
-          
-          const ruleConfig = {
-            displayName,
-            description,
-            triggers: fullTriggers,
-            condition,
-            state
-          };
+        const createdPolicy = await createDlpRule(
+          customerId, 
+          orgUnitId, 
+          ruleConfig, 
+          validateOnly, 
+          authToken
+        );
 
-          const actionParams = {};
-          if (customMessage) actionParams.customEndUserMessage = { unsafeHtmlMessageBody: customMessage };
-          if (watermarkMessage) actionParams.watermarkMessage = watermarkMessage;
-          if (blockScreenshot) actionParams.blockScreenshot = blockScreenshot;
-          if (saveContent) actionParams.saveContent = saveContent;
-
-          switch (action) {
-            case ACTION_TYPES.BLOCK:
-              ruleConfig.action = { chromeAction: { blockContent: {} } };
-              if (Object.keys(actionParams).length > 0) {
-                ruleConfig.action.chromeAction.blockContent.actionParams = actionParams;
-              }
-              break;
-            case ACTION_TYPES.WARN:
-              ruleConfig.action = { chromeAction: { warnUser: {} } };
-              if (Object.keys(actionParams).length > 0) {
-                ruleConfig.action.chromeAction.warnUser.actionParams = actionParams;
-              }
-              break;
-            case ACTION_TYPES.AUDIT:
-              ruleConfig.action = { chromeAction: { auditOnly: {} } };
-              break;
-          }
-
-          const createdPolicy = await createDlpRule(
-            normalizedCustomerId, 
-            normalizedOrgUnitId, 
-            ruleConfig, 
-            validateOnly, 
-            authToken
-          );
-
-          if (validateOnly) {
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: 'DLP rule validation successful. The rule was not created.',
-                },
-              ],
-            };
-          }
-
+        if (validateOnly) {
           return {
             content: [
               {
                 type: 'text',
-                text: `Successfully created DLP rule: ${createdPolicy.name}\n\nDetails:\n${JSON.stringify(createdPolicy, null, 2)}`,
-              },
-            ],
-          };
-        } catch (error) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Error creating DLP rule: ${error.message}`,
+                text: 'DLP rule validation successful. The rule was not created.',
               },
             ],
           };
         }
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Successfully created DLP rule: ${createdPolicy.name}\n\nDetails:\n${JSON.stringify(createdPolicy, null, 2)}`,
+            },
+          ],
+        };
       }
-    )
+    })
   );
 }

@@ -5,7 +5,7 @@
 import { z } from 'zod';
 
 import { listChromeActivities } from '../../lib/api/admin_sdk.js';
-import { gcpTool, getAuthToken } from '../utils.js';
+import { guardedToolCall, getAuthToken } from '../utils.js';
 
 
 /**
@@ -47,64 +47,49 @@ export function registerGetChromeActivityLogTool(server, options) {
           .describe('The customer ID to filter by. Defaults to the current customer.'),
       },
     },
-    gcpTool(
-      options.gcpCredentialsAvailable,
-      async ({ userKey, eventName, startTime, endTime, maxResults, customerId }, { requestInfo }) => {
-        try {
-          const authToken = getAuthToken(requestInfo);
-          const normalizedCustomerId = customerId === 'me' ? undefined : customerId;
-          
-          let effectiveStartTime = startTime;
-          let effectiveEndTime = endTime;
+    guardedToolCall({
+      transform: (params) => {
+        if (!params.startTime) {
+          const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
+          params.startTime = tenDaysAgo.toISOString();
+        }
+        if (!params.endTime) {
+          params.endTime = new Date().toISOString();
+        }
+        return params;
+      },
+      handler: async ({ userKey, eventName, startTime, endTime, maxResults, customerId }, { requestInfo }) => {
+        const authToken = getAuthToken(requestInfo);
+        
+        const activities = await listChromeActivities({
+          userKey,
+          eventName,
+          startTime,
+          endTime,
+          maxResults,
+          customerId,
+        }, authToken);
 
-          if (!effectiveStartTime) {
-            const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000);
-            effectiveStartTime = tenDaysAgo.toISOString();
-          }
-          
-          if (!effectiveEndTime) {
-            effectiveEndTime = new Date().toISOString();
-          }
-
-          const activities = await listChromeActivities({
-            userKey,
-            eventName,
-            startTime: effectiveStartTime,
-            endTime: effectiveEndTime,
-            maxResults,
-            customerId: normalizedCustomerId,
-          }, authToken);
-
-          if (!activities || activities.length === 0) {
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: 'No Chrome activity found for the specified criteria.',
-                },
-              ],
-            };
-          }
-
+        if (!activities || activities.length === 0) {
           return {
             content: [
               {
                 type: 'text',
-                text: `Chrome activity:\n${JSON.stringify(activities, null, 2)}`,
-              },
-            ],
-          };
-        } catch (error) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Error getting Chrome activity: ${error.message}`,
+                text: 'No Chrome activity found for the specified criteria.',
               },
             ],
           };
         }
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Chrome activity:\n${JSON.stringify(activities, null, 2)}`,
+            },
+          ],
+        };
       }
-    )
+    })
   );
 }

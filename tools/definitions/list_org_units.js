@@ -3,7 +3,7 @@
  */
 
 import { listOrgUnits } from '../../lib/api/admin_sdk.js';
-import { gcpTool, getAuthToken, commonSchemas } from '../utils.js';
+import { guardedToolCall, getAuthToken, commonSchemas } from '../utils.js';
 
 
 /**
@@ -22,44 +22,31 @@ export function registerListOrgUnitsTool(server, options) {
         customerId: commonSchemas.customerId,
       },
     },
-    gcpTool(
-      options.gcpCredentialsAvailable,
-      async ({ customerId }, { requestInfo }) => {
-        try {
-          const authToken = getAuthToken(requestInfo);
-          const normalizedCustomerId = customerId === 'me' ? undefined : customerId;
-          const orgUnits = await listOrgUnits({ customerId: normalizedCustomerId }, authToken);
+    guardedToolCall({
+      handler: async ({ customerId }, { requestInfo }) => {
+        const authToken = getAuthToken(requestInfo);
+        const orgUnits = await listOrgUnits({ customerId }, authToken);
 
-          if (!orgUnits || orgUnits.length === 0) {
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: 'No organizational units found for the specified criteria.',
-                },
-              ],
-            };
-          }
-
+        if (!orgUnits || orgUnits.length === 0) {
           return {
             content: [
               {
                 type: 'text',
-                text: `Organizational Units:\n${JSON.stringify(orgUnits, null, 2)}`,
-              },
-            ],
-          };
-        } catch (error) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Error listing organizational units: ${error.message}`,
+                text: 'No organizational units found for the specified criteria.',
               },
             ],
           };
         }
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Organizational Units:\n${JSON.stringify(orgUnits, null, 2)}`,
+            },
+          ],
+        };
       }
-    )
+    })
   );
 }

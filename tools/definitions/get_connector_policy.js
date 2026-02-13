@@ -5,7 +5,7 @@
 import { z } from 'zod';
 
 import { getConnectorPolicy, ConnectorPolicyFilter } from '../../lib/api/chromepolicy.js';
-import { gcpTool, getAuthToken, validateAndGetOrgUnitId, commonSchemas } from '../utils.js';
+import { guardedToolCall, getAuthToken, validateAndGetOrgUnitId, commonSchemas } from '../utils.js';
 
 
 /**
@@ -35,55 +35,28 @@ export function registerGetConnectorPolicyTool(server, options) {
           .describe('The policy to filter by.'),
       },
     },
-    gcpTool(
-      options.gcpCredentialsAvailable,
-      async ({ customerId, orgUnitId, policy }, { requestInfo }) => {
-        const normalizedCustomerId = customerId === 'me' ? undefined : customerId;
-        const normalizedOrgUnitId = validateAndGetOrgUnitId(orgUnitId);
-
-        if (normalizedCustomerId && typeof normalizedCustomerId !== 'string') {
-          return {
-            content: [{ type: 'text', text: 'Error: Customer ID must be a string.' }],
-          };
-        }
+    guardedToolCall({
+      handler: async ({ customerId, orgUnitId, policy }, { requestInfo }) => {
+        const authToken = getAuthToken(requestInfo);
+        const policySchemaFilter = ConnectorPolicyFilter[policy];
         
-        if (typeof normalizedOrgUnitId !== 'string') {
-          return {
-            content: [{ type: 'text', text: 'Error: Org Unit ID is required.' }],
-          };
-        }
+        const policies = await getConnectorPolicy(
+          customerId,
+          orgUnitId,
+          policySchemaFilter,
+          null, // progressCallback
+          authToken
+        );
 
-        try {
-          const authToken = getAuthToken(requestInfo);
-          const policySchemaFilter = ConnectorPolicyFilter[policy];
-          
-          const policies = await getConnectorPolicy(
-            normalizedCustomerId,
-            normalizedOrgUnitId,
-            policySchemaFilter,
-            null, // progressCallback
-            authToken
-          );
-
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Connector policy:\n${JSON.stringify(policies, null, 2)}`,
-              },
-            ],
-          };
-        } catch (error) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Error getting connector policy: ${error.message}`,
-              },
-            ],
-          };
-        }
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Connector policy:\n${JSON.stringify(policies, null, 2)}`,
+            },
+          ],
+        };
       }
-    )
+    })
   );
 }

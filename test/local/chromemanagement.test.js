@@ -76,7 +76,7 @@ describe('Chrome Management API', () => {
       );
       assert.deepStrictEqual(
         result.content[0].text,
-        'Error counting browser versions: API Error'
+        'Error: API Error'
       );
     });
   });
@@ -141,7 +141,7 @@ describe('Chrome Management API', () => {
       );
       assert.deepStrictEqual(
         result.content[0].text,
-        'Error listing customer profiles: API Error'
+        'Error: API Error'
       );
     });
   });

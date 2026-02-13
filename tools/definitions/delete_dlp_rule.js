@@ -5,7 +5,7 @@
 import { z } from 'zod';
 
 import { deleteDlpRule } from '../../lib/api/cloudidentity.js';
-import { gcpTool, getAuthToken } from '../utils.js';
+import { guardedToolCall, getAuthToken } from '../utils.js';
 
 
 /**
@@ -24,32 +24,20 @@ export function registerDeleteDlpRuleTool(server, options) {
         policyName: z.string().describe('The name of the policy to delete (e.g. policies/akajj264aovytg7aau)'),
       },
     },
-    gcpTool(
-      options.gcpCredentialsAvailable,
-      async ({ policyName }, { requestInfo }) => {
-        try {
-          const authToken = getAuthToken(requestInfo);
-          await deleteDlpRule(policyName, authToken);
+    guardedToolCall({
+      handler: async ({ policyName }, { requestInfo }) => {
+        const authToken = getAuthToken(requestInfo);
+        await deleteDlpRule(policyName, authToken);
 
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Successfully deleted DLP rule: ${policyName}`,
-              },
-            ],
-          };
-        } catch (error) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Error deleting DLP rule: ${error.message}`,
-              },
-            ],
-          };
-        }
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Successfully deleted DLP rule: ${policyName}`,
+            },
+          ],
+        };
       }
-    )
+    })
   );
 }

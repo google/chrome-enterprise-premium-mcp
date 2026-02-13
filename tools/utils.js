@@ -57,48 +57,69 @@ export function getAuthToken(requestInfo) {
 
 
 /**
- * Wraps a tool implementation with common GCP logic.
+ * Implements the guardrail model for write operations.
  *
- * Automatically resolves the `customerId` if it's missing or set to 'me',
- * unless `skipAutoResolve` is true. Caches the resolved ID for future calls.
- *
- * @param {boolean} gcpCredentialsAvailable - Whether GCP credentials are available (unused, kept for signature compatibility)
- * @param {Function} fn - The tool implementation function
- * @param {object} [options] - Configuration options
- * @param {boolean} [options.skipAutoResolve=false] - If true, skips automatic customer ID resolution
- * @returns {Function} The wrapped tool function
+ * @param {object} definition - The tool definition object.
+ * @param {Function} definition.validate - The validation function.
+ * @param {Function} definition.transform - The transformation function.
+ * @param {Function} definition.handler - The handler function.
+ * @returns {Function} The wrapped tool function.
  */
-export function gcpTool(gcpCredentialsAvailable, fn, options = {}) {
-  return async (args, context) => {
-    // Attempt to auto-resolve customerId if applicable
-    const shouldResolve =
-      !options.skipAutoResolve &&
-      args &&
-      (args.customerId === undefined || args.customerId === 'me');
-
-    if (shouldResolve) {
-      if (cachedCustomerId) {
-        args.customerId = cachedCustomerId;
-      } else {
-        try {
-          const authToken = getAuthToken(context?.requestInfo);
-          const customer = await getCustomerId(authToken);
-          
-          if (customer && customer.id) {
-            cachedCustomerId = customer.id;
-            args.customerId = cachedCustomerId;
-          }
-        } catch (error) {
-          // Log but don't fail; the tool might validate the missing ID itself or work without it.
-          console.error(`${TAGS.MCP} ⚠️ Failed to auto-resolve customerId:`, error.message);
-        }
-      }
-    }
-
-    return fn(args, context);
-  };
+function commonTransform(params) {
+  const newParams = { ...params };
+  if (newParams.orgUnitId) {
+    newParams.orgUnitId = validateAndGetOrgUnitId(newParams.orgUnitId);
+  }
+  return newParams;
 }
 
+export function guardedToolCall({ validate, transform, handler, skipAutoResolve = false }) {
+  return async (params, context) => {
+    try {
+      if (params.customerId) {
+        cachedCustomerId = params.customerId;
+      }
+
+      if (!skipAutoResolve && params.customerId === undefined) {
+        if (cachedCustomerId) {
+          params.customerId = cachedCustomerId;
+        } else {
+          try {
+            const authToken = getAuthToken(context?.requestInfo);
+            const customer = await getCustomerId(authToken);
+
+            if (customer && customer.id) {
+              cachedCustomerId = customer.id;
+              params.customerId = cachedCustomerId;
+            }
+          } catch (error) {
+            console.error(`${TAGS.MCP} ⚠️ Failed to auto-resolve customerId:`, error.message);
+          }
+        }
+      }
+
+      // 1. COMMON TRANSFORMATION
+      let transformedParams = commonTransform(params);
+
+      // 2. CUSTOM TRANSFORMATION
+      if (transform) {
+        transformedParams = transform(transformedParams);
+      }
+
+      // 3. VALIDATION
+      if (validate) {
+        validate(transformedParams);
+      }
+
+      // 4. EXECUTION
+      return await handler(transformedParams, context);
+    } catch (error) {
+      return {
+        content: [{ type: 'text', text: `Error: ${error.message}` }],
+      };
+    }
+  };
+}
 
 /**
  * Validates and normalizes an Organizational Unit ID.

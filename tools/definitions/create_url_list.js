@@ -5,7 +5,7 @@
 import { z } from 'zod';
 
 import { createUrlList } from '../../lib/api/cloudidentity.js';
-import { gcpTool, getAuthToken, validateAndGetOrgUnitId, commonSchemas } from '../utils.js';
+import { guardedToolCall, getAuthToken, validateAndGetOrgUnitId, commonSchemas } from '../utils.js';
 
 
 /**
@@ -27,57 +27,30 @@ export function registerCreateUrlListTool(server, options) {
         urls: z.array(z.string()).describe('A list of URLs to include in the list.'),
       },
     },
-    gcpTool(
-      options.gcpCredentialsAvailable,
-      async ({ customerId, orgUnitId, displayName, urls }, { requestInfo }) => {
-        const normalizedCustomerId = customerId === 'me' ? undefined : customerId;
-        const normalizedOrgUnitId = validateAndGetOrgUnitId(orgUnitId);
+    guardedToolCall({
+      handler: async ({ customerId, orgUnitId, displayName, urls }, { requestInfo }) => {
+        const authToken = getAuthToken(requestInfo);
+        const urlListConfig = {
+          display_name: displayName,
+          urls: urls,
+        };
 
-        if (normalizedCustomerId && typeof normalizedCustomerId !== 'string') {
-          return {
-            content: [{ type: 'text', text: 'Error: Customer ID must be a string.' }],
-          };
-        }
-        
-        if (typeof normalizedOrgUnitId !== 'string') {
-          return {
-            content: [{ type: 'text', text: 'Error: Org Unit ID is required.' }],
-          };
-        }
+        const createdPolicy = await createUrlList(
+          customerId, 
+          orgUnitId, 
+          urlListConfig, 
+          authToken
+        );
 
-        try {
-          const authToken = getAuthToken(requestInfo);
-          const urlListConfig = {
-            display_name: displayName,
-            urls: urls,
-          };
-
-          const createdPolicy = await createUrlList(
-            normalizedCustomerId, 
-            normalizedOrgUnitId, 
-            urlListConfig, 
-            authToken
-          );
-
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Successfully created URL list: ${createdPolicy.name}\n\nDetails:\n${JSON.stringify(createdPolicy, null, 2)}`,
-              },
-            ],
-          };
-        } catch (error) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Error creating URL list: ${error.message}`,
-              },
-            ],
-          };
-        }
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Successfully created URL list: ${createdPolicy.name}\n\nDetails:\n${JSON.stringify(createdPolicy, null, 2)}`,
+            },
+          ],
+        };
       }
-    )
+    })
   );
 }

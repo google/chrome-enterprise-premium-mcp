@@ -84,7 +84,7 @@ describe('Admin SDK API', () => {
       );
       assert.deepStrictEqual(
         result.content[0].text,
-        'Error getting customer ID: API Error'
+        'Error: API Error'
       );
     });
   });
@@ -162,7 +162,7 @@ describe('Admin SDK API', () => {
       );
       assert.deepStrictEqual(
         result.content[0].text,
-        'Error listing organizational units: API Error'
+        'Error: API Error'
       );
     });
   });

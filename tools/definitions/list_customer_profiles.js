@@ -3,7 +3,7 @@
  */
 
 import { listCustomerProfiles } from '../../lib/api/chromemanagement.js';
-import { gcpTool, commonSchemas } from '../utils.js';
+import { guardedToolCall, commonSchemas } from '../utils.js';
 
 
 /**
@@ -22,57 +22,32 @@ export function registerCustomerProfileTool(server, options) {
         customerId: commonSchemas.customerId,
       },
     },
-    gcpTool(
-      options.gcpCredentialsAvailable,
-      async ({ customerId }) => {
-        const normalizedCustomerId = customerId === 'me' ? undefined : customerId;
+    guardedToolCall({
+      handler: async ({ customerId }) => {
+        const profiles = await listCustomerProfiles(
+          customerId
+        );
 
-        if (normalizedCustomerId && typeof normalizedCustomerId !== 'string') {
+        if (!profiles || profiles.length === 0) {
           return {
             content: [
               {
                 type: 'text',
-                text: 'Error: Customer ID must be a string.',
+                text: `No profiles found for customer ${customerId}.`,
               },
             ],
           };
         }
 
-        try {
-          const profiles = await listCustomerProfiles(
-            normalizedCustomerId
-          );
-
-          if (!profiles || profiles.length === 0) {
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: `No profiles found for customer ${normalizedCustomerId}.`,
-                },
-              ],
-            };
-          }
-
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Browser versions for customer ${normalizedCustomerId}:\n${JSON.stringify(profiles)}`,
-              },
-            ],
-          };
-        } catch (error) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Error listing customer profiles: ${error.message}`,
-              },
-            ],
-          };
-        }
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Browser versions for customer ${customerId}:\n${JSON.stringify(profiles)}`,
+            },
+          ],
+        };
       }
-    )
+    })
   );
 }

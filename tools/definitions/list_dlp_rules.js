@@ -5,7 +5,7 @@
 import { z } from 'zod';
 
 import { listDlpPolicies } from '../../lib/api/cloudidentity.js';
-import { gcpTool, getAuthToken } from '../utils.js';
+import { guardedToolCall, getAuthToken } from '../utils.js';
 
 const SUPPORTED_TRIGGERS = [
   'google.workspace.chrome.file.v1.upload',
@@ -39,59 +39,46 @@ export function registerListDlpRulesTool(server, options) {
           .describe('The customer ID to list policies for.'),
       },
     },
-    gcpTool(
-      options.gcpCredentialsAvailable,
-      async ({ type, customerId }, { requestInfo }) => {
-        try {
-          const authToken = getAuthToken(requestInfo);
-          // Default to 'rule' if not specified, since the tool name implies rules
-          const policyType = type || 'rule';
-          const normalizedCustomerId = customerId === 'me' ? undefined : customerId;
+    guardedToolCall({
+      handler: async ({ type, customerId }, { requestInfo }) => {
+        const authToken = getAuthToken(requestInfo);
+        // Default to 'rule' if not specified, since the tool name implies rules
+        const policyType = type || 'rule';
 
-          const policies = await listDlpPolicies(
-            policyType,
-            authToken,
-            normalizedCustomerId
-          );
+        const policies = await listDlpPolicies(
+          policyType,
+          authToken,
+          customerId
+        );
 
-          const filteredPolicies = policies.filter(policy => {
-            const triggers = policy.setting?.value?.triggers;
-            if (triggers) {
-              return triggers.some(trigger => SUPPORTED_TRIGGERS.includes(trigger));
-            }
-            return false;
-          });
-
-          if (!filteredPolicies || filteredPolicies.length === 0) {
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: `No DLP ${policyType}s found with supported triggers.`, 
-                },
-              ],
-            };
+        const filteredPolicies = policies.filter(policy => {
+          const triggers = policy.setting?.value?.triggers;
+          if (triggers) {
+            return triggers.some(trigger => SUPPORTED_TRIGGERS.includes(trigger));
           }
+          return false;
+        });
 
+        if (!filteredPolicies || filteredPolicies.length === 0) {
           return {
             content: [
               {
                 type: 'text',
-                text: `DLP ${policyType}:\n${JSON.stringify(filteredPolicies, null, 2)}`,
-              },
-            ],
-          };
-        } catch (error) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Error listing DLP policies: ${error.message}`,
+                text: `No DLP ${policyType}s found with supported triggers.`, 
               },
             ],
           };
         }
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `DLP ${policyType}:\n${JSON.stringify(filteredPolicies, null, 2)}`,
+            },
+          ],
+        };
       }
-    )
+    })
   );
 }

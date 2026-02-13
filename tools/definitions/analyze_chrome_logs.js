@@ -5,8 +5,7 @@
 import { z } from 'zod';
 
 import { listChromeActivities } from '../../lib/api/admin_sdk.js';
-import { gcpTool, getAuthToken } from '../utils.js';
-
+import { guardedToolCall, getAuthToken } from '../utils.js';
 
 /**
  * Registers the 'analyze_chrome_logs_for_risky_activity' tool with the MCP server.
@@ -39,50 +38,37 @@ export function registerAnalyzeChromeLogsTool(server, options) {
           .describe('The customer ID to filter by. Defaults to the current customer.'),
       },
     },
-    gcpTool(
-      options.gcpCredentialsAvailable,
-      async ({ userKey, startTime, endTime, customerId }, { requestInfo }) => {
-        try {
-          const authToken = getAuthToken(requestInfo);
-          const normalizedCustomerId = customerId === 'me' ? undefined : customerId;
+    guardedToolCall({
+      handler: async ({ userKey, startTime, endTime, customerId }, { requestInfo }) => {
+        const authToken = getAuthToken(requestInfo);
 
-          const activities = await listChromeActivities({
-            userKey,
-            startTime,
-            endTime,
-            customerId: normalizedCustomerId,
-          }, authToken);
+        const activities = await listChromeActivities({
+          userKey,
+          startTime,
+          endTime,
+          customerId,
+        }, authToken);
 
-          if (!activities || activities.length === 0) {
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: 'No Chrome activity found for the specified criteria.',
-                },
-              ],
-            };
-          }
-
+        if (!activities || activities.length === 0) {
           return {
             content: [
               {
                 type: 'text',
-                text: JSON.stringify(activities),
-              },
-            ],
-          };
-        } catch (error) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Error analyzing Chrome activity: ${error.message}`,
+                text: 'No Chrome activity found for the specified criteria.',
               },
             ],
           };
         }
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(activities),
+            },
+          ],
+        };
       }
-    )
+    })
   );
 }

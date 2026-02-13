@@ -3,7 +3,7 @@
  */
 
 import { countBrowserVersions } from '../../lib/api/chromemanagement.js';
-import { gcpTool, validateAndGetOrgUnitId, commonSchemas } from '../utils.js';
+import { guardedToolCall, validateAndGetOrgUnitId, commonSchemas } from '../utils.js';
 
 
 /**
@@ -23,68 +23,40 @@ export function registerCountBrowserVersionsTool(server, options) {
         orgUnitId: commonSchemas.orgUnitIdOptional,
       },
     },
-    gcpTool(
-      options.gcpCredentialsAvailable,
-      async ({ customerId, orgUnitId }) => {
-        // Normalize input arguments
-        const normalizedCustomerId = customerId === 'me' ? undefined : customerId;
-        const normalizedOrgUnitId = validateAndGetOrgUnitId(orgUnitId);
+    guardedToolCall({
+      handler: async ({ customerId, orgUnitId }) => {
+        const versions = await countBrowserVersions(
+          customerId,
+          orgUnitId
+        );
 
-        // Validation
-        if (normalizedCustomerId && typeof normalizedCustomerId !== 'string') {
+        if (!versions || versions.length === 0) {
           return {
             content: [
               {
                 type: 'text',
-                text: 'Error: Customer ID must be a string.',
+                text: `No browser versions found for customer ${customerId}.`,
               },
             ],
           };
         }
 
-        try {
-          const versions = await countBrowserVersions(
-            normalizedCustomerId,
-            normalizedOrgUnitId
-          );
+        const versionList = versions
+          .map(
+            (v) =>
+              `- ${v.version} (${v.count} devices) - ${v.releaseChannel}`
+          )
+          .join('\n');
 
-          if (!versions || versions.length === 0) {
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: `No browser versions found for customer ${normalizedCustomerId}.`,
-                },
-              ],
-            };
-          }
-
-          const versionList = versions
-            .map(
-              (v) =>
-                `- ${v.version} (${v.count} devices) - ${v.releaseChannel}`
-            )
-            .join('\n');
-
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Browser versions for customer ${normalizedCustomerId}:\n${versionList}`,
-              },
-            ],
-          };
-        } catch (error) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Error counting browser versions: ${error.message}`,
-              },
-            ],
-          };
-        }
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Browser versions for customer ${customerId}:\n${versionList}`,
+            },
+          ],
+        };
       }
-    )
+    })
   );
 }
