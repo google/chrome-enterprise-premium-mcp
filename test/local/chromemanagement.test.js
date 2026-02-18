@@ -17,20 +17,28 @@ describe('Chrome Management API', () => {
     describe('count_browser_versions Tool', () => {
         it('should call countBrowserVersions and return formatted result', async () => {
             const mockCountBrowserVersions = mock.fn(async () => [
-                { version: '120.0.6099.71', count: 10, releaseChannel: 'Stable' },
-                { version: '119.0.0.0', count: 5, releaseChannel: 'Beta' },
+                { version: '120.0.6099.71', count: 10, channel: 'Stable' },
+                { version: '119.0.0.0', count: 5, channel: 'Beta' },
             ])
+            const MockChromeManagementClient = class {
+                constructor() {
+                    this.countBrowserVersions = mockCountBrowserVersions
+                }
+            }
 
             const { registerTools } = await esmock(
                 '../../tools/tools.js',
                 {},
                 {
-                    '../../lib/api/chromemanagement.js': {
-                        countBrowserVersions: mockCountBrowserVersions,
+                    '../../lib/api/real_chrome_management_client.js': {
+                        RealChromeManagementClient: MockChromeManagementClient,
                     },
                 },
             )
-            registerTools(server, { gcpCredentialsAvailable: true })
+            registerTools(server, {
+                gcpCredentialsAvailable: true,
+                apiClients: { chromeManagement: new MockChromeManagementClient() },
+            })
 
             const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'count_browser_versions')
                 .arguments[2]
@@ -53,17 +61,25 @@ describe('Chrome Management API', () => {
             const mockCountBrowserVersions = mock.fn(async () => {
                 throw new Error('API Error')
             })
+            const MockChromeManagementClient = class {
+                constructor() {
+                    this.countBrowserVersions = mockCountBrowserVersions
+                }
+            }
 
             const { registerTools } = await esmock(
                 '../../tools/tools.js',
                 {},
                 {
-                    '../../lib/api/chromemanagement.js': {
-                        countBrowserVersions: mockCountBrowserVersions,
+                    '../../lib/api/real_chrome_management_client.js': {
+                        RealChromeManagementClient: MockChromeManagementClient,
                     },
                 },
             )
-            registerTools(server, { gcpCredentialsAvailable: true })
+            registerTools(server, {
+                gcpCredentialsAvailable: true,
+                apiClients: { chromeManagement: new MockChromeManagementClient() },
+            })
 
             const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'count_browser_versions')
                 .arguments[2]
@@ -82,17 +98,25 @@ describe('Chrome Management API', () => {
                 { name: 'profile1', value: 'value1' },
                 { name: 'profile2', value: 'value2' },
             ])
+            const MockChromeManagementClient = class {
+                constructor() {
+                    this.listCustomerProfiles = mockListCustomerProfiles
+                }
+            }
 
             const { registerTools } = await esmock(
                 '../../tools/tools.js',
                 {},
                 {
-                    '../../lib/api/chromemanagement.js': {
-                        listCustomerProfiles: mockListCustomerProfiles,
+                    '../../lib/api/real_chrome_management_client.js': {
+                        RealChromeManagementClient: MockChromeManagementClient,
                     },
                 },
             )
-            registerTools(server, { gcpCredentialsAvailable: true })
+            registerTools(server, {
+                gcpCredentialsAvailable: true,
+                apiClients: { chromeManagement: new MockChromeManagementClient() },
+            })
 
             const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'list_customer_profiles')
                 .arguments[2]
@@ -101,8 +125,17 @@ describe('Chrome Management API', () => {
 
             assert.strictEqual(mockListCustomerProfiles.mock.callCount(), 1)
             const expectedText =
-                'Browser versions for customer C0123:\n' +
-                '[{"name":"profile1","value":"value1"},{"name":"profile2","value":"value2"}]'
+                'Customer profiles for customer C0123:\n' +
+                '[\n' +
+                '  {\n' +
+                '    "name": "profile1",\n' +
+                '    "value": "value1"\n' +
+                '  },\n' +
+                '  {\n' +
+                '    "name": "profile2",\n' +
+                '    "value": "value2"\n' +
+                '  }\n' +
+                ']'
             assert.deepStrictEqual(result.content[0].text, expectedText)
         })
 
@@ -110,23 +143,31 @@ describe('Chrome Management API', () => {
             const mockListCustomerProfiles = mock.fn(async () => {
                 throw new Error('API Error')
             })
+            const MockChromeManagementClient = class {
+                constructor() {
+                    this.listCustomerProfiles = mockListCustomerProfiles
+                }
+            }
 
             const { registerTools } = await esmock(
                 '../../tools/tools.js',
                 {},
                 {
-                    '../../lib/api/chromemanagement.js': {
-                        listCustomerProfiles: mockListCustomerProfiles,
+                    '../../lib/api/real_chrome_management_client.js': {
+                        RealChromeManagementClient: MockChromeManagementClient,
                     },
                 },
             )
-            registerTools(server, { gcpCredentialsAvailable: true })
+            registerTools(server, {
+                gcpCredentialsAvailable: true,
+                apiClients: { chromeManagement: new MockChromeManagementClient() },
+            })
 
             const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'list_customer_profiles')
                 .arguments[2]
 
             const result = await handler({ customerId: 'C0123' }, {})
-            assert.deepStrictEqual(result.content[0].text, 'Error: API Error')
+            assert.deepStrictEqual(result.content[0].text, 'Error listing customer profiles: API Error')
         })
     })
 })

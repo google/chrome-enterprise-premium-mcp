@@ -4,8 +4,8 @@
 
 import { z } from 'zod'
 
-import { createDlpRule } from '../../lib/api/cloudidentity.js'
-import { guardedToolCall, getAuthToken, validateAndGetOrgUnitId, commonSchemas } from '../utils.js'
+import { guardedToolCall, getAuthToken, commonSchemas } from '../utils.js'
+import { TAGS } from '../../lib/constants.js'
 
 const TRIGGER_MAPPING = {
     FILE_UPLOAD: 'google.workspace.chrome.file.v1.upload',
@@ -26,9 +26,11 @@ const ACTION_TYPES = {
  *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
- * @param {boolean} options.gcpCredentialsAvailable - Whether GCP credentials are available.
+ * @param {import('../../lib/api/interfaces/cloud_identity_client.js').CloudIdentityClient} options.cloudIdentityClient - The Cloud Identity client instance.
  */
 export function registerCreateDlpRuleTool(server, options) {
+    const { cloudIdentityClient } = options
+
     server.registerTool(
         'create_dlp_rule',
         {
@@ -62,103 +64,112 @@ Supports a validate_only mode to test rule creation without saving the rule.`,
             },
         },
 
-        guardedToolCall({
-            transform: params => {
-                const newDisplayName = `🤖 ${params.displayName}`
-                return { ...params, displayName: newDisplayName }
-            },
-            validate: params => {
-                if (params.action === ACTION_TYPES.BLOCK) {
-                    throw new Error(
-                        'Creating DLP rules in "BLOCK" mode is not permitted. Supported actions are "AUDIT" and "WARN".',
-                    )
-                }
-                return true
-            },
-            handler: async (params, { requestInfo }) => {
-                const {
-                    customerId,
-                    orgUnitId,
-                    displayName,
-                    description,
-                    triggers,
-                    condition,
-                    action,
-                    state,
-                    validateOnly,
-                    customMessage,
-                    watermarkMessage,
-                    blockScreenshot,
-                    saveContent,
-                } = params
-
-                const authToken = getAuthToken(requestInfo)
-                const fullTriggers = triggers.map(t => TRIGGER_MAPPING[t])
-
-                const ruleConfig = {
-                    displayName,
-                    description,
-                    triggers: fullTriggers,
-                    condition,
-                    state,
-                }
-
-                const actionParams = {}
-                if (customMessage) {
-                    actionParams.customEndUserMessage = {
-                        unsafeHtmlMessageBody: customMessage,
+        guardedToolCall(
+            {
+                transform: params => {
+                    const newDisplayName = `🤖 ${params.displayName}`
+                    return { ...params, displayName: newDisplayName }
+                },
+                validate: params => {
+                    if (params.action === ACTION_TYPES.BLOCK) {
+                        throw new Error(
+                            'Creating DLP rules in "BLOCK" mode is not permitted. Supported actions are "AUDIT" and "WARN".',
+                        )
                     }
-                }
-                if (watermarkMessage) {
-                    actionParams.watermarkMessage = watermarkMessage
-                }
-                if (blockScreenshot) {
-                    actionParams.blockScreenshot = blockScreenshot
-                }
-                if (saveContent) {
-                    actionParams.saveContent = saveContent
-                }
+                    return true
+                },
+                handler: async (params, { requestInfo }) => {
+                    const {
+                        customerId,
+                        orgUnitId,
+                        displayName,
+                        description,
+                        triggers,
+                        condition,
+                        action,
+                        state,
+                        validateOnly,
+                        customMessage,
+                        watermarkMessage,
+                        blockScreenshot,
+                        saveContent,
+                    } = params
 
-                switch (action) {
-                    case ACTION_TYPES.BLOCK:
-                        ruleConfig.action = { chromeAction: { blockContent: {} } }
-                        if (Object.keys(actionParams).length > 0) {
-                            ruleConfig.action.chromeAction.blockContent.actionParams = actionParams
+                    const authToken = getAuthToken(requestInfo)
+                    const fullTriggers = triggers.map(t => TRIGGER_MAPPING[t])
+
+                    const ruleConfig = {
+                        displayName,
+                        description,
+                        triggers: fullTriggers,
+                        condition,
+                        state: state,
+                    }
+
+                    const actionParams = {}
+                    if (customMessage) {
+                        actionParams.customEndUserMessage = {
+                            unsafeHtmlMessageBody: customMessage,
                         }
-                        break
-                    case ACTION_TYPES.WARN:
-                        ruleConfig.action = { chromeAction: { warnUser: {} } }
-                        if (Object.keys(actionParams).length > 0) {
-                            ruleConfig.action.chromeAction.warnUser.actionParams = actionParams
+                    }
+                    if (watermarkMessage) {
+                        actionParams.watermarkMessage = watermarkMessage
+                    }
+                    if (blockScreenshot) {
+                        actionParams.blockScreenshot = blockScreenshot
+                    }
+                    if (saveContent) {
+                        actionParams.saveContent = saveContent
+                    }
+
+                    switch (action) {
+                        case ACTION_TYPES.BLOCK:
+                            ruleConfig.action = { chromeAction: { blockContent: {} } }
+                            if (Object.keys(actionParams).length > 0) {
+                                ruleConfig.action.chromeAction.blockContent.actionParams = actionParams
+                            }
+                            break
+                        case ACTION_TYPES.WARN:
+                            ruleConfig.action = { chromeAction: { warnUser: {} } }
+                            if (Object.keys(actionParams).length > 0) {
+                                ruleConfig.action.chromeAction.warnUser.actionParams = actionParams
+                            }
+                            break
+                        case ACTION_TYPES.AUDIT:
+                            ruleConfig.action = { chromeAction: { auditOnly: {} } }
+                            break
+                    }
+
+                    const createdPolicy = await cloudIdentityClient.createDlpRule(
+                        customerId,
+                        orgUnitId,
+                        ruleConfig,
+                        validateOnly,
+                        authToken,
+                    )
+
+                    if (validateOnly) {
+                        return {
+                            content: [
+                                {
+                                    type: 'text',
+                                    text: 'DLP rule validation successful. The rule was not created.',
+                                },
+                            ],
                         }
-                        break
-                    case ACTION_TYPES.AUDIT:
-                        ruleConfig.action = { chromeAction: { auditOnly: {} } }
-                        break
-                }
+                    }
 
-                const createdPolicy = await createDlpRule(customerId, orgUnitId, ruleConfig, validateOnly, authToken)
-
-                if (validateOnly) {
                     return {
                         content: [
                             {
                                 type: 'text',
-                                text: 'DLP rule validation successful. The rule was not created.',
+                                text: `Successfully created DLP rule: ${createdPolicy.name}\n\nDetails:\n${JSON.stringify(createdPolicy, null, 2)}`,
                             },
                         ],
                     }
-                }
-
-                return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: `Successfully created DLP rule: ${createdPolicy.name}\n\nDetails:\n${JSON.stringify(createdPolicy, null, 2)}`,
-                        },
-                    ],
-                }
+                },
             },
-        }),
+            options.apiOptions,
+        ),
     )
 }

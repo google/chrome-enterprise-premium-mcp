@@ -2,17 +2,19 @@
  * @fileoverview Tool definition for listing customer profiles.
  */
 
-import { listCustomerProfiles } from '../../lib/api/chromemanagement.js'
-import { guardedToolCall, commonSchemas } from '../utils.js'
+import { guardedToolCall, commonSchemas, getAuthToken } from '../utils.js'
+import { TAGS } from '../../lib/constants.js'
 
 /**
  * Registers the 'list_customer_profiles' tool with the MCP server.
  *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
- * @param {boolean} options.gcpCredentialsAvailable - Whether GCP credentials are available.
+ * @param {import('../../lib/api/interfaces/chrome_management_client.js').ChromeManagementClient} options.chromeManagementClient - The Chrome Management client instance.
  */
 export function registerCustomerProfileTool(server, options) {
+    const { chromeManagementClient } = options
+
     server.registerTool(
         'list_customer_profiles',
         {
@@ -21,30 +23,40 @@ export function registerCustomerProfileTool(server, options) {
                 customerId: commonSchemas.customerId,
             },
         },
-        guardedToolCall({
-            handler: async ({ customerId }) => {
-                const profiles = await listCustomerProfiles(customerId)
+        guardedToolCall(
+            {
+                handler: async ({ customerId }, { requestInfo }) => {
+                    try {
+                        const authToken = getAuthToken(requestInfo)
+                        const profiles = await chromeManagementClient.listCustomerProfiles(customerId, null, authToken) // Added null for progressCallback
 
-                if (!profiles || profiles.length === 0) {
-                    return {
-                        content: [
-                            {
-                                type: 'text',
-                                text: `No profiles found for customer ${customerId}.`,
-                            },
-                        ],
+                        if (!profiles || profiles.length === 0) {
+                            return {
+                                content: [
+                                    {
+                                        type: 'text',
+                                        text: `No profiles found for customer ${customerId}.`,
+                                    },
+                                ],
+                            }
+                        }
+
+                        return {
+                            content: [
+                                {
+                                    type: 'text',
+                                    text: `Customer profiles for customer ${customerId}:\n${JSON.stringify(profiles, null, 2)}`, // Improved formatting
+                                },
+                            ],
+                        }
+                    } catch (error) {
+                        return {
+                            content: [{ type: 'text', text: `Error listing customer profiles: ${error.message}` }],
+                        }
                     }
-                }
-
-                return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: `Browser versions for customer ${customerId}:\n${JSON.stringify(profiles)}`,
-                        },
-                    ],
-                }
+                },
             },
-        }),
+            options.apiOptions,
+        ),
     )
 }

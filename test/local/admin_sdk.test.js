@@ -29,20 +29,26 @@ describe('Admin SDK API', () => {
 
     describe('get_customer_id Tool', () => {
         it('should call getCustomerId and return formatted result', async () => {
-            const mockGetCustomerId = mock.fn(async () => ({
-                id: 'C0123',
-            }))
+            const mockGetCustomerId = mock.fn(async () => ({ id: 'C0123' }))
+            const MockAdminSdkClient = class {
+                constructor() {
+                    this.getCustomerId = mockGetCustomerId
+                }
+            }
 
             const { registerTools } = await esmock(
                 '../../tools/tools.js',
                 {},
                 {
-                    '../../lib/api/admin_sdk.js': {
-                        getCustomerId: mockGetCustomerId,
+                    '../../lib/api/real_admin_sdk_client.js': {
+                        RealAdminSdkClient: MockAdminSdkClient,
                     },
                 },
             )
-            registerTools(server, { gcpCredentialsAvailable: true })
+            registerTools(server, {
+                gcpCredentialsAvailable: true,
+                apiClients: { adminSdk: new MockAdminSdkClient() },
+            })
 
             const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_customer_id')
                 .arguments[2]
@@ -61,17 +67,25 @@ describe('Admin SDK API', () => {
             const mockGetCustomerId = mock.fn(async () => {
                 throw new Error('API Error')
             })
+            const MockAdminSdkClient = class {
+                constructor() {
+                    this.getCustomerId = mockGetCustomerId
+                }
+            }
 
             const { registerTools } = await esmock(
                 '../../tools/tools.js',
                 {},
                 {
-                    '../../lib/api/admin_sdk.js': {
-                        getCustomerId: mockGetCustomerId,
+                    '../../lib/api/real_admin_sdk_client.js': {
+                        RealAdminSdkClient: MockAdminSdkClient,
                     },
                 },
             )
-            registerTools(server, { gcpCredentialsAvailable: true })
+            registerTools(server, {
+                gcpCredentialsAvailable: true,
+                apiClients: { adminSdk: new MockAdminSdkClient() },
+            })
 
             const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_customer_id')
                 .arguments[2]
@@ -92,17 +106,25 @@ describe('Admin SDK API', () => {
                     { name: 'ou2', orgUnitId: 'ou2' },
                 ],
             }))
+            const MockAdminSdkClient = class {
+                constructor() {
+                    this.listOrgUnits = mockListOrgUnits
+                }
+            }
 
             const { registerTools } = await esmock(
                 '../../tools/tools.js',
                 {},
                 {
-                    '../../lib/api/admin_sdk.js': {
-                        listOrgUnits: mockListOrgUnits,
+                    '../../lib/api/real_admin_sdk_client.js': {
+                        RealAdminSdkClient: MockAdminSdkClient,
                     },
                 },
             )
-            registerTools(server, { gcpCredentialsAvailable: true })
+            registerTools(server, {
+                gcpCredentialsAvailable: true,
+                apiClients: { adminSdk: new MockAdminSdkClient() },
+            })
 
             const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'list_org_units')
                 .arguments[2]
@@ -115,18 +137,16 @@ describe('Admin SDK API', () => {
             assert.strictEqual(mockListOrgUnits.mock.callCount(), 1)
             const expectedText =
                 'Organizational Units:\n' +
-                '{\n' +
-                '  "organizationUnits": [\n' +
-                '    {\n' +
-                '      "name": "ou1",\n' +
-                '      "orgUnitId": "ou1"\n' +
-                '    },\n' +
-                '    {\n' +
-                '      "name": "ou2",\n' +
-                '      "orgUnitId": "ou2"\n' +
-                '    }\n' +
-                '  ]\n' +
-                '}'
+                '[\n' +
+                '  {\n' +
+                '    "name": "ou1",\n' +
+                '    "orgUnitId": "ou1"\n' +
+                '  },\n' +
+                '  {\n' +
+                '    "name": "ou2",\n' +
+                '    "orgUnitId": "ou2"\n' +
+                '  }\n' +
+                ']'
             assert.deepStrictEqual(result.content[0].text, expectedText)
         })
 
@@ -134,25 +154,30 @@ describe('Admin SDK API', () => {
             const mockListOrgUnits = mock.fn(async () => {
                 throw new Error('API Error')
             })
+            const MockAdminSdkClient = class {
+                constructor() {
+                    this.listOrgUnits = mockListOrgUnits
+                }
+            }
 
             const { registerTools } = await esmock(
                 '../../tools/tools.js',
                 {},
                 {
-                    '../../lib/api/admin_sdk.js': {
-                        listOrgUnits: mockListOrgUnits,
+                    '../../lib/api/real_admin_sdk_client.js': {
+                        RealAdminSdkClient: MockAdminSdkClient,
                     },
                 },
             )
-            registerTools(server, { gcpCredentialsAvailable: true })
+            registerTools(server, {
+                gcpCredentialsAvailable: true,
+                apiClients: { adminSdk: new MockAdminSdkClient() },
+            })
 
             const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'list_org_units')
                 .arguments[2]
 
-            const result = await handler(
-                {},
-                {}, // Added mock context
-            )
+            const result = await handler({}, {})
             assert.deepStrictEqual(result.content[0].text, 'Error: API Error')
         })
     })

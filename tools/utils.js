@@ -9,7 +9,6 @@
 
 import { z } from 'zod'
 
-import { getCustomerId } from '../lib/api/admin_sdk.js'
 import { TAGS } from '../lib/constants.js'
 
 let cachedCustomerId = null
@@ -49,6 +48,8 @@ export function getAuthToken(requestInfo) {
  * @param {Function} definition.validate - The validation function.
  * @param {Function} definition.transform - The transformation function.
  * @param {Function} definition.handler - The handler function.
+ * @param {boolean} [definition.skipAutoResolve=false] - Whether to skip customer ID auto-resolve.
+ * @param {object} [apiOptions={}] - API client options including rootUrl.
  * @returns {Function} The wrapped tool function.
  */
 function commonTransform(params) {
@@ -59,24 +60,34 @@ function commonTransform(params) {
     return newParams
 }
 
-export function guardedToolCall({ validate, transform, handler, skipAutoResolve = false }) {
-  return async (params, context) => {
-    try {
-      if (params.customerId) {
-        cachedCustomerId = params.customerId;
-      }
+export function guardedToolCall({ validate, transform, handler, skipAutoResolve = false }, options = {}) {
+    return async (params, context) => {
+        try {
+            const { apiClients } = options
+            let currentParams = { ...params }
+            if (currentParams.customerId) {
+                setGlobalCustomerId(currentParams.customerId)
+            }
 
-            if (!skipAutoResolve && params.customerId === undefined) {
+            if (!skipAutoResolve && currentParams.customerId === undefined) {
                 if (cachedCustomerId) {
-                    params.customerId = cachedCustomerId
+                    currentParams.customerId = cachedCustomerId
                 } else {
                     try {
                         const authToken = getAuthToken(context?.requestInfo)
-                        const customer = await getCustomerId(authToken)
+                        if (apiClients && apiClients.adminSdk) {
+                            const customer = await apiClients.adminSdk.getCustomerId(authToken)
 
-                        if (customer && customer.id) {
-                            cachedCustomerId = customer.id
-                            params.customerId = cachedCustomerId
+                            if (customer && customer.id) {
+                                setGlobalCustomerId(customer.id)
+                                currentParams.customerId = customer.id
+                            } else {
+                                console.error(
+                                    `${TAGS.MCP} ⚠️ Failed to auto-resolve customerId: No customer object returned.`,
+                                )
+                            }
+                        } else {
+                            console.error(`${TAGS.MCP} ⚠️ adminSdkClient not provided to guardedToolCall`)
                         }
                     } catch (error) {
                         console.error(`${TAGS.MCP} ⚠️ Failed to auto-resolve customerId:`, error.message)
@@ -85,7 +96,7 @@ export function guardedToolCall({ validate, transform, handler, skipAutoResolve 
             }
 
             // 1. COMMON TRANSFORMATION
-            let transformedParams = commonTransform(params)
+            let transformedParams = commonTransform(currentParams)
 
             // 2. CUSTOM TRANSFORMATION
             if (transform) {

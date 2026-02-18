@@ -130,7 +130,7 @@ describe('Auth', () => {
                 return ''
             })
 
-            const { getAuthErrorMessage } = await esmock('../../lib/util/auth.js', {
+            const { getAuthErrorMessage } = await esmock('../../lib/util/auth-error.js', {
                 'node:child_process': {
                     execFileSync: mockExecFileSync,
                 },
@@ -170,7 +170,7 @@ describe('Auth', () => {
                 return ''
             })
 
-            const { getAuthErrorMessage } = await esmock('../../lib/util/auth.js', {
+            const { getAuthErrorMessage } = await esmock('../../lib/util/auth-error.js', {
                 'node:child_process': {
                     execFileSync: mockExecFileSync,
                 },
@@ -198,7 +198,7 @@ describe('Auth', () => {
                 return ''
             })
 
-            const { getAuthErrorMessage } = await esmock('../../lib/util/auth.js', {
+            const { getAuthErrorMessage } = await esmock('../../lib/util/auth-error.js', {
                 'node:child_process': {
                     execFileSync: mockExecFileSync,
                 },
@@ -225,7 +225,7 @@ describe('Auth', () => {
                 return ''
             })
 
-            const { getAuthErrorMessage } = await esmock('../../lib/util/auth.js', {
+            const { getAuthErrorMessage } = await esmock('../../lib/util/auth-error.js', {
                 'node:child_process': {
                     execFileSync: mockExecFileSync,
                 },

@@ -2,17 +2,19 @@
  * @fileoverview Tool definition for counting browser versions.
  */
 
-import { countBrowserVersions } from '../../lib/api/chromemanagement.js'
-import { guardedToolCall, validateAndGetOrgUnitId, commonSchemas } from '../utils.js'
+import { guardedToolCall, commonSchemas, getAuthToken } from '../utils.js'
+import { TAGS } from '../../lib/constants.js'
 
 /**
  * Registers the 'count_browser_versions' tool with the MCP server.
  *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
- * @param {boolean} options.gcpCredentialsAvailable - Whether GCP credentials are available.
+ * @param {import('../../lib/api/interfaces/chrome_management_client.js').ChromeManagementClient} options.chromeManagementClient - The Chrome Management client instance.
  */
 export function registerCountBrowserVersionsTool(server, options) {
+    const { chromeManagementClient } = options
+
     server.registerTool(
         'count_browser_versions',
         {
@@ -22,34 +24,43 @@ export function registerCountBrowserVersionsTool(server, options) {
                 orgUnitId: commonSchemas.orgUnitIdOptional,
             },
         },
-        guardedToolCall({
-            handler: async ({ customerId, orgUnitId }) => {
-                const versions = await countBrowserVersions(customerId, orgUnitId)
+        guardedToolCall(
+            {
+                handler: async ({ customerId, orgUnitId }, { requestInfo }) => {
+                    const authToken = getAuthToken(requestInfo)
+                    const versions = await chromeManagementClient.countBrowserVersions(
+                        customerId,
+                        orgUnitId,
+                        null,
+                        authToken,
+                    ) // Added null for progressCallback
 
-                if (!versions || versions.length === 0) {
+                    if (!versions || versions.length === 0) {
+                        return {
+                            content: [
+                                {
+                                    type: 'text',
+                                    text: `No browser versions found for customer ${customerId}.`,
+                                },
+                            ],
+                        }
+                    }
+
+                    const versionList = versions
+                        .map(v => `- ${v.version} (${v.count} devices) - ${v.channel || 'UNKNOWN'}`) // Added fallback for channel
+                        .join('\n')
+
                     return {
                         content: [
                             {
                                 type: 'text',
-                                text: `No browser versions found for customer ${customerId}.`,
+                                text: `Browser versions for customer ${customerId}:\n${versionList}`,
                             },
                         ],
                     }
-                }
-
-                const versionList = versions
-                    .map(v => `- ${v.version} (${v.count} devices) - ${v.releaseChannel}`)
-                    .join('\n')
-
-                return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: `Browser versions for customer ${customerId}:\n${versionList}`,
-                        },
-                    ],
-                }
+                },
             },
-        }),
+            options.apiOptions,
+        ),
     )
 }

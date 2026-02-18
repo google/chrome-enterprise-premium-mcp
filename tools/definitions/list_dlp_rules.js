@@ -1,11 +1,9 @@
 /**
- * @fileoverview Tool definition for listing DLP rules.
+ * @fileoverview Tool definition for listing DLP (Data Loss Prevention) rules.
  */
-
 import { z } from 'zod'
-
-import { listDlpPolicies } from '../../lib/api/cloudidentity.js'
-import { guardedToolCall, getAuthToken } from '../utils.js'
+import { guardedToolCall, getAuthToken, commonSchemas } from '../utils.js'
+import { TAGS } from '../../lib/constants.js'
 
 const SUPPORTED_TRIGGERS = [
     'google.workspace.chrome.file.v1.upload',
@@ -17,61 +15,66 @@ const SUPPORTED_TRIGGERS = [
 
 /**
  * Registers the 'list_dlp_rules' tool with the MCP server.
- *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
- * @param {boolean} options.gcpCredentialsAvailable - Whether GCP credentials are available.
+ * @param {import('../../lib/api/interfaces/cloud_identity_client.js').CloudIdentityClient} options.cloudIdentityClient - The Cloud Identity client instance.
  */
 export function registerListDlpRulesTool(server, options) {
+    const { cloudIdentityClient } = options
+
     server.registerTool(
         'list_dlp_rules',
         {
-            description: `Lists all DLP rules or detectors for a given customer. 
-        The tool returns rules with multiple attributes, parse them and return names, summarize the action`,
+            description: 'Lists Data Loss Prevention (DLP) rules or detectors with supported Chrome triggers.',
             inputSchema: {
                 type: z
                     .enum(['rule', 'detector'])
-                    .optional()
-                    .describe(`Filter by policy type. Defaults to "rule". Set to "detector" to list detectors.`),
-                customerId: z.string().optional().describe(`The customer ID to list policies for.`),
+                    .default('rule')
+                    .describe("Type of policy to list: 'rule' for DLP rules, 'detector' for URL lists/detectors."),
+                customerId: commonSchemas.customerId,
             },
         },
-        guardedToolCall({
-            handler: async ({ type, customerId }, { requestInfo }) => {
-                const authToken = getAuthToken(requestInfo)
-                // Default to 'rule' if not specified, since the tool name implies rules
-                const policyType = type || 'rule'
+        guardedToolCall(
+            {
+                handler: async (params, { requestInfo }) => {
+                    const { type, customerId } = params
+                    const authToken = getAuthToken(requestInfo)
 
-                const policies = await listDlpPolicies(policyType, authToken, customerId)
-
-                const filteredPolicies = policies.filter(policy => {
-                    const triggers = policy.setting?.value?.triggers
-                    if (triggers) {
-                        return triggers.some(trigger => SUPPORTED_TRIGGERS.includes(trigger))
+                    const policies = await cloudIdentityClient.listDlpPolicies(type, authToken, customerId)
+                    if (!policies || policies.length === 0) {
+                        return { content: [{ type: 'text', text: `No DLP policies of type '${type}' found.` }] }
                     }
-                    return false
-                })
 
-                if (!filteredPolicies || filteredPolicies.length === 0) {
+                    const filteredPolicies = policies.filter(policy => {
+                        const triggers = policy.setting?.value?.triggers
+                        if (triggers) {
+                            return triggers.some(trigger => SUPPORTED_TRIGGERS.includes(trigger))
+                        }
+                        return false
+                    })
+
+                    if (!filteredPolicies || filteredPolicies.length === 0) {
+                        return {
+                            content: [
+                                {
+                                    type: 'text',
+                                    text: `No DLP ${type}s found with supported triggers.`,
+                                },
+                            ],
+                        }
+                    }
+
                     return {
                         content: [
                             {
                                 type: 'text',
-                                text: `No DLP ${policyType}s found with supported triggers.`,
+                                text: `DLP ${type}:\n${JSON.stringify(filteredPolicies, null, 2)}`,
                             },
                         ],
                     }
-                }
-
-                return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: `DLP ${policyType}:\n${JSON.stringify(filteredPolicies, null, 2)}`,
-                        },
-                    ],
-                }
+                },
             },
-        }),
+            options.apiOptions,
+        ),
     )
 }

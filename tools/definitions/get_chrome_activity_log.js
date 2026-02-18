@@ -4,22 +4,24 @@
 
 import { z } from 'zod'
 
-import { listChromeActivities } from '../../lib/api/admin_sdk.js'
-import { guardedToolCall, getAuthToken } from '../utils.js'
+import { guardedToolCall, getAuthToken, commonSchemas } from '../utils.js'
+import { TAGS } from '../../lib/constants.js'
 
 /**
  * Registers the 'get_chrome_activity_log' tool with the MCP server.
  *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
- * @param {boolean} options.gcpCredentialsAvailable - Whether GCP credentials are available.
+ * @param {import('../../lib/api/interfaces/admin_sdk_client.js').AdminSdkClient} options.adminSdkClient - The Admin SDK client instance.
  */
 export function registerGetChromeActivityLogTool(server, options) {
+    const { adminSdkClient } = options
+
     server.registerTool(
         'get_chrome_activity_log',
         {
-            description: `Gets a log of Chrome browser activity for a given user. 
-        By default, it retrieves events from the last 10 days unless a specific start time is provided. 
+            description: `Gets a log of Chrome browser activity for a given user.
+        By default, it retrieves events from the last 10 days unless a specific start time is provided.
         Do not prompt users for additional inputs; use the defaults if no values are provided.`,
             inputSchema: {
                 userKey: z
@@ -38,58 +40,60 @@ export function registerGetChromeActivityLogTool(server, options) {
                     .optional()
                     .describe(`The end time of the range to get activities for (RFC3339 timestamp). Defaults to now.`),
                 maxResults: z.number().optional().describe(`The maximum number of results to return.`),
-                customerId: z
-                    .string()
-                    .optional()
-                    .describe(`The customer ID to filter by. Defaults to the current customer.`),
+                customerId: commonSchemas.customerId,
             },
         },
-        guardedToolCall({
-            transform: params => {
-                if (!params.startTime) {
-                    const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000)
-                    params.startTime = tenDaysAgo.toISOString()
-                }
-                if (!params.endTime) {
-                    params.endTime = new Date().toISOString()
-                }
-                return params
-            },
-            handler: async ({ userKey, eventName, startTime, endTime, maxResults, customerId }, { requestInfo }) => {
-                const authToken = getAuthToken(requestInfo)
+        guardedToolCall(
+            {
+                transform: params => {
+                    if (!params.startTime) {
+                        const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000)
+                        params.startTime = tenDaysAgo.toISOString()
+                    }
+                    if (!params.endTime) {
+                        params.endTime = new Date().toISOString()
+                    }
+                    return params
+                },
+                handler: async (
+                    { userKey, eventName, startTime, endTime, maxResults, customerId },
+                    { requestInfo },
+                ) => {
+                    const authToken = getAuthToken(requestInfo)
+                    const activities = await adminSdkClient.listChromeActivities(
+                        {
+                            userKey,
+                            eventName,
+                            startTime,
+                            endTime,
+                            maxResults,
+                            customerId,
+                        },
+                        authToken,
+                    )
 
-                const activities = await listChromeActivities(
-                    {
-                        userKey,
-                        eventName,
-                        startTime,
-                        endTime,
-                        maxResults,
-                        customerId,
-                    },
-                    authToken,
-                )
+                    if (!activities || activities.length === 0) {
+                        return {
+                            content: [
+                                {
+                                    type: 'text',
+                                    text: 'No Chrome activity found for the specified criteria.',
+                                },
+                            ],
+                        }
+                    }
 
-                if (!activities || activities.length === 0) {
                     return {
                         content: [
                             {
                                 type: 'text',
-                                text: 'No Chrome activity found for the specified criteria.',
+                                text: `Chrome activity:\n${JSON.stringify(activities, null, 2)}`,
                             },
                         ],
                     }
-                }
-
-                return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: `Chrome activity:\n${JSON.stringify(activities, null, 2)}`,
-                        },
-                    ],
-                }
+                },
             },
-        }),
+            options.apiOptions,
+        ),
     )
 }

@@ -25,7 +25,7 @@ class TestGetCustomerId(McpIntegrationTestBase):
     prompt = "What is my customer ID?"
     result_text = query_agent_oneshot(prompt)
     self.assert_nl(
-        result_text, "The answer includes the customer ID 'C02gbfv3o'"
+        result_text, "The answer includes the customer ID 'C0123456'"
     )
 
 

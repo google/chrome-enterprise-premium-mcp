@@ -22,7 +22,7 @@ class TestListDlpRules(McpIntegrationTestBase):
 
   def test_list_dlp_rules(self):
     """Verify agent can list DLP rules and finds a specific rule."""
-    prompt = "Show me my DLP rules."
+    prompt = "Show me my DLP rules of type 'rule' for customer ID C0123456. Include names of blocked domains in output if possible."
     result_text = query_agent_oneshot(prompt)
     self.assert_nl(
         result_text, "The answer includes that 'test123.com' is blocked"

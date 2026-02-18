@@ -20,8 +20,21 @@ import { registerTools, registerToolsRemote } from './tools/tools.js'
 import { registerPrompts } from './prompts/index.js'
 import { checkGCP } from './lib/util/gcp.js'
 import { ensureADCCredentials } from './lib/util/auth.js'
-import { getCustomerId } from './lib/api/admin_sdk.js'
 import { TAGS, DEFAULT_CONFIG } from './lib/constants.js'
+
+// Import Real Clients
+import { RealAdminSdkClient } from './lib/api/real_admin_sdk_client.js'
+import { RealCloudIdentityClient } from './lib/api/real_cloud_identity_client.js'
+import { RealChromePolicyClient } from './lib/api/real_chrome_policy_client.js'
+import { RealChromeManagementClient } from './lib/api/real_chrome_management_client.js'
+
+// Import Fake Clients
+import { FakeAdminSdkClient } from './lib/api/fake_admin_sdk_client.js'
+import { FakeCloudIdentityClient } from './lib/api/fake_cloud_identity_client.js'
+import { FakeChromePolicyClient } from './lib/api/fake_chrome_policy_client.js'
+import { FakeChromeManagementClient } from './lib/api/fake_chrome_management_client.js'
+
+import { setGlobalCustomerId } from './tools/utils.js'
 
 /**
  * Redirects console.log to console.error for compatibility with Stdio transport.
@@ -72,43 +85,62 @@ async function getServer(gcpInfo) {
     const effectiveProjectId = envProjectId || (gcpInfo && gcpInfo.project)
     const effectiveRegion = envRegion || (gcpInfo && gcpInfo.region) || DEFAULT_CONFIG.REGION
 
+    const apiOptions = {}
+    let apiClients = {}
+
+    if (process.env.GOOGLE_API_ROOT_URL) {
+        apiOptions.rootUrl = process.env.GOOGLE_API_ROOT_URL
+        console.error(`${TAGS.MCP}  TEST MODE: Using FAKE API clients routing to ${apiOptions.rootUrl}`)
+        apiClients = {
+            adminSdk: new FakeAdminSdkClient(apiOptions.rootUrl),
+            cloudIdentity: new FakeCloudIdentityClient(apiOptions.rootUrl),
+            chromePolicy: new FakeChromePolicyClient(apiOptions.rootUrl),
+            chromeManagement: new FakeChromeManagementClient(apiOptions.rootUrl),
+        }
+    } else {
+        console.error(`${TAGS.MCP} Using REAL API clients.`)
+        apiClients = {
+            adminSdk: new RealAdminSdkClient(apiOptions),
+            cloudIdentity: new RealCloudIdentityClient(apiOptions),
+            chromePolicy: new RealChromePolicyClient(apiOptions),
+            chromeManagement: new RealChromeManagementClient(apiOptions),
+        }
+    }
+
     // Pre-fetch Customer ID to cache it globally
     let customerId
     try {
-        const customer = await getCustomerId()
+        const customer = await apiClients.adminSdk.getCustomerId(null) // Pass null for authToken
         if (customer && customer.id) {
             customerId = customer.id
+            setGlobalCustomerId(customerId)
             console.error(`${TAGS.MCP} Initialization: Retrieved Customer ID: ${customerId}`)
         }
     } catch (error) {
         console.error(`${TAGS.MCP} Initialization: Failed to retrieve Customer ID: ${error.message}`)
-        // Proceed without it; tools will try to fetch it lazily if needed, or fail gracefully
+    }
+
+    const toolOptions = {
+        defaultProjectId: effectiveProjectId,
+        defaultRegion: effectiveRegion,
+        gcpCredentialsAvailable: true,
+        customerId,
+        apiClients,
+        apiOptions,
     }
 
     if (shouldStartStdio(gcpInfo)) {
         console.error(`${TAGS.MCP} Using tools optimized for local or stdio mode.`)
-        await ensureADCCredentials()
-
-        registerTools(server, {
-            defaultProjectId: effectiveProjectId,
-            defaultRegion: effectiveRegion,
-            gcpCredentialsAvailable: true, // Implied by ensureADCCredentials logic in tools
-            customerId,
-        })
-
+        if (!process.env.GAPI_ROOT_URL) {
+            await ensureADCCredentials()
+        }
+        registerTools(server, toolOptions)
         registerPrompts(server)
     } else {
         console.error(
             `${TAGS.MCP} Running on GCP project: ${effectiveProjectId}, region: ${effectiveRegion}. Using tools optimized for remote use.`,
         )
-
-        registerToolsRemote(server, {
-            defaultProjectId: effectiveProjectId,
-            defaultRegion: effectiveRegion,
-            gcpCredentialsAvailable: true,
-            customerId,
-        })
-
+        registerToolsRemote(server, toolOptions)
         registerPrompts(server)
     }
 
@@ -127,7 +159,6 @@ async function main() {
             makeLoggingCompatibleWithStdio()
             const stdioTransport = new StdioServerTransport()
             const server = await getServer(gcpInfo)
-
             await server.connect(stdioTransport)
             console.error(`${TAGS.MCP} Chrome Enterprise Premium MCP server stdio transport connected`)
         } else {
@@ -137,15 +168,10 @@ async function main() {
 
             app.post('/mcp', async (req, res) => {
                 const server = await getServer(gcpInfo)
-
                 try {
-                    const transport = new StreamableHTTPServerTransport({
-                        sessionIdGenerator: undefined,
-                    })
-
+                    const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined })
                     await server.connect(transport)
                     await transport.handleRequest(req, res, req.body)
-
                     res.on('close', () => {
                         console.log(`${TAGS.MCP} Request closed`)
                         transport.close()
@@ -156,10 +182,7 @@ async function main() {
                     if (!res.headersSent) {
                         res.status(500).json({
                             jsonrpc: '2.0',
-                            error: {
-                                code: -32603,
-                                message: 'Internal server error',
-                            },
+                            error: { code: -32603, message: 'Internal server error' },
                             id: null,
                         })
                     }
@@ -171,29 +194,21 @@ async function main() {
                 res.writeHead(405).end(
                     JSON.stringify({
                         jsonrpc: '2.0',
-                        error: {
-                            code: -32000,
-                            message: 'Method not allowed.',
-                        },
+                        error: { code: -32000, message: 'Method not allowed.' },
                         id: null,
                     }),
                 )
             })
 
-            // Legacy SSE endpoint for backward compatibility
             const sseTransports = {}
-
             app.get('/sse', async (req, res) => {
                 console.log(`${TAGS.MCP} /sse Received request`)
                 const server = await getServer(gcpInfo)
                 const transport = new SSEServerTransport('/messages', res)
-
                 sseTransports[transport.sessionId] = transport
-
                 res.on('close', () => {
                     delete sseTransports[transport.sessionId]
                 })
-
                 await server.connect(transport)
             })
 
@@ -201,7 +216,6 @@ async function main() {
                 console.log(`${TAGS.MCP} /messages Received request`)
                 const sessionId = req.query.sessionId
                 const transport = sseTransports[sessionId]
-
                 if (transport) {
                     await transport.handlePostMessage(req, res, req.body)
                 } else {
@@ -216,14 +230,13 @@ async function main() {
         }
     } catch (error) {
         console.error(`${TAGS.MCP} ✗ Fatal error starting server:`, error)
-        throw new Error(error)
+        process.exitCode = 1
     }
 }
 
-// Handle server shutdown
 process.on('SIGINT', async () => {
     console.error(`${TAGS.MCP} Shutting down server...`)
-    return
+    process.exit(0)
 })
 
 main()
