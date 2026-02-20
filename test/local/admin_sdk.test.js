@@ -46,7 +46,6 @@ describe('Admin SDK API', () => {
         },
       )
       registerTools(server, {
-        gcpCredentialsAvailable: true,
         apiClients: { adminSdk: new MockAdminSdkClient() },
       })
 
@@ -82,7 +81,6 @@ describe('Admin SDK API', () => {
         },
       )
       registerTools(server, {
-        gcpCredentialsAvailable: true,
         apiClients: { adminSdk: new MockAdminSdkClient() },
       })
 
@@ -120,7 +118,6 @@ describe('Admin SDK API', () => {
         },
       )
       registerTools(server, {
-        gcpCredentialsAvailable: true,
         apiClients: { adminSdk: new MockAdminSdkClient() },
       })
 
@@ -167,7 +164,6 @@ describe('Admin SDK API', () => {
         },
       )
       registerTools(server, {
-        gcpCredentialsAvailable: true,
         apiClients: { adminSdk: new MockAdminSdkClient() },
       })
 

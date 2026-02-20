@@ -63,7 +63,6 @@ describe('Cloud Identity API', () => {
         },
       )
       registerTools(server, {
-        gcpCredentialsAvailable: true,
         apiClients: { cloudIdentity: new MockCloudIdentityClient() },
       })
 
@@ -119,7 +118,6 @@ describe('Cloud Identity API', () => {
         },
       )
       registerTools(server, {
-        gcpCredentialsAvailable: true,
         apiClients: { cloudIdentity: new MockCloudIdentityClient() },
       })
 
@@ -147,7 +145,6 @@ describe('Cloud Identity API', () => {
         },
       )
       registerTools(server, {
-        gcpCredentialsAvailable: true,
         apiClients: { cloudIdentity: new MockCloudIdentityClient() },
       })
 
@@ -184,7 +181,6 @@ describe('Cloud Identity API', () => {
         },
       )
       registerTools(server, {
-        gcpCredentialsAvailable: true,
         apiClients: { cloudIdentity: new MockCloudIdentityClient() },
       })
 
@@ -224,7 +220,6 @@ describe('Cloud Identity API', () => {
         },
       )
       registerTools(server, {
-        gcpCredentialsAvailable: true,
         apiClients: { cloudIdentity: new MockCloudIdentityClient() },
       })
 
@@ -267,7 +262,6 @@ describe('Cloud Identity API', () => {
         },
       )
       registerTools(server, {
-        gcpCredentialsAvailable: true,
         apiClients: { cloudIdentity: new MockCloudIdentityClient() },
       })
 

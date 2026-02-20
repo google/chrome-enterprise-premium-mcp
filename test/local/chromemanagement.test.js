@@ -52,7 +52,6 @@ describe('Chrome Management API', () => {
         },
       )
       registerTools(server, {
-        gcpCredentialsAvailable: true,
         apiClients: { chromeManagement: new MockChromeManagementClient() },
       })
 
@@ -93,7 +92,6 @@ describe('Chrome Management API', () => {
         },
       )
       registerTools(server, {
-        gcpCredentialsAvailable: true,
         apiClients: { chromeManagement: new MockChromeManagementClient() },
       })
 
@@ -130,7 +128,6 @@ describe('Chrome Management API', () => {
         },
       )
       registerTools(server, {
-        gcpCredentialsAvailable: true,
         apiClients: { chromeManagement: new MockChromeManagementClient() },
       })
 
@@ -175,7 +172,6 @@ describe('Chrome Management API', () => {
         },
       )
       registerTools(server, {
-        gcpCredentialsAvailable: true,
         apiClients: { chromeManagement: new MockChromeManagementClient() },
       })
 

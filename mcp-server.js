@@ -91,13 +91,6 @@ async function getServer(gcpInfo) {
     return {}
   })
 
-  const envProjectId = process.env.GOOGLE_CLOUD_PROJECT
-  const envRegion = process.env.GOOGLE_CLOUD_REGION
-
-  // Determine effective configuration
-  const effectiveProjectId = envProjectId || (gcpInfo && gcpInfo.project)
-  const effectiveRegion = envRegion || (gcpInfo && gcpInfo.region) || DEFAULT_CONFIG.REGION
-
   const apiOptions = {}
   let apiClients = {}
 
@@ -121,9 +114,6 @@ async function getServer(gcpInfo) {
   }
 
   const toolOptions = {
-    defaultProjectId: effectiveProjectId,
-    defaultRegion: effectiveRegion,
-    gcpCredentialsAvailable: true,
     apiClients,
     apiOptions,
   }
@@ -133,9 +123,7 @@ async function getServer(gcpInfo) {
     registerTools(server, toolOptions)
     registerPrompts(server)
   } else {
-    console.error(
-      `${TAGS.MCP} Running on GCP project: ${effectiveProjectId}, region: ${effectiveRegion}. Using tools optimized for remote use.`,
-    )
+    console.error(`${TAGS.MCP} Running on GCP environment. Using tools optimized for remote use.`)
     registerToolsRemote(server, toolOptions)
     registerPrompts(server)
   }
