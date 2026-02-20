@@ -44,7 +44,7 @@ export function registerCustomerProfileTool(server, options) {
         handler: async ({ customerId }, { requestInfo }) => {
           try {
             const authToken = getAuthToken(requestInfo)
-            const profiles = await chromeManagementClient.listCustomerProfiles(customerId, null, authToken) // Added null for progressCallback
+            const profiles = await chromeManagementClient.listCustomerProfiles(customerId, authToken)
 
             if (!profiles || profiles.length === 0) {
               return {

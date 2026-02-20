@@ -74,7 +74,6 @@ export function registerGetConnectorPolicyTool(server, options) {
             customerId,
             orgUnitId,
             policySchemaFilter,
-            null, // progressCallback
             authToken,
           )
 

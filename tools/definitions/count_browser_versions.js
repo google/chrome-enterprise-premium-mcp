@@ -44,7 +44,7 @@ export function registerCountBrowserVersionsTool(server, options) {
       {
         handler: async ({ customerId, orgUnitId }, { requestInfo }) => {
           const authToken = getAuthToken(requestInfo)
-          const versions = await chromeManagementClient.countBrowserVersions(customerId, orgUnitId, null, authToken) // Added null for progressCallback
+          const versions = await chromeManagementClient.countBrowserVersions(customerId, orgUnitId, authToken)
 
           if (!versions || versions.length === 0) {
             return {
