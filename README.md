@@ -110,6 +110,46 @@ npm run format
 | `GCP_STDIO`            | Force Stdio mode (`true`) or SSE mode (`false`). | Auto-detected  |
 | `PORT`                 | Port for SSE/HTTP server.                        | `3000`         |
 
+## Run Integration Tests (Including Python Env Setup)
+
+If you are working with the Python-based CEP agents in `adk/`, it's recommended to use a virtual environment.
+
+A. **Create and Activate Virtual Environment:**
+To keep the repository clean, create the environment in a directory outside the project:
+
+      ```bash
+      # Create a virtual environment outside the repo
+      python3 -m venv ~/venvs/cep-agent
+
+      # Activate the virtual environment
+      source ~/venvs/cep-agent/bin/activate
+      ```
+
+B. **Install Python Dependencies:**
+
+      ```bash
+      # Install dependencies from the repo root
+      pip install -r requirements.txt
+      ```
+
+C. **Set Environment Variables:**
+
+      ```bash
+      export GEMINI_API_KEY=XXX
+      ```
+
+      Use a real API key.
+
+D. **Run Specific Integration Test:**
+
+      ```bash
+      source ~/venvs/cep-agent/bin/activate && python -m unittest test/integration/get_customer_id_test.py
+      ```
+
+      ```bash
+      source ~/venvs/cep-agent/bin/activate && python -m unittest test/integration/list_dlp_rules_test.py
+      ```
+
 ## License
 
 Apache-2.0
