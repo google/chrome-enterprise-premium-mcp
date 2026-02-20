@@ -34,8 +34,6 @@ import { FakeCloudIdentityClient } from './lib/api/fake_cloud_identity_client.js
 import { FakeChromePolicyClient } from './lib/api/fake_chrome_policy_client.js'
 import { FakeChromeManagementClient } from './lib/api/fake_chrome_management_client.js'
 
-import { setGlobalCustomerId } from './tools/utils.js'
-
 /**
  * Redirects console.log to console.error for compatibility with Stdio transport.
  * Stdio transport uses stdout for protocol messages, so logging must go to stderr.
@@ -107,33 +105,16 @@ async function getServer(gcpInfo) {
         }
     }
 
-    // Pre-fetch Customer ID to cache it globally
-    let customerId
-    try {
-        const customer = await apiClients.adminSdk.getCustomerId(null) // Pass null for authToken
-        if (customer && customer.id) {
-            customerId = customer.id
-            setGlobalCustomerId(customerId)
-            console.error(`${TAGS.MCP} Initialization: Retrieved Customer ID: ${customerId}`)
-        }
-    } catch (error) {
-        console.error(`${TAGS.MCP} Initialization: Failed to retrieve Customer ID: ${error.message}`)
-    }
-
     const toolOptions = {
         defaultProjectId: effectiveProjectId,
         defaultRegion: effectiveRegion,
         gcpCredentialsAvailable: true,
-        customerId,
         apiClients,
         apiOptions,
     }
 
     if (shouldStartStdio(gcpInfo)) {
         console.error(`${TAGS.MCP} Using tools optimized for local or stdio mode.`)
-        if (!process.env.GAPI_ROOT_URL) {
-            await ensureADCCredentials()
-        }
         registerTools(server, toolOptions)
         registerPrompts(server)
     } else {

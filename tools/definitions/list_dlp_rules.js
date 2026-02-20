@@ -25,22 +25,21 @@ export function registerListDlpRulesTool(server, options) {
     server.registerTool(
         'list_dlp_rules',
         {
-            description: 'Lists Data Loss Prevention (DLP) rules or detectors with supported Chrome triggers.',
+            description: `Lists all DLP rules or detectors for a given customer.
+        The tool returns rules with multiple attributes, parse them and return names, summarize the action`,
             inputSchema: {
                 type: z
                     .enum(['rule', 'detector'])
                     .default('rule')
                     .describe("Type of policy to list: 'rule' for DLP rules, 'detector' for URL lists/detectors."),
-                customerId: commonSchemas.customerId,
             },
         },
         guardedToolCall(
             {
-                handler: async (params, { requestInfo }) => {
-                    const { type, customerId } = params
+                handler: async ({ type }, { requestInfo }) => {
                     const authToken = getAuthToken(requestInfo)
 
-                    const policies = await cloudIdentityClient.listDlpPolicies(type, authToken, customerId)
+                    const policies = await cloudIdentityClient.listDlpPolicies(type, authToken)
                     if (!policies || policies.length === 0) {
                         return { content: [{ type: 'text', text: `No DLP policies of type '${type}' found.` }] }
                     }

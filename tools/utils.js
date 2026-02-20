@@ -14,15 +14,6 @@ import { TAGS } from '../lib/constants.js'
 let cachedCustomerId = null
 
 /**
- * Sets the global cached Customer ID.
- *
- * @param {string} id - The customer ID to cache
- */
-export function setGlobalCustomerId(id) {
-    cachedCustomerId = id
-}
-
-/**
  * Reusable Zod schema definitions.
  */
 export const commonSchemas = {
@@ -66,7 +57,7 @@ export function guardedToolCall({ validate, transform, handler, skipAutoResolve 
             const { apiClients } = options
             let currentParams = { ...params }
             if (currentParams.customerId) {
-                setGlobalCustomerId(currentParams.customerId)
+                cachedCustomerId = currentParams.customerId
             }
 
             if (!skipAutoResolve && currentParams.customerId === undefined) {
@@ -79,7 +70,7 @@ export function guardedToolCall({ validate, transform, handler, skipAutoResolve 
                             const customer = await apiClients.adminSdk.getCustomerId(authToken)
 
                             if (customer && customer.id) {
-                                setGlobalCustomerId(customer.id)
+                                cachedCustomerId = customer.id
                                 currentParams.customerId = customer.id
                             } else {
                                 console.error(

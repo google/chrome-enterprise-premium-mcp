@@ -16,7 +16,6 @@ import { registerCreateUrlListTool } from './definitions/create_url_list.js'
 import { registerGetConnectorPolicyTool } from './definitions/get_connector_policy.js'
 import { registerListOrgUnitsTool } from './definitions/list_org_units.js'
 import { registerGetCustomerIdTool } from './definitions/get_customer_id.js'
-import { setGlobalCustomerId } from './utils.js'
 
 /**
  * Registers all tools with the MCP server.
@@ -25,9 +24,6 @@ import { setGlobalCustomerId } from './utils.js'
  * @param {object} [options={}] - Configuration options for the tools.
  */
 function registerAllTools(server, options = {}) {
-    if (options.customerId) {
-        setGlobalCustomerId(options.customerId)
-    }
     const apiOptions = options.apiOptions || {}
     const {
         adminSdk: adminSdkClient,
