@@ -20,47 +20,47 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 
 describe('MCP Server in stdio mode', () => {
-    let client
-    let transport
+  let client
+  let transport
 
-    before(async () => {
-        transport = new StdioClientTransport({
-            command: 'node',
-            args: ['mcp-server.js'],
-            env: { ...process.env, GCP_STDIO: 'true' },
-        })
-        client = new Client({
-            name: 'test-client',
-            version: '1.0.0',
-        })
-        await client.connect(transport)
+  before(async () => {
+    transport = new StdioClientTransport({
+      command: 'node',
+      args: ['mcp-server.js'],
+      env: { ...process.env, GCP_STDIO: 'true' },
     })
-
-    after(() => {
-        client.close()
+    client = new Client({
+      name: 'test-client',
+      version: '1.0.0',
     })
+    await client.connect(transport)
+  })
 
-    test('should list tools', async () => {
-        const response = await client.listTools()
+  after(() => {
+    client.close()
+  })
 
-        const tools = response.tools
-        assert(Array.isArray(tools))
-        const toolNames = tools.map(t => t.name)
-        assert.deepStrictEqual(
-            toolNames.sort(),
-            [
-                'analyze_chrome_logs_for_risky_activity',
-                'count_browser_versions',
-                'create_dlp_rule',
-                'create_url_list',
-                'delete_dlp_rule',
-                'get_chrome_activity_log',
-                'get_connector_policy',
-                'get_customer_id',
-                'list_customer_profiles',
-                'list_dlp_rules',
-                'list_org_units',
-            ].sort(),
-        )
-    })
+  test('should list tools', async () => {
+    const response = await client.listTools()
+
+    const tools = response.tools
+    assert(Array.isArray(tools))
+    const toolNames = tools.map(t => t.name)
+    assert.deepStrictEqual(
+      toolNames.sort(),
+      [
+        'analyze_chrome_logs_for_risky_activity',
+        'count_browser_versions',
+        'create_dlp_rule',
+        'create_url_list',
+        'delete_dlp_rule',
+        'get_chrome_activity_log',
+        'get_connector_policy',
+        'get_customer_id',
+        'list_customer_profiles',
+        'list_dlp_rules',
+        'list_org_units',
+      ].sort(),
+    )
+  })
 })

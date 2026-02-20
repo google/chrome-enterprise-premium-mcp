@@ -24,27 +24,27 @@ import { registerGetCustomerIdTool } from './definitions/get_customer_id.js'
  * @param {object} [options={}] - Configuration options for the tools.
  */
 function registerAllTools(server, options = {}) {
-    const apiOptions = options.apiOptions || {}
-    const {
-        adminSdk: adminSdkClient,
-        cloudIdentity: cloudIdentityClient,
-        chromePolicy: chromePolicyClient,
-        chromeManagement: chromeManagementClient,
-    } = options.apiClients || {}
+  const apiOptions = options.apiOptions || {}
+  const {
+    adminSdk: adminSdkClient,
+    cloudIdentity: cloudIdentityClient,
+    chromePolicy: chromePolicyClient,
+    chromeManagement: chromeManagementClient,
+  } = options.apiClients || {}
 
-    const commonOpts = { ...options, apiOptions }
+  const commonOpts = { ...options, apiOptions }
 
-    registerCountBrowserVersionsTool(server, { ...commonOpts, chromeManagementClient })
-    registerCustomerProfileTool(server, { ...commonOpts, chromeManagementClient })
-    registerListDlpRulesTool(server, { ...commonOpts, cloudIdentityClient })
-    registerCreateDlpRuleTool(server, { ...commonOpts, cloudIdentityClient })
-    registerGetChromeActivityLogTool(server, { ...commonOpts, adminSdkClient })
-    registerAnalyzeChromeLogsTool(server, { ...commonOpts }) // Assuming no specific client needed
-    registerDeleteDlpRuleTool(server, { ...commonOpts, cloudIdentityClient })
-    registerCreateUrlListTool(server, { ...commonOpts, cloudIdentityClient })
-    registerGetConnectorPolicyTool(server, { ...commonOpts, chromePolicyClient })
-    registerListOrgUnitsTool(server, { ...commonOpts, adminSdkClient })
-    registerGetCustomerIdTool(server, { ...commonOpts, adminSdkClient })
+  registerCountBrowserVersionsTool(server, { ...commonOpts, chromeManagementClient })
+  registerCustomerProfileTool(server, { ...commonOpts, chromeManagementClient })
+  registerListDlpRulesTool(server, { ...commonOpts, cloudIdentityClient })
+  registerCreateDlpRuleTool(server, { ...commonOpts, cloudIdentityClient })
+  registerGetChromeActivityLogTool(server, { ...commonOpts, adminSdkClient })
+  registerAnalyzeChromeLogsTool(server, { ...commonOpts }) // Assuming no specific client needed
+  registerDeleteDlpRuleTool(server, { ...commonOpts, cloudIdentityClient })
+  registerCreateUrlListTool(server, { ...commonOpts, cloudIdentityClient })
+  registerGetConnectorPolicyTool(server, { ...commonOpts, chromePolicyClient })
+  registerListOrgUnitsTool(server, { ...commonOpts, adminSdkClient })
+  registerGetCustomerIdTool(server, { ...commonOpts, adminSdkClient })
 }
 
 /**
@@ -54,7 +54,7 @@ function registerAllTools(server, options = {}) {
  * @param {object} [options={}] - Configuration options.
  */
 export const registerTools = (server, options = {}) => {
-    registerAllTools(server, options)
+  registerAllTools(server, options)
 }
 
 /**
@@ -64,5 +64,5 @@ export const registerTools = (server, options = {}) => {
  * @param {object} [options={}] - Configuration options.
  */
 export const registerToolsRemote = (server, options = {}) => {
-    registerAllTools(server, options)
+  registerAllTools(server, options)
 }

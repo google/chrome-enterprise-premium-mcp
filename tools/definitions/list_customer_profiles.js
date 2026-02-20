@@ -13,50 +13,50 @@ import { TAGS } from '../../lib/constants.js'
  * @param {import('../../lib/api/interfaces/chrome_management_client.js').ChromeManagementClient} options.chromeManagementClient - The Chrome Management client instance.
  */
 export function registerCustomerProfileTool(server, options) {
-    const { chromeManagementClient } = options
+  const { chromeManagementClient } = options
 
-    server.registerTool(
-        'list_customer_profiles',
-        {
-            description: 'Lists all customer profiles for a given customer.',
-            inputSchema: {
-                customerId: commonSchemas.customerId,
-            },
-        },
-        guardedToolCall(
-            {
-                handler: async ({ customerId }, { requestInfo }) => {
-                    try {
-                        const authToken = getAuthToken(requestInfo)
-                        const profiles = await chromeManagementClient.listCustomerProfiles(customerId, null, authToken) // Added null for progressCallback
+  server.registerTool(
+    'list_customer_profiles',
+    {
+      description: 'Lists all customer profiles for a given customer.',
+      inputSchema: {
+        customerId: commonSchemas.customerId,
+      },
+    },
+    guardedToolCall(
+      {
+        handler: async ({ customerId }, { requestInfo }) => {
+          try {
+            const authToken = getAuthToken(requestInfo)
+            const profiles = await chromeManagementClient.listCustomerProfiles(customerId, null, authToken) // Added null for progressCallback
 
-                        if (!profiles || profiles.length === 0) {
-                            return {
-                                content: [
-                                    {
-                                        type: 'text',
-                                        text: `No profiles found for customer ${customerId}.`,
-                                    },
-                                ],
-                            }
-                        }
+            if (!profiles || profiles.length === 0) {
+              return {
+                content: [
+                  {
+                    type: 'text',
+                    text: `No profiles found for customer ${customerId}.`,
+                  },
+                ],
+              }
+            }
 
-                        return {
-                            content: [
-                                {
-                                    type: 'text',
-                                    text: `Customer profiles for customer ${customerId}:\n${JSON.stringify(profiles, null, 2)}`, // Improved formatting
-                                },
-                            ],
-                        }
-                    } catch (error) {
-                        return {
-                            content: [{ type: 'text', text: `Error listing customer profiles: ${error.message}` }],
-                        }
-                    }
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: `Customer profiles for customer ${customerId}:\n${JSON.stringify(profiles, null, 2)}`, // Improved formatting
                 },
-            },
-            options.apiOptions,
-        ),
-    )
+              ],
+            }
+          } catch (error) {
+            return {
+              content: [{ type: 'text', text: `Error listing customer profiles: ${error.message}` }],
+            }
+          }
+        },
+      },
+      options.apiOptions,
+    ),
+  )
 }

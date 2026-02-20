@@ -24,39 +24,39 @@ import { BaseAgent, LocalTool } from './base-agent.js'
  * Adapter that exposes a BaseAgent as a LocalTool for function calling.
  */
 export class SubAgentTool implements LocalTool {
-    name: string
-    description: string
-    parameters: any
-    private agent: BaseAgent
+  name: string
+  description: string
+  parameters: any
+  private agent: BaseAgent
 
-    /**
-     * Initializes the SubAgentTool.
-     */
-    constructor(name: string, description: string, agent: BaseAgent) {
-        this.name = name
-        this.description = description
-        this.agent = agent
-        this.parameters = {
-            type: 'object',
-            properties: {
-                prompt: {
-                    type: 'string',
-                    description: 'The prompt or question to ask the sub-agent.',
-                },
-            },
-            required: ['prompt'],
-        }
+  /**
+   * Initializes the SubAgentTool.
+   */
+  constructor(name: string, description: string, agent: BaseAgent) {
+    this.name = name
+    this.description = description
+    this.agent = agent
+    this.parameters = {
+      type: 'object',
+      properties: {
+        prompt: {
+          type: 'string',
+          description: 'The prompt or question to ask the sub-agent.',
+        },
+      },
+      required: ['prompt'],
     }
+  }
 
-    /**
-     * Executes the wrapped agent with the given arguments.
-     */
-    async execute(args: any): Promise<string> {
-        const prompt = args.prompt
-        if (!prompt) {
-            throw new Error('Missing required argument: prompt')
-        }
-        console.log(`[agent:sub] Executing ${this.name} with prompt: "${prompt}"`)
-        return await this.agent.run(prompt)
+  /**
+   * Executes the wrapped agent with the given arguments.
+   */
+  async execute(args: any): Promise<string> {
+    const prompt = args.prompt
+    if (!prompt) {
+      throw new Error('Missing required argument: prompt')
     }
+    console.log(`[agent:sub] Executing ${this.name} with prompt: "${prompt}"`)
+    return await this.agent.run(prompt)
+  }
 }

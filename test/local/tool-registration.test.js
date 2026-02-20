@@ -20,36 +20,36 @@ import { registerTools } from '../../tools/tools.js'
 
 // Tests for CEP tool registration and individual tool handler logic.
 describe('CEP Tool Registration', () => {
-    let server
+  let server
 
-    beforeEach(async () => {
-        server = {
-            registerTool: mock.fn(),
-        }
-    })
+  beforeEach(async () => {
+    server = {
+      registerTool: mock.fn(),
+    }
+  })
 
-    // Test if all tools are registered with the server.
-    it('should register all expected tools', () => {
-        registerTools(server)
+  // Test if all tools are registered with the server.
+  it('should register all expected tools', () => {
+    registerTools(server)
 
-        const registeredToolNames = server.registerTool.mock.calls.map(call => call.arguments[0])
-        const expectedToolNames = [
-            'count_browser_versions',
-            'list_customer_profiles',
-            'list_dlp_rules',
-            'create_dlp_rule',
-            'get_chrome_activity_log',
-            'analyze_chrome_logs_for_risky_activity',
-            'delete_dlp_rule',
-            'create_url_list',
-            'get_connector_policy',
-            'get_customer_id',
-            'list_org_units',
-        ].sort()
-        assert.deepStrictEqual(
-            registeredToolNames.sort(),
-            expectedToolNames,
-            'The list of registered tool names does not match the expected list.',
-        )
-    })
+    const registeredToolNames = server.registerTool.mock.calls.map(call => call.arguments[0])
+    const expectedToolNames = [
+      'count_browser_versions',
+      'list_customer_profiles',
+      'list_dlp_rules',
+      'create_dlp_rule',
+      'get_chrome_activity_log',
+      'analyze_chrome_logs_for_risky_activity',
+      'delete_dlp_rule',
+      'create_url_list',
+      'get_connector_policy',
+      'get_customer_id',
+      'list_org_units',
+    ].sort()
+    assert.deepStrictEqual(
+      registeredToolNames.sort(),
+      expectedToolNames,
+      'The list of registered tool names does not match the expected list.',
+    )
+  })
 })

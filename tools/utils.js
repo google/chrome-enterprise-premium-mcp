@@ -17,9 +17,9 @@ let cachedCustomerId = null
  * Reusable Zod schema definitions.
  */
 export const commonSchemas = {
-    customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
-    orgUnitId: z.string().describe('The ID of the organizational unit.'),
-    orgUnitIdOptional: z.string().optional().describe('The ID of the organizational unit to filter results.'),
+  customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
+  orgUnitId: z.string().describe('The ID of the organizational unit.'),
+  orgUnitIdOptional: z.string().optional().describe('The ID of the organizational unit to filter results.'),
 }
 
 /**
@@ -29,7 +29,7 @@ export const commonSchemas = {
  * @returns {string|null} The Bearer token if present, otherwise null
  */
 export function getAuthToken(requestInfo) {
-    return requestInfo?.headers?.authorization ? requestInfo.headers.authorization.split(' ')[1] : null
+  return requestInfo?.headers?.authorization ? requestInfo.headers.authorization.split(' ')[1] : null
 }
 
 /**
@@ -44,69 +44,67 @@ export function getAuthToken(requestInfo) {
  * @returns {Function} The wrapped tool function.
  */
 function commonTransform(params) {
-    const newParams = { ...params }
-    if (newParams.orgUnitId) {
-        newParams.orgUnitId = validateAndGetOrgUnitId(newParams.orgUnitId)
-    }
-    return newParams
+  const newParams = { ...params }
+  if (newParams.orgUnitId) {
+    newParams.orgUnitId = validateAndGetOrgUnitId(newParams.orgUnitId)
+  }
+  return newParams
 }
 
 export function guardedToolCall({ validate, transform, handler, skipAutoResolve = false }, options = {}) {
-    return async (params, context) => {
-        try {
-            const { apiClients } = options
-            let currentParams = { ...params }
-            if (currentParams.customerId) {
-                cachedCustomerId = currentParams.customerId
+  return async (params, context) => {
+    try {
+      const { apiClients } = options
+      let currentParams = { ...params }
+      if (currentParams.customerId) {
+        cachedCustomerId = currentParams.customerId
+      }
+
+      if (!skipAutoResolve && currentParams.customerId === undefined) {
+        if (cachedCustomerId) {
+          currentParams.customerId = cachedCustomerId
+        } else {
+          try {
+            const authToken = getAuthToken(context?.requestInfo)
+            if (apiClients && apiClients.adminSdk) {
+              const customer = await apiClients.adminSdk.getCustomerId(authToken)
+
+              if (customer && customer.id) {
+                cachedCustomerId = customer.id
+                currentParams.customerId = customer.id
+              } else {
+                console.error(`${TAGS.MCP} ⚠️ Failed to auto-resolve customerId: No customer object returned.`)
+              }
+            } else {
+              console.error(`${TAGS.MCP} ⚠️ adminSdkClient not provided to guardedToolCall`)
             }
-
-            if (!skipAutoResolve && currentParams.customerId === undefined) {
-                if (cachedCustomerId) {
-                    currentParams.customerId = cachedCustomerId
-                } else {
-                    try {
-                        const authToken = getAuthToken(context?.requestInfo)
-                        if (apiClients && apiClients.adminSdk) {
-                            const customer = await apiClients.adminSdk.getCustomerId(authToken)
-
-                            if (customer && customer.id) {
-                                cachedCustomerId = customer.id
-                                currentParams.customerId = customer.id
-                            } else {
-                                console.error(
-                                    `${TAGS.MCP} ⚠️ Failed to auto-resolve customerId: No customer object returned.`,
-                                )
-                            }
-                        } else {
-                            console.error(`${TAGS.MCP} ⚠️ adminSdkClient not provided to guardedToolCall`)
-                        }
-                    } catch (error) {
-                        console.error(`${TAGS.MCP} ⚠️ Failed to auto-resolve customerId:`, error.message)
-                    }
-                }
-            }
-
-            // 1. COMMON TRANSFORMATION
-            let transformedParams = commonTransform(currentParams)
-
-            // 2. CUSTOM TRANSFORMATION
-            if (transform) {
-                transformedParams = transform(transformedParams)
-            }
-
-            // 3. VALIDATION
-            if (validate) {
-                validate(transformedParams)
-            }
-
-            // 4. EXECUTION
-            return await handler(transformedParams, context)
-        } catch (error) {
-            return {
-                content: [{ type: 'text', text: `Error: ${error.message}` }],
-            }
+          } catch (error) {
+            console.error(`${TAGS.MCP} ⚠️ Failed to auto-resolve customerId:`, error.message)
+          }
         }
+      }
+
+      // 1. COMMON TRANSFORMATION
+      let transformedParams = commonTransform(currentParams)
+
+      // 2. CUSTOM TRANSFORMATION
+      if (transform) {
+        transformedParams = transform(transformedParams)
+      }
+
+      // 3. VALIDATION
+      if (validate) {
+        validate(transformedParams)
+      }
+
+      // 4. EXECUTION
+      return await handler(transformedParams, context)
+    } catch (error) {
+      return {
+        content: [{ type: 'text', text: `Error: ${error.message}` }],
+      }
     }
+  }
 }
 
 /**
@@ -118,8 +116,8 @@ export function guardedToolCall({ validate, transform, handler, skipAutoResolve 
  * @returns {string} The normalized ID
  */
 export function validateAndGetOrgUnitId(orgUnitId) {
-    if (typeof orgUnitId === 'string' && orgUnitId.startsWith('id:')) {
-        return orgUnitId.substring(3)
-    }
-    return orgUnitId
+  if (typeof orgUnitId === 'string' && orgUnitId.startsWith('id:')) {
+    return orgUnitId.substring(3)
+  }
+  return orgUnitId
 }

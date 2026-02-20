@@ -13,54 +13,49 @@ import { TAGS } from '../../lib/constants.js'
  * @param {import('../../lib/api/interfaces/chrome_management_client.js').ChromeManagementClient} options.chromeManagementClient - The Chrome Management client instance.
  */
 export function registerCountBrowserVersionsTool(server, options) {
-    const { chromeManagementClient } = options
+  const { chromeManagementClient } = options
 
-    server.registerTool(
-        'count_browser_versions',
-        {
-            description: 'Counts Chrome browser versions reported by devices.',
-            inputSchema: {
-                customerId: commonSchemas.customerId,
-                orgUnitId: commonSchemas.orgUnitIdOptional,
-            },
-        },
-        guardedToolCall(
-            {
-                handler: async ({ customerId, orgUnitId }, { requestInfo }) => {
-                    const authToken = getAuthToken(requestInfo)
-                    const versions = await chromeManagementClient.countBrowserVersions(
-                        customerId,
-                        orgUnitId,
-                        null,
-                        authToken,
-                    ) // Added null for progressCallback
+  server.registerTool(
+    'count_browser_versions',
+    {
+      description: 'Counts Chrome browser versions reported by devices.',
+      inputSchema: {
+        customerId: commonSchemas.customerId,
+        orgUnitId: commonSchemas.orgUnitIdOptional,
+      },
+    },
+    guardedToolCall(
+      {
+        handler: async ({ customerId, orgUnitId }, { requestInfo }) => {
+          const authToken = getAuthToken(requestInfo)
+          const versions = await chromeManagementClient.countBrowserVersions(customerId, orgUnitId, null, authToken) // Added null for progressCallback
 
-                    if (!versions || versions.length === 0) {
-                        return {
-                            content: [
-                                {
-                                    type: 'text',
-                                    text: `No browser versions found for customer ${customerId}.`,
-                                },
-                            ],
-                        }
-                    }
-
-                    const versionList = versions
-                        .map(v => `- ${v.version} (${v.count} devices) - ${v.channel || 'UNKNOWN'}`) // Added fallback for channel
-                        .join('\n')
-
-                    return {
-                        content: [
-                            {
-                                type: 'text',
-                                text: `Browser versions for customer ${customerId}:\n${versionList}`,
-                            },
-                        ],
-                    }
+          if (!versions || versions.length === 0) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: `No browser versions found for customer ${customerId}.`,
                 },
-            },
-            options.apiOptions,
-        ),
-    )
+              ],
+            }
+          }
+
+          const versionList = versions
+            .map(v => `- ${v.version} (${v.count} devices) - ${v.channel || 'UNKNOWN'}`) // Added fallback for channel
+            .join('\n')
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Browser versions for customer ${customerId}:\n${versionList}`,
+              },
+            ],
+          }
+        },
+      },
+      options.apiOptions,
+    ),
+  )
 }

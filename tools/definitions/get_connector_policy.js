@@ -9,12 +9,12 @@ import { TAGS } from '../../lib/constants.js'
 
 // Keep ConnectorPolicyFilter definition local as it's used in the inputSchema and handler
 const ConnectorPolicyFilter = {
-    ON_FILE_ATTACHED: 'chrome.users.OnFileAttachedConnectorPolicy',
-    ON_FILE_DOWNLOAD: 'chrome.users.OnFileDownloadedConnectorPolicy',
-    ON_BULK_TEXT_ENTRY: 'chrome.users.OnBulkTextEntryConnectorPolicy',
-    ON_PRINT: 'chrome.users.OnPrintAnalysisConnectorPolicy',
-    ON_REALTIME_URL_NAVIGATION: 'chrome.users.RealtimeUrlCheck',
-    ON_SECURITY_EVENT: 'chrome.users.OnSecurityEvent',
+  ON_FILE_ATTACHED: 'chrome.users.OnFileAttachedConnectorPolicy',
+  ON_FILE_DOWNLOAD: 'chrome.users.OnFileDownloadedConnectorPolicy',
+  ON_BULK_TEXT_ENTRY: 'chrome.users.OnBulkTextEntryConnectorPolicy',
+  ON_PRINT: 'chrome.users.OnPrintAnalysisConnectorPolicy',
+  ON_REALTIME_URL_NAVIGATION: 'chrome.users.RealtimeUrlCheck',
+  ON_SECURITY_EVENT: 'chrome.users.OnSecurityEvent',
 }
 
 /**
@@ -25,12 +25,12 @@ const ConnectorPolicyFilter = {
  * @param {import('../../lib/api/interfaces/chrome_policy_client.js').ChromePolicyClient} options.chromePolicyClient - The Chrome Policy client instance.
  */
 export function registerGetConnectorPolicyTool(server, options) {
-    const { chromePolicyClient } = options
+  const { chromePolicyClient } = options
 
-    server.registerTool(
-        'get_connector_policy',
-        {
-            description: `This tool retrieves the configuration status for Chrome Enterprise connectors,
+  server.registerTool(
+    'get_connector_policy',
+    {
+      description: `This tool retrieves the configuration status for Chrome Enterprise connectors,
         specifically distinguishing between Content Analysis settings—ON_FILE_ATTACHED, ON_FILE_DOWNLOAD,
         ON_BULK_TEXT_ENTRY, ON_PRINT, ON_REALTIME_URL_NAVIGATION and ON_SECURITY_EVENT.
         It serves as the primary diagnostic engine to verify if the settings are set for DLP rules and data insights to be operational.
@@ -42,37 +42,37 @@ export function registerGetConnectorPolicyTool(server, options) {
         policy may be "active," the feedback loop for DLP rules and data insights will be broken. Please provide direct links to customers to resolve this issue ,
         this is the URL format - https://admin.google.com/ac/chrome/settings/user/details/{CONNECTOR_NAME}?ac_ouid={OrgUnitId} where CONNECTOR_NAME is
         file_attached, file_downloaded, bulk_text_entry, print_analysis_connector, realtime_url_check, on_security_event.`,
-            inputSchema: {
-                customerId: commonSchemas.customerId,
-                orgUnitId: commonSchemas.orgUnitId.describe(`The ID of the organizational unit to filter results.`),
-                policy: z.enum(Object.keys(ConnectorPolicyFilter)).describe(`The policy to filter by.`),
-            },
+      inputSchema: {
+        customerId: commonSchemas.customerId,
+        orgUnitId: commonSchemas.orgUnitId.describe(`The ID of the organizational unit to filter results.`),
+        policy: z.enum(Object.keys(ConnectorPolicyFilter)).describe(`The policy to filter by.`),
+      },
+    },
+    guardedToolCall(
+      {
+        handler: async ({ customerId, orgUnitId, policy }, { requestInfo }) => {
+          const authToken = getAuthToken(requestInfo)
+          const policySchemaFilter = ConnectorPolicyFilter[policy]
+
+          const policies = await chromePolicyClient.getConnectorPolicy(
+            customerId,
+            orgUnitId,
+            policySchemaFilter,
+            null, // progressCallback
+            authToken,
+          )
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `Connector policy for ${policy}:\n${JSON.stringify(policies, null, 2)}`,
+              },
+            ],
+          }
         },
-        guardedToolCall(
-            {
-                handler: async ({ customerId, orgUnitId, policy }, { requestInfo }) => {
-                    const authToken = getAuthToken(requestInfo)
-                    const policySchemaFilter = ConnectorPolicyFilter[policy]
-
-                    const policies = await chromePolicyClient.getConnectorPolicy(
-                        customerId,
-                        orgUnitId,
-                        policySchemaFilter,
-                        null, // progressCallback
-                        authToken,
-                    )
-
-                    return {
-                        content: [
-                            {
-                                type: 'text',
-                                text: `Connector policy for ${policy}:\n${JSON.stringify(policies, null, 2)}`,
-                            },
-                        ],
-                    }
-                },
-            },
-            options.apiOptions,
-        ),
-    )
+      },
+      options.apiOptions,
+    ),
+  )
 }

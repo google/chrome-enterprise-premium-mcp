@@ -15,8 +15,8 @@ import { registerNoisePrompt } from './definitions/noise.js'
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance
  */
 export function registerPrompts(server) {
-    registerCepPrompt(server)
-    registerDiagnosePrompt(server)
-    registerMaturityPrompt(server)
-    registerNoisePrompt(server)
+  registerCepPrompt(server)
+  registerDiagnosePrompt(server)
+  registerMaturityPrompt(server)
+  registerNoisePrompt(server)
 }

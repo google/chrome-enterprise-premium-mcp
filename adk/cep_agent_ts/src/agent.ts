@@ -28,7 +28,7 @@ import 'dotenv/config'
 
 const projectId = process.env.GOOGLE_CLOUD_PROJECT
 if (!projectId) {
-    console.warn('[warn] GOOGLE_CLOUD_PROJECT not set. Agent commands may fail.')
+  console.warn('[warn] GOOGLE_CLOUD_PROJECT not set. Agent commands may fail.')
 }
 
 // Global MCP Client instance (Lazy connection)
@@ -40,71 +40,71 @@ export const mcpClient = new McpClientWrapper()
  * Creates the Metadata Agent.
  */
 function createMetadataAgent(): BaseAgent {
-    return new BaseAgent(
-        projectId || 'unknown-project',
-        LOCATIONS.US_CENTRAL1,
-        MODEL_NAMES.GEMINI_2_0_FLASH,
-        PROMPTS.METADATA,
-        mcpClient,
-    )
+  return new BaseAgent(
+    projectId || 'unknown-project',
+    LOCATIONS.US_CENTRAL1,
+    MODEL_NAMES.GEMINI_2_0_FLASH,
+    PROMPTS.METADATA,
+    mcpClient,
+  )
 }
 
 /**
  * Creates the Troubleshooting Agent.
  */
 function createTroubleshootingAgent(): BaseAgent {
-    return new BaseAgent(
-        projectId || 'unknown-project',
-        LOCATIONS.US_CENTRAL1,
-        MODEL_NAMES.GEMINI_2_0_FLASH,
-        PROMPTS.TROUBLESHOOTING,
-        mcpClient,
-    )
+  return new BaseAgent(
+    projectId || 'unknown-project',
+    LOCATIONS.US_CENTRAL1,
+    MODEL_NAMES.GEMINI_2_0_FLASH,
+    PROMPTS.TROUBLESHOOTING,
+    mcpClient,
+  )
 }
 
 /**
  * Creates the Onboarding Agent.
  */
 function createOnboardingAgent(): BaseAgent {
-    return new BaseAgent(
-        projectId || 'unknown-project',
-        LOCATIONS.US_CENTRAL1,
-        MODEL_NAMES.GEMINI_2_0_FLASH,
-        PROMPTS.ONBOARDING,
-        mcpClient,
-    )
+  return new BaseAgent(
+    projectId || 'unknown-project',
+    LOCATIONS.US_CENTRAL1,
+    MODEL_NAMES.GEMINI_2_0_FLASH,
+    PROMPTS.ONBOARDING,
+    mcpClient,
+  )
 }
 
 /**
  * Creates the Orchestrator Agent.
  */
 function createOrchestratorAgent(): BaseAgent {
-    const metadataAgent = createMetadataAgent()
-    const troubleshootingAgent = createTroubleshootingAgent()
-    const onboardingAgent = createOnboardingAgent()
+  const metadataAgent = createMetadataAgent()
+  const troubleshootingAgent = createTroubleshootingAgent()
+  const onboardingAgent = createOnboardingAgent()
 
-    const tools: LocalTool[] = [
-        new SubAgentTool(
-            AGENT_NAMES.METADATA,
-            'Strict Data Retrieval Tool. Returns Customer ID and Root Org Unit ID.',
-            metadataAgent,
-        ),
-        new SubAgentTool(
-            AGENT_NAMES.TROUBLESHOOTING,
-            'Troubleshoots DLP rules. Requires Orchestrator to provide Customer/Org IDs.',
-            troubleshootingAgent,
-        ),
-        new SubAgentTool(AGENT_NAMES.ONBOARDING, 'Handles setup and best practices.', onboardingAgent),
-    ]
+  const tools: LocalTool[] = [
+    new SubAgentTool(
+      AGENT_NAMES.METADATA,
+      'Strict Data Retrieval Tool. Returns Customer ID and Root Org Unit ID.',
+      metadataAgent,
+    ),
+    new SubAgentTool(
+      AGENT_NAMES.TROUBLESHOOTING,
+      'Troubleshoots DLP rules. Requires Orchestrator to provide Customer/Org IDs.',
+      troubleshootingAgent,
+    ),
+    new SubAgentTool(AGENT_NAMES.ONBOARDING, 'Handles setup and best practices.', onboardingAgent),
+  ]
 
-    return new BaseAgent(
-        projectId || 'unknown-project',
-        LOCATIONS.US_CENTRAL1,
-        MODEL_NAMES.GEMINI_2_0_FLASH,
-        PROMPTS.ORCHESTRATOR,
-        mcpClient,
-        tools,
-    )
+  return new BaseAgent(
+    projectId || 'unknown-project',
+    LOCATIONS.US_CENTRAL1,
+    MODEL_NAMES.GEMINI_2_0_FLASH,
+    PROMPTS.ORCHESTRATOR,
+    mcpClient,
+    tools,
+  )
 }
 
 // --- Exports ---

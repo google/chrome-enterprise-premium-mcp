@@ -30,10 +30,10 @@ A Model Context Protocol (MCP) server that provides AI agents with access to Chr
 - **Node.js**: >=18.0.0
 - **npm**: Installed with Node.js
 - **Google Cloud Project**: With the following APIs enabled:
-    - `admin.googleapis.com` (Admin SDK)
-    - `chromemanagement.googleapis.com`
-    - `chromepolicy.googleapis.com`
-    - `cloudidentity.googleapis.com`
+  - `admin.googleapis.com` (Admin SDK)
+  - `chromemanagement.googleapis.com`
+  - `chromepolicy.googleapis.com`
+  - `cloudidentity.googleapis.com`
 - **Authentication**: Google Cloud CLI (`gcloud`) authenticated with necessary scopes.
 
 ## Development Setup

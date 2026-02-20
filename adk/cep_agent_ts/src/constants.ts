@@ -28,27 +28,27 @@ export const PROJECT_ROOT = path.resolve(__dirname, '../../..')
 export const MCP_SERVER_PATH = path.resolve(PROJECT_ROOT, '../../mcp-server.js')
 
 export const AGENT_NAMES = {
-    METADATA: 'metadata_agent',
-    TROUBLESHOOTING: 'troubleshooting_agent',
-    ONBOARDING: 'onboarding_agent',
-    ORCHESTRATOR: 'orchestrator_agent',
+  METADATA: 'metadata_agent',
+  TROUBLESHOOTING: 'troubleshooting_agent',
+  ONBOARDING: 'onboarding_agent',
+  ORCHESTRATOR: 'orchestrator_agent',
 } as const
 
 export const MODEL_NAMES = {
-    GEMINI_2_0_FLASH: 'gemini-2.0-flash-001',
+  GEMINI_2_0_FLASH: 'gemini-2.0-flash-001',
 } as const
 
 export const LOCATIONS = {
-    US_CENTRAL1: 'us-central1',
+  US_CENTRAL1: 'us-central1',
 } as const
 
 export const PROMPTS = {
-    METADATA: `You are a silent data fetcher.
+  METADATA: `You are a silent data fetcher.
     1. Call your tools to find the Customer ID and the Root Org Unit ID.
     2. Output ONLY the IDs in this format: "Context: CustomerID=[ID], OrgUnitID=[ID]".
     3. Do NOT converse with the user. Do NOT ask clarifying questions. Just return the data.`,
 
-    TROUBLESHOOTING: `You are a technical debugger for Chrome Enterprise Premium.
+  TROUBLESHOOTING: `You are a technical debugger for Chrome Enterprise Premium.
 
     ### CRITICAL CONSTRAINTS:
     1. **NEVER ask for IDs**: Assume the Orchestrator has provided 'CustomerID' and 'OrgUnitID' in the prompt. Use them.
@@ -68,13 +68,13 @@ connector_settings
        - Ask: "Would you like to debug Rule A or Rule B deeply?"
     `,
 
-    ONBOARDING: `You are an onboarding specialist.
+  ONBOARDING: `You are an onboarding specialist.
     - If the user asks "What next?", check if they have any DLP rules created.
     - If no rules exist, suggest creating a "Block Sensitive Content" rule.
     - ALWAYS use the 'OrgUnitID' provided by the Orchestrator for all tool calls.
     - Do not ask the user for configuration details unless absolutely necessary. Propose defaults (e.g., "Shall I apply this to the Root Org Unit?").`,
 
-    ORCHESTRATOR: `You are the Orchestrator. You control the flow to prevent hallucination.
+  ORCHESTRATOR: `You are the Orchestrator. You control the flow to prevent hallucination.
 
     ### PHASE 1: CONTEXT ACQUISITION
     Before answering ANY user question, you must verify if you have the 

@@ -26,54 +26,54 @@ const __dirname = dirname(__filename)
 const SERVER_PATH = resolve(__dirname, '../../mcp-server.js')
 
 describe('MCP Prompts', () => {
-    let client
-    let transport
+  let client
+  let transport
 
-    before(async () => {
-        transport = new StdioClientTransport({
-            command: 'node',
-            args: [SERVER_PATH],
-            env: { ...process.env, GCP_STDIO: 'true' },
-        })
-        client = new Client(
-            {
-                name: 'test-client',
-                version: '1.0.0',
-            },
-            {
-                capabilities: {
-                    prompts: {},
-                },
-            },
-        )
-        await client.connect(transport)
+  before(async () => {
+    transport = new StdioClientTransport({
+      command: 'node',
+      args: [SERVER_PATH],
+      env: { ...process.env, GCP_STDIO: 'true' },
     })
+    client = new Client(
+      {
+        name: 'test-client',
+        version: '1.0.0',
+      },
+      {
+        capabilities: {
+          prompts: {},
+        },
+      },
+    )
+    await client.connect(transport)
+  })
 
-    after(async () => {
-        await client.close()
-    })
+  after(async () => {
+    await client.close()
+  })
 
-    it('should list all registered prompts', async () => {
-        const result = await client.listPrompts()
-        const promptNames = result.prompts.map(p => p.name).sort()
+  it('should list all registered prompts', async () => {
+    const result = await client.listPrompts()
+    const promptNames = result.prompts.map(p => p.name).sort()
 
-        assert.deepStrictEqual(promptNames, ['cep', 'cep:diagnose', 'cep:maturity', 'cep:noise'].sort())
-    })
+    assert.deepStrictEqual(promptNames, ['cep', 'cep:diagnose', 'cep:maturity', 'cep:noise'].sort())
+  })
 
-    it('should retrieve the "cep" prompt content (defaulting to diagnostics)', async () => {
-        const result = await client.getPrompt({ name: 'cep' })
+  it('should retrieve the "cep" prompt content (defaulting to diagnostics)', async () => {
+    const result = await client.getPrompt({ name: 'cep' })
 
-        assert.ok(result.messages)
-        assert.equal(result.messages.length, 1)
-        assert.equal(result.messages[0].role, 'user')
-        assert.ok(result.messages[0].content.text.includes('List the organizational units'))
-        assert.ok(result.messages[0].content.text.includes('Chrome Enterprise Premium'))
-    })
+    assert.ok(result.messages)
+    assert.equal(result.messages.length, 1)
+    assert.equal(result.messages[0].role, 'user')
+    assert.ok(result.messages[0].content.text.includes('List the organizational units'))
+    assert.ok(result.messages[0].content.text.includes('Chrome Enterprise Premium'))
+  })
 
-    it('should retrieve the "cep:diagnose" prompt content', async () => {
-        const result = await client.getPrompt({ name: 'cep:diagnose' })
+  it('should retrieve the "cep:diagnose" prompt content', async () => {
+    const result = await client.getPrompt({ name: 'cep:diagnose' })
 
-        assert.ok(result.messages)
-        assert.ok(result.messages[0].content.text.includes('List the organizational units'))
-    })
+    assert.ok(result.messages)
+    assert.ok(result.messages[0].content.text.includes('List the organizational units'))
+  })
 })

@@ -1,42 +1,42 @@
 {
-    "name": "@google-cloud/chrome-management-mcp",
-    "version": "0.1.0",
-    "type": "module",
-    "description": "Chrome Management MCP server",
-    "main": "mcp-server.js",
-    "bin": {
-        "chrome-management-mcp": "mcp-server.js"
-    },
-    "scripts": {
-        "start": "node mcp-server.js",
-        "mcp-inspector": "npx @modelcontextprotocol/inspector node mcp-server.js",
-        "test:local": "bash -c 'shopt -s globstar; node --test test/local/**/*.test.js'",
-        "test": "npm run test:local",
-        "lint": "eslint .",
-        "format": "prettier --write ."
-    },
-    "license": "Apache-2.0",
-    "engines": {
-        "node": ">=18.0.0"
-    },
-    "dependencies": {
-        "@google-cloud/service-usage": "^4.1.0",
-        "@modelcontextprotocol/sdk": "^1.11.0",
-        "axios": "^1.7.2",
-        "dotenv": "^17.2.1",
-        "express": "^5.1.0",
-        "google-auth-library": "^10.4.0",
-        "googleapis": "^166.0.0",
-        "zod": "^3.25.76"
-    },
-    "devDependencies": {
-        "@eslint/js": "^9.0.0",
-        "eslint": "^9.0.0",
-        "eslint-config-prettier": "^9.0.0",
-        "eslint-plugin-n": "^17.2.0",
-        "eslint-plugin-prettier": "^5.0.0",
-        "esmock": "^2.7.1",
-        "prettier": "^3.8.1",
-        "typescript-eslint": "^8.0.0-alpha.20"
-    }
+  "name": "@google-cloud/chrome-management-mcp",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Chrome Management MCP server",
+  "main": "mcp-server.js",
+  "bin": {
+    "chrome-management-mcp": "mcp-server.js"
+  },
+  "scripts": {
+    "start": "node mcp-server.js",
+    "mcp-inspector": "npx @modelcontextprotocol/inspector node mcp-server.js",
+    "test:local": "bash -c 'shopt -s globstar; node --test test/local/**/*.test.js'",
+    "test": "npm run test:local",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@google-cloud/service-usage": "^4.1.0",
+    "@modelcontextprotocol/sdk": "^1.11.0",
+    "axios": "^1.7.2",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "google-auth-library": "^10.4.0",
+    "googleapis": "^166.0.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "eslint": "^9.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-n": "^17.2.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "esmock": "^2.7.1",
+    "prettier": "^3.8.1",
+    "typescript-eslint": "^8.0.0-alpha.20"
+  }
 }

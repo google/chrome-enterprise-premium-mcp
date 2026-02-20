@@ -1,20 +1,20 @@
 {
-    "name": "cep-agent-ts",
-    "version": "1.0.0",
-    "type": "module",
-    "scripts": {
-        "start": "tsx src/index.ts",
-        "test": "node --test"
-    },
-    "dependencies": {
-        "@google-cloud/vertexai": "^1.9.0",
-        "@modelcontextprotocol/sdk": "^1.11.0",
-        "zod": "^3.25.76",
-        "dotenv": "^17.2.1"
-    },
-    "devDependencies": {
-        "@types/node": "^22.10.1",
-        "typescript": "^5.7.2",
-        "tsx": "^4.19.0"
-    }
+  "name": "cep-agent-ts",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "@google-cloud/vertexai": "^1.9.0",
+    "@modelcontextprotocol/sdk": "^1.11.0",
+    "zod": "^3.25.76",
+    "dotenv": "^17.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "typescript": "^5.7.2",
+    "tsx": "^4.19.0"
+  }
 }
