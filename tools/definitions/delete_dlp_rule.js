@@ -20,6 +20,8 @@ limitations under the License.
 
 import { z } from 'zod'
 import { guardedToolCall, getAuthToken, outputSchemas } from '../utils.js'
+import { TAGS } from '../../lib/constants.js'
+import { logger } from '../../lib/util/logger.js'
 
 /**
  * Registers the 'delete_dlp_rule' tool with the MCP server.
@@ -30,6 +32,7 @@ import { guardedToolCall, getAuthToken, outputSchemas } from '../utils.js'
  */
 export function registerDeleteDlpRuleTool(server, options) {
   const { cloudIdentityClient } = options
+  logger.debug(`${TAGS.MCP} Registering 'delete_dlp_rule' tool...`)
 
   server.registerTool(
     'delete_dlp_rule',
@@ -43,9 +46,11 @@ export function registerDeleteDlpRuleTool(server, options) {
     guardedToolCall(
       {
         handler: async ({ policyName }, { requestInfo }) => {
+          logger.debug(`${TAGS.MCP} Calling 'delete_dlp_rule' with policyName: ${policyName}`)
           const authToken = getAuthToken(requestInfo)
           await cloudIdentityClient.deleteDlpRule(policyName, authToken)
 
+          logger.debug(`${TAGS.MCP} Successfully deleted DLP rule.`)
           return {
             content: [
               {

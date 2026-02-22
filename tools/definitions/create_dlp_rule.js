@@ -22,6 +22,7 @@ import { z } from 'zod'
 
 import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
+import { logger } from '../../lib/util/logger.js'
 
 const TRIGGER_MAPPING = {
   FILE_UPLOAD: 'google.workspace.chrome.file.v1.upload',
@@ -46,6 +47,7 @@ const ACTION_TYPES = {
  */
 export function registerCreateDlpRuleTool(server, options) {
   const { cloudIdentityClient } = options
+  logger.debug(`${TAGS.MCP} Registering 'create_dlp_rule' tool...`)
 
   server.registerTool(
     'create_dlp_rule',
@@ -90,6 +92,7 @@ Supports a validate_only mode to test rule creation without saving the rule.`,
           return true
         },
         handler: async (params, { requestInfo }) => {
+          logger.debug(`${TAGS.MCP} Calling 'create_dlp_rule' with params: ${JSON.stringify(params)}`)
           const {
             customerId,
             orgUnitId,
@@ -160,6 +163,7 @@ Supports a validate_only mode to test rule creation without saving the rule.`,
           )
 
           if (validateOnly) {
+            logger.debug(`${TAGS.MCP} Successfully validated DLP rule.`)
             return {
               content: [
                 {
@@ -170,6 +174,7 @@ Supports a validate_only mode to test rule creation without saving the rule.`,
             }
           }
 
+          logger.debug(`${TAGS.MCP} Successfully created DLP rule.`)
           return {
             content: [
               {

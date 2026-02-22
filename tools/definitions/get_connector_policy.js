@@ -22,6 +22,7 @@ import { z } from 'zod'
 
 import { guardedToolCall, getAuthToken, inputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
+import { logger } from '../../lib/util/logger.js'
 
 // Keep ConnectorPolicyFilter definition local as it's used in the inputSchema and handler
 const ConnectorPolicyFilter = {
@@ -42,6 +43,7 @@ const ConnectorPolicyFilter = {
  */
 export function registerGetConnectorPolicyTool(server, options) {
   const { chromePolicyClient } = options
+  logger.debug(`${TAGS.MCP} Registering 'get_connector_policy' tool...`)
 
   server.registerTool(
     'get_connector_policy',
@@ -67,6 +69,9 @@ export function registerGetConnectorPolicyTool(server, options) {
     guardedToolCall(
       {
         handler: async ({ customerId, orgUnitId, policy }, { requestInfo }) => {
+          logger.debug(
+            `${TAGS.MCP} Calling 'get_connector_policy' with customerId: ${customerId}, orgUnitId: ${orgUnitId}, policy: ${policy}`,
+          )
           const authToken = getAuthToken(requestInfo)
           const policySchemaFilter = ConnectorPolicyFilter[policy]
 
@@ -77,6 +82,7 @@ export function registerGetConnectorPolicyTool(server, options) {
             authToken,
           )
 
+          logger.debug(`${TAGS.MCP} Successfully retrieved connector policy.`)
           return {
             content: [
               {

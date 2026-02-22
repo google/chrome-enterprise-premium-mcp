@@ -20,6 +20,7 @@ limitations under the License.
 
 import { guardedToolCall, getAuthToken } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
+import { logger } from '../../lib/util/logger.js'
 
 /**
  * Registers the 'get_customer_id' tool with the MCP server.
@@ -30,6 +31,7 @@ import { TAGS } from '../../lib/constants.js'
  */
 export function registerGetCustomerIdTool(server, options) {
   const { adminSdkClient } = options
+  logger.debug(`${TAGS.MCP} Registering 'get_customer_id' tool...`)
 
   server.registerTool(
     'get_customer_id',
@@ -40,15 +42,17 @@ export function registerGetCustomerIdTool(server, options) {
     guardedToolCall(
       {
         handler: async (params, { requestInfo }) => {
+          logger.debug(`${TAGS.MCP} Calling 'get_customer_id'`)
           const authToken = getAuthToken(requestInfo)
           const customer = await adminSdkClient.getCustomerId(authToken)
 
           if (!customer) {
-            console.error(`${TAGS.MCP} ✗ get_customer_id tool: Could not retrieve customer ID. Response:`, customer)
+            logger.error(`${TAGS.MCP} ✗ get_customer_id tool: Could not retrieve customer ID. Response:`, customer)
             return {
               content: [{ type: 'text', text: 'Could not retrieve customer ID.' }],
             }
           }
+          logger.debug(`${TAGS.MCP} Successfully retrieved customer ID.`)
           return { content: [{ type: 'text', text: `Customer ID: ${customer.id}` }] }
         },
         skipAutoResolve: true,

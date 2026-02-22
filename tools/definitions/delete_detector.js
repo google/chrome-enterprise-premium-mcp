@@ -20,6 +20,7 @@ limitations under the License.
 
 import { z } from 'zod'
 import { guardedToolCall, getAuthToken, outputSchemas } from '../utils.js'
+import { logger } from '../../lib/util/logger.js'
 
 /**
  * Registers the 'delete_detector' tool with the MCP server.
@@ -30,6 +31,8 @@ import { guardedToolCall, getAuthToken, outputSchemas } from '../utils.js'
  */
 export function registerDeleteDetectorTool(server, options) {
   const { cloudIdentityClient } = options
+
+  logger.debug(`Registering 'delete_detector' tool...`)
 
   server.registerTool(
     'delete_detector',

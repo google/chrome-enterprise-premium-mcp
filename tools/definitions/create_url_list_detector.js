@@ -21,6 +21,7 @@ limitations under the License.
 import { z } from 'zod'
 
 import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas } from '../utils.js'
+import { logger } from '../../lib/util/logger.js'
 
 /**
  * Registers the 'create_url_list_detector' tool with the MCP server.
@@ -31,6 +32,8 @@ import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas } from '../u
  */
 export function registerCreateUrlListDetectorTool(server, options) {
   const { cloudIdentityClient } = options
+
+  logger.debug(`Registering 'create_url_list_detector' tool...`)
 
   server.registerTool(
     'create_url_list_detector',

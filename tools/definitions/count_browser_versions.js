@@ -20,6 +20,7 @@ limitations under the License.
 
 import { guardedToolCall, inputSchemas, getAuthToken } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
+import { logger } from '../../lib/util/logger.js'
 
 /**
  * Registers the 'count_browser_versions' tool with the MCP server.
@@ -30,6 +31,7 @@ import { TAGS } from '../../lib/constants.js'
  */
 export function registerCountBrowserVersionsTool(server, options) {
   const { chromeManagementClient } = options
+  logger.debug(`${TAGS.MCP} Registering 'count_browser_versions' tool...`)
 
   server.registerTool(
     'count_browser_versions',
@@ -43,10 +45,14 @@ export function registerCountBrowserVersionsTool(server, options) {
     guardedToolCall(
       {
         handler: async ({ customerId, orgUnitId }, { requestInfo }) => {
+          logger.debug(
+            `${TAGS.MCP} Calling 'count_browser_versions' with customerId: ${customerId}, orgUnitId: ${orgUnitId}`,
+          )
           const authToken = getAuthToken(requestInfo)
           const versions = await chromeManagementClient.countBrowserVersions(customerId, orgUnitId, authToken)
 
           if (!versions || versions.length === 0) {
+            logger.debug(`${TAGS.MCP} No browser versions found.`)
             return {
               content: [
                 {
@@ -61,6 +67,7 @@ export function registerCountBrowserVersionsTool(server, options) {
             .map(v => `- ${v.version} (${v.count} devices) - ${v.channel || 'UNKNOWN'}`) // Added fallback for channel
             .join('\n')
 
+          logger.debug(`${TAGS.MCP} Successfully counted browser versions.`)
           return {
             content: [
               {

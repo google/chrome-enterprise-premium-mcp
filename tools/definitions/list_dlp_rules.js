@@ -19,7 +19,7 @@ limitations under the License.
  */
 import { z } from 'zod'
 import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas } from '../utils.js'
-import { TAGS } from '../../lib/constants.js'
+import { logger } from '../../lib/util/logger.js'
 
 const SUPPORTED_TRIGGERS = [
   'google.workspace.chrome.file.v1.upload',
@@ -38,6 +38,8 @@ const SUPPORTED_TRIGGERS = [
  */
 export function registerListDlpRulesTool(server, options) {
   const { cloudIdentityClient } = options
+
+  logger.debug(`Registering 'list_dlp_rules' tool...`)
 
   server.registerTool(
     'list_dlp_rules',

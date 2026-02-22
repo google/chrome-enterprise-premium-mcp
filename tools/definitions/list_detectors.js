@@ -19,7 +19,7 @@ limitations under the License.
  */
 import { z } from 'zod'
 import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas } from '../utils.js'
-import { TAGS } from '../../lib/constants.js'
+import { logger } from '../../lib/util/logger.js'
 
 /**
  * Registers the 'list_detectors' tool with the MCP server.
@@ -31,10 +31,13 @@ import { TAGS } from '../../lib/constants.js'
 export function registerListDetectorsTool(server, options) {
   const { cloudIdentityClient } = options
 
+  logger.debug(`Registering 'list_detectors' tool...`)
+
   server.registerTool(
     'list_detectors',
     {
-      description: `Lists all DLP detectors (URL lists, word lists, regex) for a given customer.`,
+      description: `Lists all DLP detectors (URL lists, word lists, regex) for a given customer.
+        The tool returns detectors with multiple attributes, parse them and return displayNames, summarize the action`,
       inputSchema: {},
       outputSchema: outputSchemas.policyList,
     },

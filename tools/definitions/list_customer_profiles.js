@@ -20,6 +20,7 @@ limitations under the License.
 
 import { guardedToolCall, inputSchemas, getAuthToken } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
+import { logger } from '../../lib/util/logger.js'
 
 /**
  * Registers the 'list_customer_profiles' tool with the MCP server.
@@ -30,6 +31,7 @@ import { TAGS } from '../../lib/constants.js'
  */
 export function registerCustomerProfileTool(server, options) {
   const { chromeManagementClient } = options
+  logger.debug(`${TAGS.MCP} Registering 'list_customer_profiles' tool...`)
 
   server.registerTool(
     'list_customer_profiles',
@@ -42,11 +44,13 @@ export function registerCustomerProfileTool(server, options) {
     guardedToolCall(
       {
         handler: async ({ customerId }, { requestInfo }) => {
+          logger.debug(`${TAGS.MCP} Calling 'list_customer_profiles' with customerId: ${customerId}`)
           try {
             const authToken = getAuthToken(requestInfo)
             const profiles = await chromeManagementClient.listCustomerProfiles(customerId, authToken)
 
             if (!profiles || profiles.length === 0) {
+              logger.debug(`${TAGS.MCP} No profiles found.`)
               return {
                 content: [
                   {
@@ -57,6 +61,7 @@ export function registerCustomerProfileTool(server, options) {
               }
             }
 
+            logger.debug(`${TAGS.MCP} Successfully listed customer profiles.`)
             return {
               content: [
                 {
@@ -66,6 +71,7 @@ export function registerCustomerProfileTool(server, options) {
               ],
             }
           } catch (error) {
+            logger.error(`${TAGS.MCP} Error listing customer profiles: ${error.message}`)
             return {
               content: [{ type: 'text', text: `Error listing customer profiles: ${error.message}` }],
             }

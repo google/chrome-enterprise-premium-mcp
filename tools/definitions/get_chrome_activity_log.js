@@ -22,6 +22,7 @@ import { z } from 'zod'
 
 import { guardedToolCall, getAuthToken, inputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
+import { logger } from '../../lib/util/logger.js'
 
 /**
  * Registers the 'get_chrome_activity_log' tool with the MCP server.
@@ -32,6 +33,7 @@ import { TAGS } from '../../lib/constants.js'
  */
 export function registerGetChromeActivityLogTool(server, options) {
   const { adminSdkClient } = options
+  logger.debug(`${TAGS.MCP} Registering 'get_chrome_activity_log' tool...`)
 
   server.registerTool(
     'get_chrome_activity_log',
@@ -69,6 +71,9 @@ export function registerGetChromeActivityLogTool(server, options) {
           return params
         },
         handler: async ({ userKey, eventName, startTime, endTime, maxResults, customerId }, { requestInfo }) => {
+          logger.debug(
+            `${TAGS.MCP} Calling 'get_chrome_activity_log' with userKey: ${userKey}, eventName: ${eventName}, startTime: ${startTime}, endTime: ${endTime}, maxResults: ${maxResults}, customerId: ${customerId}`,
+          )
           const authToken = getAuthToken(requestInfo)
           const activities = await adminSdkClient.listChromeActivities(
             {
@@ -83,6 +88,7 @@ export function registerGetChromeActivityLogTool(server, options) {
           )
 
           if (!activities || activities.length === 0) {
+            logger.debug(`${TAGS.MCP} No Chrome activity found.`)
             return {
               content: [
                 {
@@ -93,6 +99,7 @@ export function registerGetChromeActivityLogTool(server, options) {
             }
           }
 
+          logger.debug(`${TAGS.MCP} Successfully retrieved Chrome activity log.`)
           return {
             content: [
               {

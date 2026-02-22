@@ -20,6 +20,7 @@ limitations under the License.
 
 import { guardedToolCall, getAuthToken, inputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
+import { logger } from '../../lib/util/logger.js'
 
 /**
  * Registers the 'list_org_units' tool with the MCP server.
@@ -30,6 +31,7 @@ import { TAGS } from '../../lib/constants.js'
  */
 export function registerListOrgUnitsTool(server, options) {
   const { adminSdkClient } = options
+  logger.debug(`${TAGS.MCP} Registering 'list_org_units' tool...`)
 
   server.registerTool(
     'list_org_units',
@@ -45,12 +47,14 @@ export function registerListOrgUnitsTool(server, options) {
     guardedToolCall(
       {
         handler: async ({ customerId }, { requestInfo }) => {
+          logger.debug(`${TAGS.MCP} Calling 'list_org_units' with customerId: ${customerId}`)
           const authToken = getAuthToken(requestInfo)
           const orgUnitsData = await adminSdkClient.listOrgUnits({ customerId }, authToken)
 
           const orgUnits = orgUnitsData?.organizationUnits // Extract the array
 
           if (!orgUnits || orgUnits.length === 0) {
+            logger.debug(`${TAGS.MCP} No organizational units found.`)
             return {
               content: [
                 {
@@ -61,6 +65,7 @@ export function registerListOrgUnitsTool(server, options) {
             }
           }
 
+          logger.debug(`${TAGS.MCP} Successfully listed organizational units.`)
           return {
             content: [
               {
