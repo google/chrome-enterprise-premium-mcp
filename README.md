@@ -77,6 +77,14 @@ npm run test:local
 npm run test:python
 ```
 
+**5. Smoke Test:**
+
+Run a quick smoke test to ensure the server starts and responds correctly.
+
+```bash
+npm run smoke
+```
+
 ## Linting and Formatting
 
 This project uses ESLint for linting and Prettier for code formatting.

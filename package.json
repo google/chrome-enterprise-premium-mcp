@@ -13,6 +13,7 @@
     "test:local": "./test/run_js_tests.sh",
     "test:python": "./test/run_python_tests.sh",
     "test": "./test/run_all_tests.sh",
+    "smoke": "GCP_STDIO=false node test/local/smoke-test.js",
     "lint": "eslint .",
     "format": "prettier --write ."
   },

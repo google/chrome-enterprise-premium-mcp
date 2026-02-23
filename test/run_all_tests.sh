@@ -36,6 +36,13 @@ JS_STATUS=$?
 
 echo "----------------------------------------"
 
+# Run Smoke tests
+echo "--- Running smoke tests ---"
+npm run smoke
+SMOKE_STATUS=$?
+
+echo "----------------------------------------"
+
 # Run Python tests
 run_test_suite "./test/run_python_tests.sh" "Python"
 PYTHON_STATUS=$?
@@ -43,7 +50,7 @@ PYTHON_STATUS=$?
 echo "----------------------------------------"
 
 # Final verdict
-if [ $JS_STATUS -eq 0 ] && [ $PYTHON_STATUS -eq 0 ]; then
+if [ $JS_STATUS -eq 0 ] && [ $PYTHON_STATUS -eq 0 ] && [ $SMOKE_STATUS -eq 0 ]; then
   echo "✅ ALL TESTS: PASSED"
   exit 0
 else
@@ -52,6 +59,7 @@ else
   # Print which ones failed
   [ $JS_STATUS -ne 0 ] && echo "   - JS tests failed"
   [ $PYTHON_STATUS -ne 0 ] && echo "   - Python tests failed"
+  [ $SMOKE_STATUS -ne 0 ] && echo "   - Smoke tests failed"
 
   exit 1
 fi
