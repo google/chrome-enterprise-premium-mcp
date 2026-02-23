@@ -10,8 +10,9 @@
   "scripts": {
     "start": "node mcp-server.js",
     "mcp-inspector": "npx @modelcontextprotocol/inspector node mcp-server.js",
-    "test:local": "bash -c 'shopt -s globstar; node --test test/local/**/*.test.js'",
-    "test": "npm run test:local",
+    "test:local": "./test/run_js_tests.sh",
+    "test:python": "./test/run_python_tests.sh",
+    "test": "./test/run_all_tests.sh",
     "lint": "eslint .",
     "format": "prettier --write ."
   },

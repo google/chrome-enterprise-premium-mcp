@@ -67,7 +67,14 @@ npm run mcp-inspector
 **4. Run Tests:**
 
 ```bash
+# Run all tests (JS unit tests and Python tests)
 npm test
+
+# Run only JS unit tests
+npm run test:local
+
+# Run only Python tests
+npm run test:python
 ```
 
 ## Linting and Formatting
@@ -139,16 +146,6 @@ C. **Set Environment Variables:**
       ```
 
       Use a real API key.
-
-D. **Run Specific Integration Test:**
-
-      ```bash
-      source ~/venvs/cep-agent/bin/activate && python -m unittest test/integration/get_customer_id_test.py
-      ```
-
-      ```bash
-      source ~/venvs/cep-agent/bin/activate && python -m unittest test/integration/list_dlp_rules_test.py
-      ```
 
 ## License
 
