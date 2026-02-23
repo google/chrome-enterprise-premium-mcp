@@ -1,14 +1,23 @@
-# test/helpers/integration_test_base.py
-import unittest
+import os
+import signal
+import socket
 import subprocess
 import sys
-import os
-import time
-import requests
 import threading
-import signal # Import signal
-from test.helpers.mcp_server_runner import start_mcp_server, terminate_mcp_server
+import time
+import unittest
+
+import requests
+import test.helpers.mcp_client
+from test.helpers.mcp_server_runner import start_mcp_server
+from test.helpers.mcp_server_runner import terminate_mcp_server
 from test.helpers.nl_check import assert_nl_condition
+
+
+def get_free_port():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(('localhost', 0))
+        return s.getsockname()[1]
 
 def capture_output(process, stream_name):
     try:
@@ -29,8 +38,6 @@ class McpIntegrationTestBase(unittest.TestCase):
 
     mcp_server_process = None
     fake_api_process = None
-    FAKE_API_PORT = 8008
-    FAKE_API_URL = f"http://localhost:{FAKE_API_PORT}"
     fake_api_stdout_thread = None
     fake_api_stderr_thread = None
 
@@ -38,10 +45,19 @@ class McpIntegrationTestBase(unittest.TestCase):
     def setUpClass(cls):
         """Starts the Fake API and MCP server once before any tests."""
         super().setUpClass()
-        # Attempt to kill any lingering processes on the port
+        # Get free ports dynamically
+        cls.FAKE_API_PORT = get_free_port()
+        cls.FAKE_API_URL = f"http://localhost:{cls.FAKE_API_PORT}"
+
+        mcp_server_port = get_free_port()
+        test.helpers.mcp_client.MCP_SERVER_URL = f"http://localhost:{mcp_server_port}/mcp"
+
+        # Attempt to kill any lingering processes on the port (though less likely needed now)
         cls._kill_process_on_port(cls.FAKE_API_PORT)
+        cls._kill_process_on_port(mcp_server_port)
+
         cls._start_fake_api()
-        cls.mcp_server_process = start_mcp_server(fake_api_url=cls.FAKE_API_URL)
+        cls.mcp_server_process = start_mcp_server(fake_api_url=cls.FAKE_API_URL, server_port=mcp_server_port)
 
     @classmethod
     def tearDownClass(cls):
@@ -73,8 +89,12 @@ class McpIntegrationTestBase(unittest.TestCase):
         if not os.path.exists(fake_api_path):
             raise FileNotFoundError(f"Fake API script not found at {os.path.abspath(fake_api_path)}")
 
+        env = os.environ.copy()
+        env["PORT"] = str(cls.FAKE_API_PORT)
+
         cls.fake_api_process = subprocess.Popen(
             [sys.executable, "-u", fake_api_path],
+            env=env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             preexec_fn=os.setsid # Run in a new session
@@ -125,7 +145,6 @@ class McpIntegrationTestBase(unittest.TestCase):
                     if cls.fake_api_process.stderr: cls.fake_api_process.stderr.close()
                 cls.fake_api_process = None
                 print("--- Fake API Server stop complete ---", flush=True)
-
 
     def setUp(self):
         """Resets the fake API state before each test."""

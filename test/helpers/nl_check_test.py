@@ -25,20 +25,19 @@ from test.helpers.nl_check import check_nl_condition
 
 class TestNLChecker(unittest.TestCase):
 
+  @mock.patch.dict(os.environ, {"GEMINI_API_KEY": "test_key"}, clear=False)
   @mock.patch("google.genai.Client")
   def test_call_gemini_flash_success(self, MockClient):
     """Test call_gemini_flash on successful API call."""
     mock_generate_content = MockClient.return_value.models.generate_content
     mock_generate_content.return_value.text = "Mocked Gemini Response"
 
-    os.environ["GEMINI_API_KEY"] = "test_key"
     prompt = "What is today's date?"
     result = call_gemini_flash(prompt)
     self.assertEqual(result, "Mocked Gemini Response")
     mock_generate_content.assert_called_once()
-    # Clean up environment variable
-    del os.environ["GEMINI_API_KEY"]
 
+  @mock.patch.dict(os.environ, {}, clear=False)
   @mock.patch("google.genai.Client")
   def test_call_gemini_flash_no_api_key(self, MockClient):
     """Test call_gemini_flash when API key is not set."""

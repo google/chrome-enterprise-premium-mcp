@@ -22,13 +22,14 @@ import urllib.request
 
 from .mcp_client import MCP_SERVER_URL
 
-def start_mcp_server(fake_api_url=None):
+def start_mcp_server(fake_api_url=None, server_port=None):
     print("--- Setting up MCP Server ---")
     server_process = None
-    server_port = 3000
-    url_parts = urllib.parse.urlparse(MCP_SERVER_URL)
-    if url_parts.port:
-        server_port = url_parts.port
+    if server_port is None:
+        server_port = 3000
+        url_parts = urllib.parse.urlparse(MCP_SERVER_URL)
+        if url_parts.port:
+            server_port = url_parts.port
 
     mcp_server_path = os.path.join(
         os.path.dirname(__file__), "../../mcp-server.js"

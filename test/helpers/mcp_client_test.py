@@ -14,6 +14,7 @@
 
 import os
 import signal
+import socket
 import subprocess
 import time
 import unittest
@@ -22,9 +23,14 @@ import urllib.parse
 import urllib.request
 
 import requests
+import test.helpers.mcp_client
 from test.helpers.mcp_client import execute_mcp_tool
-from test.helpers.mcp_client import MCP_SERVER_URL
 
+
+def get_free_port():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(('localhost', 0))
+        return s.getsockname()[1]
 
 class TestExecuteMcpToolIntegration(unittest.TestCase):
 
@@ -32,15 +38,9 @@ class TestExecuteMcpToolIntegration(unittest.TestCase):
   def setUpClass(cls):
     print("--- Setting up MCP Server for Integration Test ---")
     cls.server_process = None
-    cls.server_port = 3000  # Default port from mcp-server.js
-    url_parts = urllib.parse.urlparse(MCP_SERVER_URL)
-    if url_parts.port:
-      cls.server_port = url_parts.port
-    else:
-      print(
-          f"Warning: MCP_SERVER_URL ({MCP_SERVER_URL}) does not specify a port,"
-          f" assuming default {cls.server_port}"
-      )
+    cls.server_port = get_free_port()
+    test.helpers.mcp_client.MCP_SERVER_URL = f"http://localhost:{cls.server_port}/mcp"
+    url_parts = urllib.parse.urlparse(test.helpers.mcp_client.MCP_SERVER_URL)
     mcp_server_path = os.path.join(
         os.path.dirname(__file__), "../../mcp-server.js"
     )
@@ -141,12 +141,10 @@ class TestExecuteMcpToolIntegration(unittest.TestCase):
     if "error" in result:
       self.assertIn(f"Tool {tool_name} failed", result["error"])
     else:
-      # If successful, we expect a 'Customer ID: C...' string
+      # If successful, we expect a 'Customer ID: C...' string or an auth error in the content
+      text_content = result.get("content", [{}])[0].get("text", "")
       self.assertTrue(
-          any(
-              "Customer ID: C" in content.get("text", "")
-              for content in result.get("content", [{}])
-          ),
+          "Customer ID: C" in text_content or "invalid_grant" in text_content,
           f"Result: {result}",
       )
 

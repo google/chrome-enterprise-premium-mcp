@@ -1,11 +1,13 @@
-from fastapi import FastAPI, HTTPException, Request
-from typing import List, Dict, Any, Optional
-import uvicorn
-import uuid
-import re
 import copy
-import json
-import sys
+import os
+from typing import Any, Dict, Optional
+import uuid
+
+from fastapi import FastAPI
+from fastapi import HTTPException
+from fastapi import Request
+import uvicorn
+
 
 app = FastAPI(title="Fake Google APIs for MCP Testing")
 
@@ -169,4 +171,5 @@ async def reset_state():
     return {"message": "State reset"}
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8008)
+    port = int(os.environ.get("PORT", 8008))
+    uvicorn.run(app, host="0.0.0.0", port=port)
