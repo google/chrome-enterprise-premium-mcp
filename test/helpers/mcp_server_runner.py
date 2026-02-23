@@ -41,6 +41,7 @@ def start_mcp_server(fake_api_url=None, server_port=None):
 
     env = os.environ.copy()
     env["GCP_STDIO"] = "false"
+    env["OAUTH_ENABLED"] = "false"
     env["PORT"] = str(server_port)
     if fake_api_url:
         env["GOOGLE_API_ROOT_URL"] = fake_api_url

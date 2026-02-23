@@ -23,7 +23,7 @@ limitations under the License.
  * Automatically detects the execution environment (local vs. GCP).
  */
 
-import 'dotenv/config'
+import { config } from '@dotenvx/dotenvx'
 import express from 'express'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js'
@@ -34,8 +34,15 @@ import { SetLevelRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import { registerTools, registerToolsRemote } from './tools/tools.js'
 import { registerPrompts } from './prompts/index.js'
 import { checkGCP } from './lib/util/gcp.js'
-import { ensureADCCredentials } from './lib/util/auth.js'
-import { TAGS, DEFAULT_CONFIG } from './lib/constants.js'
+import { verifyToken, oauthMiddleware } from './lib/util/auth.js'
+import {
+  TAGS,
+  DEFAULT_CONFIG,
+  SCOPES,
+  BEARER_METHODS_SUPPORTED,
+  RESPONSE_TYPES_SUPPORTED,
+  OAUTH_ISSUER,
+} from './lib/constants.js'
 
 // Import Real Clients
 import { RealAdminSdkClient } from './lib/api/real_admin_sdk_client.js'
@@ -48,6 +55,9 @@ import { FakeAdminSdkClient } from './lib/api/fake_admin_sdk_client.js'
 import { FakeCloudIdentityClient } from './lib/api/fake_cloud_identity_client.js'
 import { FakeChromePolicyClient } from './lib/api/fake_chrome_policy_client.js'
 import { FakeChromeManagementClient } from './lib/api/fake_chrome_management_client.js'
+
+//Suppress the warning related to missing .env file in case of non-OAuth mode
+config({ quiet: true, ignore: ['MISSING_ENV_FILE'] })
 
 /**
  * Redirects console.log to console.error for compatibility with Stdio transport.
@@ -150,7 +160,7 @@ async function main() {
       const app = express()
       app.use(express.json())
 
-      app.post('/mcp', async (req, res) => {
+      app.post('/mcp', oauthMiddleware, async (req, res) => {
         const server = await getServer(gcpInfo)
         try {
           const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined })
@@ -164,9 +174,13 @@ async function main() {
         } catch (error) {
           console.error(`${TAGS.MCP} ✗ Error handling MCP request:`, error)
           if (!res.headersSent) {
-            res.status(500).json({
+            const status = error.status || 500
+            res.status(status).json({
               jsonrpc: '2.0',
-              error: { code: -32603, message: 'Internal server error' },
+              error: {
+                code: status === 401 ? -32001 : -32603,
+                message: error.message || 'Internal server error',
+              },
               id: null,
             })
           }
@@ -185,6 +199,29 @@ async function main() {
       })
 
       const sseTransports = {}
+
+      const getOAuthProtectedResource = (req, res) => {
+        res.json({
+          resource: process.env.OAUTH_PROTECTED_RESOURCE,
+          authorization_servers: [process.env.OAUTH_AUTHORIZATION_SERVER],
+          scopes_supported: Object.values(SCOPES),
+          bearer_methods_supported: [...BEARER_METHODS_SUPPORTED],
+        })
+      }
+
+      const getOAuthAuthorizationServer = (req, res) => {
+        res.json({
+          issuer: OAUTH_ISSUER,
+          authorization_endpoint: process.env.OAUTH_AUTHORIZATION_ENDPOINT,
+          token_endpoint: process.env.OAUTH_TOKEN_ENDPOINT,
+          scopes_supported: Object.values(SCOPES),
+          response_types_supported: [...RESPONSE_TYPES_SUPPORTED],
+        })
+      }
+
+      app.get('/.well-known/oauth-protected-resource', getOAuthProtectedResource)
+      app.get('/.well-known/oauth-authorization-server', getOAuthAuthorizationServer)
+
       app.get('/sse', async (req, res) => {
         console.log(`${TAGS.MCP} /sse Received request`)
         const server = await getServer(gcpInfo)

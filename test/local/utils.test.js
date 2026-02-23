@@ -67,5 +67,39 @@ describe('Tool Utils', () => {
       // Check if the cached customerId was used
       assert.strictEqual(result.params.customerId, 'C123')
     })
+
+    it('should throw a 401 error when handler fails with 401', async () => {
+      const handler = async () => {
+        const error = new Error('Permission denied')
+        error.code = 401
+        throw error
+      }
+      const tool = guardedToolCall({ handler })
+
+      try {
+        await tool({}, {})
+        assert.fail('Should have thrown an error')
+      } catch (error) {
+        assert.strictEqual(error.status, 401)
+        assert.strictEqual(error.message, 'Authentication required. Please check your credentials.')
+      }
+    })
+
+    it('should throw a 403 error when handler fails with 403', async () => {
+      const handler = async () => {
+        const error = new Error('Permission denied')
+        error.code = 403
+        throw error
+      }
+      const tool = guardedToolCall({ handler })
+
+      try {
+        await tool({}, {})
+        assert.fail('Should have thrown an error')
+      } catch (error) {
+        assert.strictEqual(error.status, 403)
+        assert.strictEqual(error.message, 'Permission denied. Your account lacks the required permissions.')
+      }
+    })
   })
 })
