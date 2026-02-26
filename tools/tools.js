@@ -26,7 +26,6 @@ import { registerCustomerProfileTool } from './definitions/list_customer_profile
 import { registerListDlpRulesTool } from './definitions/list_dlp_rules.js'
 import { registerCreateDlpRuleTool } from './definitions/create_dlp_rule.js'
 import { registerGetChromeActivityLogTool } from './definitions/get_chrome_activity_log.js'
-import { registerAnalyzeChromeLogsTool } from './definitions/analyze_chrome_logs.js'
 import { registerDeleteDlpRuleTool } from './definitions/delete_dlp_rule.js'
 import { registerGetConnectorPolicyTool } from './definitions/get_connector_policy.js'
 import { registerListOrgUnitsTool } from './definitions/list_org_units.js'
@@ -65,7 +64,6 @@ function registerAllTools(server, options = {}) {
   registerCreateRegexDetectorTool(server, { ...commonOpts, cloudIdentityClient })
   registerDeleteDetectorTool(server, { ...commonOpts, cloudIdentityClient })
   registerGetChromeActivityLogTool(server, { ...commonOpts, adminSdkClient })
-  registerAnalyzeChromeLogsTool(server, { ...commonOpts })
   registerGetConnectorPolicyTool(server, { ...commonOpts, chromePolicyClient })
   registerListOrgUnitsTool(server, { ...commonOpts, adminSdkClient })
   registerGetCustomerIdTool(server, { ...commonOpts, adminSdkClient })

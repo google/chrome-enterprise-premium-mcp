@@ -49,7 +49,6 @@ describe('CEP Tool Registration', () => {
       'create_word_list_detector',
       'delete_detector',
       'get_chrome_activity_log',
-      'analyze_chrome_logs_for_risky_activity',
       'get_connector_policy',
       'get_customer_id',
       'list_org_units',

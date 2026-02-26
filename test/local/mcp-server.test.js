@@ -53,7 +53,6 @@ describe('MCP Server in stdio mode', () => {
     assert.deepStrictEqual(
       toolNames.sort(),
       [
-        'analyze_chrome_logs_for_risky_activity',
         'count_browser_versions',
         'create_dlp_rule',
         'create_regex_detector',
