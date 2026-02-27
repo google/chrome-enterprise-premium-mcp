@@ -63,6 +63,9 @@ def _get_pydantic_field_type(
   if prop_type == ARRAY_TYPE:
     items_schema = prop_schema.get('items')
     if items_schema:
+      if items_schema.get('type') == OBJECT_TYPE and 'properties' in items_schema:
+         sub_model = json_schema_to_pydantic_model(items_schema, f"{model_name}_{prop_name}_item")
+         return list[sub_model]
       item_type = items_schema.get('type', STRING_TYPE)
       base_item_type = TYPE_MAPPING.get(item_type, Any)
       return list[base_item_type]
@@ -74,6 +77,8 @@ def _get_pydantic_field_type(
           model_name,
       )
       return list[str]
+  elif prop_type == OBJECT_TYPE and 'properties' in prop_schema:
+      return json_schema_to_pydantic_model(prop_schema, f"{model_name}_{prop_name}")
   else:
     return TYPE_MAPPING.get(prop_type, Any)
 
@@ -131,7 +136,19 @@ def create_langchain_tool(mcp_tool_spec: dict[str, Any]) -> BaseTool:
   ArgsModel = json_schema_to_pydantic_model(input_schema, f'{tool_name}Args')
 
   def _execute(**kwargs):
-    return execute_mcp_tool(tool_name, kwargs)
+    def serialize_value(v):
+        if hasattr(v, 'model_dump'):
+            return serialize_value(v.model_dump())
+        elif isinstance(v, dict):
+             # Strip out keys with None values so Zod sees them as undefined
+             return {key: serialize_value(val) for key, val in v.items() if val is not None}
+        elif isinstance(v, list):
+             return [serialize_value(item) for item in v]
+        else:
+             return v
+
+    serialized_kwargs = serialize_value(kwargs)
+    return execute_mcp_tool(tool_name, serialized_kwargs)
 
   # Create parameters for the dynamic function signature
   params = []
