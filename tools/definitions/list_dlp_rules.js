@@ -18,7 +18,7 @@ limitations under the License.
  * @fileoverview Tool definition for listing DLP (Data Loss Prevention) rules.
  */
 import { z } from 'zod'
-import { guardedToolCall, getAuthToken, commonSchemas } from '../utils.js'
+import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 
 const SUPPORTED_TRIGGERS = [
@@ -31,6 +31,7 @@ const SUPPORTED_TRIGGERS = [
 
 /**
  * Registers the 'list_dlp_rules' tool with the MCP server.
+ *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
  * @param {import('../../lib/api/interfaces/cloud_identity_client.js').CloudIdentityClient} options.cloudIdentityClient - The Cloud Identity client instance.
@@ -41,23 +42,19 @@ export function registerListDlpRulesTool(server, options) {
   server.registerTool(
     'list_dlp_rules',
     {
-      description: `Lists all DLP rules or detectors for a given customer.
+      description: `Lists all DLP rules for a given customer.
         The tool returns rules with multiple attributes, parse them and return names, summarize the action`,
-      inputSchema: {
-        type: z
-          .enum(['rule', 'detector'])
-          .default('rule')
-          .describe("Type of policy to list: 'rule' for DLP rules, 'detector' for URL lists/detectors."),
-      },
+      inputSchema: {},
+      outputSchema: outputSchemas.policyList,
     },
     guardedToolCall(
       {
-        handler: async ({ type }, { requestInfo }) => {
+        handler: async (_, { requestInfo }) => {
           const authToken = getAuthToken(requestInfo)
 
-          const policies = await cloudIdentityClient.listDlpPolicies(type, authToken)
+          const policies = await cloudIdentityClient.listDlpRules(authToken)
           if (!policies || policies.length === 0) {
-            return { content: [{ type: 'text', text: `No DLP policies of type '${type}' found.` }] }
+            return { content: [{ type: 'text', text: `No DLP rules found.` }] }
           }
 
           const filteredPolicies = policies.filter(policy => {
@@ -73,7 +70,7 @@ export function registerListDlpRulesTool(server, options) {
               content: [
                 {
                   type: 'text',
-                  text: `No DLP ${type}s found with supported triggers.`,
+                  text: `No DLP rules found with supported triggers.`,
                 },
               ],
             }
@@ -83,7 +80,7 @@ export function registerListDlpRulesTool(server, options) {
             content: [
               {
                 type: 'text',
-                text: `DLP ${type}:\n${JSON.stringify(filteredPolicies, null, 2)}`,
+                text: `DLP rules:\n${JSON.stringify(filteredPolicies, null, 2)}`,
               },
             ],
           }

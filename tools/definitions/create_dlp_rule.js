@@ -20,7 +20,7 @@ limitations under the License.
 
 import { z } from 'zod'
 
-import { guardedToolCall, getAuthToken, commonSchemas } from '../utils.js'
+import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 
 const TRIGGER_MAPPING = {
@@ -53,8 +53,8 @@ export function registerCreateDlpRuleTool(server, options) {
       description: `Creates a new Chrome DLP rule for a specific Organizational Unit.
 Supports a validate_only mode to test rule creation without saving the rule.`,
       inputSchema: {
-        customerId: commonSchemas.customerId,
-        orgUnitId: commonSchemas.orgUnitId.describe('The target Organizational Unit ID'),
+        customerId: inputSchemas.customerId,
+        orgUnitId: inputSchemas.orgUnitId.describe('The target Organizational Unit ID'),
         displayName: z.string().describe('Name of the rule'),
         description: z.string().optional().describe('Description of the rule'),
         triggers: z.array(z.enum(Object.keys(TRIGGER_MAPPING))).describe('List of simplified triggers.'),
@@ -72,6 +72,7 @@ Supports a validate_only mode to test rule creation without saving the rule.`,
         blockScreenshot: z.boolean().optional().describe(`Whether to block screenshots when the rule is triggered.`),
         saveContent: z.boolean().optional().describe(`Whether to save the content that triggered the rule.`),
       },
+      outputSchema: outputSchemas.singlePolicy,
     },
 
     guardedToolCall(

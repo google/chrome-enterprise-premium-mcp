@@ -20,7 +20,7 @@ limitations under the License.
 
 import { z } from 'zod'
 
-import { guardedToolCall, getAuthToken, commonSchemas } from '../utils.js'
+import { guardedToolCall, getAuthToken, inputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 
 /**
@@ -53,7 +53,7 @@ export function registerGetChromeActivityLogTool(server, options) {
           .optional()
           .describe(`The end time of the range to get activities for (RFC3339 timestamp). Defaults to now.`),
         maxResults: z.number().optional().describe(`The maximum number of results to return.`),
-        customerId: commonSchemas.customerId,
+        customerId: inputSchemas.customerId,
       },
     },
     guardedToolCall(

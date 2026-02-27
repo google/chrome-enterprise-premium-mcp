@@ -18,7 +18,7 @@ limitations under the License.
  * @fileoverview Tool definition for listing customer profiles.
  */
 
-import { guardedToolCall, commonSchemas, getAuthToken } from '../utils.js'
+import { guardedToolCall, inputSchemas, getAuthToken } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 
 /**
@@ -36,7 +36,7 @@ export function registerCustomerProfileTool(server, options) {
     {
       description: 'Lists all customer profiles for a given customer.',
       inputSchema: {
-        customerId: commonSchemas.customerId,
+        customerId: inputSchemas.customerId,
       },
     },
     guardedToolCall(

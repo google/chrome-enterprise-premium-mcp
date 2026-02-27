@@ -18,7 +18,7 @@ limitations under the License.
  * @fileoverview Tool definition for counting browser versions.
  */
 
-import { guardedToolCall, commonSchemas, getAuthToken } from '../utils.js'
+import { guardedToolCall, inputSchemas, getAuthToken } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 
 /**
@@ -36,8 +36,8 @@ export function registerCountBrowserVersionsTool(server, options) {
     {
       description: 'Counts Chrome browser versions reported by devices.',
       inputSchema: {
-        customerId: commonSchemas.customerId,
-        orgUnitId: commonSchemas.orgUnitIdOptional,
+        customerId: inputSchemas.customerId,
+        orgUnitId: inputSchemas.orgUnitIdOptional,
       },
     },
     guardedToolCall(

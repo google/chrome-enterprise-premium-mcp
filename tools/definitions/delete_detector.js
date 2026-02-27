@@ -15,51 +15,42 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Tool definition for creating URL lists.
+ * @fileoverview Tool definition for deleting DLP detectors.
  */
 
 import { z } from 'zod'
-
-import { guardedToolCall, getAuthToken, commonSchemas } from '../utils.js'
-import { TAGS } from '../../lib/constants.js'
+import { guardedToolCall, getAuthToken, outputSchemas } from '../utils.js'
 
 /**
- * Registers the 'create_url_list' tool with the MCP server.
+ * Registers the 'delete_detector' tool with the MCP server.
  *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
  * @param {import('../../lib/api/interfaces/cloud_identity_client.js').CloudIdentityClient} options.cloudIdentityClient - The Cloud Identity client instance.
  */
-export function registerCreateUrlListTool(server, options) {
+export function registerDeleteDetectorTool(server, options) {
   const { cloudIdentityClient } = options
 
   server.registerTool(
-    'create_url_list',
+    'delete_detector',
     {
-      description: 'Creates a new URL list.',
+      description: 'Deletes a DLP detector (URL list, word list, or regex).',
       inputSchema: {
-        customerId: commonSchemas.customerId,
-        orgUnitId: commonSchemas.orgUnitId.describe(`The ID of the organizational unit for the URL list.`),
-        displayName: z.string().describe(`The display name for the URL list.`),
-        urls: z.array(z.string()).describe(`A list of URLs to include in the list.`),
+        policyName: z.string().describe('The name of the detector policy to delete (e.g. policies/abc-123)'),
       },
+      outputSchema: outputSchemas.successMessage,
     },
     guardedToolCall(
       {
-        handler: async ({ customerId, orgUnitId, displayName, urls }, { requestInfo }) => {
+        handler: async ({ policyName }, { requestInfo }) => {
           const authToken = getAuthToken(requestInfo)
-          const urlListConfig = {
-            display_name: displayName,
-            urls: urls,
-          }
-
-          const createdPolicy = await cloudIdentityClient.createUrlList(customerId, orgUnitId, urlListConfig, authToken)
+          await cloudIdentityClient.deleteDetector(policyName, authToken)
 
           return {
             content: [
               {
                 type: 'text',
-                text: `Successfully created URL list: ${createdPolicy.name}\n\nDetails:\n${JSON.stringify(createdPolicy, null, 2)}`,
+                text: `Successfully deleted detector policy: ${policyName}`,
               },
             ],
           }

@@ -15,42 +15,44 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Tool definition for deleting DLP rules.
+ * @fileoverview Tool definition for listing DLP detectors.
  */
-
 import { z } from 'zod'
-import { guardedToolCall, getAuthToken, outputSchemas } from '../utils.js'
+import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas } from '../utils.js'
+import { TAGS } from '../../lib/constants.js'
 
 /**
- * Registers the 'delete_dlp_rule' tool with the MCP server.
+ * Registers the 'list_detectors' tool with the MCP server.
  *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
  * @param {import('../../lib/api/interfaces/cloud_identity_client.js').CloudIdentityClient} options.cloudIdentityClient - The Cloud Identity client instance.
  */
-export function registerDeleteDlpRuleTool(server, options) {
+export function registerListDetectorsTool(server, options) {
   const { cloudIdentityClient } = options
 
   server.registerTool(
-    'delete_dlp_rule',
+    'list_detectors',
     {
-      description: 'Deletes a Chrome DLP rule.',
-      inputSchema: {
-        policyName: z.string().describe('The name of the DLP rule policy to delete (e.g. policies/abc-123)'),
-      },
-      outputSchema: outputSchemas.successMessage,
+      description: `Lists all DLP detectors (URL lists, word lists, regex) for a given customer.`,
+      inputSchema: {},
+      outputSchema: outputSchemas.policyList,
     },
     guardedToolCall(
       {
-        handler: async ({ policyName }, { requestInfo }) => {
+        handler: async (_, { requestInfo }) => {
           const authToken = getAuthToken(requestInfo)
-          await cloudIdentityClient.deleteDlpRule(policyName, authToken)
+
+          const policies = await cloudIdentityClient.listDetectors(authToken)
+          if (!policies || policies.length === 0) {
+            return { content: [{ type: 'text', text: `No DLP detectors found.` }] }
+          }
 
           return {
             content: [
               {
                 type: 'text',
-                text: `Successfully deleted DLP rule: ${policyName}`,
+                text: `DLP detectors:\n${JSON.stringify(policies, null, 2)}`,
               },
             ],
           }

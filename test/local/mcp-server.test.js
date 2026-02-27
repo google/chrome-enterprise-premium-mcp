@@ -14,6 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/**
+ * @fileoverview Integration tests for the MCP server in stdio mode.
+ */
+
 import { test, describe, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
@@ -52,12 +56,16 @@ describe('MCP Server in stdio mode', () => {
         'analyze_chrome_logs_for_risky_activity',
         'count_browser_versions',
         'create_dlp_rule',
-        'create_url_list',
+        'create_regex_detector',
+        'create_url_list_detector',
+        'create_word_list_detector',
+        'delete_detector',
         'delete_dlp_rule',
         'get_chrome_activity_log',
         'get_connector_policy',
         'get_customer_id',
         'list_customer_profiles',
+        'list_detectors',
         'list_dlp_rules',
         'list_org_units',
       ].sort(),

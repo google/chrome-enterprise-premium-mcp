@@ -30,12 +30,45 @@ import { TAGS } from '../lib/constants.js'
 let cachedCustomerId = null
 
 /**
- * Reusable Zod schema definitions.
+ * Reusable Zod schema definitions for inputs.
  */
-export const commonSchemas = {
+export const inputSchemas = {
   customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
   orgUnitId: z.string().describe('The ID of the organizational unit.'),
   orgUnitIdOptional: z.string().optional().describe('The ID of the organizational unit to filter results.'),
+}
+
+/**
+ * Reusable Zod schema definitions for outputs.
+ */
+export const outputSchemas = {
+  // Generic success message
+  successMessage: z.object({
+    content: z.array(
+      z.object({
+        type: z.literal('text'),
+        text: z.string(),
+      }),
+    ),
+  }),
+  // List of policies (rules or detectors)
+  policyList: z.object({
+    content: z.array(
+      z.object({
+        type: z.literal('text'),
+        text: z.string().describe('A JSON-formatted string containing the list of policies.'),
+      }),
+    ),
+  }),
+  // Single policy (created or retrieved)
+  singlePolicy: z.object({
+    content: z.array(
+      z.object({
+        type: z.literal('text'),
+        text: z.string().describe('A JSON-formatted string containing the policy details.'),
+      }),
+    ),
+  }),
 }
 
 /**
@@ -49,24 +82,17 @@ export function getAuthToken(requestInfo) {
 }
 
 /**
- * Implements the guardrail model for write operations.
+ * Helper to wrap tool handlers with common logic like customerId resolution
+ * and error handling.
  *
- * @param {object} definition - The tool definition object.
- * @param {Function} definition.validate - The validation function.
- * @param {Function} definition.transform - The transformation function.
- * @param {Function} definition.handler - The handler function.
- * @param {boolean} [definition.skipAutoResolve=false] - Whether to skip customer ID auto-resolve.
- * @param {object} [apiOptions={}] - API client options including rootUrl.
- * @returns {Function} The wrapped tool function.
+ * @param {object} toolDef
+ * @param {Function} [toolDef.validate] - Optional validation function
+ * @param {Function} [toolDef.transform] - Optional parameter transformation function
+ * @param {Function} toolDef.handler - The main tool handler function
+ * @param {boolean} [toolDef.skipAutoResolve] - Whether to skip auto-resolving customerId
+ * @param {object} options
+ * @returns {Function} Wrapped tool handler
  */
-function commonTransform(params) {
-  const newParams = { ...params }
-  if (newParams.orgUnitId) {
-    newParams.orgUnitId = validateAndGetOrgUnitId(newParams.orgUnitId)
-  }
-  return newParams
-}
-
 export function guardedToolCall({ validate, transform, handler, skipAutoResolve = false }, options = {}) {
   return async (params, context) => {
     try {
@@ -84,7 +110,6 @@ export function guardedToolCall({ validate, transform, handler, skipAutoResolve 
             const authToken = getAuthToken(context?.requestInfo)
             if (apiClients && apiClients.adminSdk) {
               const customer = await apiClients.adminSdk.getCustomerId(authToken)
-
               if (customer && customer.id) {
                 cachedCustomerId = customer.id
                 currentParams.customerId = customer.id
@@ -100,36 +125,48 @@ export function guardedToolCall({ validate, transform, handler, skipAutoResolve 
         }
       }
 
-      // 1. COMMON TRANSFORMATION
       let transformedParams = commonTransform(currentParams)
-
-      // 2. CUSTOM TRANSFORMATION
       if (transform) {
         transformedParams = transform(transformedParams)
       }
-
-      // 3. VALIDATION
       if (validate) {
         validate(transformedParams)
       }
 
-      // 4. EXECUTION
-      return await handler(transformedParams, context)
+      const result = await handler(transformedParams, context)
+      if (result && !result.structuredContent && result.content) {
+        result.structuredContent = { content: result.content }
+      }
+      return result
     } catch (error) {
+      console.error(`${TAGS.MCP} Tool handler error:`, error)
       return {
         content: [{ type: 'text', text: `Error: ${error.message}` }],
+        isError: true,
       }
     }
   }
 }
 
 /**
- * Validates and normalizes an Organizational Unit ID.
+ * Performs common transformations on tool parameters.
  *
- * Strips the 'id:' prefix if present.
+ * @param {object} params
+ * @returns {object} Transformed parameters
+ */
+function commonTransform(params) {
+  const newParams = { ...params }
+  if (newParams.orgUnitId) {
+    newParams.orgUnitId = validateAndGetOrgUnitId(newParams.orgUnitId)
+  }
+  return newParams
+}
+
+/**
+ * Validates and extracts the raw organizational unit ID.
  *
- * @param {string} orgUnitId - The raw Organizational Unit ID
- * @returns {string} The normalized ID
+ * @param {string} orgUnitId
+ * @returns {string} The raw ID
  */
 export function validateAndGetOrgUnitId(orgUnitId) {
   if (typeof orgUnitId === 'string' && orgUnitId.startsWith('id:')) {

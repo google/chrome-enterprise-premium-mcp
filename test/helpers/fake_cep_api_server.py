@@ -56,6 +56,36 @@ def get_initial_state():
                         "action": {"chromeAction": {"blockContent": {}}},
                     },
                 },
+            },
+            "policies/fakeDetector1": {
+                "name": "policies/fakeDetector1",
+                "customer": "customers/C0123456",
+                "policyQuery": {"orgUnit": "orgUnits/fakeOUId1"},
+                "setting": {
+                    "type": "settings/detector.url_list",
+                    "value": {
+                        "displayName": "Fake URL Detector",
+                        "description": "A fake URL list detector for testing",
+                        "url_list": {
+                            "urls": ["malware.com"]
+                        }
+                    },
+                },
+            },
+            "policies/fakeTempDetector1": {
+                "name": "policies/fakeTempDetector1",
+                "customer": "customers/C0123456",
+                "policyQuery": {"orgUnit": "orgUnits/fakeOUId1"},
+                "setting": {
+                    "type": "settings/detector.url_list",
+                    "value": {
+                        "displayName": "End-to-End Temp Detector",
+                        "description": "A temporary detector for testing",
+                        "url_list": {
+                            "urls": ["temp.com"]
+                        }
+                    },
+                },
             }
         },
         "activities": [],
@@ -145,7 +175,7 @@ async def fake_list_policies_v1beta1(request: Request, filter: Optional[str] = N
         if 'setting.type.matches("rule.dlp")' in filter:
             policies = [p for p in policies if p.get("setting", {}).get("type") == "settings/rule.dlp"]
         elif 'setting.type.matches("detector")' in filter:
-             policies = [p for p in policies if p.get("setting", {}).get("type") == "settings/detector.url_list"]
+             policies = [p for p in policies if p.get("setting", {}).get("type", "").startswith("settings/detector")]
 
     return {"policies": policies}
 
@@ -160,17 +190,17 @@ async def fake_create_policy(customer_id: str, body: Dict[str, Any]):
     new_policy["customer"] = f"customers/{customer_id}"
     ou_id = new_policy.get("policyQuery", {}).get("orgUnit", "")
     if ou_id:
-            new_policy["policyQuery"]["orgUnitId"] = ou_id.split("/")[-1]
+        new_policy["policyQuery"]["orgUnitId"] = ou_id.split("/")[-1]
     state["policies"][policy_name] = new_policy
     return new_policy
 
-@app.get("/v1beta1/{name=policies/*}")
+@app.get("/v1beta1/{name:path}")
 async def fake_get_policy(name: str):
     if name in state["policies"]:
         return state["policies"][name]
     raise HTTPException(status_code=404, detail=f"Policy {name} not found")
 
-@app.delete("/v1beta1/{name=policies/*}")
+@app.delete("/v1beta1/{name:path}")
 async def fake_delete_policy(name: str):
     if name in state["policies"]:
         del state["policies"][name]

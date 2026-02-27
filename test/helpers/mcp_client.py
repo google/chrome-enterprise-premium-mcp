@@ -63,6 +63,17 @@ def _parse_sse_response(response_text: str) -> Optional[dict[str, Any]]:
       return None
 
 
+def serialize_pydantic(v: Any) -> Any:
+    """Recursively serializes Pydantic models to dicts."""
+    if hasattr(v, 'model_dump'):
+        return v.model_dump()
+    elif isinstance(v, dict):
+        return {key: serialize_pydantic(val) for key, val in v.items()}
+    elif isinstance(v, list):
+        return [serialize_pydantic(item) for item in v]
+    else:
+        return v
+
 def execute_mcp_tool(tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
   """Executes a specific tool on the MCP server.
 
@@ -73,11 +84,12 @@ def execute_mcp_tool(tool_name: str, args: dict[str, Any]) -> dict[str, Any]:
   Returns:
     A dictionary containing the tool's result or an error description.
   """
+  serialized_args = serialize_pydantic(args)
   payload = {
       "jsonrpc": "2.0",
       "method": "tools/call",
       "id": f"test-{tool_name}-{os.urandom(4).hex()}",
-      "params": {"name": tool_name, "arguments": args},
+      "params": {"name": tool_name, "arguments": serialized_args},
   }
   headers = {
       "Content-Type": "application/json",

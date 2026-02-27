@@ -20,7 +20,7 @@ limitations under the License.
 
 import { z } from 'zod'
 
-import { guardedToolCall, getAuthToken, commonSchemas } from '../utils.js'
+import { guardedToolCall, getAuthToken, inputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 
 // Keep ConnectorPolicyFilter definition local as it's used in the inputSchema and handler
@@ -59,8 +59,8 @@ export function registerGetConnectorPolicyTool(server, options) {
         this is the URL format - https://admin.google.com/ac/chrome/settings/user/details/{CONNECTOR_NAME}?ac_ouid={OrgUnitId} where CONNECTOR_NAME is
         file_attached, file_downloaded, bulk_text_entry, print_analysis_connector, realtime_url_check, on_security_event.`,
       inputSchema: {
-        customerId: commonSchemas.customerId,
-        orgUnitId: commonSchemas.orgUnitId.describe(`The ID of the organizational unit to filter results.`),
+        customerId: inputSchemas.customerId,
+        orgUnitId: inputSchemas.orgUnitId.describe(`The ID of the organizational unit to filter results.`),
         policy: z.enum(Object.keys(ConnectorPolicyFilter)).describe(`The policy to filter by.`),
       },
     },

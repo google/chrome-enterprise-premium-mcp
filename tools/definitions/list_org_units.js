@@ -18,7 +18,7 @@ limitations under the License.
  * @fileoverview Tool definition for listing organizational units.
  */
 
-import { guardedToolCall, getAuthToken, commonSchemas } from '../utils.js'
+import { guardedToolCall, getAuthToken, inputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 
 /**
@@ -39,7 +39,7 @@ export function registerListOrgUnitsTool(server, options) {
         It provides users with a list of organizational unit names,
         so they do not need to manually search for the org unit ID.`,
       inputSchema: {
-        customerId: commonSchemas.customerId,
+        customerId: inputSchemas.customerId,
       },
     },
     guardedToolCall(

@@ -28,10 +28,14 @@ import { registerCreateDlpRuleTool } from './definitions/create_dlp_rule.js'
 import { registerGetChromeActivityLogTool } from './definitions/get_chrome_activity_log.js'
 import { registerAnalyzeChromeLogsTool } from './definitions/analyze_chrome_logs.js'
 import { registerDeleteDlpRuleTool } from './definitions/delete_dlp_rule.js'
-import { registerCreateUrlListTool } from './definitions/create_url_list.js'
 import { registerGetConnectorPolicyTool } from './definitions/get_connector_policy.js'
 import { registerListOrgUnitsTool } from './definitions/list_org_units.js'
 import { registerGetCustomerIdTool } from './definitions/get_customer_id.js'
+import { registerListDetectorsTool } from './definitions/list_detectors.js'
+import { registerCreateUrlListDetectorTool } from './definitions/create_url_list_detector.js'
+import { registerCreateWordListDetectorTool } from './definitions/create_word_list_detector.js'
+import { registerCreateRegexDetectorTool } from './definitions/create_regex_detector.js'
+import { registerDeleteDetectorTool } from './definitions/delete_detector.js'
 
 /**
  * Registers all tools with the MCP server.
@@ -54,10 +58,14 @@ function registerAllTools(server, options = {}) {
   registerCustomerProfileTool(server, { ...commonOpts, chromeManagementClient })
   registerListDlpRulesTool(server, { ...commonOpts, cloudIdentityClient })
   registerCreateDlpRuleTool(server, { ...commonOpts, cloudIdentityClient })
-  registerGetChromeActivityLogTool(server, { ...commonOpts, adminSdkClient })
-  registerAnalyzeChromeLogsTool(server, { ...commonOpts }) // Assuming no specific client needed
   registerDeleteDlpRuleTool(server, { ...commonOpts, cloudIdentityClient })
-  registerCreateUrlListTool(server, { ...commonOpts, cloudIdentityClient })
+  registerListDetectorsTool(server, { ...commonOpts, cloudIdentityClient })
+  registerCreateUrlListDetectorTool(server, { ...commonOpts, cloudIdentityClient })
+  registerCreateWordListDetectorTool(server, { ...commonOpts, cloudIdentityClient })
+  registerCreateRegexDetectorTool(server, { ...commonOpts, cloudIdentityClient })
+  registerDeleteDetectorTool(server, { ...commonOpts, cloudIdentityClient })
+  registerGetChromeActivityLogTool(server, { ...commonOpts, adminSdkClient })
+  registerAnalyzeChromeLogsTool(server, { ...commonOpts })
   registerGetConnectorPolicyTool(server, { ...commonOpts, chromePolicyClient })
   registerListOrgUnitsTool(server, { ...commonOpts, adminSdkClient })
   registerGetCustomerIdTool(server, { ...commonOpts, adminSdkClient })

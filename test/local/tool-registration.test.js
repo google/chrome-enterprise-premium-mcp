@@ -14,6 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/**
+ * @fileoverview Tests for MCP tool registration.
+ */
+
 import assert from 'node:assert/strict'
 import { describe, it, mock, beforeEach } from 'node:test'
 import { registerTools } from '../../tools/tools.js'
@@ -38,10 +42,14 @@ describe('CEP Tool Registration', () => {
       'list_customer_profiles',
       'list_dlp_rules',
       'create_dlp_rule',
+      'delete_dlp_rule',
+      'list_detectors',
+      'create_regex_detector',
+      'create_url_list_detector',
+      'create_word_list_detector',
+      'delete_detector',
       'get_chrome_activity_log',
       'analyze_chrome_logs_for_risky_activity',
-      'delete_dlp_rule',
-      'create_url_list',
       'get_connector_policy',
       'get_customer_id',
       'list_org_units',
