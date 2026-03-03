@@ -22,7 +22,7 @@ class TestListDetectors(McpIntegrationTestBase):
 
   def test_list_detectors(self):
     """Verify agent can list DLP detectors."""
-    prompt = "Can you list my DLP detectors?"
+    prompt = "Can you list my DLP detectors and include their display names in the output?"
     result_text = query_agent_oneshot(prompt)
     self.assert_nl(
         result_text, "The answer mentions 'Fake URL Detector'"

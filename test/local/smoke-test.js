@@ -110,7 +110,7 @@ function runPromptTest() {
       if (res.statusCode === 200 && responseBody.includes('"name":"cep"')) {
         console.log('Prompt smoke test passed!')
         server.kill()
-        process.exit(0)
+        runOAuthTest()
       } else {
         console.error('Prompt smoke test failed')
         server.kill()
@@ -127,6 +127,129 @@ function runPromptTest() {
 
   req.write(postData)
   req.end()
+}
+
+function runOAuthTest() {
+  console.log('--- Starting OAuth Smoke Test ---')
+  const oauthServer = spawn('node', ['mcp-server.js'], {
+    env: {
+      ...process.env,
+      GOOGLE_API_ROOT_URL: 'http://localhost:1234',
+      OAUTH_ENABLED: 'true',
+      PORT: '3001',
+    },
+  })
+
+  oauthServer.stdout.on('data', data => {
+    console.log(`oauth-server: ${data}`)
+    if (data.includes('Chrome Enterprise Premium MCP server listening on port')) {
+      executeUnauthorizedCall()
+    }
+  })
+
+  oauthServer.stderr.on('data', data => {
+    console.error(`oauth-server error: ${data}`)
+  })
+
+  function executeUnauthorizedCall() {
+    const postData = JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: { name: 'get_customer_id', arguments: {} },
+      id: 1,
+    })
+
+    const options = {
+      hostname: 'localhost',
+      port: 3001,
+      path: '/mcp',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json, text/event-stream',
+        'Content-Length': Buffer.byteLength(postData),
+      },
+    }
+
+    const req = http.request(options, res => {
+      console.log(`OAuth test statusCode: ${res.statusCode}`)
+      let body = ''
+      res.on('data', chunk => {
+        body += chunk
+      })
+      res.on('end', () => {
+        console.log('OAuth test responseBody (no token):', body)
+        if (res.statusCode === 401 && body.includes('Authentication required')) {
+          console.log('OAuth unauthorized (no token) test passed!')
+          executeInvalidTokenCall()
+        } else {
+          console.error('OAuth unauthorized (no token) test failed')
+          oauthServer.kill()
+          process.exit(1)
+        }
+      })
+    })
+
+    req.on('error', e => {
+      console.error('OAuth test request error:', e)
+      oauthServer.kill()
+      process.exit(1)
+    })
+
+    req.write(postData)
+    req.end()
+  }
+
+  function executeInvalidTokenCall() {
+    const postData = JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'tools/call',
+      params: { name: 'get_customer_id', arguments: {} },
+      id: 2,
+    })
+
+    const options = {
+      hostname: 'localhost',
+      port: 3001,
+      path: '/mcp',
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json, text/event-stream',
+        Authorization: 'Bearer invalid-token',
+        'Content-Length': Buffer.byteLength(postData),
+      },
+    }
+
+    const req = http.request(options, res => {
+      console.log(`OAuth invalid token statusCode: ${res.statusCode}`)
+      let body = ''
+      res.on('data', chunk => {
+        body += chunk
+      })
+      res.on('end', () => {
+        console.log('OAuth invalid token responseBody:', body)
+        if (res.statusCode === 401 && body.includes('Invalid or expired token')) {
+          console.log('OAuth invalid token test passed!')
+          oauthServer.kill()
+          process.exit(0)
+        } else {
+          console.error('OAuth invalid token test failed')
+          oauthServer.kill()
+          process.exit(1)
+        }
+      })
+    })
+
+    req.on('error', e => {
+      console.error('OAuth invalid token test request error:', e)
+      oauthServer.kill()
+      process.exit(1)
+    })
+
+    req.write(postData)
+    req.end()
+  }
 }
 
 server.stdout.on('data', data => {

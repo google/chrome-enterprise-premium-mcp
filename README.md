@@ -118,12 +118,66 @@ npm run format
 
 ## Environment Variables
 
-| Variable               | Description                                      | Default        |
-| :--------------------- | :----------------------------------------------- | :------------- |
-| `GOOGLE_CLOUD_PROJECT` | GCP Project ID (overrides metadata server).      | `undefined`    |
-| `GOOGLE_CLOUD_REGION`  | GCP Region (overrides metadata server).          | `europe-west1` |
-| `GCP_STDIO`            | Force Stdio mode (`true`) or SSE mode (`false`). | Auto-detected  |
-| `PORT`                 | Port for SSE/HTTP server.                        | `3000`         |
+| Variable                     | Description                                      | Default        |
+| :--------------------------- | :----------------------------------------------- | :------------- |
+| `GOOGLE_CLOUD_PROJECT`       | GCP Project ID (overrides metadata server).      | `undefined`    |
+| `GOOGLE_CLOUD_REGION`        | GCP Region (overrides metadata server).          | `europe-west1` |
+| `GCP_STDIO`                  | Force Stdio mode (`true`) or SSE mode (`false`). | Auto-detected  |
+| `PORT`                       | Port for SSE/HTTP server.                        | `3000`         |
+| `OAUTH_ENABLED`              | Enable OAuth authentication for tool calls.      | `false`        |
+| `GOOGLE_OAUTH_CLIENT_ID`     | OAuth 2.0 Client ID.                             | `undefined`    |
+| `GOOGLE_OAUTH_CLIENT_SECRET` | OAuth 2.0 Client Secret.                         | `undefined`    |
+| `GOOGLE_OAUTH_AUDIENCE`      | Expected audience (Client ID).                   | `undefined`    |
+| `GOOGLE_OAUTH_REDIRECT_URI`  | OAuth Redirect URI.                              | `undefined`    |
+
+## Using OAuth with Gemini CLI
+
+The CEP MCP server supports direct OAuth authentication when used with the Gemini CLI. This allows for automatic discovery of authorization endpoints and secure user-based authentication.
+
+**1. Configure Environment Variables:**
+
+Create a `.env` file (see `.env.example`) with your OAuth credentials:
+
+```text
+OAUTH_ENABLED=true
+GOOGLE_OAUTH_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_OAUTH_CLIENT_SECRET=your-client-secret
+GOOGLE_OAUTH_AUDIENCE=your-client-id.apps.googleusercontent.com
+GOOGLE_OAUTH_REDIRECT_URI=http://localhost:7777/oauth/callback
+
+# Discovery endpoints (use ${PORT} for runtime interpolation if needed)
+OAUTH_PROTECTED_RESOURCE=http://localhost:3000/mcp
+OAUTH_AUTHORIZATION_SERVER=http://localhost:3000/auth/google
+OAUTH_AUTHORIZATION_ENDPOINT=https://accounts.google.com/o/oauth2/v2/auth
+OAUTH_TOKEN_ENDPOINT=https://oauth2.googleapis.com/token
+```
+
+**2. Start the Server in HTTP Mode:**
+
+```bash
+GCP_STDIO=false npm start
+```
+
+**3. Connect via Gemini CLI:**
+
+When you add this server to the Gemini CLI, it will automatically detect the OAuth requirements via the `.well-known` endpoints and guide you through the authentication flow in your browser.
+
+You must also configure the client ID and secret in your `~/.gemini/settings.json` file for the corresponding server entry:
+
+```json
+{
+  "mcpServers": {
+    "cep": {
+      "httpUrl": "http://localhost:3000/mcp",
+      "oauth": {
+        "enabled": true,
+        "clientId": "YOUR_CLIENT_ID",
+        "clientSecret": "YOUR_CLIENT_SECRET"
+      }
+    }
+  }
+}
+```
 
 ## Run Integration Tests (Including Python Env Setup)
 

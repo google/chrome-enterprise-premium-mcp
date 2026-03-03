@@ -140,6 +140,18 @@ export function guardedToolCall({ validate, transform, handler, skipAutoResolve 
       return result
     } catch (error) {
       console.error(`${TAGS.MCP} Tool handler error:`, error)
+      const status = error.status || error.code || error.response?.status
+      if (status === 401) {
+        throw {
+          status: 401,
+          message: 'Authentication required. Please check your credentials.',
+        }
+      } else if (status === 403) {
+        throw {
+          status: 403,
+          message: 'Permission denied. Your account lacks the required permissions.',
+        }
+      }
       return {
         content: [{ type: 'text', text: `Error: ${error.message}` }],
         isError: true,

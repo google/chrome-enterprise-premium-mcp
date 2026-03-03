@@ -50,6 +50,7 @@ class TestExecuteMcpToolIntegration(unittest.TestCase):
       )
     env = os.environ.copy()
     env["GCP_STDIO"] = "false"
+    env["OAUTH_ENABLED"] = "false"
     env["PORT"] = str(cls.server_port)
     try:
       print(
