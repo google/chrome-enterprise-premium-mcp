@@ -59,7 +59,7 @@ export function registerDeleteDetectorTool(server, options) {
           }
         },
       },
-      options.apiOptions,
+      options,
     ),
   )
 }

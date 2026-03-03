@@ -30,6 +30,14 @@ import { TAGS } from '../lib/constants.js'
 let cachedCustomerId = null
 
 /**
+ * Resets the cached customer ID and root organizational unit ID.
+ * Primarily used for testing to ensure a clean state.
+ */
+export function resetCache() {
+  cachedCustomerId = null
+}
+
+/**
  * Reusable Zod schema definitions for inputs.
  */
 export const inputSchemas = {
@@ -96,7 +104,7 @@ export function getAuthToken(requestInfo) {
 export function guardedToolCall({ validate, transform, handler, skipAutoResolve = false }, options = {}) {
   return async (params, context) => {
     try {
-      const { apiClients } = options
+      const { apiClients, apiOptions } = options
       let currentParams = { ...params }
       if (currentParams.customerId) {
         cachedCustomerId = currentParams.customerId
@@ -109,7 +117,7 @@ export function guardedToolCall({ validate, transform, handler, skipAutoResolve 
           try {
             const authToken = getAuthToken(context?.requestInfo)
             if (apiClients && apiClients.adminSdk) {
-              const customer = await apiClients.adminSdk.getCustomerId(authToken)
+              const customer = await apiClients.adminSdk.getCustomerId(authToken, apiOptions)
               if (customer && customer.id) {
                 cachedCustomerId = customer.id
                 currentParams.customerId = customer.id
@@ -166,7 +174,7 @@ export function guardedToolCall({ validate, transform, handler, skipAutoResolve 
  * @param {object} params
  * @returns {object} Transformed parameters
  */
-function commonTransform(params) {
+export function commonTransform(params) {
   const newParams = { ...params }
   if (newParams.orgUnitId) {
     newParams.orgUnitId = validateAndGetOrgUnitId(newParams.orgUnitId)

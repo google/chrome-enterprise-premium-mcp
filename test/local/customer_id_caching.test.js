@@ -17,12 +17,13 @@ limitations under the License.
 import assert from 'node:assert/strict'
 import { describe, it, mock, beforeEach } from 'node:test'
 import esmock from 'esmock'
-import { guardedToolCall } from '../../tools/utils.js'
+import { guardedToolCall, resetCache } from '../../tools/utils.js'
 
 describe('Customer ID Caching and Auto-Resolution', () => {
   let server
 
   beforeEach(() => {
+    resetCache()
     server = {
       registerTool: mock.fn(),
     }

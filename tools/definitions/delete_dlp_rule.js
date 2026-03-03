@@ -61,7 +61,7 @@ export function registerDeleteDlpRuleTool(server, options) {
           }
         },
       },
-      options.apiOptions,
+      options,
     ),
   )
 }

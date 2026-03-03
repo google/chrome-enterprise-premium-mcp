@@ -76,7 +76,7 @@ export function registerListOrgUnitsTool(server, options) {
           }
         },
       },
-      options.apiOptions,
+      options,
     ),
   )
 }

@@ -61,7 +61,7 @@ export function registerListDetectorsTool(server, options) {
           }
         },
       },
-      options.apiOptions,
+      options,
     ),
   )
 }

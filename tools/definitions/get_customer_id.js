@@ -57,7 +57,7 @@ export function registerGetCustomerIdTool(server, options) {
         },
         skipAutoResolve: true,
       },
-      options.apiOptions,
+      options,
     ),
   )
 }

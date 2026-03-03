@@ -15,30 +15,17 @@ limitations under the License.
 */
 
 import assert from 'node:assert/strict'
-import { describe, it } from 'node:test'
-import { guardedToolCall, validateAndGetOrgUnitId } from '../../tools/utils.js'
-
-// This is a bit of a hack to get access to the un-exported commonTransform function.
-// In a real-world scenario, this would be exported from utils.js.
-const commonTransform = params => {
-  const newParams = { ...params }
-  if (newParams.customerId === 'me') {
-    newParams.customerId = undefined
-  }
-  if (newParams.orgUnitId) {
-    newParams.orgUnitId = validateAndGetOrgUnitId(newParams.orgUnitId)
-  }
-  return newParams
-}
+import { describe, it, mock, beforeEach } from 'node:test'
+import {
+  validateAndGetOrgUnitId,
+  commonTransform,
+  guardedToolCall,
+  resetCache,
+} from '../../tools/utils.js'
+import { registerTools } from '../../tools/tools.js'
 
 describe('Tool Utils', () => {
   describe('commonTransform', () => {
-    it('should normalize customerId "me" to undefined', () => {
-      const params = { customerId: 'me' }
-      const transformed = commonTransform(params)
-      assert.strictEqual(transformed.customerId, undefined)
-    })
-
     it('should strip "id:" prefix from orgUnitId', () => {
       const params = { orgUnitId: 'id:12345' }
       const transformed = commonTransform(params)
@@ -51,21 +38,88 @@ describe('Tool Utils', () => {
       assert.deepStrictEqual(transformed, { customerId: 'C123', orgUnitId: '12345', other: 'value' })
     })
   })
-  describe('guardedToolCall', () => {
-    it('should update cachedCustomerId when params.customerId is provided', async () => {
-      const handler = async params => {
-        return { params }
+
+  describe('validateAndGetOrgUnitId', () => {
+    it('should return the same ID if it does not start with "id:"', () => {
+      assert.strictEqual(validateAndGetOrgUnitId('12345'), '12345')
+    })
+
+    it('should strip "id:" prefix', () => {
+      assert.strictEqual(validateAndGetOrgUnitId('id:12345'), '12345')
+    })
+  })
+
+  describe('guardedToolCall Infrastructure', () => {
+    let server
+
+    beforeEach(() => {
+      resetCache()
+      server = {
+        registerTool: mock.fn(),
       }
-      const tool = guardedToolCall({ handler })
+    })
 
-      // First call with a customerId
-      await tool({ customerId: 'C123' }, {})
+    describe('Registration and Auto-Resolution', () => {
+      it('should auto-resolve customerId using provided adminSdk client and apiOptions during tool registration', async () => {
+        const mockGetCustomerId = mock.fn(async (authToken, apiOptions) => {
+          if (apiOptions?.rootUrl === 'http://fake-api') {
+            return { id: 'C_AUTO' }
+          }
+          return { id: 'C_WRONG_ROOT' }
+        })
+        const mockCountBrowserVersions = mock.fn(async () => [])
 
-      // Second call without a customerId
-      const result = await tool({}, {})
+        const apiClients = {
+          adminSdk: { getCustomerId: mockGetCustomerId },
+          chromeManagement: { countBrowserVersions: mockCountBrowserVersions },
+          cloudIdentity: {},
+          chromePolicy: {},
+        }
+        const apiOptions = { rootUrl: 'http://fake-api' }
 
-      // Check if the cached customerId was used
-      assert.strictEqual(result.params.customerId, 'C123')
+        // Register tools as it's done in mcp-server.js
+        registerTools(server, { apiClients, apiOptions })
+
+        // Find the count_browser_versions tool handler
+        const countBrowserVersionsReg = server.registerTool.mock.calls.find(
+          call => call.arguments[0] === 'count_browser_versions',
+        )
+        const handler = countBrowserVersionsReg.arguments[2]
+
+        // Execute the handler without a customerId
+        await handler({}, { requestInfo: { headers: { authorization: 'Bearer token' } } })
+
+        // Verify that getCustomerId was called with the correct arguments
+        assert.strictEqual(mockGetCustomerId.mock.callCount(), 1, 'getCustomerId should have been called')
+        assert.strictEqual(mockGetCustomerId.mock.calls[0].arguments[0], 'token')
+        assert.deepStrictEqual(mockGetCustomerId.mock.calls[0].arguments[1], apiOptions)
+
+        // Verify that the resolved customerId was passed to the actual handler
+        assert.strictEqual(mockCountBrowserVersions.mock.callCount(), 1)
+        assert.strictEqual(
+          mockCountBrowserVersions.mock.calls[0].arguments[0],
+          'C_AUTO',
+          'customerId should be auto-resolved to C_AUTO',
+        )
+      })
+    })
+
+    describe('Caching logic integration', () => {
+      it('should update cachedCustomerId when params.customerId is provided', async () => {
+        const handler = async params => {
+          return { params }
+        }
+        const tool = guardedToolCall({ handler })
+
+        // First call with a customerId
+        await tool({ customerId: 'C123' }, {})
+
+        // Second call without a customerId
+        const result = await tool({}, {})
+
+        // Check if the cached customerId was used
+        assert.strictEqual(result.params.customerId, 'C123')
+      })
     })
 
     it('should throw a 401 error when handler fails with 401', async () => {

@@ -78,7 +78,7 @@ export function registerCountBrowserVersionsTool(server, options) {
           }
         },
       },
-      options.apiOptions,
+      options,
     ),
   )
 }

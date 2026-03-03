@@ -93,7 +93,7 @@ export function registerGetConnectorPolicyTool(server, options) {
           }
         },
       },
-      options.apiOptions,
+      options,
     ),
   )
 }

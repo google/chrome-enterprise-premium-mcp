@@ -78,7 +78,7 @@ export function registerCustomerProfileTool(server, options) {
           }
         },
       },
-      options.apiOptions,
+      options,
     ),
   )
 }

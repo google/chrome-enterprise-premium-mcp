@@ -185,7 +185,7 @@ Supports a validate_only mode to test rule creation without saving the rule.`,
           }
         },
       },
-      options.apiOptions,
+      options,
     ),
   )
 }

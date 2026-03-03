@@ -110,7 +110,7 @@ export function registerGetChromeActivityLogTool(server, options) {
           }
         },
       },
-      options.apiOptions,
+      options,
     ),
   )
 }

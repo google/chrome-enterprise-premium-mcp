@@ -88,7 +88,7 @@ export function registerListDlpRulesTool(server, options) {
           }
         },
       },
-      options.apiOptions,
+      options,
     ),
   )
 }

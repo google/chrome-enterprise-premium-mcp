@@ -80,7 +80,7 @@ ${JSON.stringify(createdPolicy, null, 2)}`,
           }
         },
       },
-      options.apiOptions,
+      options,
     ),
   )
 }
