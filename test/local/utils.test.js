@@ -16,12 +16,7 @@ limitations under the License.
 
 import assert from 'node:assert/strict'
 import { describe, it, mock, beforeEach } from 'node:test'
-import {
-  validateAndGetOrgUnitId,
-  commonTransform,
-  guardedToolCall,
-  resetCache,
-} from '../../tools/utils.js'
+import { validateAndGetOrgUnitId, commonTransform, guardedToolCall } from '../../tools/utils.js'
 import { registerTools } from '../../tools/tools.js'
 
 describe('Tool Utils', () => {
@@ -53,7 +48,6 @@ describe('Tool Utils', () => {
     let server
 
     beforeEach(() => {
-      resetCache()
       server = {
         registerTool: mock.fn(),
       }
@@ -105,11 +99,12 @@ describe('Tool Utils', () => {
     })
 
     describe('Caching logic integration', () => {
-      it('should update cachedCustomerId when params.customerId is provided', async () => {
+      it('should update sessionState.customerId when params.customerId is provided', async () => {
         const handler = async params => {
           return { params }
         }
-        const tool = guardedToolCall({ handler })
+        const sessionState = { customerId: null }
+        const tool = guardedToolCall({ handler }, { sessionState })
 
         // First call with a customerId
         await tool({ customerId: 'C123' }, {})
@@ -119,6 +114,7 @@ describe('Tool Utils', () => {
 
         // Check if the cached customerId was used
         assert.strictEqual(result.params.customerId, 'C123')
+        assert.strictEqual(sessionState.customerId, 'C123')
       })
     })
 

@@ -44,6 +44,7 @@ import { registerDeleteDetectorTool } from './definitions/delete_detector.js'
  */
 function registerAllTools(server, options = {}) {
   const apiOptions = options.apiOptions || {}
+  const sessionState = { customerId: null }
   const {
     adminSdk: adminSdkClient,
     cloudIdentity: cloudIdentityClient,
@@ -51,7 +52,7 @@ function registerAllTools(server, options = {}) {
     chromeManagement: chromeManagementClient,
   } = options.apiClients || {}
 
-  const commonOpts = { ...options, apiOptions }
+  const commonOpts = { ...options, apiOptions, sessionState }
 
   registerCountBrowserVersionsTool(server, { ...commonOpts, chromeManagementClient })
   registerCustomerProfileTool(server, { ...commonOpts, chromeManagementClient })

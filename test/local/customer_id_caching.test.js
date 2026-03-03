@@ -16,14 +16,12 @@ limitations under the License.
 
 import assert from 'node:assert/strict'
 import { describe, it, mock, beforeEach } from 'node:test'
-import esmock from 'esmock'
-import { guardedToolCall, resetCache } from '../../tools/utils.js'
+import { guardedToolCall } from '../../tools/utils.js'
 
 describe('Customer ID Caching and Auto-Resolution', () => {
   let server
 
   beforeEach(() => {
-    resetCache()
     server = {
       registerTool: mock.fn(),
     }
@@ -40,13 +38,14 @@ describe('Customer ID Caching and Auto-Resolution', () => {
     }
     const adminSdkClientInstance = new MockAdminSdkClient()
 
+    const sessionState = { customerId: null }
     const listOrgUnitsHandler = guardedToolCall(
       {
         handler: async (params, context) => {
           return adminSdkClientInstance.listOrgUnits(params)
         },
       },
-      { apiClients: { adminSdk: adminSdkClientInstance } },
+      { apiClients: { adminSdk: adminSdkClientInstance }, sessionState },
     )
 
     // --- First Call ---
@@ -73,18 +72,20 @@ describe('Customer ID Caching and Auto-Resolution', () => {
     }
     const adminSdkClientInstance = new MockAdminSdkClient()
 
+    const sessionState = { customerId: null }
     const listOrgUnitsHandler = guardedToolCall(
       {
         handler: async (params, context) => {
           return adminSdkClientInstance.listOrgUnits(params)
         },
       },
-      { apiClients: { adminSdk: adminSdkClientInstance } },
+      { apiClients: { adminSdk: adminSdkClientInstance }, sessionState },
     )
 
     // Call with explicit ID
     await listOrgUnitsHandler({ customerId: 'C_EXPLICIT' }, { requestInfo: {} })
     assert.strictEqual(mockGetCustomerId.mock.callCount(), 0)
     assert.strictEqual(mockListOrgUnits.mock.calls[0].arguments[0].customerId, 'C_EXPLICIT')
+    assert.strictEqual(sessionState.customerId, 'C_EXPLICIT')
   })
 })

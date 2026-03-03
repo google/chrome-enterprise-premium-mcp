@@ -26,17 +26,6 @@ limitations under the License.
 import { z } from 'zod'
 
 import { TAGS } from '../lib/constants.js'
-
-let cachedCustomerId = null
-
-/**
- * Resets the cached customer ID and root organizational unit ID.
- * Primarily used for testing to ensure a clean state.
- */
-export function resetCache() {
-  cachedCustomerId = null
-}
-
 /**
  * Reusable Zod schema definitions for inputs.
  */
@@ -104,22 +93,22 @@ export function getAuthToken(requestInfo) {
 export function guardedToolCall({ validate, transform, handler, skipAutoResolve = false }, options = {}) {
   return async (params, context) => {
     try {
-      const { apiClients, apiOptions } = options
+      const { apiClients, apiOptions, sessionState = { customerId: null } } = options
       let currentParams = { ...params }
       if (currentParams.customerId) {
-        cachedCustomerId = currentParams.customerId
+        sessionState.customerId = currentParams.customerId
       }
 
       if (!skipAutoResolve && currentParams.customerId === undefined) {
-        if (cachedCustomerId) {
-          currentParams.customerId = cachedCustomerId
+        if (sessionState.customerId) {
+          currentParams.customerId = sessionState.customerId
         } else {
           try {
             const authToken = getAuthToken(context?.requestInfo)
             if (apiClients && apiClients.adminSdk) {
               const customer = await apiClients.adminSdk.getCustomerId(authToken, apiOptions)
               if (customer && customer.id) {
-                cachedCustomerId = customer.id
+                sessionState.customerId = customer.id
                 currentParams.customerId = customer.id
               } else {
                 console.error(`${TAGS.MCP} ⚠️ Failed to auto-resolve customerId: No customer object returned.`)
