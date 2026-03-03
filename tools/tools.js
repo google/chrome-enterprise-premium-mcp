@@ -44,7 +44,7 @@ import { registerDeleteDetectorTool } from './definitions/delete_detector.js'
  */
 function registerAllTools(server, options = {}) {
   const apiOptions = options.apiOptions || {}
-  const sessionState = { customerId: null }
+  const sessionState = { customerId: null, cachedRootOrgUnitId: null }
   const {
     adminSdk: adminSdkClient,
     cloudIdentity: cloudIdentityClient,
@@ -52,22 +52,22 @@ function registerAllTools(server, options = {}) {
     chromeManagement: chromeManagementClient,
   } = options.apiClients || {}
 
-  const commonOpts = { ...options, apiOptions, sessionState }
+  const commonOpts = { ...options, apiOptions }
 
-  registerCountBrowserVersionsTool(server, { ...commonOpts, chromeManagementClient })
-  registerCustomerProfileTool(server, { ...commonOpts, chromeManagementClient })
-  registerListDlpRulesTool(server, { ...commonOpts, cloudIdentityClient })
-  registerCreateDlpRuleTool(server, { ...commonOpts, cloudIdentityClient })
-  registerDeleteDlpRuleTool(server, { ...commonOpts, cloudIdentityClient })
-  registerListDetectorsTool(server, { ...commonOpts, cloudIdentityClient })
-  registerCreateUrlListDetectorTool(server, { ...commonOpts, cloudIdentityClient })
-  registerCreateWordListDetectorTool(server, { ...commonOpts, cloudIdentityClient })
-  registerCreateRegexDetectorTool(server, { ...commonOpts, cloudIdentityClient })
-  registerDeleteDetectorTool(server, { ...commonOpts, cloudIdentityClient })
-  registerGetChromeActivityLogTool(server, { ...commonOpts, adminSdkClient })
-  registerGetConnectorPolicyTool(server, { ...commonOpts, chromePolicyClient })
-  registerListOrgUnitsTool(server, { ...commonOpts, adminSdkClient })
-  registerGetCustomerIdTool(server, { ...commonOpts, adminSdkClient })
+  registerCountBrowserVersionsTool(server, { ...commonOpts, chromeManagementClient }, sessionState)
+  registerCustomerProfileTool(server, { ...commonOpts, chromeManagementClient }, sessionState)
+  registerListDlpRulesTool(server, { ...commonOpts, cloudIdentityClient }, sessionState)
+  registerCreateDlpRuleTool(server, { ...commonOpts, cloudIdentityClient }, sessionState)
+  registerDeleteDlpRuleTool(server, { ...commonOpts, cloudIdentityClient }, sessionState)
+  registerListDetectorsTool(server, { ...commonOpts, cloudIdentityClient }, sessionState)
+  registerCreateUrlListDetectorTool(server, { ...commonOpts, cloudIdentityClient }, sessionState)
+  registerCreateWordListDetectorTool(server, { ...commonOpts, cloudIdentityClient }, sessionState)
+  registerCreateRegexDetectorTool(server, { ...commonOpts, cloudIdentityClient }, sessionState)
+  registerDeleteDetectorTool(server, { ...commonOpts, cloudIdentityClient }, sessionState)
+  registerGetChromeActivityLogTool(server, { ...commonOpts, adminSdkClient }, sessionState)
+  registerGetConnectorPolicyTool(server, { ...commonOpts, chromePolicyClient }, sessionState)
+  registerListOrgUnitsTool(server, { ...commonOpts, adminSdkClient }, sessionState)
+  registerGetCustomerIdTool(server, { ...commonOpts, adminSdkClient }, sessionState)
 }
 
 /**

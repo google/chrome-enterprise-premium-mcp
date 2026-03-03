@@ -40,8 +40,9 @@ const ConnectorPolicyFilter = {
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
  * @param {import('../../lib/api/interfaces/chrome_policy_client.js').ChromePolicyClient} options.chromePolicyClient - The Chrome Policy client instance.
+ * @param {object} sessionState - The session state object for caching.
  */
-export function registerGetConnectorPolicyTool(server, options) {
+export function registerGetConnectorPolicyTool(server, options, sessionState) {
   const { chromePolicyClient } = options
   logger.debug(`${TAGS.MCP} Registering 'get_connector_policy' tool...`)
 
@@ -94,6 +95,7 @@ export function registerGetConnectorPolicyTool(server, options) {
         },
       },
       options,
+      sessionState,
     ),
   )
 }

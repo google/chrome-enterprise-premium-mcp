@@ -16,7 +16,7 @@ limitations under the License.
 
 import assert from 'node:assert/strict'
 import { describe, it, mock, beforeEach } from 'node:test'
-import { validateAndGetOrgUnitId, commonTransform, guardedToolCall } from '../../tools/utils.js'
+import { validateAndGetOrgUnitId, commonTransform, guardedToolCall, resolveRootOrgUnitId } from '../../tools/utils.js'
 import { registerTools } from '../../tools/tools.js'
 
 describe('Tool Utils', () => {
@@ -104,7 +104,7 @@ describe('Tool Utils', () => {
           return { params }
         }
         const sessionState = { customerId: null }
-        const tool = guardedToolCall({ handler }, { sessionState })
+        const tool = guardedToolCall({ handler }, {}, sessionState)
 
         // First call with a customerId
         await tool({ customerId: 'C123' }, {})
@@ -115,6 +115,54 @@ describe('Tool Utils', () => {
         // Check if the cached customerId was used
         assert.strictEqual(result.params.customerId, 'C123')
         assert.strictEqual(sessionState.customerId, 'C123')
+      })
+    })
+
+    describe('Root OrgUnit Auto-Resolution (resolveRootOrgUnitId helper)', () => {
+      it('should resolve root orgUnitId and cache it', async () => {
+        const mockListOrgUnits = mock.fn(async () => ({
+          organizationUnits: [
+            { orgUnitId: 'root-id', orgUnitPath: '/' },
+            { orgUnitId: 'child-id', orgUnitPath: '/child' },
+          ],
+        }))
+
+        const apiClients = {
+          adminSdk: { listOrgUnits: mockListOrgUnits },
+        }
+        const sessionState = { cachedRootOrgUnitId: null }
+
+        const result = await resolveRootOrgUnitId(apiClients, 'C123', 'token', sessionState)
+
+        assert.strictEqual(mockListOrgUnits.mock.callCount(), 1)
+        assert.strictEqual(result, 'root-id')
+        assert.strictEqual(sessionState.cachedRootOrgUnitId, 'root-id')
+      })
+
+      it('should use cached root orgUnitId if available', async () => {
+        const mockListOrgUnits = mock.fn()
+
+        const apiClients = {
+          adminSdk: { listOrgUnits: mockListOrgUnits },
+        }
+        const sessionState = { cachedRootOrgUnitId: 'cached-root-id' }
+
+        const result = await resolveRootOrgUnitId(apiClients, 'C123', 'token', sessionState)
+
+        assert.strictEqual(mockListOrgUnits.mock.callCount(), 0)
+        assert.strictEqual(result, 'cached-root-id')
+      })
+
+      it('should return null if root OU is not found', async () => {
+        const mockListOrgUnits = mock.fn(async () => ({
+          organizationUnits: [{ orgUnitId: 'child-id', orgUnitPath: '/child' }],
+        }))
+        const apiClients = { adminSdk: { listOrgUnits: mockListOrgUnits } }
+        const sessionState = { cachedRootOrgUnitId: null }
+
+        const result = await resolveRootOrgUnitId(apiClients, 'C123', 'token', sessionState)
+
+        assert.strictEqual(result, null)
       })
     })
 

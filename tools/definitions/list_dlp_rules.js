@@ -35,8 +35,9 @@ const SUPPORTED_TRIGGERS = [
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
  * @param {import('../../lib/api/interfaces/cloud_identity_client.js').CloudIdentityClient} options.cloudIdentityClient - The Cloud Identity client instance.
+ * @param {object} sessionState - The session state object for caching.
  */
-export function registerListDlpRulesTool(server, options) {
+export function registerListDlpRulesTool(server, options, sessionState) {
   const { cloudIdentityClient } = options
 
   logger.debug(`Registering 'list_dlp_rules' tool...`)
@@ -89,6 +90,7 @@ export function registerListDlpRulesTool(server, options) {
         },
       },
       options,
+      sessionState,
     ),
   )
 }

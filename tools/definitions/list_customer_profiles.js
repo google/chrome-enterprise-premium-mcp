@@ -28,8 +28,9 @@ import { logger } from '../../lib/util/logger.js'
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
  * @param {import('../../lib/api/interfaces/chrome_management_client.js').ChromeManagementClient} options.chromeManagementClient - The Chrome Management client instance.
+ * @param {object} sessionState - The session state object for caching.
  */
-export function registerCustomerProfileTool(server, options) {
+export function registerCustomerProfileTool(server, options, sessionState) {
   const { chromeManagementClient } = options
   logger.debug(`${TAGS.MCP} Registering 'list_customer_profiles' tool...`)
 
@@ -79,6 +80,7 @@ export function registerCustomerProfileTool(server, options) {
         },
       },
       options,
+      sessionState,
     ),
   )
 }

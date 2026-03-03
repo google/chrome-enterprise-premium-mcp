@@ -79,6 +79,42 @@ export function getAuthToken(requestInfo) {
 }
 
 /**
+ * Resolves the root organizational unit ID for the given customer.
+ * Uses session caching to avoid redundant API calls.
+ *
+ * @param {object} apiClients - The API clients object
+ * @param {string} customerId - The customer ID
+ * @param {string} authToken - The authentication token
+ * @param {object} sessionState - The session state object for caching
+ * @returns {Promise<string|null>} The root OU ID or null if resolution fails
+ */
+export async function resolveRootOrgUnitId(apiClients, customerId, authToken, sessionState) {
+  if (sessionState.cachedRootOrgUnitId) {
+    return sessionState.cachedRootOrgUnitId
+  }
+
+  try {
+    if (apiClients && apiClients.adminSdk) {
+      const orgUnitsResponse = await apiClients.adminSdk.listOrgUnits({ customerId }, authToken)
+      const rootOU = orgUnitsResponse.organizationUnits?.find(ou => ou.orgUnitPath === '/')
+      if (rootOU && rootOU.orgUnitId) {
+        sessionState.cachedRootOrgUnitId = rootOU.orgUnitId
+        return rootOU.orgUnitId
+      } else {
+        console.error(
+          `${TAGS.MCP} ⚠️ Failed to auto-resolve root orgUnitId for customer ${customerId}: Root OU not found.`,
+        )
+      }
+    } else {
+      console.error(`${TAGS.MCP} ⚠️ adminSdkClient not provided for OU resolution (customer: ${customerId})`)
+    }
+  } catch (error) {
+    console.error(`${TAGS.MCP} ⚠️ Failed to auto-resolve root orgUnitId for customer ${customerId}:`, error.message)
+  }
+  return null
+}
+
+/**
  * Helper to wrap tool handlers with common logic like customerId resolution
  * and error handling.
  *
@@ -88,27 +124,35 @@ export function getAuthToken(requestInfo) {
  * @param {Function} toolDef.handler - The main tool handler function
  * @param {boolean} [toolDef.skipAutoResolve] - Whether to skip auto-resolving customerId
  * @param {object} options
+ * @param {object} sessionState - The session state object for caching
  * @returns {Function} Wrapped tool handler
  */
-export function guardedToolCall({ validate, transform, handler, skipAutoResolve = false }, options = {}) {
+export function guardedToolCall(
+  { validate, transform, handler, skipAutoResolve = false },
+  options = {},
+  sessionState = { customerId: null, cachedRootOrgUnitId: null },
+) {
   return async (params, context) => {
     try {
-      const { apiClients, apiOptions, sessionState = { customerId: null } } = options
+      const { apiClients, apiOptions } = options
       let currentParams = { ...params }
-      if (currentParams.customerId) {
+      if (sessionState && currentParams.customerId) {
         sessionState.customerId = currentParams.customerId
       }
 
+      const authToken = getAuthToken(context?.requestInfo)
+
       if (!skipAutoResolve && currentParams.customerId === undefined) {
-        if (sessionState.customerId) {
+        if (sessionState && sessionState.customerId) {
           currentParams.customerId = sessionState.customerId
         } else {
           try {
-            const authToken = getAuthToken(context?.requestInfo)
             if (apiClients && apiClients.adminSdk) {
               const customer = await apiClients.adminSdk.getCustomerId(authToken, apiOptions)
               if (customer && customer.id) {
-                sessionState.customerId = customer.id
+                if (sessionState) {
+                  sessionState.customerId = customer.id
+                }
                 currentParams.customerId = customer.id
               } else {
                 console.error(`${TAGS.MCP} ⚠️ Failed to auto-resolve customerId: No customer object returned.`)

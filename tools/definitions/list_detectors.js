@@ -27,8 +27,9 @@ import { logger } from '../../lib/util/logger.js'
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
  * @param {import('../../lib/api/interfaces/cloud_identity_client.js').CloudIdentityClient} options.cloudIdentityClient - The Cloud Identity client instance.
+ * @param {object} sessionState - The session state object for caching.
  */
-export function registerListDetectorsTool(server, options) {
+export function registerListDetectorsTool(server, options, sessionState) {
   const { cloudIdentityClient } = options
 
   logger.debug(`Registering 'list_detectors' tool...`)
@@ -62,6 +63,7 @@ export function registerListDetectorsTool(server, options) {
         },
       },
       options,
+      sessionState,
     ),
   )
 }

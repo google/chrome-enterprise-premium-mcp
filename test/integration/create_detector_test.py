@@ -22,7 +22,7 @@ class TestCreateDetector(McpIntegrationTestBase):
 
   def test_create_url_list_detector(self):
     """Verify agent can create a URL list detector."""
-    prompt = "Create a new DLP URL list detector named 'End-to-End Temp Detector' for customer C0123456 in OU 'id:fakeOUId1' with URLs 'malware.com' and 'phishing.net'. Give verbatim error if there is one."
+    prompt = "Create a new DLP URL list detector named 'End-to-End Temp Detector' for customer C0123456 with URLs 'malware.com' and 'phishing.net'. Give verbatim error if there is one."
     result_text = query_agent_oneshot(prompt)
     self.assert_nl(
         result_text, "The answer confirms that the 'End-to-End Temp Detector' detector was successfully created"
@@ -30,7 +30,7 @@ class TestCreateDetector(McpIntegrationTestBase):
 
   def test_create_word_list_detector(self):
     """Verify agent can create a word list detector."""
-    prompt = "Create a new DLP word list detector named 'End-to-End Temp Word List' for customer C0123456 in OU 'id:fakeOUId1' with words 'confidential', 'secret'."
+    prompt = "Create a new DLP word list detector named 'End-to-End Temp Word List' for customer C0123456 with words 'confidential', 'secret'."
     result_text = query_agent_oneshot(prompt)
     self.assert_nl(
         result_text, "The answer confirms that the 'End-to-End Temp Word List' detector was successfully created"
@@ -38,7 +38,7 @@ class TestCreateDetector(McpIntegrationTestBase):
 
   def test_create_regex_detector(self):
     """Verify agent can create a regular expression detector."""
-    prompt = "Create a new DLP regular expression detector named 'End-to-End Temp Regex' for customer C0123456 in OU 'id:fakeOUId1' with expression '^4[0-9]{12}(?:[0-9]{3})?$'."
+    prompt = "Create a new DLP regular expression detector named 'End-to-End Temp Regex' for customer C0123456 with expression '^4[0-9]{12}(?:[0-9]{3})?$'."
     result_text = query_agent_oneshot(prompt)
     self.assert_nl(
         result_text, "The answer confirms that a regular expression detector was successfully created"

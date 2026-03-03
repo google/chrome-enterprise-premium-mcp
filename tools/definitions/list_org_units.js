@@ -28,8 +28,9 @@ import { logger } from '../../lib/util/logger.js'
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
  * @param {import('../../lib/api/interfaces/admin_sdk_client.js').AdminSdkClient} options.adminSdkClient - The Admin SDK client instance.
+ * @param {object} sessionState - The session state object for caching.
  */
-export function registerListOrgUnitsTool(server, options) {
+export function registerListOrgUnitsTool(server, options, sessionState) {
   const { adminSdkClient } = options
   logger.debug(`${TAGS.MCP} Registering 'list_org_units' tool...`)
 
@@ -77,6 +78,7 @@ export function registerListOrgUnitsTool(server, options) {
         },
       },
       options,
+      sessionState,
     ),
   )
 }

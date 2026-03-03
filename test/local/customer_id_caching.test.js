@@ -45,7 +45,8 @@ describe('Customer ID Caching and Auto-Resolution', () => {
           return adminSdkClientInstance.listOrgUnits(params)
         },
       },
-      { apiClients: { adminSdk: adminSdkClientInstance }, sessionState },
+      { apiClients: { adminSdk: adminSdkClientInstance } },
+      sessionState,
     )
 
     // --- First Call ---
@@ -79,7 +80,8 @@ describe('Customer ID Caching and Auto-Resolution', () => {
           return adminSdkClientInstance.listOrgUnits(params)
         },
       },
-      { apiClients: { adminSdk: adminSdkClientInstance }, sessionState },
+      { apiClients: { adminSdk: adminSdkClientInstance } },
+      sessionState,
     )
 
     // Call with explicit ID

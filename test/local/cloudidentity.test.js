@@ -266,6 +266,14 @@ describe('Cloud Identity API', () => {
           this.createDetector = mockCreateDetector
         }
       }
+      const MockAdminSdkClient = class {
+        constructor() {
+          this.listOrgUnits = mock.fn(async () => ({
+            organizationUnits: [{ orgUnitId: 'root-id', orgUnitPath: '/' }],
+          }))
+          this.getCustomerId = mock.fn(async () => ({ id: 'C0123' }))
+        }
+      }
 
       const { registerTools } = await esmock(
         '../../tools/tools.js',
@@ -274,11 +282,17 @@ describe('Cloud Identity API', () => {
           '../../lib/api/real_cloud_identity_client.js': {
             RealCloudIdentityClient: MockCloudIdentityClient,
           },
+          '../../lib/api/real_admin_sdk_client.js': {
+            RealAdminSdkClient: MockAdminSdkClient,
+          },
         },
       )
       registerTools(server, {
         gcpCredentialsAvailable: true,
-        apiClients: { cloudIdentity: new MockCloudIdentityClient() },
+        apiClients: {
+          cloudIdentity: new MockCloudIdentityClient(),
+          adminSdk: new MockAdminSdkClient(),
+        },
       })
 
       const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'create_regex_detector')
@@ -286,7 +300,6 @@ describe('Cloud Identity API', () => {
       const result = await handler(
         {
           customerId: 'C0123',
-          orgUnitId: 'ou1',
           displayName: 'Regex Detector',
           expression: '.*test.*',
         },
@@ -312,6 +325,14 @@ describe('Cloud Identity API', () => {
           this.createDetector = mockCreateDetector
         }
       }
+      const MockAdminSdkClient = class {
+        constructor() {
+          this.listOrgUnits = mock.fn(async () => ({
+            organizationUnits: [{ orgUnitId: 'root-id', orgUnitPath: '/' }],
+          }))
+          this.getCustomerId = mock.fn(async () => ({ id: 'C0123' }))
+        }
+      }
 
       const { registerTools } = await esmock(
         '../../tools/tools.js',
@@ -320,11 +341,17 @@ describe('Cloud Identity API', () => {
           '../../lib/api/real_cloud_identity_client.js': {
             RealCloudIdentityClient: MockCloudIdentityClient,
           },
+          '../../lib/api/real_admin_sdk_client.js': {
+            RealAdminSdkClient: MockAdminSdkClient,
+          },
         },
       )
       registerTools(server, {
         gcpCredentialsAvailable: true,
-        apiClients: { cloudIdentity: new MockCloudIdentityClient() },
+        apiClients: {
+          cloudIdentity: new MockCloudIdentityClient(),
+          adminSdk: new MockAdminSdkClient(),
+        },
       })
 
       const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'create_url_list_detector')
@@ -332,7 +359,6 @@ describe('Cloud Identity API', () => {
       const result = await handler(
         {
           customerId: 'C0123',
-          orgUnitId: 'ou1',
           displayName: 'URL Detector',
           urls: ['test.com'],
         },
@@ -358,6 +384,14 @@ describe('Cloud Identity API', () => {
           this.createDetector = mockCreateDetector
         }
       }
+      const MockAdminSdkClient = class {
+        constructor() {
+          this.listOrgUnits = mock.fn(async () => ({
+            organizationUnits: [{ orgUnitId: 'root-id', orgUnitPath: '/' }],
+          }))
+          this.getCustomerId = mock.fn(async () => ({ id: 'C0123' }))
+        }
+      }
 
       const { registerTools } = await esmock(
         '../../tools/tools.js',
@@ -366,11 +400,17 @@ describe('Cloud Identity API', () => {
           '../../lib/api/real_cloud_identity_client.js': {
             RealCloudIdentityClient: MockCloudIdentityClient,
           },
+          '../../lib/api/real_admin_sdk_client.js': {
+            RealAdminSdkClient: MockAdminSdkClient,
+          },
         },
       )
       registerTools(server, {
         gcpCredentialsAvailable: true,
-        apiClients: { cloudIdentity: new MockCloudIdentityClient() },
+        apiClients: {
+          cloudIdentity: new MockCloudIdentityClient(),
+          adminSdk: new MockAdminSdkClient(),
+        },
       })
 
       const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'create_word_list_detector')
@@ -378,7 +418,6 @@ describe('Cloud Identity API', () => {
       const result = await handler(
         {
           customerId: 'C0123',
-          orgUnitId: 'ou1',
           displayName: 'Word Detector',
           words: ['secret'],
         },
@@ -393,6 +432,55 @@ describe('Cloud Identity API', () => {
         word_list: { words: ['secret'] },
       })
       assert.ok(result.content[0].text.includes('policies/word1'))
+    })
+
+    it('should throw an error if root OU resolution fails', async () => {
+      const MockCloudIdentityClient = class {
+        constructor() {
+          this.createDetector = mock.fn()
+        }
+      }
+      const mockListOrgUnits = mock.fn(async () => ({ organizationUnits: [] }))
+      const MockAdminSdkClient = class {
+        constructor() {
+          this.listOrgUnits = mockListOrgUnits
+          this.getCustomerId = mock.fn(async () => ({ id: 'C0123' }))
+        }
+      }
+
+      const { registerTools } = await esmock(
+        '../../tools/tools.js',
+        {},
+        {
+          '../../lib/api/real_cloud_identity_client.js': {
+            RealCloudIdentityClient: MockCloudIdentityClient,
+          },
+          '../../lib/api/real_admin_sdk_client.js': {
+            RealAdminSdkClient: MockAdminSdkClient,
+          },
+        },
+      )
+      registerTools(server, {
+        gcpCredentialsAvailable: true,
+        apiClients: {
+          cloudIdentity: new MockCloudIdentityClient(),
+          adminSdk: new MockAdminSdkClient(),
+        },
+      })
+
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'create_word_list_detector')
+        .arguments[2]
+
+      const result = await handler(
+        {
+          customerId: 'C0123',
+          displayName: 'Word Detector',
+          words: ['secret'],
+        },
+        { requestInfo: {} },
+      )
+
+      assert.strictEqual(result.content[0].text, 'Error: Failed to resolve root organizational unit ID.')
     })
   })
 

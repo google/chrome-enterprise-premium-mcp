@@ -17,10 +17,9 @@ limitations under the License.
 /**
  * @fileoverview Tool definition for creating word list DLP detectors.
  */
-
 import { z } from 'zod'
 
-import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas } from '../utils.js'
+import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas, resolveRootOrgUnitId } from '../utils.js'
 import { logger } from '../../lib/util/logger.js'
 
 /**
@@ -29,9 +28,10 @@ import { logger } from '../../lib/util/logger.js'
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
  * @param {import('../../lib/api/interfaces/cloud_identity_client.js').CloudIdentityClient} options.cloudIdentityClient - The Cloud Identity client instance.
+ * @param {object} sessionState - The session state object for caching.
  */
-export function registerCreateWordListDetectorTool(server, options) {
-  const { cloudIdentityClient } = options
+export function registerCreateWordListDetectorTool(server, options, sessionState) {
+  const { cloudIdentityClient, apiClients } = options
 
   logger.debug(`Registering 'create_word_list_detector' tool...`)
 
@@ -41,7 +41,6 @@ export function registerCreateWordListDetectorTool(server, options) {
       description: 'Creates a new DLP word list detector.',
       inputSchema: {
         customerId: inputSchemas.customerId,
-        orgUnitId: inputSchemas.orgUnitId.describe(`The ID of the organizational unit for the detector.`),
         displayName: z.string().describe(`The display name for the detector.`),
         description: z.string().optional().describe(`An optional description for the detector.`),
         words: z.array(z.string()).min(1).describe(`A list of words to match.`),
@@ -51,8 +50,13 @@ export function registerCreateWordListDetectorTool(server, options) {
     guardedToolCall(
       {
         handler: async (params, { requestInfo }) => {
-          const { customerId, orgUnitId, displayName, description, words } = params
+          const { customerId, displayName, description, words } = params
           const authToken = getAuthToken(requestInfo)
+
+          const orgUnitId = await resolveRootOrgUnitId(apiClients, customerId, authToken, sessionState)
+          if (!orgUnitId) {
+            throw new Error('Failed to resolve root organizational unit ID.')
+          }
 
           const detectorConfig = {
             displayName: displayName,
@@ -73,14 +77,15 @@ export function registerCreateWordListDetectorTool(server, options) {
                 type: 'text',
                 text: `Successfully created word list detector: ${createdPolicy.name}
 
-Details:
-${JSON.stringify(createdPolicy, null, 2)}`,
+ Details:
+ ${JSON.stringify(createdPolicy, null, 2)}`,
               },
             ],
           }
         },
       },
       options,
+      sessionState,
     ),
   )
 }

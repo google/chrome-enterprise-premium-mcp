@@ -28,8 +28,9 @@ import { logger } from '../../lib/util/logger.js'
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
  * @param {import('../../lib/api/interfaces/admin_sdk_client.js').AdminSdkClient} options.adminSdkClient - The Admin SDK client instance.
+ * @param {object} sessionState - The session state object for caching.
  */
-export function registerGetCustomerIdTool(server, options) {
+export function registerGetCustomerIdTool(server, options, sessionState) {
   const { adminSdkClient } = options
   logger.debug(`${TAGS.MCP} Registering 'get_customer_id' tool...`)
 
@@ -58,6 +59,7 @@ export function registerGetCustomerIdTool(server, options) {
         skipAutoResolve: true,
       },
       options,
+      sessionState,
     ),
   )
 }

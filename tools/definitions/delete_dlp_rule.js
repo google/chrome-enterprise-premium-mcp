@@ -29,8 +29,9 @@ import { logger } from '../../lib/util/logger.js'
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
  * @param {import('../../lib/api/interfaces/cloud_identity_client.js').CloudIdentityClient} options.cloudIdentityClient - The Cloud Identity client instance.
+ * @param {object} sessionState - The session state object for caching.
  */
-export function registerDeleteDlpRuleTool(server, options) {
+export function registerDeleteDlpRuleTool(server, options, sessionState) {
   const { cloudIdentityClient } = options
   logger.debug(`${TAGS.MCP} Registering 'delete_dlp_rule' tool...`)
 
@@ -62,6 +63,7 @@ export function registerDeleteDlpRuleTool(server, options) {
         },
       },
       options,
+      sessionState,
     ),
   )
 }
