@@ -34,8 +34,8 @@ def get_initial_state():
         },
         "org_units": {
             "C0123456": {
-                "fakeOUId1": {"name": "Root OU", "orgUnitId": "id:fakeOUId1", "parentOrgUnitId": None},
-                "fakeOUId2": {"name": "Child OU", "orgUnitId": "id:fakeOUId2", "parentOrgUnitId": "id:fakeOUId1"},
+                "fakeOUId1": {"name": "Root OU", "orgUnitId": "id:fakeOUId1", "orgUnitPath": "/", "parentOrgUnitId": None},
+                "fakeOUId2": {"name": "Child OU", "orgUnitId": "id:fakeOUId2", "orgUnitPath": "/Child OU", "parentOrgUnitId": "id:fakeOUId1"},
             }
         },
         "policies": {
@@ -112,11 +112,16 @@ def get_customer_id_key(customer_key: str) -> str:
 # --- Fake Admin SDK Endpoints ---
 
 @app.get("/admin/directory/v1/customers/{customerKey}/orgunits")
-async def fake_list_orgunits(customerKey: str, type: Optional[str] = None):
+async def fake_list_orgunits(customerKey: str, type: Optional[str] = None, orgUnitPath: Optional[str] = None):
     customer_id = get_customer_id_key(customerKey)
-    if customer_id in state["org_units"]:
-        return {"organizationUnits": list(state["org_units"][customer_id].values())}
-    return {"organizationUnits": []}
+    if customer_id not in state["org_units"]:
+        return {"organizationUnits": []}
+
+    all_units = list(state["org_units"][customer_id].values())
+    if type == "ALL_INCLUDING_PARENT":
+        return {"organizationUnits": all_units}
+    else:
+        raise HTTPException(status_code=501, detail=f"Type {type} is not implemented in fake server")
 
 @app.get("/admin/directory/v1/customers/{customerKey}")
 async def fake_get_customer(customerKey: str, request: Request):
