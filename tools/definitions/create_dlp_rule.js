@@ -117,8 +117,10 @@ Supports a validate_only mode to test rule creation without saving the rule.`,
             displayName,
             description,
             triggers: fullTriggers,
-            condition,
-            state: state,
+            condition: {
+              contentCondition: condition,
+            },
+            state: state || 'ACTIVE',
           }
 
           const actionParams = {}
