@@ -30,7 +30,7 @@ class TestCreateDetector(McpIntegrationTestBase):
 
   def test_create_word_list_detector(self):
     """Verify agent can create a word list detector."""
-    prompt = "Create a new DLP word list detector named 'End-to-End Temp Word List' for customer C0123456 with words 'confidential', 'secret'."
+    prompt = "Create a new DLP word list detector named 'End-to-End Temp Word List' for customer C0123456 with words 'secret'."
     result_text = query_agent_oneshot(prompt)
     self.assert_nl(
         result_text, "The answer confirms that the 'End-to-End Temp Word List' detector was successfully created"

@@ -25,7 +25,7 @@ class TestCreateDlpRule(McpIntegrationTestBase):
     prompt = (
         "Create a new DLP rule named 'End-to-End Temp DLP Rule' for customer"
         " C0123456 and OrgUnit fakeOUId1. Use the trigger FILE_UPLOAD, action"
-        " WARN, and condition 'all_content.contains(\"confidential\")'. Give"
+        " WARN, and condition 'all_content.contains(\"secret\")'. Give"
         " verbatim error if there is one."
     )
     result_text = query_agent_oneshot(prompt)
