@@ -35,6 +35,23 @@ class TestCreateDlpRule(McpIntegrationTestBase):
         " successfully created",
     )
 
+  def test_create_dlp_rule_with_data_masking(self):
+    """Verify agent can create a DLP rule with data masking."""
+    prompt = (
+        "Create a new DLP rule named 'End-to-End Temp Masking Rule' for"
+        " customer C0123456 and OrgUnit fakeOUId1. Use the trigger NAVIGATION,"
+        " action AUDIT, and condition 'all_content.contains(\"secret\")'."
+        " Add a data masking configuration to redact US_SOCIAL_SECURITY_NUMBER"
+        " with display name 'SSN' and maskType 'MASK_TYPE_REDACT'. Give"
+        " verbatim error if there is one."
+    )
+    result_text = query_agent_oneshot(prompt)
+    self.assert_nl(
+        result_text,
+        "The answer confirms that the 'End-to-End Temp Masking Rule' DLP rule"
+        " was successfully created",
+    )
+
 
 if __name__ == "__main__":
   unittest.main()

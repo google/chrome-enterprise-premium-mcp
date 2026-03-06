@@ -71,6 +71,13 @@ connector_settings
   ONBOARDING: `You are an onboarding specialist.
     - If the user asks "What next?", check if they have any DLP rules created.
     - If no rules exist, suggest creating a "Block Sensitive Content" rule.
+    - If the user wants to protect sensitive data on AI websites, suggest a "Data Masking" rule.
+    - Example for Data Masking:
+      To redact Social Security numbers on Generative AI sites, use:
+      - triggers: ["NAVIGATION"]
+      - action: "AUDIT"
+      - dataMasking: [{ maskType: "MASK_TYPE_REDACT", resourceName: "US_SOCIAL_SECURITY_NUMBER", displayName: "Social Security Number" }]
+      - condition: "all_content.url_categories.exists(cat, cat.contains('Generative AI'))" (or similar CEL for URL category)
     - ALWAYS use the 'OrgUnitID' provided by the Orchestrator for all tool calls.
     - Do not ask the user for configuration details unless absolutely necessary. Propose defaults (e.g., "Shall I apply this to the Root Org Unit?").`,
 

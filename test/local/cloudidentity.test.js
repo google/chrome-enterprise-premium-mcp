@@ -217,6 +217,62 @@ describe('Cloud Identity API', () => {
       assert.deepStrictEqual(result.content[0].text, expectedText)
     })
 
+    it('should pass dataMasking parameters to createDlpRule', async () => {
+      const mockCreateDlpRule = mock.fn(async () => ({ name: 'policies/123' }))
+      const MockCloudIdentityClient = class {
+        constructor() {
+          this.createDlpRule = mockCreateDlpRule
+        }
+      }
+
+      const { registerTools } = await esmock(
+        '../../tools/tools.js',
+        {},
+        {
+          '../../lib/api/real_cloud_identity_client.js': {
+            RealCloudIdentityClient: MockCloudIdentityClient,
+          },
+        },
+      )
+      registerTools(server, {
+        gcpCredentialsAvailable: true,
+        apiClients: { cloudIdentity: new MockCloudIdentityClient() },
+      })
+
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'create_dlp_rule').arguments[2]
+
+      await handler(
+        {
+          customerId: 'C0123',
+          orgUnitId: 'ou1',
+          displayName: 'Masking Rule',
+          triggers: ['NAVIGATION'],
+          condition: 'true',
+          action: 'AUDIT',
+          dataMasking: [
+            {
+              maskType: 'MASK_TYPE_REDACT',
+              resourceName: 'US_SOCIAL_SECURITY_NUMBER',
+              displayName: 'SSN',
+            },
+          ],
+        },
+        { requestInfo: {} },
+      )
+
+      assert.strictEqual(mockCreateDlpRule.mock.callCount(), 1)
+      const passedConfig = mockCreateDlpRule.mock.calls[0].arguments[2]
+      assert.deepStrictEqual(passedConfig.action.chromeAction.auditOnly.actionParams.dataMasking, {
+        regex_detector: [
+          {
+            mask_type: 'MASK_TYPE_REDACT',
+            resource_name: 'US_SOCIAL_SECURITY_NUMBER',
+            display_name: 'SSN',
+          },
+        ],
+      })
+    })
+
     it('should return an error message if API call fails', async () => {
       const mockCreateDlpRule = mock.fn(async () => {
         throw new Error('API Error')

@@ -21,7 +21,7 @@ limitations under the License.
 import { z } from 'zod'
 
 import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas } from '../utils.js'
-import { TAGS } from '../../lib/constants.js'
+import { TAGS, MASK_TYPES } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
 const TRIGGER_MAPPING = {
@@ -74,6 +74,16 @@ Supports a validate_only mode to test rule creation without saving the rule.`,
         watermarkMessage: z.string().optional().describe(`Watermark message to display when the rule is triggered.`),
         blockScreenshot: z.boolean().optional().describe(`Whether to block screenshots when the rule is triggered.`),
         saveContent: z.boolean().optional().describe(`Whether to save the content that triggered the rule.`),
+        dataMasking: z
+          .array(
+            z.object({
+              maskType: z.enum(Object.values(MASK_TYPES)).describe('The type of masking to apply.'),
+              resourceName: z.string().describe('The resource name of the detector (e.g. US_SOCIAL_SECURITY_NUMBER).'),
+              displayName: z.string().describe('The display name for the detector in the UI.'),
+            }),
+          )
+          .optional()
+          .describe('List of data masking configurations.'),
       },
       outputSchema: outputSchemas.singlePolicy,
     },
@@ -108,6 +118,7 @@ Supports a validate_only mode to test rule creation without saving the rule.`,
             watermarkMessage,
             blockScreenshot,
             saveContent,
+            dataMasking,
           } = params
 
           const authToken = getAuthToken(requestInfo)
@@ -138,6 +149,15 @@ Supports a validate_only mode to test rule creation without saving the rule.`,
           if (saveContent) {
             actionParams.saveContent = saveContent
           }
+          if (dataMasking?.length) { // Only add if not empty to avoid API errors.
+            actionParams.dataMasking = {
+              regex_detector: dataMasking.map(dm => ({
+                mask_type: dm.maskType,
+                resource_name: dm.resourceName,
+                display_name: dm.displayName,
+              })),
+            }
+          }
 
           switch (action) {
             case ACTION_TYPES.BLOCK:
@@ -154,6 +174,9 @@ Supports a validate_only mode to test rule creation without saving the rule.`,
               break
             case ACTION_TYPES.AUDIT:
               ruleConfig.action = { chromeAction: { auditOnly: {} } }
+              if (Object.keys(actionParams).length > 0) {
+                ruleConfig.action.chromeAction.auditOnly.actionParams = actionParams
+              }
               break
           }
 
