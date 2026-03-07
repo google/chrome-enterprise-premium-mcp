@@ -59,4 +59,38 @@ describe('CEP Tool Registration', () => {
       'The list of registered tool names does not match the expected list.',
     )
   })
+
+  it('should accept and use a shared session state object across tool registrations', async () => {
+    const mockAdminSdkClient = {
+      listOrgUnits: mock.fn(async () => [{ orgUnitPath: '/Test' }]),
+    }
+
+    // This is the state we expect the tools to use
+    const sharedState = {
+      customerId: 'C_SHARED_123',
+      cachedRootOrgUnitId: null,
+    }
+
+    // Register tools and pass the shared state
+    registerTools(server, { apiClients: { adminSdk: mockAdminSdkClient } }, sharedState)
+
+    // Find the handler for 'list_org_units'
+    const listOrgUnitsCall = server.registerTool.mock.calls.find((call) => call.arguments[0] === 'list_org_units')
+    assert.ok(listOrgUnitsCall, 'list_org_units tool should be registered')
+
+    const handler = listOrgUnitsCall.arguments[2]
+
+    // Call the handler without a customerId in the params.
+    // If the tool uses the shared state, guardedToolCall will inject 'C_SHARED_123'
+    // and skip auto-resolution. If it doesn't use the shared state (the bug),
+    // it will try to auto-resolve because its internal state is { customerId: null }.
+
+    // We expect it to use 'C_SHARED_123' and call the mock API client.
+    await handler({}, { requestInfo: {} })
+
+    // Verify the mock client was called with the shared customer ID
+    assert.strictEqual(mockAdminSdkClient.listOrgUnits.mock.callCount(), 1)
+    const callArgs = mockAdminSdkClient.listOrgUnits.mock.calls[0].arguments
+    assert.deepStrictEqual(callArgs[0], { customerId: 'C_SHARED_123' })
+  })
 })

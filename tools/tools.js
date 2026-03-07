@@ -41,10 +41,11 @@ import { registerDeleteDetectorTool } from './definitions/delete_detector.js'
  *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} [options={}] - Configuration options for the tools.
+ * @param {object} [sessionState] - Shared session state object.
  */
-function registerAllTools(server, options = {}) {
+function registerAllTools(server, options = {}, sessionState) {
   const apiOptions = options.apiOptions || {}
-  const sessionState = { customerId: null, cachedRootOrgUnitId: null }
+  const state = sessionState || { customerId: null, cachedRootOrgUnitId: null }
   const {
     adminSdk: adminSdkClient,
     cloudIdentity: cloudIdentityClient,
@@ -54,20 +55,20 @@ function registerAllTools(server, options = {}) {
 
   const commonOpts = { ...options, apiOptions }
 
-  registerCountBrowserVersionsTool(server, { ...commonOpts, chromeManagementClient }, sessionState)
-  registerCustomerProfileTool(server, { ...commonOpts, chromeManagementClient }, sessionState)
-  registerListDlpRulesTool(server, { ...commonOpts, cloudIdentityClient }, sessionState)
-  registerCreateDlpRuleTool(server, { ...commonOpts, cloudIdentityClient }, sessionState)
-  registerDeleteDlpRuleTool(server, { ...commonOpts, cloudIdentityClient }, sessionState)
-  registerListDetectorsTool(server, { ...commonOpts, cloudIdentityClient }, sessionState)
-  registerCreateUrlListDetectorTool(server, { ...commonOpts, cloudIdentityClient }, sessionState)
-  registerCreateWordListDetectorTool(server, { ...commonOpts, cloudIdentityClient }, sessionState)
-  registerCreateRegexDetectorTool(server, { ...commonOpts, cloudIdentityClient }, sessionState)
-  registerDeleteDetectorTool(server, { ...commonOpts, cloudIdentityClient }, sessionState)
-  registerGetChromeActivityLogTool(server, { ...commonOpts, adminSdkClient }, sessionState)
-  registerGetConnectorPolicyTool(server, { ...commonOpts, chromePolicyClient }, sessionState)
-  registerListOrgUnitsTool(server, { ...commonOpts, adminSdkClient }, sessionState)
-  registerGetCustomerIdTool(server, { ...commonOpts, adminSdkClient }, sessionState)
+  registerCountBrowserVersionsTool(server, { ...commonOpts, chromeManagementClient }, state)
+  registerCustomerProfileTool(server, { ...commonOpts, chromeManagementClient }, state)
+  registerListDlpRulesTool(server, { ...commonOpts, cloudIdentityClient }, state)
+  registerCreateDlpRuleTool(server, { ...commonOpts, cloudIdentityClient }, state)
+  registerDeleteDlpRuleTool(server, { ...commonOpts, cloudIdentityClient }, state)
+  registerListDetectorsTool(server, { ...commonOpts, cloudIdentityClient }, state)
+  registerCreateUrlListDetectorTool(server, { ...commonOpts, cloudIdentityClient }, state)
+  registerCreateWordListDetectorTool(server, { ...commonOpts, cloudIdentityClient }, state)
+  registerCreateRegexDetectorTool(server, { ...commonOpts, cloudIdentityClient }, state)
+  registerDeleteDetectorTool(server, { ...commonOpts, cloudIdentityClient }, state)
+  registerGetChromeActivityLogTool(server, { ...commonOpts, adminSdkClient }, state)
+  registerGetConnectorPolicyTool(server, { ...commonOpts, chromePolicyClient }, state)
+  registerListOrgUnitsTool(server, { ...commonOpts, adminSdkClient }, state)
+  registerGetCustomerIdTool(server, { ...commonOpts, adminSdkClient }, state)
 }
 
 /**
@@ -75,9 +76,10 @@ function registerAllTools(server, options = {}) {
  *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} [options={}] - Configuration options.
+ * @param {object} [sessionState] - Shared session state object.
  */
-export const registerTools = (server, options = {}) => {
-  registerAllTools(server, options)
+export const registerTools = (server, options = {}, sessionState) => {
+  registerAllTools(server, options, sessionState)
 }
 
 /**
@@ -85,7 +87,8 @@ export const registerTools = (server, options = {}) => {
  *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} [options={}] - Configuration options.
+ * @param {object} [sessionState] - Shared session state object.
  */
-export const registerToolsRemote = (server, options = {}) => {
-  registerAllTools(server, options)
+export const registerToolsRemote = (server, options = {}, sessionState) => {
+  registerAllTools(server, options, sessionState)
 }

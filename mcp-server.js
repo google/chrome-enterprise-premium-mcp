@@ -84,9 +84,10 @@ function shouldStartStdio(gcpInfo) {
  * Initializes and configures the MCP server instance.
  *
  * @param {object} gcpInfo - The detected GCP environment metadata
+ * @param {object} sharedSessionState - The shared session state for cross-request persistence
  * @returns {Promise<McpServer>} The configured MCP server instance
  */
-async function getServer(gcpInfo) {
+async function getServer(gcpInfo, sharedSessionState) {
   const server = new McpServer(
     {
       name: 'chrome-enterprise-premium',
@@ -130,11 +131,11 @@ async function getServer(gcpInfo) {
 
   if (shouldStartStdio(gcpInfo)) {
     console.error(`${TAGS.MCP} Using tools optimized for local or stdio mode.`)
-    registerTools(server, toolOptions)
+    registerTools(server, toolOptions, sharedSessionState)
     registerPrompts(server)
   } else {
     console.error(`${TAGS.MCP} Running on GCP environment. Using tools optimized for remote use.`)
-    registerToolsRemote(server, toolOptions)
+    registerToolsRemote(server, toolOptions, sharedSessionState)
     registerPrompts(server)
   }
 
@@ -149,10 +150,13 @@ async function main() {
     const gcpInfo = await checkGCP()
     const isStdio = shouldStartStdio(gcpInfo)
 
+    // Maintain session state globally for all server connections
+    const sharedSessionState = { customerId: null, cachedRootOrgUnitId: null, pendingRule: null }
+
     if (isStdio) {
       makeLoggingCompatibleWithStdio()
       const stdioTransport = new StdioServerTransport()
-      const server = await getServer(gcpInfo)
+      const server = await getServer(gcpInfo, sharedSessionState)
       await server.connect(stdioTransport)
       console.error(`${TAGS.MCP} Chrome Enterprise Premium MCP server stdio transport connected`)
     } else {
@@ -161,7 +165,7 @@ async function main() {
       app.use(express.json())
 
       app.post('/mcp', oauthMiddleware, async (req, res) => {
-        const server = await getServer(gcpInfo)
+        const server = await getServer(gcpInfo, sharedSessionState)
         try {
           const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined })
           await server.connect(transport)
@@ -224,7 +228,7 @@ async function main() {
 
       app.get('/sse', async (req, res) => {
         console.log(`${TAGS.MCP} /sse Received request`)
-        const server = await getServer(gcpInfo)
+        const server = await getServer(gcpInfo, sharedSessionState)
         const transport = new SSEServerTransport('/messages', res)
         sseTransports[transport.sessionId] = transport
         res.on('close', () => {
