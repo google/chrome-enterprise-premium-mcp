@@ -213,6 +213,10 @@ describe('Cloud Identity API', () => {
       )
 
       assert.strictEqual(mockCreateDlpRule.mock.callCount(), 1)
+      const passedConfig = mockCreateDlpRule.mock.calls[0].arguments[2]
+      assert.deepStrictEqual(passedConfig.condition, {
+        contentCondition: 'true',
+      })
       const expectedText = `Successfully created DLP rule: policies/123\n\nDetails:\n{\n  "name": "policies/123"\n}`
       assert.deepStrictEqual(result.content[0].text, expectedText)
     })
@@ -271,6 +275,48 @@ describe('Cloud Identity API', () => {
           },
         ],
       })
+    })
+
+    it('should not include condition in ruleConfig if not provided', async () => {
+      const mockCreateDlpRule = mock.fn(async () => ({ name: 'policies/123' }))
+      const MockCloudIdentityClient = class {
+        constructor() {
+          this.createDlpRule = mockCreateDlpRule
+        }
+      }
+
+      const { registerTools } = await esmock(
+        '../../tools/tools.js',
+        {},
+        {
+          '../../lib/api/real_cloud_identity_client.js': {
+            RealCloudIdentityClient: MockCloudIdentityClient,
+          },
+        },
+      )
+      registerTools(server, {
+        gcpCredentialsAvailable: true,
+        apiClients: { cloudIdentity: new MockCloudIdentityClient() },
+      })
+
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'create_dlp_rule').arguments[2]
+
+      await handler(
+        {
+          customerId: 'C0123',
+          orgUnitId: 'ou1',
+          displayName: 'Test Rule No Condition',
+          triggers: ['FILE_UPLOAD'],
+          // condition is omitted
+          action: 'WARN',
+        },
+        { requestInfo: {} },
+      )
+
+      assert.strictEqual(mockCreateDlpRule.mock.callCount(), 1)
+      const passedConfig = mockCreateDlpRule.mock.calls[0].arguments[2]
+      assert.strictEqual(passedConfig.condition, undefined)
+      assert.ok(!Object.hasOwn(passedConfig, 'condition'))
     })
 
     it('should return an error message if API call fails', async () => {

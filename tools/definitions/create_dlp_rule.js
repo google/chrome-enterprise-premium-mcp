@@ -61,7 +61,7 @@ Supports a validate_only mode to test rule creation without saving the rule.`,
         displayName: z.string().describe('Name of the rule'),
         description: z.string().optional().describe('Description of the rule'),
         triggers: z.array(z.enum(Object.keys(TRIGGER_MAPPING))).describe('List of simplified triggers.'),
-        condition: z.string().describe(`CEL condition string (e.g. "all_content.contains('secret')")`),
+        condition: z.string().optional().describe(`CEL condition string (e.g. "all_content.contains('secret')")`),
         action: z
           .enum([ACTION_TYPES.BLOCK, ACTION_TYPES.WARN, ACTION_TYPES.AUDIT])
           .describe('Action to take when the rule is triggered'),
@@ -128,10 +128,13 @@ Supports a validate_only mode to test rule creation without saving the rule.`,
             displayName,
             description,
             triggers: fullTriggers,
-            condition: {
-              contentCondition: condition,
-            },
             state: state || 'ACTIVE',
+          }
+
+          if (condition) {
+            ruleConfig.condition = {
+              contentCondition: condition,
+            }
           }
 
           const actionParams = {}
