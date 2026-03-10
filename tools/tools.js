@@ -24,7 +24,7 @@ limitations under the License.
 import { registerCountBrowserVersionsTool } from './definitions/count_browser_versions.js'
 import { registerCustomerProfileTool } from './definitions/list_customer_profiles.js'
 import { registerListDlpRulesTool } from './definitions/list_dlp_rules.js'
-import { registerCreateDlpRuleTool } from './definitions/create_dlp_rule.js'
+import { registerCreateChromeDlpRuleTool } from './definitions/create_chrome_dlp_rule.js'
 import { registerGetChromeActivityLogTool } from './definitions/get_chrome_activity_log.js'
 import { registerDeleteDlpRuleTool } from './definitions/delete_dlp_rule.js'
 import { registerGetConnectorPolicyTool } from './definitions/get_connector_policy.js'
@@ -58,7 +58,7 @@ function registerAllTools(server, options = {}, sessionState) {
   registerCountBrowserVersionsTool(server, { ...commonOpts, chromeManagementClient }, state)
   registerCustomerProfileTool(server, { ...commonOpts, chromeManagementClient }, state)
   registerListDlpRulesTool(server, { ...commonOpts, cloudIdentityClient }, state)
-  registerCreateDlpRuleTool(server, { ...commonOpts, cloudIdentityClient }, state)
+  registerCreateChromeDlpRuleTool(server, { ...commonOpts, cloudIdentityClient }, state)
   registerDeleteDlpRuleTool(server, { ...commonOpts, cloudIdentityClient }, state)
   registerListDetectorsTool(server, { ...commonOpts, cloudIdentityClient }, state)
   registerCreateUrlListDetectorTool(server, { ...commonOpts, cloudIdentityClient }, state)

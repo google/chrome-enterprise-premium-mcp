@@ -100,11 +100,12 @@ describe('Cloud Identity API', () => {
     })
   })
 
-  describe('create_dlp_rule Tool', () => {
-    it('should throw an error if action is "BLOCK"', async () => {
+  describe('create_chrome_dlp_rule Tool', () => {
+    it('should map BLOCK action correctly', async () => {
+      const mockCreateDlpRule = mock.fn(async () => ({ name: 'policies/123' }))
       const MockCloudIdentityClient = class {
         constructor() {
-          this.createDlpRule = mock.fn()
+          this.createDlpRule = mockCreateDlpRule
         }
       }
       const { registerTools } = await esmock(
@@ -121,20 +122,23 @@ describe('Cloud Identity API', () => {
         apiClients: { cloudIdentity: new MockCloudIdentityClient() },
       })
 
-      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'create_dlp_rule').arguments[2]
-
-      const result = await handler(
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'create_chrome_dlp_rule').arguments[2]
+      await handler(
         {
-          action: 'BLOCK',
+          customerId: 'C0123',
+          orgUnitId: 'ou1',
+          displayName: 'Block Rule',
           triggers: ['FILE_UPLOAD'],
+          action: 'BLOCK',
         },
-        { requestInfo: {} },
+        { requestInfo: {} }
       )
-      assert.deepStrictEqual(
-        result.content[0].text,
-        'Error: Creating DLP rules in "BLOCK" mode is not permitted. Supported actions are "AUDIT" and "WARN".',
-      )
+
+      const passedConfig = mockCreateDlpRule.mock.calls[0].arguments[2]
+      assert.deepStrictEqual(passedConfig.action, { chromeAction: { blockContent: {} } })
     })
+
+
 
     it('should prefix the displayName', async () => {
       const mockCreateDlpRule = mock.fn(async () => ({ name: 'policies/123' }))
@@ -158,7 +162,7 @@ describe('Cloud Identity API', () => {
         apiClients: { cloudIdentity: new MockCloudIdentityClient() },
       })
 
-      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'create_dlp_rule').arguments[2]
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'create_chrome_dlp_rule').arguments[2]
 
       await handler(
         {
@@ -198,7 +202,7 @@ describe('Cloud Identity API', () => {
         apiClients: { cloudIdentity: new MockCloudIdentityClient() },
       })
 
-      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'create_dlp_rule').arguments[2]
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'create_chrome_dlp_rule').arguments[2]
 
       const result = await handler(
         {
@@ -217,7 +221,7 @@ describe('Cloud Identity API', () => {
       assert.deepStrictEqual(passedConfig.condition, {
         contentCondition: 'true',
       })
-      const expectedText = `Successfully created DLP rule: policies/123\n\nDetails:\n{\n  "name": "policies/123"\n}`
+      const expectedText = `Successfully created Chrome DLP rule: policies/123\n\nDetails:\n{\n  "name": "policies/123"\n}`
       assert.deepStrictEqual(result.content[0].text, expectedText)
     })
 
@@ -243,14 +247,14 @@ describe('Cloud Identity API', () => {
         apiClients: { cloudIdentity: new MockCloudIdentityClient() },
       })
 
-      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'create_dlp_rule').arguments[2]
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'create_chrome_dlp_rule').arguments[2]
 
       await handler(
         {
           customerId: 'C0123',
           orgUnitId: 'ou1',
           displayName: 'Masking Rule',
-          triggers: ['NAVIGATION'],
+          triggers: ['URL_NAVIGATION'],
           condition: 'true',
           action: 'AUDIT',
           dataMasking: [
@@ -299,7 +303,7 @@ describe('Cloud Identity API', () => {
         apiClients: { cloudIdentity: new MockCloudIdentityClient() },
       })
 
-      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'create_dlp_rule').arguments[2]
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'create_chrome_dlp_rule').arguments[2]
 
       await handler(
         {
@@ -343,7 +347,7 @@ describe('Cloud Identity API', () => {
         apiClients: { cloudIdentity: new MockCloudIdentityClient() },
       })
 
-      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'create_dlp_rule').arguments[2]
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'create_chrome_dlp_rule').arguments[2]
 
       const result = await handler(
         {

@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Tool definition for creating DLP rules.
+ * @fileoverview Tool definition for creating Chrome-specific DLP rules.
  */
 
 import { z } from 'zod'
@@ -24,46 +24,46 @@ import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas } from '../u
 import { TAGS, MASK_TYPES } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
-const TRIGGER_MAPPING = {
+export const CHROME_TRIGGER_MAPPING = {
   FILE_UPLOAD: 'google.workspace.chrome.file.v1.upload',
   FILE_DOWNLOAD: 'google.workspace.chrome.file.v1.download',
   WEB_CONTENT_UPLOAD: 'google.workspace.chrome.web_content.v1.upload',
   PRINT: 'google.workspace.chrome.page.v1.print',
-  NAVIGATION: 'google.workspace.chrome.url.v1.navigation',
+  URL_NAVIGATION: 'google.workspace.chrome.url.v1.navigation',
 }
 
-const ACTION_TYPES = {
+const CHROME_ACTION_TYPES = {
   BLOCK: 'BLOCK',
   WARN: 'WARN',
   AUDIT: 'AUDIT',
 }
 
 /**
- * Registers the 'create_dlp_rule' tool with the MCP server.
+ * Registers the 'create_chrome_dlp_rule' tool with the MCP server.
  *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
  * @param {import('../../lib/api/interfaces/cloud_identity_client.js').CloudIdentityClient} options.cloudIdentityClient - The Cloud Identity client instance.
  * @param {object} sessionState - The session state object for caching.
  */
-export function registerCreateDlpRuleTool(server, options, sessionState) {
+export function registerCreateChromeDlpRuleTool(server, options, sessionState) {
   const { cloudIdentityClient } = options
-  logger.debug(`${TAGS.MCP} Registering 'create_dlp_rule' tool...`)
+  logger.debug(`${TAGS.MCP} Registering 'create_chrome_dlp_rule' tool...`)
 
   server.registerTool(
-    'create_dlp_rule',
+    'create_chrome_dlp_rule',
     {
       description: `Creates a new Chrome DLP rule for a specific Organizational Unit.
-Supports a validate_only mode to test rule creation without saving the rule.`,
+This tool is specialized for browser-level protection (e.g., uploads, downloads, printing).`,
       inputSchema: {
         customerId: inputSchemas.customerId,
         orgUnitId: inputSchemas.orgUnitId.describe('The target Organizational Unit ID'),
         displayName: z.string().describe('Name of the rule'),
         description: z.string().optional().describe('Description of the rule'),
-        triggers: z.array(z.enum(Object.keys(TRIGGER_MAPPING))).describe('List of simplified triggers.'),
+        triggers: z.array(z.enum(Object.keys(CHROME_TRIGGER_MAPPING))).describe('List of Chrome triggers.'),
         condition: z.string().optional().describe(`CEL condition string (e.g. "all_content.contains('secret')")`),
         action: z
-          .enum([ACTION_TYPES.BLOCK, ACTION_TYPES.WARN, ACTION_TYPES.AUDIT])
+          .enum([CHROME_ACTION_TYPES.BLOCK, CHROME_ACTION_TYPES.WARN, CHROME_ACTION_TYPES.AUDIT])
           .describe('Action to take when the rule is triggered'),
         state: z.enum(['ACTIVE', 'INACTIVE']).optional().describe('Rule state (defaults to ACTIVE)'),
         validateOnly: z.boolean().optional().describe('If true, the request is validated but not created.'),
@@ -94,16 +94,8 @@ Supports a validate_only mode to test rule creation without saving the rule.`,
           const newDisplayName = `🤖 ${params.displayName}`
           return { ...params, displayName: newDisplayName }
         },
-        validate: params => {
-          if (params.action === ACTION_TYPES.BLOCK) {
-            throw new Error(
-              'Creating DLP rules in "BLOCK" mode is not permitted. Supported actions are "AUDIT" and "WARN".',
-            )
-          }
-          return true
-        },
         handler: async (params, { requestInfo }) => {
-          logger.debug(`${TAGS.MCP} Calling 'create_dlp_rule' with params: ${JSON.stringify(params)}`)
+          logger.debug(`${TAGS.MCP} Calling 'create_chrome_dlp_rule' with params: ${JSON.stringify(params)}`)
           const {
             customerId,
             orgUnitId,
@@ -122,7 +114,7 @@ Supports a validate_only mode to test rule creation without saving the rule.`,
           } = params
 
           const authToken = getAuthToken(requestInfo)
-          const fullTriggers = triggers.map(t => TRIGGER_MAPPING[t])
+          const fullTriggers = triggers.map(t => CHROME_TRIGGER_MAPPING[t])
 
           const ruleConfig = {
             displayName,
@@ -152,7 +144,7 @@ Supports a validate_only mode to test rule creation without saving the rule.`,
           if (saveContent) {
             actionParams.saveContent = saveContent
           }
-          if (dataMasking?.length) { // Only add if not empty to avoid API errors.
+          if (dataMasking?.length) {
             actionParams.dataMasking = {
               regex_detector: dataMasking.map(dm => ({
                 mask_type: dm.maskType,
@@ -163,19 +155,19 @@ Supports a validate_only mode to test rule creation without saving the rule.`,
           }
 
           switch (action) {
-            case ACTION_TYPES.BLOCK:
+            case CHROME_ACTION_TYPES.BLOCK:
               ruleConfig.action = { chromeAction: { blockContent: {} } }
               if (Object.keys(actionParams).length > 0) {
                 ruleConfig.action.chromeAction.blockContent.actionParams = actionParams
               }
               break
-            case ACTION_TYPES.WARN:
+            case CHROME_ACTION_TYPES.WARN:
               ruleConfig.action = { chromeAction: { warnUser: {} } }
               if (Object.keys(actionParams).length > 0) {
                 ruleConfig.action.chromeAction.warnUser.actionParams = actionParams
               }
               break
-            case ACTION_TYPES.AUDIT:
+            case CHROME_ACTION_TYPES.AUDIT:
               ruleConfig.action = { chromeAction: { auditOnly: {} } }
               if (Object.keys(actionParams).length > 0) {
                 ruleConfig.action.chromeAction.auditOnly.actionParams = actionParams
@@ -192,23 +184,23 @@ Supports a validate_only mode to test rule creation without saving the rule.`,
           )
 
           if (validateOnly) {
-            logger.debug(`${TAGS.MCP} Successfully validated DLP rule.`)
+            logger.debug(`${TAGS.MCP} Successfully validated Chrome DLP rule.`)
             return {
               content: [
                 {
                   type: 'text',
-                  text: 'DLP rule validation successful. The rule was not created.',
+                  text: 'Chrome DLP rule validation successful. The rule was not created.',
                 },
               ],
             }
           }
 
-          logger.debug(`${TAGS.MCP} Successfully created DLP rule.`)
+          logger.debug(`${TAGS.MCP} Successfully created Chrome DLP rule.`)
           return {
             content: [
               {
                 type: 'text',
-                text: `Successfully created DLP rule: ${createdPolicy.name}\n\nDetails:\n${JSON.stringify(createdPolicy, null, 2)}`,
+                text: `Successfully created Chrome DLP rule: ${createdPolicy.name}\n\nDetails:\n${JSON.stringify(createdPolicy, null, 2)}`,
               },
             ],
           }

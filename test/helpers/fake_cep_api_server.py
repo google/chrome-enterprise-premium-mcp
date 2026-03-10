@@ -316,17 +316,17 @@ async def fake_create_policy(customer_id: str, body: Dict[str, Any]):
           ),
       )
 
-    action = setting_value.get("action", {}).get("chromeAction", {})
+    action = setting_value.get("action", {})
+    chrome_action = action.get("chromeAction", {})
     if not (
-        "blockContent" in action
-        or "warnUser" in action
-        or "auditOnly" in action
+        "blockContent" in chrome_action
+        or "warnUser" in chrome_action
+        or "auditOnly" in chrome_action
     ):
       raise HTTPException(
           status_code=400,
           detail=(
-              "Invalid config: an action (blockContent, warnUser, or auditOnly)"
-              " is required."
+              "Invalid config: a valid Chrome action is required."
           ),
       )
 

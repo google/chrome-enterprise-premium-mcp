@@ -54,7 +54,7 @@ describe('MCP Server in stdio mode', () => {
       toolNames.sort(),
       [
         'count_browser_versions',
-        'create_dlp_rule',
+        'create_chrome_dlp_rule',
         'create_regex_detector',
         'create_url_list_detector',
         'create_word_list_detector',

@@ -41,7 +41,7 @@ describe('CEP Tool Registration', () => {
       'count_browser_versions',
       'list_customer_profiles',
       'list_dlp_rules',
-      'create_dlp_rule',
+      'create_chrome_dlp_rule',
       'delete_dlp_rule',
       'list_detectors',
       'create_regex_detector',
