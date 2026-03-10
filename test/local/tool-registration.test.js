@@ -75,7 +75,7 @@ describe('CEP Tool Registration', () => {
     registerTools(server, { apiClients: { adminSdk: mockAdminSdkClient } }, sharedState)
 
     // Find the handler for 'list_org_units'
-    const listOrgUnitsCall = server.registerTool.mock.calls.find((call) => call.arguments[0] === 'list_org_units')
+    const listOrgUnitsCall = server.registerTool.mock.calls.find(call => call.arguments[0] === 'list_org_units')
     assert.ok(listOrgUnitsCall, 'list_org_units tool should be registered')
 
     const handler = listOrgUnitsCall.arguments[2]

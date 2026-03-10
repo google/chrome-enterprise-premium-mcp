@@ -23,6 +23,7 @@ import { z } from 'zod'
 import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS, MASK_TYPES } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
+import { validateCelCondition } from '../../lib/util/cel_validator.js'
 
 export const CHROME_TRIGGER_MAPPING = {
   FILE_UPLOAD: 'google.workspace.chrome.file.v1.upload',
@@ -31,6 +32,18 @@ export const CHROME_TRIGGER_MAPPING = {
   PRINT: 'google.workspace.chrome.page.v1.print',
   URL_NAVIGATION: 'google.workspace.chrome.url.v1.navigation',
 }
+
+const CHROME_TRIGGER_DESCRIPTIONS = {
+  FILE_UPLOAD: 'Scanning files that are uploaded.',
+  FILE_DOWNLOAD: 'Scanning files that are downloaded.',
+  WEB_CONTENT_UPLOAD: 'Scanning text that is copy-pasted.',
+  PRINT: 'Scanning pages that are printed.',
+  URL_NAVIGATION: 'Scanning URLs when visited.',
+}
+
+const triggerList = Object.keys(CHROME_TRIGGER_MAPPING)
+  .map(key => `- ${key}: ${CHROME_TRIGGER_DESCRIPTIONS[key] || ''}`)
+  .join('\n')
 
 const CHROME_ACTION_TYPES = {
   BLOCK: 'BLOCK',
@@ -60,8 +73,34 @@ This tool is specialized for browser-level protection (e.g., uploads, downloads,
         orgUnitId: inputSchemas.orgUnitId.describe('The target Organizational Unit ID'),
         displayName: z.string().describe('Name of the rule'),
         description: z.string().optional().describe('Description of the rule'),
-        triggers: z.array(z.enum(Object.keys(CHROME_TRIGGER_MAPPING))).describe('List of Chrome triggers.'),
-        condition: z.string().optional().describe(`CEL condition string (e.g. "all_content.contains('secret')")`),
+        triggers: z
+          .array(z.enum(Object.keys(CHROME_TRIGGER_MAPPING)))
+          .describe(`List of Chrome triggers:\n${triggerList}`),
+        condition: z
+          .string()
+          .optional()
+          .describe(
+            `CEL condition string.
+
+CEL Condition Syntax Guide:
+Must follow the pattern "{content_type}.{function}(...)".
+Valid content types: all_content, body, subject, title, url, url_category, destination_url, source_url, file_size_in_bytes, file_type, etc.
+
+Trigger Compatibility Rules:
+- NAVIGATION / FILE_DOWNLOAD: Use 'url' or 'url_category' only.
+- FILE_UPLOAD / WEB_CONTENT_UPLOAD: Use 'source_url' (origin) or 'destination_url' (target).
+
+Function Mapping:
+- {content_type}.contains('string'), .starts_with('string'), .ends_with('string'), .equals('string')
+- {content_type}.matches_dlp_detector('detector_name')
+- {content_type}.matches_regex_detector('detector_name')
+- {content_type}.matches_word_list('detector_name')
+- url_category.matches_web_category('CATEGORY_NAME') (Note: Only valid on 'url_category', not 'url')
+
+Common Web Categories: ADULT, GAMBLING, FINANCE, ONLINE_COMMUNITIES__SOCIAL_NETWORKS, INTERNET_AND_TELECOM__FILE_SHARING_AND_HOSTING
+Operators: && (AND), || (OR), ! (NOT).
+Example: "all_content.contains('secret') && !url_category.matches_web_category('ONLINE_COMMUNITIES__SOCIAL_NETWORKS')"`,
+          ),
         action: z
           .enum([CHROME_ACTION_TYPES.BLOCK, CHROME_ACTION_TYPES.WARN, CHROME_ACTION_TYPES.AUDIT])
           .describe('Action to take when the rule is triggered'),
@@ -124,6 +163,10 @@ This tool is specialized for browser-level protection (e.g., uploads, downloads,
           }
 
           if (condition) {
+            const validationResult = validateCelCondition(condition, triggers)
+            if (!validationResult.isValid) {
+              throw new Error(`CEL condition validation failed:\n- ${validationResult.errors.join('\n- ')}`)
+            }
             ruleConfig.condition = {
               contentCondition: condition,
             }
@@ -175,13 +218,33 @@ This tool is specialized for browser-level protection (e.g., uploads, downloads,
               break
           }
 
-          const createdPolicy = await cloudIdentityClient.createDlpRule(
-            customerId,
-            orgUnitId,
-            ruleConfig,
-            validateOnly,
-            authToken,
-          )
+          let createdPolicy
+          try {
+            createdPolicy = await cloudIdentityClient.createDlpRule(
+              customerId,
+              orgUnitId,
+              ruleConfig,
+              validateOnly,
+              authToken,
+            )
+          } catch (error) {
+            // Error 7016: Request contains invalid argument(s) often happens due to incompatible CEL functions with triggers.
+            if (error.message && (error.message.includes('7016') || error.message.includes('INVALID_ARGUMENT'))) {
+              let errorDetails = 'This may be due to an incompatible CEL function or a malformed condition string.'
+              if (condition && condition.includes('.matches_web_category')) {
+                const hasNavTrigger = fullTriggers.includes('google.workspace.chrome.url.v1.navigation')
+                if (!hasNavTrigger) {
+                  errorDetails =
+                    "The CEL function 'matches_web_category' requires the 'NAVIGATION' trigger, which was not provided in the request."
+                } else {
+                  errorDetails =
+                    "The CEL condition uses 'matches_web_category', but the category string might be invalid or unsupported by the API."
+                }
+              }
+              throw new Error(`${error.message}\nError Details: ${errorDetails}`)
+            }
+            throw error
+          }
 
           if (validateOnly) {
             logger.debug(`${TAGS.MCP} Successfully validated Chrome DLP rule.`)
