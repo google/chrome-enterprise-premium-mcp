@@ -24,9 +24,10 @@ class TestCreateDlpRule(McpIntegrationTestBase):
     """Verify agent can create a DLP rule."""
     prompt = (
         "Create a new DLP rule named 'End-to-End Temp DLP Rule' for customer"
-        " C0123456 and OrgUnit fakeOUId1. Use the trigger FILE_UPLOAD, action"
-        " WARN, and condition 'all_content.contains(\"secret\")'. Give"
-        " verbatim error if there is one."
+        " C0123456 and organizational unit fakeOUId1. Use the trigger"
+        " FILE_UPLOAD, action WARN, and condition"
+        " 'all_content.contains(\"secret\")'. Give the verbatim error if there"
+        " is one."
     )
     result_text = query_agent_oneshot(prompt)
     self.assert_nl(
@@ -39,17 +40,120 @@ class TestCreateDlpRule(McpIntegrationTestBase):
     """Verify agent can create a DLP rule with data masking."""
     prompt = (
         "Create a new DLP rule named 'End-to-End Temp Masking Rule' for"
-        " customer C0123456 and OrgUnit fakeOUId1. Use the trigger"
+        " customer C0123456 and organizational unit fakeOUId1. Use the trigger"
         " URL_NAVIGATION, action AUDIT, and condition"
-        " 'all_content.contains(\"secret\")'. Add a data masking configuration"
-        " to redact US_SOCIAL_SECURITY_NUMBER with display name 'SSN' and"
-        " maskType 'MASK_TYPE_REDACT'. Give verbatim error if there is one."
+        " 'all_content.contains(\"secret\")'. Add a data masking"
+        " configuration to redact US_SOCIAL_SECURITY_NUMBER with display name"
+        " 'SSN' and maskType 'MASK_TYPE_REDACT'. Give the verbatim error if"
+        " there is one."
     )
     result_text = query_agent_oneshot(prompt)
     self.assert_nl(
         result_text,
         "The answer confirms that the 'End-to-End Temp Masking Rule' DLP rule"
         " was successfully created",
+    )
+
+  def test_create_dlp_rule_download_warning_identifies_tool(self):
+    """Verify agent knows which tool to use for a download warning rule."""
+    prompt = (
+        "Create a rule to add a warning when downloading things from"
+        " google.com. Which single tool would you use for this request? Just"
+        " name the tool and do nothing else."
+    )
+    result_text = query_agent_oneshot(prompt)
+    self.assertIn("create_chrome_dlp_rule", result_text)
+
+  def test_create_dlp_rule_download_warning(self):
+    """Verify agent can actually use the tool when provided needed info."""
+    prompt = (
+        "Create a Chrome DLP rule to add a warning when downloading things from"
+        " google.com for customer C0123456 and organizational unit fakeOUId1."
+        " Use trigger FILE_DOWNLOAD and condition"
+        " 'all_content.contains(\"google.com\")'. Give the verbatim error if"
+        " there is one."
+    )
+    result_text = query_agent_oneshot(prompt)
+    self.assert_nl(
+        result_text,
+        "The answer confirms that the DLP rule was successfully created",
+    )
+
+  def test_create_dlp_rule_social_media_audit_identifies_tool(self):
+    """Verify agent knows which tool to use for a social media audit rule."""
+    prompt = (
+        "Create a rule to audit when users visit social media websites. Which"
+        " single tool would you use for this request? Just name the tool and"
+        " do nothing else."
+    )
+    result_text = query_agent_oneshot(prompt)
+    self.assertIn("create_chrome_dlp_rule", result_text)
+
+  def test_create_dlp_rule_social_media_audit(self):
+    """Verify agent can actually use the tool when provided needed info."""
+    prompt = (
+        "Create a Chrome DLP rule to audit when users visit social media"
+        " websites (e.g., facebook.com, twitter.com) for customer C0123456 and"
+        " organizational unit fakeOUId1. Use trigger URL_NAVIGATION and action"
+        " AUDIT, and condition 'all_content.contains(\"social\")'. Give the"
+        " verbatim error if there is one. IMPORTANT: Just use the exact"
+        " provided condition. Do not create a URL list detector or ask for"
+        " permission."
+    )
+    result_text = query_agent_oneshot(prompt)
+    self.assert_nl(
+        result_text,
+        "The answer confirms that the DLP rule was successfully created",
+    )
+
+  def test_create_dlp_rule_block_screenshot_identifies_tool(self):
+    """Verify agent knows which tool to use for a block screenshot rule."""
+    prompt = (
+        "Create a DLP rule to block screenshots on facebook.com. Which single"
+        " tool would you use for this request? Just name the tool and do"
+        " nothing else."
+    )
+    result_text = query_agent_oneshot(prompt)
+    self.assertIn("create_chrome_dlp_rule", result_text)
+
+  def test_create_dlp_rule_block_screenshot(self):
+    """Verify agent can actually use the tool when provided needed info."""
+    prompt = (
+        "Create a Chrome DLP rule to block screenshots on facebook.com for"
+        " customer C0123456 and organizational unit fakeOUId1. Use trigger"
+        " URL_NAVIGATION and action BLOCK, set blockScreenshot to true, and"
+        " condition 'all_content.contains(\"facebook.com\")'. Give the"
+        " verbatim error if there is one."
+    )
+    result_text = query_agent_oneshot(prompt)
+    self.assert_nl(
+        result_text,
+        "The answer confirms that the DLP rule was successfully created",
+    )
+
+  def test_create_dlp_rule_warn_navigation_identifies_tool(self):
+    """Verify agent knows which tool to use for a navigation warning rule."""
+    prompt = (
+        "Create a DLP rule to warn users visiting yahoo.com. Which single tool"
+        " would you use for this request? Just name the tool and do nothing"
+        " else."
+    )
+    result_text = query_agent_oneshot(prompt)
+    self.assertIn("create_chrome_dlp_rule", result_text)
+
+  def test_create_dlp_rule_warn_navigation(self):
+    """Verify agent can actually use the tool when provided needed info."""
+    prompt = (
+        "Create a Chrome DLP rule to warn users visiting yahoo.com for"
+        " customer C0123456 and organizational unit fakeOUId1. Use trigger"
+        " URL_NAVIGATION and action WARN, and condition"
+        " 'all_content.contains(\"yahoo.com\")'. Give the verbatim error if"
+        " there is one."
+    )
+    result_text = query_agent_oneshot(prompt)
+    self.assert_nl(
+        result_text,
+        "The answer confirms that the DLP rule was successfully created",
     )
 
 
