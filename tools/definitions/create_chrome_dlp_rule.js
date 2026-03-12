@@ -269,48 +269,48 @@ ${actionConstraintList}`,
 
           const actionParams = {}
           if (customMessage) {
-            actionParams.custom_end_user_message = {
-              unsafe_html_message_body: customMessage,
+            actionParams.customEndUserMessage = {
+              unsafeHtmlMessageBody: customMessage,
             }
           }
           if (watermarkMessage) {
-            actionParams.watermark_message = watermarkMessage
+            actionParams.watermarkMessage = watermarkMessage
           }
           if (blockScreenshot) {
-            actionParams.block_screenshot = blockScreenshot
+            actionParams.blockScreenshot = blockScreenshot
           }
           if (saveContent) {
-            actionParams.save_content = saveContent
+            actionParams.saveContent = saveContent
           }
           if (dataMasking?.length) {
-            actionParams.data_masking = {
-              regex_detector: dataMasking.map(dm => ({
-                mask_type: dm.maskType,
-                resource_name: dm.resourceName,
-                display_name: dm.displayName,
+            actionParams.dataMasking = {
+              regexDetector: dataMasking.map(dm => ({
+                maskType: dm.maskType,
+                resourceName: dm.resourceName,
+                displayName: dm.displayName,
               })),
             }
           }
 
+          const chromeAction = {}
+          const hasActionParams = Object.keys(actionParams).length > 0
+
           switch (action) {
             case CHROME_ACTION_TYPES.BLOCK:
-              ruleConfig.action = { chromeAction: { blockContent: {} } }
-              if (Object.keys(actionParams).length > 0) {
-                ruleConfig.action.chromeAction.blockContent.actionParams = actionParams
-              }
+              chromeAction.blockContent = hasActionParams ? { actionParams } : {}
               break
             case CHROME_ACTION_TYPES.WARN:
-              ruleConfig.action = { chromeAction: { warnUser: {} } }
-              if (Object.keys(actionParams).length > 0) {
-                ruleConfig.action.chromeAction.warnUser.actionParams = actionParams
-              }
+              chromeAction.warnUser = hasActionParams ? { actionParams } : {}
               break
             case CHROME_ACTION_TYPES.AUDIT:
-              ruleConfig.action = { chromeAction: { auditOnly: {} } }
-              if (Object.keys(actionParams).length > 0) {
-                ruleConfig.action.chromeAction.auditOnly.actionParams = actionParams
-              }
+              chromeAction.auditOnly = hasActionParams ? { actionParams } : {}
               break
+            default:
+              throw new Error(`Unsupported action type: ${action}`)
+          }
+
+          ruleConfig.action = {
+            chromeAction: chromeAction,
           }
 
           let createdPolicy
