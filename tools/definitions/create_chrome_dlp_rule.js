@@ -21,35 +21,87 @@ limitations under the License.
 import { z } from 'zod'
 
 import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas } from '../utils.js'
-import { TAGS, MASK_TYPES } from '../../lib/constants.js'
+import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
-import { validateCelCondition } from '../../lib/util/cel_validator.js'
+import { validateCelCondition, validateActionParameters } from '../../lib/util/cel_validator.js'
+import {
+  CEL_SYNTAX_GUIDE,
+  UNIVERSAL_CONTENT_TYPES,
+  NAVIGATION_CONTENT_TYPES,
+  PASTE_CONTENT_TYPES,
+  FILE_CONTENT_TYPES,
+  CEL_FUNCTIONS,
+  CEL_COMPATIBILITY_RULES,
+  URL_RISK_LEVELS,
+  CHROME_CONTEXTS,
+  URL_CATEGORY_METADATA,
+  POLICY_STATES,
+  MASK_TYPES,
+  VALID_WEB_CATEGORIES,
+  CHROME_TRIGGERS,
+  CHROME_ACTION_TYPES,
+  ACTION_PARAMETER_CONSTRAINTS,
+} from '../../lib/util/chrome_dlp_constants.js'
 
-export const CHROME_TRIGGER_MAPPING = {
-  FILE_UPLOAD: 'google.workspace.chrome.file.v1.upload',
-  FILE_DOWNLOAD: 'google.workspace.chrome.file.v1.download',
-  WEB_CONTENT_UPLOAD: 'google.workspace.chrome.web_content.v1.upload',
-  PRINT: 'google.workspace.chrome.page.v1.print',
-  URL_NAVIGATION: 'google.workspace.chrome.url.v1.navigation',
-}
-
-const CHROME_TRIGGER_DESCRIPTIONS = {
-  FILE_UPLOAD: 'Scanning files that are uploaded.',
-  FILE_DOWNLOAD: 'Scanning files that are downloaded.',
-  WEB_CONTENT_UPLOAD: 'Scanning text that is copy-pasted.',
-  PRINT: 'Scanning pages that are printed.',
-  URL_NAVIGATION: 'Scanning URLs when visited.',
-}
-
-const triggerList = Object.keys(CHROME_TRIGGER_MAPPING)
-  .map(key => `- ${key}: ${CHROME_TRIGGER_DESCRIPTIONS[key] || ''}`)
+const triggerList = Object.entries(CHROME_TRIGGERS)
+  .map(([key, obj]) => `- ${key}: ${obj.description}`)
   .join('\n')
 
-const CHROME_ACTION_TYPES = {
-  BLOCK: 'BLOCK',
-  WARN: 'WARN',
-  AUDIT: 'AUDIT',
+const syntaxGuideList = CEL_SYNTAX_GUIDE.map(item => {
+  const exampleLines = item.examples.map(ex => `   Example: "${ex}"`).join('\n')
+  return `${item.rule}\n${exampleLines}`
+}).join('\n')
+
+const universalTypeList = Object.entries(UNIVERSAL_CONTENT_TYPES)
+  .map(([key, desc]) => `- ${key}: ${desc}`)
+  .join('\n')
+
+const navigationTypeList = Object.entries(NAVIGATION_CONTENT_TYPES)
+  .map(([key, desc]) => `- ${key}: ${desc}`)
+  .join('\n')
+
+const pasteTypeList = Object.entries(PASTE_CONTENT_TYPES)
+  .map(([key, desc]) => `- ${key}: ${desc}`)
+  .join('\n')
+
+const fileTypeList = Object.entries(FILE_CONTENT_TYPES)
+  .map(([key, desc]) => `- ${key}: ${desc}`)
+  .join('\n')
+
+const functionList = Object.entries(CEL_FUNCTIONS)
+  .map(([key, desc]) => `- ${key}: ${desc}`)
+  .join('\n')
+
+const compatibilityList = Object.entries(CEL_COMPATIBILITY_RULES)
+  .map(([key, desc]) => `- ${key}: ${desc}`)
+  .join('\n')
+
+const actionConstraintList = Object.entries(ACTION_PARAMETER_CONSTRAINTS)
+  .map(([key, desc]) => `- ${key}: ${desc}`)
+  .join('\n')
+
+const enumReferenceMap = {
+  source_chrome_context: CHROME_CONTEXTS,
 }
+
+const referenceValueList = Object.entries(enumReferenceMap)
+  .map(([key, enumObj]) => {
+    const valuesStr = Object.values(enumObj)
+      .map(v => `'${v.value}' (${v.description})`)
+      .join(', ')
+    return `- ${key}: ${valuesStr}`
+  })
+  .join('\n')
+
+const webCategoryList = URL_CATEGORY_METADATA.commonValuesDescription
+
+const maskTypeList = Object.values(MASK_TYPES)
+  .map(m => `- ${m.value}: ${m.description}`)
+  .join('\n')
+
+const policyStateList = Object.values(POLICY_STATES)
+  .map(s => `- ${s.value}: ${s.description}`)
+  .join('\n')
 
 /**
  * Registers the 'create_chrome_dlp_rule' tool with the MCP server.
@@ -73,50 +125,83 @@ This tool is specialized for browser-level protection (e.g., uploads, downloads,
         orgUnitId: inputSchemas.orgUnitId.describe('The target Organizational Unit ID'),
         displayName: z.string().describe('Name of the rule'),
         description: z.string().optional().describe('Description of the rule'),
-        triggers: z
-          .array(z.enum(Object.keys(CHROME_TRIGGER_MAPPING)))
-          .describe(`List of Chrome triggers:\n${triggerList}`),
+        triggers: z.array(z.enum(Object.keys(CHROME_TRIGGERS))).describe(`List of Chrome triggers:\n${triggerList}`),
         condition: z
           .string()
           .optional()
           .describe(
             `CEL condition string.
-
 CEL Condition Syntax Guide:
-Must follow the pattern "{content_type}.{function}(...)".
-Valid content types: all_content, body, subject, title, url, url_category, destination_url, source_url, file_size_in_bytes, file_type, etc.
+${syntaxGuideList}
+
+Valid Content Types (Universal):
+${universalTypeList}
+
+Valid Content Types (Trigger Specific):
+*Navigation Only*:
+${navigationTypeList}
+
+*Paste (WEB_CONTENT_UPLOAD) Only*:
+${pasteTypeList}
+
+*File (UPLOAD/DOWNLOAD/PRINT) Only*:
+${fileTypeList}
+
+Valid Functions:
+${functionList}
+
+Value References (for enums/categories):
+${referenceValueList}
+
+Web Categories (for url_category):
+${webCategoryList}
 
 Trigger Compatibility Rules:
-- NAVIGATION / FILE_DOWNLOAD: Use 'url' or 'url_category' only.
-- FILE_UPLOAD / WEB_CONTENT_UPLOAD: Use 'source_url' (origin) or 'destination_url' (target).
+${compatibilityList}
 
-Function Mapping:
-- {content_type}.contains('string'), .starts_with('string'), .ends_with('string'), .equals('string')
-- {content_type}.matches_dlp_detector('detector_name')
-- {content_type}.matches_regex_detector('detector_name')
-- {content_type}.matches_word_list('detector_name')
-- url_category.matches_web_category('CATEGORY_NAME') (Note: Only valid on 'url_category', not 'url')
+Multi-Trigger Logic:
+- If multiple triggers are selected, a field or function is valid if it is supported by AT LEAST ONE of those triggers.
+- Example: 'all_content' is supported if you select both 'URL_NAVIGATION' (which doesn't support it) and 'WEB_CONTENT_UPLOAD' (which does).
 
-Common Web Categories: ADULT, GAMBLING, FINANCE, ONLINE_COMMUNITIES__SOCIAL_NETWORKS, INTERNET_AND_TELECOM__FILE_SHARING_AND_HOSTING
-Operators: && (AND), || (OR), ! (NOT).
-Example: "all_content.contains('secret') && !url_category.matches_web_category('ONLINE_COMMUNITIES__SOCIAL_NETWORKS')"`,
+Action Parameter Compatibility Rules:
+${actionConstraintList}`,
           ),
         action: z
           .enum([CHROME_ACTION_TYPES.BLOCK, CHROME_ACTION_TYPES.WARN, CHROME_ACTION_TYPES.AUDIT])
           .describe('Action to take when the rule is triggered'),
-        state: z.enum(['ACTIVE', 'INACTIVE']).optional().describe('Rule state (defaults to ACTIVE)'),
-        validateOnly: z.boolean().optional().describe('If true, the request is validated but not created.'),
+        state: z
+          .enum(Object.values(POLICY_STATES).map(s => s.value))
+          .optional()
+          .describe(`Rule state (defaults to ACTIVE):\n${policyStateList}`),
         customMessage: z
           .string()
           .optional()
-          .describe(`Custom message to display to the user when the rule is triggered.`),
-        watermarkMessage: z.string().optional().describe(`Watermark message to display when the rule is triggered.`),
-        blockScreenshot: z.boolean().optional().describe(`Whether to block screenshots when the rule is triggered.`),
+          .describe(
+            `Custom message to display to the user when the rule is triggered. Note: This field is not applicable to 'AUDIT' actions.`,
+          ),
+        watermarkMessage: z
+          .string()
+          .optional()
+          .describe(
+            `Watermark message to display when the rule is triggered. Note: This field is only applicable to 'WARN' and 'AUDIT' actions; it is ignored for 'BLOCK' actions.`,
+          ),
+        blockScreenshot: z
+          .boolean()
+          .optional()
+          .describe(
+            `Whether to block screenshots when the rule is triggered. Note: This field is only applicable to 'WARN' and 'AUDIT' actions; it is ignored for 'BLOCK' actions.`,
+          ),
         saveContent: z.boolean().optional().describe(`Whether to save the content that triggered the rule.`),
+        validateOnly: z
+          .boolean()
+          .optional()
+          .describe('If true, validates the rule configuration without actually creating it.'),
         dataMasking: z
           .array(
             z.object({
-              maskType: z.enum(Object.values(MASK_TYPES)).describe('The type of masking to apply.'),
+              maskType: z
+                .enum(Object.values(MASK_TYPES).map(m => m.value))
+                .describe(`The type of masking to apply:\n${maskTypeList}`),
               resourceName: z.string().describe('The resource name of the detector (e.g. US_SOCIAL_SECURITY_NUMBER).'),
               displayName: z.string().describe('The display name for the detector in the UI.'),
             }),
@@ -153,13 +238,13 @@ Example: "all_content.contains('secret') && !url_category.matches_web_category('
           } = params
 
           const authToken = getAuthToken(requestInfo)
-          const fullTriggers = triggers.map(t => CHROME_TRIGGER_MAPPING[t])
+          const fullTriggers = triggers.map(t => CHROME_TRIGGERS[t].value)
 
           const ruleConfig = {
             displayName,
             description,
             triggers: fullTriggers,
-            state: state || 'ACTIVE',
+            state: state || POLICY_STATES.ACTIVE.value,
           }
 
           if (condition) {
@@ -172,23 +257,33 @@ Example: "all_content.contains('secret') && !url_category.matches_web_category('
             }
           }
 
+          // Validate action-parameter compatibility based on rule message constraints
+          const actionValidation = validateActionParameters(action, {
+            customMessage,
+            watermarkMessage,
+            blockScreenshot,
+          })
+          if (!actionValidation.isValid) {
+            throw new Error(actionValidation.errors.join('\n- '))
+          }
+
           const actionParams = {}
           if (customMessage) {
-            actionParams.customEndUserMessage = {
-              unsafeHtmlMessageBody: customMessage,
+            actionParams.custom_end_user_message = {
+              unsafe_html_message_body: customMessage,
             }
           }
           if (watermarkMessage) {
-            actionParams.watermarkMessage = watermarkMessage
+            actionParams.watermark_message = watermarkMessage
           }
           if (blockScreenshot) {
-            actionParams.blockScreenshot = blockScreenshot
+            actionParams.block_screenshot = blockScreenshot
           }
           if (saveContent) {
-            actionParams.saveContent = saveContent
+            actionParams.save_content = saveContent
           }
           if (dataMasking?.length) {
-            actionParams.dataMasking = {
+            actionParams.data_masking = {
               regex_detector: dataMasking.map(dm => ({
                 mask_type: dm.maskType,
                 resource_name: dm.resourceName,
@@ -230,18 +325,10 @@ Example: "all_content.contains('secret') && !url_category.matches_web_category('
           } catch (error) {
             // Error 7016: Request contains invalid argument(s) often happens due to incompatible CEL functions with triggers.
             if (error.message && (error.message.includes('7016') || error.message.includes('INVALID_ARGUMENT'))) {
-              let errorDetails = 'This may be due to an incompatible CEL function or a malformed condition string.'
-              if (condition && condition.includes('.matches_web_category')) {
-                const hasNavTrigger = fullTriggers.includes('google.workspace.chrome.url.v1.navigation')
-                if (!hasNavTrigger) {
-                  errorDetails =
-                    "The CEL function 'matches_web_category' requires the 'NAVIGATION' trigger, which was not provided in the request."
-                } else {
-                  errorDetails =
-                    "The CEL condition uses 'matches_web_category', but the category string might be invalid or unsupported by the API."
-                }
-              }
-              throw new Error(`${error.message}\nError Details: ${errorDetails}`)
+              // Invalid argument error the validators didn't catch
+              let errorDetails =
+                'This may be due to an incompatible CEL function, a malformed condition string, or an unsupported field/value combination.'
+              throw new Error(`${error.message}\n\n${errorDetails}`)
             }
             throw error
           }
