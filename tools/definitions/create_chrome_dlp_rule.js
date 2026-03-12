@@ -192,10 +192,6 @@ ${actionConstraintList}`,
             `Whether to block screenshots when the rule is triggered. Note: This field is only applicable to 'WARN' and 'AUDIT' actions; it is ignored for 'BLOCK' actions.`,
           ),
         saveContent: z.boolean().optional().describe(`Whether to save the content that triggered the rule.`),
-        validateOnly: z
-          .boolean()
-          .optional()
-          .describe('If true, validates the rule configuration without actually creating it.'),
         dataMasking: z
           .array(
             z.object({
@@ -229,7 +225,6 @@ ${actionConstraintList}`,
             condition,
             action,
             state,
-            validateOnly,
             customMessage,
             watermarkMessage,
             blockScreenshot,
@@ -315,13 +310,7 @@ ${actionConstraintList}`,
 
           let createdPolicy
           try {
-            createdPolicy = await cloudIdentityClient.createDlpRule(
-              customerId,
-              orgUnitId,
-              ruleConfig,
-              validateOnly,
-              authToken,
-            )
+            createdPolicy = await cloudIdentityClient.createDlpRule(customerId, orgUnitId, ruleConfig, authToken)
           } catch (error) {
             // Error 7016: Request contains invalid argument(s) often happens due to incompatible CEL functions with triggers.
             if (error.message && (error.message.includes('7016') || error.message.includes('INVALID_ARGUMENT'))) {
@@ -331,18 +320,6 @@ ${actionConstraintList}`,
               throw new Error(`${error.message}\n\n${errorDetails}`)
             }
             throw error
-          }
-
-          if (validateOnly) {
-            logger.debug(`${TAGS.MCP} Successfully validated Chrome DLP rule.`)
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: 'Chrome DLP rule validation successful. The rule was not created.',
-                },
-              ],
-            }
           }
 
           logger.debug(`${TAGS.MCP} Successfully created Chrome DLP rule.`)
