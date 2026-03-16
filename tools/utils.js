@@ -109,7 +109,7 @@ export async function resolveRootOrgUnitId(apiClients, customerId, authToken, se
       console.error(`${TAGS.MCP} ⚠️ adminSdkClient not provided for OU resolution (customer: ${customerId})`)
     }
   } catch (error) {
-    console.error(`${TAGS.MCP} ⚠️ Failed to auto-resolve root orgUnitId for customer ${customerId}:`, error.message)
+    console.error(`${TAGS.MCP} ⚠️ Failed to auto-resolve root orgUnitId for customer ${customerId}:`, error)
   }
   return null
 }
@@ -161,7 +161,7 @@ export function guardedToolCall(
               console.error(`${TAGS.MCP} ⚠️ adminSdkClient not provided to guardedToolCall`)
             }
           } catch (error) {
-            console.error(`${TAGS.MCP} ⚠️ Failed to auto-resolve customerId:`, error.message)
+            console.error(`${TAGS.MCP} ⚠️ Failed to auto-resolve customerId:`, error)
           }
         }
       }
@@ -180,7 +180,9 @@ export function guardedToolCall(
       }
       return result
     } catch (error) {
-      console.error(`${TAGS.MCP} Tool handler error:`, error)
+      console.error(`${TAGS.MCP} Tool handler error details:`, JSON.stringify(error, null, 2))
+      console.error(`${TAGS.MCP} Tool handler error stack:`, error.stack)
+
       const status = error.status || error.code || error.response?.status
       if (status === 401) {
         throw {
@@ -193,8 +195,20 @@ export function guardedToolCall(
           message: 'Permission denied. Your account lacks the required permissions.',
         }
       }
+
+      let errorMessage = error.message
+      if (!errorMessage && error.response?.data) {
+        errorMessage = JSON.stringify(error.response.data)
+      }
+      if (!errorMessage) {
+        errorMessage = JSON.stringify(error, null, 2)
+      }
+      if (errorMessage === '{}' || errorMessage === '[]' || !errorMessage) {
+        errorMessage = error.toString()
+      }
+
       return {
-        content: [{ type: 'text', text: `Error: ${error.message}` }],
+        content: [{ type: 'text', text: `Error: ${errorMessage}` }],
         isError: true,
       }
     }
