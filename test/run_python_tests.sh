@@ -16,6 +16,9 @@
 # Exit on any error
 set -e
 
+# Prevent Python from writing .pyc and __pycache__ directories
+export PYTHONDONTWRITEBYTECODE=1
+
 # Change to the root directory of the project
 cd "$(dirname "$0")/.."
 
