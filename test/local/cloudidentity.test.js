@@ -272,12 +272,12 @@ describe('Cloud Identity API', () => {
 
       assert.strictEqual(mockCreateDlpRule.mock.callCount(), 1)
       const passedConfig = mockCreateDlpRule.mock.calls[0].arguments[2]
-      assert.deepStrictEqual(passedConfig.action.chromeAction.auditOnly.actionParams.data_masking, {
-        regex_detector: [
+      assert.deepStrictEqual(passedConfig.action.chromeAction.auditOnly.actionParams.dataMasking, {
+        regexDetector: [
           {
-            mask_type: 'MASK_TYPE_REDACT',
-            resource_name: 'US_SOCIAL_SECURITY_NUMBER',
-            display_name: 'SSN',
+            maskType: 'MASK_TYPE_REDACT',
+            resourceName: 'US_SOCIAL_SECURITY_NUMBER',
+            displayName: 'SSN',
           },
         ],
       })
