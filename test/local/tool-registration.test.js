@@ -22,8 +22,8 @@ import assert from 'node:assert/strict'
 import { describe, it, mock, beforeEach } from 'node:test'
 import { registerTools } from '../../tools/tools.js'
 
-// Tests for CEP tool registration and individual tool handler logic.
-describe('CEP Tool Registration', () => {
+// Tests for SEB tool registration and individual tool handler logic.
+describe('SEB Tool Registration', () => {
   let server
 
   beforeEach(async () => {
@@ -54,6 +54,8 @@ describe('CEP Tool Registration', () => {
       'get_customer_id',
       'list_org_units',
       'create_default_dlp_rules',
+      'check_seb_extension_status',
+      'install_seb_extension',
     ].sort()
     assert.deepStrictEqual(
       registeredToolNames.sort(),

@@ -54,6 +54,7 @@ describe('MCP Server in stdio mode', () => {
       toolNames.sort(),
       [
         'check_cep_subscription',
+        'check_seb_extension_status',
         'count_browser_versions',
         'create_chrome_dlp_rule',
         'create_default_dlp_rules',
@@ -65,6 +66,7 @@ describe('MCP Server in stdio mode', () => {
         'get_chrome_activity_log',
         'get_connector_policy',
         'get_customer_id',
+        'install_seb_extension',
         'list_customer_profiles',
         'list_detectors',
         'list_dlp_rules',
