@@ -31,6 +31,7 @@ import { TAGS } from '../lib/constants.js'
  */
 export const inputSchemas = {
   customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
+  userId: z.string().describe("The user's primary email address or unique ID."),
   orgUnitId: z.string().describe('The ID of the organizational unit.'),
   orgUnitIdOptional: z.string().optional().describe('The ID of the organizational unit to filter results.'),
 }

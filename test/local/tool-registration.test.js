@@ -39,6 +39,7 @@ describe('SEB Tool Registration', () => {
     const registeredToolNames = server.registerTool.mock.calls.map(call => call.arguments[0])
     const expectedToolNames = [
       'check_cep_subscription',
+      'check_user_cep_license',
       'count_browser_versions',
       'list_customer_profiles',
       'list_dlp_rules',

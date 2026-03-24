@@ -37,6 +37,7 @@ import { registerCreateRegexDetectorTool } from './definitions/create_regex_dete
 import { registerDeleteDetectorTool } from './definitions/delete_detector.js'
 import { registerCreateDefaultDlpRulesTool } from './definitions/create_default_dlp_rules.js'
 import { registerCheckCepSubscriptionTool } from './definitions/check_cep_subscription.js'
+import { registerCheckUserCepLicenseTool } from './definitions/check_user_cep_license.js'
 import { registerCheckSebExtensionStatusTool } from './definitions/check_seb_extension_status.js'
 import { registerInstallSebExtensionTool } from './definitions/install_seb_extension.js'
 
@@ -74,6 +75,7 @@ function registerAllTools(server, options = {}, sessionState) {
   registerListOrgUnitsTool(server, { ...commonOpts, adminSdkClient }, state)
   registerGetCustomerIdTool(server, { ...commonOpts, adminSdkClient }, state)
   registerCheckCepSubscriptionTool(server, { ...commonOpts, adminSdkClient }, state)
+  registerCheckUserCepLicenseTool(server, { ...commonOpts, adminSdkClient }, state)
   registerCreateDefaultDlpRulesTool(server, { ...commonOpts, cloudIdentityClient }, state)
   registerCheckSebExtensionStatusTool(server, { ...commonOpts, chromePolicyClient }, state)
   registerInstallSebExtensionTool(server, { ...commonOpts, chromePolicyClient }, state)

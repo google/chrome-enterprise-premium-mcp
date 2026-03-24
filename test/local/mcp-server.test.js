@@ -55,6 +55,7 @@ describe('MCP Server in stdio mode', () => {
       [
         'check_cep_subscription',
         'check_seb_extension_status',
+        'check_user_cep_license',
         'count_browser_versions',
         'create_chrome_dlp_rule',
         'create_default_dlp_rules',

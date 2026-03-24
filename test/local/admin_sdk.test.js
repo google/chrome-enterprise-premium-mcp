@@ -173,4 +173,178 @@ describe('Admin SDK API', () => {
       assert.deepStrictEqual(result.content[0].text, 'Error: API Error')
     })
   })
+
+  describe('check_user_cep_license Tool', () => {
+    it('should call checkUserCepLicense and return success if license found', async () => {
+      const userId = 'user@example.com'
+      const mockCheckUserCepLicense = mock.fn(async () => ({ productId: '101040', skuId: '1010400001' }))
+      const MockAdminSdkClient = class {
+        constructor() {
+          this.checkUserCepLicense = mockCheckUserCepLicense
+        }
+      }
+
+      const { registerTools } = await esmock(
+        '../../tools/tools.js',
+        {},
+        {
+          '../../lib/api/real_admin_sdk_client.js': {
+            RealAdminSdkClient: MockAdminSdkClient,
+          },
+        },
+      )
+      registerTools(server, {
+        apiClients: { adminSdk: new MockAdminSdkClient() },
+      })
+
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_user_cep_license')
+        .arguments[2]
+
+      const result = await handler({ userId }, {})
+
+      assert.strictEqual(mockCheckUserCepLicense.mock.callCount(), 1)
+      assert.strictEqual(mockCheckUserCepLicense.mock.calls[0].arguments[0], userId)
+      assert.deepStrictEqual(
+        result.content[0].text,
+        "Success: User 'user@example.com' has a Chrome Enterprise Premium (CEP) license assigned.",
+      )
+    })
+
+    it('should call checkUserCepLicense and return info if license not found', async () => {
+      const userId = 'user@example.com'
+      const mockCheckUserCepLicense = mock.fn(async () => null)
+      const MockAdminSdkClient = class {
+        constructor() {
+          this.checkUserCepLicense = mockCheckUserCepLicense
+        }
+      }
+
+      const { registerTools } = await esmock(
+        '../../tools/tools.js',
+        {},
+        {
+          '../../lib/api/real_admin_sdk_client.js': {
+            RealAdminSdkClient: MockAdminSdkClient,
+          },
+        },
+      )
+      registerTools(server, {
+        apiClients: { adminSdk: new MockAdminSdkClient() },
+      })
+
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_user_cep_license')
+        .arguments[2]
+
+      const result = await handler({ userId }, {})
+
+      assert.strictEqual(mockCheckUserCepLicense.mock.callCount(), 1)
+      assert.deepStrictEqual(
+        result.content[0].text,
+        "User 'user@example.com' does NOT have a Chrome Enterprise Premium (CEP) license assigned.",
+      )
+    })
+
+    it('should return an error message if API call fails', async () => {
+      const mockCheckUserCepLicense = mock.fn(async () => {
+        throw new Error('API Error')
+      })
+      const MockAdminSdkClient = class {
+        constructor() {
+          this.checkUserCepLicense = mockCheckUserCepLicense
+        }
+      }
+
+      const { registerTools } = await esmock(
+        '../../tools/tools.js',
+        {},
+        {
+          '../../lib/api/real_admin_sdk_client.js': {
+            RealAdminSdkClient: MockAdminSdkClient,
+          },
+        },
+      )
+      registerTools(server, {
+        apiClients: { adminSdk: new MockAdminSdkClient() },
+      })
+
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_user_cep_license')
+        .arguments[2]
+
+      const result = await handler({ userId: 'user@example.com' }, {})
+      assert.deepStrictEqual(result.content[0].text, 'Error: API Error')
+    })
+
+    it('should return error message when Licensing API is not enabled', async () => {
+      const mockCheckUserCepLicense = mock.fn(async () => {
+        throw new Error(
+          'API [licensing.googleapis.com] is not enabled. Please enable it at https://console.cloud.google.com/apis/library/licensing.googleapis.com',
+        )
+      })
+
+      const MockAdminSdkClient = class {
+        constructor() {
+          this.checkUserCepLicense = mockCheckUserCepLicense
+        }
+      }
+
+      const { registerTools } = await esmock(
+        '../../tools/tools.js',
+        {},
+        {
+          '../../lib/api/real_admin_sdk_client.js': {
+            RealAdminSdkClient: MockAdminSdkClient,
+          },
+        },
+      )
+
+      registerTools(server, {
+        apiClients: { adminSdk: new MockAdminSdkClient() },
+      })
+
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_user_cep_license')
+        .arguments[2]
+
+      const result = await handler({ userId: 'user@example.com' }, {})
+
+      assert.strictEqual(mockCheckUserCepLicense.mock.callCount(), 1)
+      assert.match(result.content[0].text, /Error: API \[licensing.googleapis.com\] is not enabled/)
+      assert.match(result.content[0].text, /https:\/\/console.cloud.google.com\/apis\/library\/licensing.googleapis.com/)
+    })
+
+    it('should return error message when access is denied', async () => {
+      const mockCheckUserCepLicense = mock.fn(async () => {
+        throw new Error(
+          'Access denied to Licensing API. The account may not have permission to access licensing information.',
+        )
+      })
+
+      const MockAdminSdkClient = class {
+        constructor() {
+          this.checkUserCepLicense = mockCheckUserCepLicense
+        }
+      }
+
+      const { registerTools } = await esmock(
+        '../../tools/tools.js',
+        {},
+        {
+          '../../lib/api/real_admin_sdk_client.js': {
+            RealAdminSdkClient: MockAdminSdkClient,
+          },
+        },
+      )
+
+      registerTools(server, {
+        apiClients: { adminSdk: new MockAdminSdkClient() },
+      })
+
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_user_cep_license')
+        .arguments[2]
+
+      const result = await handler({ userId: 'user@example.com' }, {})
+
+      assert.strictEqual(mockCheckUserCepLicense.mock.callCount(), 1)
+      assert.match(result.content[0].text, /Error: Access denied to Licensing API/)
+    })
+  })
 })
