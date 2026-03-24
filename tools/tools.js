@@ -35,7 +35,7 @@ import { registerCreateUrlListDetectorTool } from './definitions/create_url_list
 import { registerCreateWordListDetectorTool } from './definitions/create_word_list_detector.js'
 import { registerCreateRegexDetectorTool } from './definitions/create_regex_detector.js'
 import { registerDeleteDetectorTool } from './definitions/delete_detector.js'
-import { registerCheckCepSubscriptionTool } from './definitions/check_cep_subscription.js'
+import { registerCreateDefaultDlpRulesTool } from './definitions/create_default_dlp_rules.js'
 
 /**
  * Registers all tools with the MCP server.
@@ -70,7 +70,7 @@ function registerAllTools(server, options = {}, sessionState) {
   registerGetConnectorPolicyTool(server, { ...commonOpts, chromePolicyClient }, state)
   registerListOrgUnitsTool(server, { ...commonOpts, adminSdkClient }, state)
   registerGetCustomerIdTool(server, { ...commonOpts, adminSdkClient }, state)
-  registerCheckCepSubscriptionTool(server, { ...commonOpts, adminSdkClient }, state)
+  registerCreateDefaultDlpRulesTool(server, { ...commonOpts, cloudIdentityClient }, state)
 }
 
 /**

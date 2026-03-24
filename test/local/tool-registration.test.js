@@ -53,6 +53,7 @@ describe('CEP Tool Registration', () => {
       'get_connector_policy',
       'get_customer_id',
       'list_org_units',
+      'create_default_dlp_rules',
     ].sort()
     assert.deepStrictEqual(
       registeredToolNames.sort(),

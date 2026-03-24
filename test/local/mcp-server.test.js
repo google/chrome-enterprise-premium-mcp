@@ -56,6 +56,7 @@ describe('MCP Server in stdio mode', () => {
         'check_cep_subscription',
         'count_browser_versions',
         'create_chrome_dlp_rule',
+        'create_default_dlp_rules',
         'create_regex_detector',
         'create_url_list_detector',
         'create_word_list_detector',
