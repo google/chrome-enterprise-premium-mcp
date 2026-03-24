@@ -68,10 +68,7 @@ describe('Extension Tools', () => {
     const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_seb_extension_status')
       .arguments[2]
 
-    const result = await handler(
-      { customerId: 'C123', orgUnitId: 'ou1' },
-      { requestInfo: {} }
-    )
+    const result = await handler({ customerId: 'C123', orgUnitId: 'ou1' }, { requestInfo: {} })
 
     assert.strictEqual(mockResolvePolicy.mock.callCount(), 1)
     assert.ok(result.content[0].text.includes('✅'))
@@ -103,10 +100,7 @@ describe('Extension Tools', () => {
     const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_seb_extension_status')
       .arguments[2]
 
-    const result = await handler(
-      { customerId: 'C123', orgUnitId: 'ou1' },
-      { requestInfo: {} }
-    )
+    const result = await handler({ customerId: 'C123', orgUnitId: 'ou1' }, { requestInfo: {} })
 
     assert.ok(result.content[0].text.includes('❌'))
   })
@@ -149,10 +143,7 @@ describe('Extension Tools', () => {
     const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'install_seb_extension')
       .arguments[2]
 
-    const result = await handler(
-      { customerId: 'C123', orgUnitId: 'ou1' },
-      { requestInfo: {} }
-    )
+    const result = await handler({ customerId: 'C123', orgUnitId: 'ou1' }, { requestInfo: {} })
 
     assert.strictEqual(mockBatchModifyPolicy.mock.callCount(), 0)
     assert.ok(result.content[0].text.includes('already force-installed'))
@@ -186,10 +177,7 @@ describe('Extension Tools', () => {
     const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'install_seb_extension')
       .arguments[2]
 
-    const result = await handler(
-      { customerId: 'C123', orgUnitId: 'ou1' },
-      { requestInfo: {} }
-    )
+    const result = await handler({ customerId: 'C123', orgUnitId: 'ou1' }, { requestInfo: {} })
 
     assert.strictEqual(mockBatchModifyPolicy.mock.callCount(), 1)
     const passedRequests = mockBatchModifyPolicy.mock.calls[0].arguments[2]

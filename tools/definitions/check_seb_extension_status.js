@@ -40,7 +40,8 @@ export function registerCheckSebExtensionStatusTool(server, options, sessionStat
   server.registerTool(
     'check_seb_extension_status',
     {
-      description: 'Checks if the Secure Enterprise Browser (SEB) extension is force-installed for a given Organizational Unit.',
+      description:
+        'Checks if the Secure Enterprise Browser (SEB) extension is force-installed for a given Organizational Unit.',
       inputSchema: {
         customerId: inputSchemas.customerId,
         orgUnitId: inputSchemas.orgUnitId.describe('The ID of the organizational unit to check.'),
@@ -54,12 +55,7 @@ export function registerCheckSebExtensionStatusTool(server, options, sessionStat
           )
           const authToken = getAuthToken(requestInfo)
 
-          const policies = await chromePolicyClient.resolvePolicy(
-            customerId,
-            orgUnitId,
-            INSTALL_TYPE_SCHEMA,
-            authToken,
-          )
+          const policies = await chromePolicyClient.resolvePolicy(customerId, orgUnitId, INSTALL_TYPE_SCHEMA, authToken)
 
           const sebPolicy = policies?.find(
             p =>
@@ -73,7 +69,7 @@ export function registerCheckSebExtensionStatusTool(server, options, sessionStat
             content: [
               {
                 type: 'text',
-                text: isInstalled 
+                text: isInstalled
                   ? `✅ The Secure Enterprise Browser extension (${SEB_EXTENSION_ID}) is force-installed for this Organizational Unit.`
                   : `❌ The Secure Enterprise Browser extension (${SEB_EXTENSION_ID}) is NOT force-installed for this Organizational Unit.\n\nData masking and other advanced features may not work correctly without it.`,
               },

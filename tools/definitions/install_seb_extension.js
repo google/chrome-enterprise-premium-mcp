@@ -40,10 +40,13 @@ export function registerInstallSebExtensionTool(server, options, sessionState) {
   server.registerTool(
     'install_seb_extension',
     {
-      description: 'Force-installs the Secure Enterprise Browser (SEB) extension for a given Organizational Unit. Required for data masking.',
+      description:
+        'Force-installs the Secure Enterprise Browser (SEB) extension for a given Organizational Unit. Required for data masking.',
       inputSchema: {
         customerId: inputSchemas.customerId,
-        orgUnitId: inputSchemas.orgUnitId.describe('The ID of the organizational unit where the extension will be force-installed.'),
+        orgUnitId: inputSchemas.orgUnitId.describe(
+          'The ID of the organizational unit where the extension will be force-installed.',
+        ),
       },
     },
     guardedToolCall(
@@ -67,7 +70,7 @@ export function registerInstallSebExtensionTool(server, options, sessionState) {
               p.value?.policySchema === INSTALL_TYPE_SCHEMA &&
               p.targetKey?.additionalTargetKeys?.app_id === `chrome:${SEB_EXTENSION_ID}`,
           )
-          
+
           if (sebPolicy?.value?.value?.appInstallType === 'FORCED') {
             return {
               content: [

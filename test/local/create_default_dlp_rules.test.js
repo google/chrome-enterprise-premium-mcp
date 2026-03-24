@@ -71,7 +71,9 @@ describe('create_default_dlp_rules Tool', () => {
     assert.ok(result.content[0].text.includes('Finished creating default Chrome DLP rules'))
     assert.ok(result.content[0].text.includes('✅ Created: 🤖 Audit visits to generative AI sites'))
     assert.ok(result.content[0].text.includes('✅ Created: 🤖 Watermark sensitive sites (Gmail, Salesforce, Zendesk)'))
-    assert.ok(result.content[0].text.includes('✅ Created: 🤖 Warn before pasting on generative AI sites (Gemini allowed)'))
+    assert.ok(
+      result.content[0].text.includes('✅ Created: 🤖 Warn before pasting on generative AI sites (Gemini allowed)'),
+    )
     assert.deepStrictEqual(result.structuredContent.createdRules.length, 3)
   })
 
