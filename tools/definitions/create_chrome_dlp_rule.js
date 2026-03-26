@@ -41,6 +41,8 @@ import {
   CHROME_TRIGGERS,
   CHROME_ACTION_TYPES,
   ACTION_PARAMETER_CONSTRAINTS,
+  WORKSPACE_RULE_LIMITS,
+  AGENT_DISPLAY_NAME_PREFIX,
 } from '../../lib/util/chrome_dlp_constants.js'
 
 const triggerList = Object.entries(CHROME_TRIGGERS)
@@ -58,7 +60,6 @@ const universalTypeList = Object.entries(UNIVERSAL_CONTENT_TYPES)
 
 const navigationTypeList = Object.entries(NAVIGATION_CONTENT_TYPES)
   .map(([key, desc]) => `- ${key}: ${desc}`)
-  .join('\n')
 
 const pasteTypeList = Object.entries(PASTE_CONTENT_TYPES)
   .map(([key, desc]) => `- ${key}: ${desc}`)
@@ -73,10 +74,6 @@ const functionList = Object.entries(CEL_FUNCTIONS)
   .join('\n')
 
 const compatibilityList = Object.entries(CEL_COMPATIBILITY_RULES)
-  .map(([key, desc]) => `- ${key}: ${desc}`)
-  .join('\n')
-
-const actionConstraintList = Object.entries(ACTION_PARAMETER_CONSTRAINTS)
   .map(([key, desc]) => `- ${key}: ${desc}`)
   .join('\n')
 
@@ -103,6 +100,11 @@ const policyStateList = Object.values(POLICY_STATES)
   .map(s => `- ${s.value}: ${s.description}`)
   .join('\n')
 
+// User provides name without prefix. Max allowed length for user is:
+// (Hard Limit - Prefix Length) rounded down to nearest multiple of 5.
+const USER_DISPLAY_NAME_MAX_LENGTH =
+  Math.floor((WORKSPACE_RULE_LIMITS.NAME_MAX_LENGTH - AGENT_DISPLAY_NAME_PREFIX.length) / 5) * 5
+
 /**
  * Registers the 'create_chrome_dlp_rule' tool with the MCP server.
  *
@@ -123,8 +125,15 @@ This tool is specialized for browser-level protection (e.g., uploads, downloads,
       inputSchema: {
         customerId: inputSchemas.customerId,
         orgUnitId: inputSchemas.orgUnitId.describe('The target Organizational Unit ID'),
-        displayName: z.string().describe('Name of the rule'),
-        description: z.string().optional().describe('Description of the rule'),
+        displayName: z
+          .string()
+          .max(USER_DISPLAY_NAME_MAX_LENGTH)
+          .describe(`Name of the rule. Will be automatically prefixed with '${AGENT_DISPLAY_NAME_PREFIX}'.`),
+        description: z
+          .string()
+          .max(WORKSPACE_RULE_LIMITS.DESCRIPTION_MAX_LENGTH)
+          .optional()
+          .describe('Description of the rule.'),
         triggers: z.array(z.enum(Object.keys(CHROME_TRIGGERS))).describe(`List of Chrome triggers:\n${triggerList}`),
         condition: z
           .string()
@@ -161,14 +170,11 @@ ${compatibilityList}
 
 Multi-Trigger Logic:
 - If multiple triggers are selected, a field or function is valid if it is supported by AT LEAST ONE of those triggers.
-- Example: 'all_content' is supported if you select both 'URL_NAVIGATION' (which doesn't support it) and 'WEB_CONTENT_UPLOAD' (which does).
-
-Action Parameter Compatibility Rules:
-${actionConstraintList}`,
+- Example: 'all_content' is supported if you select both 'URL_NAVIGATION' (which doesn't support it) and 'WEB_CONTENT_UPLOAD' (which does).`,
           ),
         action: z
           .enum([CHROME_ACTION_TYPES.BLOCK, CHROME_ACTION_TYPES.WARN, CHROME_ACTION_TYPES.AUDIT])
-          .describe('Action to take when the rule is triggered'),
+          .describe('Action to take when the rule is triggered.'),
         state: z
           .enum(Object.values(POLICY_STATES).map(s => s.value))
           .optional()
@@ -176,20 +182,18 @@ ${actionConstraintList}`,
         customMessage: z
           .string()
           .optional()
-          .describe(
-            `Custom message to display to the user when the rule is triggered. Note: This field is not applicable to 'AUDIT' actions.`,
-          ),
+          .describe(`Custom message to display to the user. ${ACTION_PARAMETER_CONSTRAINTS.CUSTOM_MESSAGE_SUPPORT}`),
         watermarkMessage: z
           .string()
           .optional()
           .describe(
-            `Watermark message to display when the rule is triggered. Note: This field is only applicable to 'WARN' and 'AUDIT' actions; it is ignored for 'BLOCK' actions.`,
+            `Watermark message to display when the rule is triggered. ${ACTION_PARAMETER_CONSTRAINTS.WATERMARK_SUPPORT}`,
           ),
         blockScreenshot: z
           .boolean()
           .optional()
           .describe(
-            `Whether to block screenshots when the rule is triggered. Note: This field is only applicable to 'WARN' and 'AUDIT' actions; it is ignored for 'BLOCK' actions.`,
+            `Whether to block screenshots when the rule is triggered. ${ACTION_PARAMETER_CONSTRAINTS.SCREENSHOT_SUPPORT}`,
           ),
         saveContent: z.boolean().optional().describe(`Whether to save the content that triggered the rule.`),
         dataMasking: z
@@ -203,7 +207,7 @@ ${actionConstraintList}`,
             }),
           )
           .optional()
-          .describe('List of data masking configurations.'),
+          .describe(`List of data masking configurations. ${ACTION_PARAMETER_CONSTRAINTS.DATA_MASKING_SUPPORT}`),
       },
       outputSchema: outputSchemas.singlePolicy,
     },
@@ -211,11 +215,10 @@ ${actionConstraintList}`,
     guardedToolCall(
       {
         transform: params => {
-          const newDisplayName = `🤖 ${params.displayName}`
+          const newDisplayName = `${AGENT_DISPLAY_NAME_PREFIX}${params.displayName}`
           return { ...params, displayName: newDisplayName }
         },
         handler: async (params, { requestInfo }) => {
-          logger.debug(`${TAGS.MCP} Calling 'create_chrome_dlp_rule' with params: ${JSON.stringify(params)}`)
           const {
             customerId,
             orgUnitId,
@@ -231,6 +234,8 @@ ${actionConstraintList}`,
             saveContent,
             dataMasking,
           } = params
+
+          logger.debug(`${TAGS.MCP} Calling 'create_chrome_dlp_rule' with params: ${JSON.stringify(params)}`)
 
           const authToken = getAuthToken(requestInfo)
           const fullTriggers = triggers.map(t => CHROME_TRIGGERS[t].value)
@@ -253,76 +258,68 @@ ${actionConstraintList}`,
           }
 
           // Validate action-parameter compatibility based on rule message constraints
-          const actionValidation = validateActionParameters(action, {
-            customMessage,
-            watermarkMessage,
-            blockScreenshot,
-          })
+          const actionValidation = validateActionParameters(
+            action,
+            {
+              customMessage,
+              watermarkMessage,
+              blockScreenshot,
+              dataMasking,
+            },
+            triggers,
+          )
           if (!actionValidation.isValid) {
             throw new Error(actionValidation.errors.join('\n- '))
           }
 
-          const actionParams = {}
+          const actionData = {}
           if (customMessage) {
-            actionParams.customEndUserMessage = {
+            actionData.customEndUserMessage = {
               unsafeHtmlMessageBody: customMessage,
             }
           }
           if (watermarkMessage) {
-            actionParams.watermarkMessage = watermarkMessage
+            actionData.watermarkMessage = watermarkMessage
           }
           if (blockScreenshot) {
-            actionParams.blockScreenshot = blockScreenshot
+            actionData.blockScreenshot = blockScreenshot
           }
           if (saveContent) {
-            actionParams.saveContent = saveContent
+            actionData.saveContent = saveContent
           }
-          if (dataMasking?.length) {
-            actionParams.dataMasking = {
-              regexDetector: dataMasking.map(dm => ({
-                maskType: dm.maskType,
-                resourceName: dm.resourceName,
-                displayName: dm.displayName,
+          if (dataMasking) {
+            actionData.dataMasking = {
+              regexDetector: dataMasking.map(m => ({
+                maskType: m.maskType,
+                resourceName: m.resourceName,
+                displayName: m.displayName,
               })),
             }
           }
 
-          const chromeAction = {}
-          const hasActionParams = Object.keys(actionParams).length > 0
+          const actionMap = {
+            [CHROME_ACTION_TYPES.BLOCK]: 'blockContent',
+            [CHROME_ACTION_TYPES.WARN]: 'warnUser',
+            [CHROME_ACTION_TYPES.AUDIT]: 'auditOnly',
+          }
 
-          switch (action) {
-            case CHROME_ACTION_TYPES.BLOCK:
-              chromeAction.blockContent = hasActionParams ? { actionParams } : {}
-              break
-            case CHROME_ACTION_TYPES.WARN:
-              chromeAction.warnUser = hasActionParams ? { actionParams } : {}
-              break
-            case CHROME_ACTION_TYPES.AUDIT:
-              chromeAction.auditOnly = hasActionParams ? { actionParams } : {}
-              break
-            default:
-              throw new Error(`Unsupported action type: ${action}`)
+          const actionKey = actionMap[action]
+          const chromeAction = {
+            [actionKey]: Object.keys(actionData).length > 0 ? { actionParams: actionData } : {},
           }
 
           ruleConfig.action = {
-            chromeAction: chromeAction,
+            chromeAction,
           }
 
-          let createdPolicy
-          try {
-            createdPolicy = await cloudIdentityClient.createDlpRule(customerId, orgUnitId, ruleConfig, authToken)
-          } catch (error) {
-            // Error 7016: Request contains invalid argument(s) often happens due to incompatible CEL functions with triggers.
-            if (error.message && (error.message.includes('7016') || error.message.includes('INVALID_ARGUMENT'))) {
-              // Invalid argument error the validators didn't catch
-              let errorDetails =
-                'This may be due to an incompatible CEL function, a malformed condition string, or an unsupported field/value combination.'
-              throw new Error(`${error.message}\n\n${errorDetails}`)
-            }
-            throw error
-          }
+          const createdPolicy = await cloudIdentityClient.createDlpRule(
+            customerId,
+            orgUnitId,
+            ruleConfig,
+            authToken,
+            requestInfo,
+          )
 
-          logger.debug(`${TAGS.MCP} Successfully created Chrome DLP rule.`)
           return {
             content: [
               {

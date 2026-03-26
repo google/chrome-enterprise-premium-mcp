@@ -22,6 +22,7 @@ import { z } from 'zod'
 
 import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas, resolveRootOrgUnitId } from '../utils.js'
 import { logger } from '../../lib/util/logger.js'
+import { WORKSPACE_RULE_LIMITS } from '../../lib/util/chrome_dlp_constants.js'
 
 /**
  * Registers the 'create_url_list_detector' tool with the MCP server.
@@ -42,8 +43,15 @@ export function registerCreateUrlListDetectorTool(server, options, sessionState)
       description: 'Creates a new DLP URL list detector.',
       inputSchema: {
         customerId: inputSchemas.customerId,
-        displayName: z.string().describe(`The display name for the detector.`),
-        description: z.string().optional().describe(`An optional description for the detector.`),
+        displayName: z
+          .string()
+          .max(WORKSPACE_RULE_LIMITS.NAME_MAX_LENGTH)
+          .describe('The display name for the detector.'),
+        description: z
+          .string()
+          .max(WORKSPACE_RULE_LIMITS.DESCRIPTION_MAX_LENGTH)
+          .optional()
+          .describe('An optional description for the detector.'),
         urls: z.array(z.string()).min(1).describe(`A list of URLs to match.`),
       },
       outputSchema: outputSchemas.singlePolicy,

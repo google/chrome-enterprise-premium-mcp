@@ -21,6 +21,7 @@ import { z } from 'zod'
 
 import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas, resolveRootOrgUnitId } from '../utils.js'
 import { logger } from '../../lib/util/logger.js'
+import { WORKSPACE_RULE_LIMITS } from '../../lib/util/chrome_dlp_constants.js'
 
 /**
  * Registers the 'create_word_list_detector' tool with the MCP server.
@@ -41,9 +42,22 @@ export function registerCreateWordListDetectorTool(server, options, sessionState
       description: 'Creates a new DLP word list detector.',
       inputSchema: {
         customerId: inputSchemas.customerId,
-        displayName: z.string().describe(`The display name for the detector.`),
-        description: z.string().optional().describe(`An optional description for the detector.`),
-        words: z.array(z.string()).min(1).describe(`A list of words to match.`),
+        displayName: z
+          .string()
+          .max(WORKSPACE_RULE_LIMITS.NAME_MAX_LENGTH)
+          .describe('The display name for the detector.'),
+        description: z
+          .string()
+          .max(WORKSPACE_RULE_LIMITS.DESCRIPTION_MAX_LENGTH)
+          .optional()
+          .describe('An optional description for the detector.'),
+        words: z
+          .array(z.string())
+          .min(1)
+          .max(WORKSPACE_RULE_LIMITS.MAX_WORDS_IN_LIST)
+          .describe(
+            `A list of words to match. Total character count across all words must be ${WORKSPACE_RULE_LIMITS.MAX_WORD_LIST_CHARS} or less.`,
+          ),
       },
       outputSchema: outputSchemas.singlePolicy,
     },
@@ -52,6 +66,13 @@ export function registerCreateWordListDetectorTool(server, options, sessionState
         handler: async (params, { requestInfo }) => {
           const { customerId, displayName, description, words } = params
           const authToken = getAuthToken(requestInfo)
+
+          const totalChars = words.reduce((acc, word) => acc + word.length, 0)
+          if (totalChars > WORKSPACE_RULE_LIMITS.MAX_WORD_LIST_CHARS) {
+            throw new Error(
+              `The total character count across all words must be ${WORKSPACE_RULE_LIMITS.MAX_WORD_LIST_CHARS} or less.`,
+            )
+          }
 
           const orgUnitId = await resolveRootOrgUnitId(apiClients, customerId, authToken, sessionState)
           if (!orgUnitId) {
