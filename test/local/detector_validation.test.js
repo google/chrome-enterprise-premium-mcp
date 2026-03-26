@@ -25,24 +25,24 @@ describe('Tool Input Validation', () => {
   }
   const mockOptions = {
     cloudIdentityClient: {
-        createDetector: mock.fn(() => ({ name: 'test' })),
-        createDlpRule: mock.fn(() => ({ name: 'test' })),
+      createDetector: mock.fn(() => ({ name: 'test' })),
+      createDlpRule: mock.fn(() => ({ name: 'test' })),
     },
     apiClients: {},
   }
 
   describe('create_word_list_detector', async () => {
     const { registerCreateWordListDetectorTool } = await esmock(
-        '../../tools/definitions/create_word_list_detector.js',
-        {
-            '../../tools/utils.js': {
-                guardedToolCall: t => t,
-                getAuthToken: () => 'token',
-                resolveRootOrgUnitId: () => 'root',
-                inputSchemas: { customerId: {} },
-                outputSchemas: { singlePolicy: {} }
-            }
-        }
+      '../../tools/definitions/create_word_list_detector.js',
+      {
+        '../../tools/utils.js': {
+          guardedToolCall: t => t,
+          getAuthToken: () => 'token',
+          resolveRootOrgUnitId: () => 'root',
+          inputSchemas: { customerId: {} },
+          outputSchemas: { singlePolicy: {} },
+        },
+      },
     )
 
     it('should have Zod validation for displayName length', async () => {
@@ -50,7 +50,7 @@ describe('Tool Input Validation', () => {
       registerCreateWordListDetectorTool(mockServer, mockOptions, {})
       const toolDef = mockServer.registerTool.mock.calls.find(c => c.arguments[0] === 'create_word_list_detector')
       const schema = toolDef.arguments[1].inputSchema
-      
+
       const longName = 'A'.repeat(WORKSPACE_RULE_LIMITS.NAME_MAX_LENGTH + 1)
       const result = schema.displayName.safeParse(longName)
       assert.strictEqual(result.success, false)
@@ -63,35 +63,33 @@ describe('Tool Input Validation', () => {
       const handler = toolDef.arguments[2].handler
 
       const bigWord = 'A'.repeat(WORKSPACE_RULE_LIMITS.MAX_WORD_LIST_CHARS + 1)
-      
+
       await assert.rejects(
         handler({ customerId: 'C123', displayName: 'Test', words: [bigWord] }, { requestInfo: {} }),
-        { message: /character count/ }
+        { message: /character count/ },
       )
     })
   })
 
   describe('create_chrome_dlp_rule', async () => {
-    const { registerCreateChromeDlpRuleTool } = await esmock(
-        '../../tools/definitions/create_chrome_dlp_rule.js',
-        {
-            '../../tools/utils.js': {
-                guardedToolCall: t => t,
-                getAuthToken: () => 'token',
-                inputSchemas: { customerId: {}, orgUnitId: { describe: () => ({}) } },
-                outputSchemas: { singlePolicy: {} }
-            }
-        }
-    )
+    const { registerCreateChromeDlpRuleTool } = await esmock('../../tools/definitions/create_chrome_dlp_rule.js', {
+      '../../tools/utils.js': {
+        guardedToolCall: t => t,
+        getAuthToken: () => 'token',
+        inputSchemas: { customerId: {}, orgUnitId: { describe: () => ({}) } },
+        outputSchemas: { singlePolicy: {} },
+      },
+    })
 
     it('should have prefix-aware Zod validation for displayName', async () => {
       mockServer.registerTool.mock.resetCalls()
       registerCreateChromeDlpRuleTool(mockServer, mockOptions, {})
       const toolDef = mockServer.registerTool.mock.calls.find(c => c.arguments[0] === 'create_chrome_dlp_rule')
       const schema = toolDef.arguments[1].inputSchema
-      
-      const allowedLength = Math.floor((WORKSPACE_RULE_LIMITS.NAME_MAX_LENGTH - AGENT_DISPLAY_NAME_PREFIX.length) / 5) * 5
-      
+
+      const allowedLength =
+        Math.floor((WORKSPACE_RULE_LIMITS.NAME_MAX_LENGTH - AGENT_DISPLAY_NAME_PREFIX.length) / 5) * 5
+
       const resultValid = schema.displayName.safeParse('A'.repeat(allowedLength))
       assert.strictEqual(resultValid.success, true)
 

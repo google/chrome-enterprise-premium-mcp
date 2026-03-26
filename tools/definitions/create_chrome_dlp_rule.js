@@ -58,8 +58,7 @@ const universalTypeList = Object.entries(UNIVERSAL_CONTENT_TYPES)
   .map(([key, desc]) => `- ${key}: ${desc}`)
   .join('\n')
 
-const navigationTypeList = Object.entries(NAVIGATION_CONTENT_TYPES)
-  .map(([key, desc]) => `- ${key}: ${desc}`)
+const navigationTypeList = Object.entries(NAVIGATION_CONTENT_TYPES).map(([key, desc]) => `- ${key}: ${desc}`)
 
 const pasteTypeList = Object.entries(PASTE_CONTENT_TYPES)
   .map(([key, desc]) => `- ${key}: ${desc}`)

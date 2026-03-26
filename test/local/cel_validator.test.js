@@ -132,9 +132,7 @@ describe('CEL Validator', () => {
 
   describe('validateActionParameters', () => {
     it('should pass for valid parameters', () => {
-      const result = validateActionParameters(CHROME_ACTION_TYPES.BLOCK, { customMessage: 'Blocked' }, [
-        'FILE_UPLOAD',
-      ])
+      const result = validateActionParameters(CHROME_ACTION_TYPES.BLOCK, { customMessage: 'Blocked' }, ['FILE_UPLOAD'])
       assert.strictEqual(result.isValid, true)
     })
 
@@ -160,7 +158,9 @@ describe('CEL Validator', () => {
     })
 
     it('should fail if dataMasking is used without URL_NAVIGATION', () => {
-      const result = validateActionParameters(CHROME_ACTION_TYPES.WARN, { dataMasking: { regexDetectors: [] } }, ['FILE_UPLOAD'])
+      const result = validateActionParameters(CHROME_ACTION_TYPES.WARN, { dataMasking: { regexDetectors: [] } }, [
+        'FILE_UPLOAD',
+      ])
       assert.strictEqual(result.isValid, false)
       assert.ok(result.errors.some(e => e.includes('dataMasking') && e.includes('URL_NAVIGATION')))
     })
