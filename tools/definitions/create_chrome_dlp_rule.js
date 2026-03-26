@@ -197,17 +197,23 @@ Multi-Trigger Logic:
           ),
         saveContent: z.boolean().optional().describe(`Whether to save the content that triggered the rule.`),
         dataMasking: z
-          .array(
-            z.object({
-              maskType: z
-                .enum(Object.values(MASK_TYPES).map(m => m.value))
-                .describe(`The type of masking to apply:\n${maskTypeList}`),
-              resourceName: z.string().describe('The resource name of the detector (e.g. US_SOCIAL_SECURITY_NUMBER).'),
-              displayName: z.string().describe('The display name for the detector in the UI.'),
-            }),
-          )
+          .object({
+            regexDetectors: z
+              .array(
+                z.object({
+                  maskType: z
+                    .enum(Object.values(MASK_TYPES).map(m => m.value))
+                    .describe(`The type of masking to apply:\n${maskTypeList}`),
+                  resourceName: z.string().describe('The resource name of the detector (e.g. policies/abc-123).'),
+                  displayName: z.string().describe('The display name for the detector in the UI.'),
+                }),
+              )
+              .optional(),
+          })
           .optional()
-          .describe(`List of data masking configurations. ${ACTION_PARAMETER_CONSTRAINTS.DATA_MASKING_SUPPORT}`),
+          .describe(
+            `Data masking configurations (currently only regex detectors are supported). ${ACTION_PARAMETER_CONSTRAINTS.DATA_MASKING_SUPPORT}`,
+          ),
       },
       outputSchema: outputSchemas.singlePolicy,
     },
@@ -288,12 +294,13 @@ Multi-Trigger Logic:
             actionData.saveContent = saveContent
           }
           if (dataMasking) {
-            actionData.dataMasking = {
-              regexDetector: dataMasking.map(m => ({
+            actionData.dataMasking = {}
+            if (dataMasking.regexDetectors) {
+              actionData.dataMasking.regexDetector = dataMasking.regexDetectors.map(m => ({
                 maskType: m.maskType,
                 resourceName: m.resourceName,
                 displayName: m.displayName,
-              })),
+              }))
             }
           }
 

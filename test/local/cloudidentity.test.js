@@ -259,13 +259,15 @@ describe('Cloud Identity API', () => {
           triggers: ['URL_NAVIGATION'],
           condition: "url.contains('test')",
           action: 'AUDIT',
-          dataMasking: [
-            {
-              maskType: 'MASK_TYPE_REDACT',
-              resourceName: 'US_SOCIAL_SECURITY_NUMBER',
-              displayName: 'SSN',
-            },
-          ],
+          dataMasking: {
+            regexDetectors: [
+              {
+                maskType: 'MASK_TYPE_REDACT',
+                resourceName: 'policies/abc-123',
+                displayName: 'My Regex',
+              },
+            ],
+          },
         },
         { requestInfo: {} },
       )
@@ -276,8 +278,8 @@ describe('Cloud Identity API', () => {
         regexDetector: [
           {
             maskType: 'MASK_TYPE_REDACT',
-            resourceName: 'US_SOCIAL_SECURITY_NUMBER',
-            displayName: 'SSN',
+            resourceName: 'policies/abc-123',
+            displayName: 'My Regex',
           },
         ],
       })

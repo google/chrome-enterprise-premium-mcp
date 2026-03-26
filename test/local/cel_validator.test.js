@@ -160,7 +160,7 @@ describe('CEL Validator', () => {
     })
 
     it('should fail if dataMasking is used without URL_NAVIGATION', () => {
-      const result = validateActionParameters(CHROME_ACTION_TYPES.WARN, { dataMasking: [{}] }, ['FILE_UPLOAD'])
+      const result = validateActionParameters(CHROME_ACTION_TYPES.WARN, { dataMasking: { regexDetectors: [] } }, ['FILE_UPLOAD'])
       assert.strictEqual(result.isValid, false)
       assert.ok(result.errors.some(e => e.includes('dataMasking') && e.includes('URL_NAVIGATION')))
     })
@@ -176,11 +176,23 @@ describe('CEL Validator', () => {
         {
           watermarkMessage: 'Test',
           blockScreenshot: true,
-          dataMasking: [{}],
+          dataMasking: { regexDetectors: [] },
         },
         ['URL_NAVIGATION'],
       )
       assert.strictEqual(result.isValid, true)
+    })
+
+    it('should fail if dataMasking contains unsupported detectors', () => {
+      const result = validateActionParameters(
+        CHROME_ACTION_TYPES.WARN,
+        {
+          dataMasking: { wordListDetectors: [{}] },
+        },
+        ['URL_NAVIGATION'],
+      )
+      assert.strictEqual(result.isValid, false)
+      assert.ok(result.errors.some(e => e.includes('ONLY regex detectors are supported for data masking')))
     })
 
     it('should fail if customMessage contains unauthorized HTML tags', () => {
