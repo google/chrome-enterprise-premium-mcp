@@ -49,12 +49,14 @@ import { RealAdminSdkClient } from './lib/api/real_admin_sdk_client.js'
 import { RealCloudIdentityClient } from './lib/api/real_cloud_identity_client.js'
 import { RealChromePolicyClient } from './lib/api/real_chrome_policy_client.js'
 import { RealChromeManagementClient } from './lib/api/real_chrome_management_client.js'
+import { RealServiceUsageClient } from './lib/api/real_service_usage_client.js'
 
 // Import Fake Clients
 import { FakeAdminSdkClient } from './lib/api/fake_admin_sdk_client.js'
 import { FakeCloudIdentityClient } from './lib/api/fake_cloud_identity_client.js'
 import { FakeChromePolicyClient } from './lib/api/fake_chrome_policy_client.js'
 import { FakeChromeManagementClient } from './lib/api/fake_chrome_management_client.js'
+import { FakeServiceUsageClient } from './lib/api/fake_service_usage_client.js'
 
 //Suppress the warning related to missing .env file in case of non-OAuth mode
 config({ quiet: true, ignore: ['MISSING_ENV_FILE'] })
@@ -113,6 +115,7 @@ async function getServer(gcpInfo, sharedSessionState) {
       cloudIdentity: new FakeCloudIdentityClient(apiOptions.rootUrl),
       chromePolicy: new FakeChromePolicyClient(apiOptions.rootUrl),
       chromeManagement: new FakeChromeManagementClient(apiOptions.rootUrl),
+      serviceUsage: new FakeServiceUsageClient(apiOptions.rootUrl),
     }
   } else {
     console.error(`${TAGS.MCP} Using REAL API clients.`)
@@ -121,6 +124,7 @@ async function getServer(gcpInfo, sharedSessionState) {
       cloudIdentity: new RealCloudIdentityClient(apiOptions),
       chromePolicy: new RealChromePolicyClient(apiOptions),
       chromeManagement: new RealChromeManagementClient(apiOptions),
+      serviceUsage: new RealServiceUsageClient(apiOptions),
     }
   }
 

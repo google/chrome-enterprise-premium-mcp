@@ -25,7 +25,7 @@ limitations under the License.
 
 import { z } from 'zod'
 
-import { TAGS } from '../lib/constants.js'
+import { TAGS, SERVICE_NAMES } from '../lib/constants.js'
 /**
  * Reusable Zod schema definitions for inputs.
  */
@@ -34,6 +34,13 @@ export const inputSchemas = {
   userId: z.string().describe("The user's primary email address or unique ID."),
   orgUnitId: z.string().describe('The ID of the organizational unit.'),
   orgUnitIdOptional: z.string().optional().describe('The ID of the organizational unit to filter results.'),
+  projectId: z.string().describe('The Google Cloud project ID or number.'),
+  apiName: z
+    .enum(Object.values(SERVICE_NAMES))
+    .optional()
+    .describe('The API name to check/enable (e.g., admin.googleapis.com).'),
+  enable: z.boolean().optional().describe('Whether to enable the API if it is disabled.'),
+  checkAll: z.boolean().optional().describe('Whether to check all required APIs and enable the missing ones.'),
 }
 
 /**

@@ -40,6 +40,7 @@ import { registerCheckCepSubscriptionTool } from './definitions/check_cep_subscr
 import { registerCheckUserCepLicenseTool } from './definitions/check_user_cep_license.js'
 import { registerCheckSebExtensionStatusTool } from './definitions/check_seb_extension_status.js'
 import { registerInstallSebExtensionTool } from './definitions/install_seb_extension.js'
+import { registerCheckAndEnableApiTool } from './definitions/check_and_enable_api.js'
 
 /**
  * Registers all tools with the MCP server.
@@ -56,6 +57,7 @@ function registerAllTools(server, options = {}, sessionState) {
     cloudIdentity: cloudIdentityClient,
     chromePolicy: chromePolicyClient,
     chromeManagement: chromeManagementClient,
+    serviceUsage: serviceUsageClient,
   } = options.apiClients || {}
 
   const commonOpts = { ...options, apiOptions }
@@ -79,6 +81,7 @@ function registerAllTools(server, options = {}, sessionState) {
   registerCreateDefaultDlpRulesTool(server, { ...commonOpts, cloudIdentityClient }, state)
   registerCheckSebExtensionStatusTool(server, { ...commonOpts, chromePolicyClient }, state)
   registerInstallSebExtensionTool(server, { ...commonOpts, chromePolicyClient }, state)
+  registerCheckAndEnableApiTool(server, { ...commonOpts, serviceUsageClient }, state)
 }
 
 /**
