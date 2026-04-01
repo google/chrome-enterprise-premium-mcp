@@ -18,6 +18,8 @@ limitations under the License.
  * @fileoverview Prompt definition for the main '/cep' command.
  */
 
+import { SHARED_DIAGNOSTIC_RULES } from './shared.js'
+
 export const CEP_PROMPT_NAME = 'cep'
 
 /**
@@ -52,7 +54,7 @@ export const registerCepPrompt = server => {
     *   Is **Enhanced Safe Browsing** enabled?
     *   Are Data Loss Prevention (DLP) rules enabled?
     *   Is reporting enabled for DLP events?
-3. Summarize your findings and report issues by severity.
+${SHARED_DIAGNOSTIC_RULES}
 
 (Note: Other available commands include "/cep:maturity" and "/cep:noise".)`,
             },

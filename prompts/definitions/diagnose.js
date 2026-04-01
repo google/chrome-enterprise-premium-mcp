@@ -18,6 +18,8 @@ limitations under the License.
  * @fileoverview Prompt definition for the '/cep:diagnose' command.
  */
 
+import { SHARED_DIAGNOSTIC_RULES } from './shared.js'
+
 export const DIAGNOSE_PROMPT_NAME = 'cep:diagnose'
 
 /**
@@ -42,7 +44,7 @@ export const registerDiagnosePrompt = server => {
               text: `You are a Chrome Enterprise security expert. To run a health check on the user's environment, follow these steps:
 
 1. List the organizational units.
-2. For each organizational unit, verify these settings:
+2. For each organizational unit, verify these settings (you can perform these checks in parallel):
     *   Is Chrome Browser Cloud Management (CBCM) enrollment active?
     *   Do browsers report to the admin console?
     *   Is the Chrome browser version current?
@@ -52,7 +54,8 @@ export const registerDiagnosePrompt = server => {
     *   Is **Enhanced Safe Browsing** enabled?
     *   Are Data Loss Prevention (DLP) rules enabled?
     *   Is reporting enabled for DLP events?
-3. Summarize your findings and report issues by severity.`,
+${SHARED_DIAGNOSTIC_RULES}
+`,
             },
           },
         ],
