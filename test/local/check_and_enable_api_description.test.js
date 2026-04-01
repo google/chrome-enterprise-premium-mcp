@@ -32,9 +32,14 @@ describe('check_and_enable_api tool description', () => {
     const state = {}
     registerCheckAndEnableApiTool(server, { serviceUsageClient }, state)
 
-    const toolDefinition = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_api').arguments[1]
+    const toolDefinition = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_api')
+      .arguments[1]
 
-    assert.ok(toolDefinition.description.includes('The model MUST specifically ask the customer whether they would like to check and enable ALL missing required APIs or just the specific one currently identified as missing.'))
+    assert.ok(
+      toolDefinition.description.includes(
+        'The model MUST specifically ask the customer whether they would like to check and enable ALL missing required APIs or just the specific one currently identified as missing.',
+      ),
+    )
     assert.ok(toolDefinition.description.includes("(and 'checkAll: true' if they agreed to enable all)"))
   })
 })

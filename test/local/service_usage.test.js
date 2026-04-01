@@ -34,15 +34,23 @@ describe('check_and_enable_api tool', () => {
     const state = {}
     registerCheckAndEnableApiTool(server, { serviceUsageClient }, state)
 
-    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_api').arguments[2]
+    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_api')
+      .arguments[2]
 
-    const result = await handler({
-      projectId: 'test-project',
-      apiName: SERVICE_NAMES.ADMIN_SDK,
-    }, { requestInfo: {} })
+    const result = await handler(
+      {
+        projectId: 'test-project',
+        apiName: SERVICE_NAMES.ADMIN_SDK,
+      },
+      { requestInfo: {} },
+    )
 
     assert.ok(result.content[0].text.includes(`API [${SERVICE_NAMES.ADMIN_SDK}] is currently DISABLED`))
-    assert.ok(result.content[0].text.includes('Would you like to enable the missing API(s) listed above, or should I check for and enable ALL required APIs for your project?'))
+    assert.ok(
+      result.content[0].text.includes(
+        'Would you like to enable the missing API(s) listed above, or should I check for and enable ALL required APIs for your project?',
+      ),
+    )
   })
 
   it('should report status of only one API if checkAll is explicitly false', async () => {
@@ -50,13 +58,17 @@ describe('check_and_enable_api tool', () => {
     const state = {}
     registerCheckAndEnableApiTool(server, { serviceUsageClient }, state)
 
-    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_api').arguments[2]
+    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_api')
+      .arguments[2]
 
-    const result = await handler({
-      projectId: 'test-project',
-      apiName: SERVICE_NAMES.ADMIN_SDK,
-      checkAll: false,
-    }, { requestInfo: {} })
+    const result = await handler(
+      {
+        projectId: 'test-project',
+        apiName: SERVICE_NAMES.ADMIN_SDK,
+        checkAll: false,
+      },
+      { requestInfo: {} },
+    )
 
     assert.ok(result.content[0].text.includes(`API [${SERVICE_NAMES.ADMIN_SDK}] is currently DISABLED`))
     // Should NOT include other APIs
@@ -68,14 +80,18 @@ describe('check_and_enable_api tool', () => {
     const state = {}
     registerCheckAndEnableApiTool(server, { serviceUsageClient }, state)
 
-    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_api').arguments[2]
+    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_api')
+      .arguments[2]
 
-    const result = await handler({
-      projectId: 'test-project',
-      apiName: SERVICE_NAMES.ADMIN_SDK,
-      enable: true,
-      checkAll: false,
-    }, { requestInfo: {} })
+    const result = await handler(
+      {
+        projectId: 'test-project',
+        apiName: SERVICE_NAMES.ADMIN_SDK,
+        enable: true,
+        checkAll: false,
+      },
+      { requestInfo: {} },
+    )
 
     // Only Admin SDK should be ENABLED
     assert.ok(result.content[0].text.includes(`API [${SERVICE_NAMES.ADMIN_SDK}] has been successfully ENABLED`))
@@ -88,13 +104,17 @@ describe('check_and_enable_api tool', () => {
     const state = {}
     registerCheckAndEnableApiTool(server, { serviceUsageClient }, state)
 
-    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_api').arguments[2]
+    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_api')
+      .arguments[2]
 
-    const result = await handler({
-      projectId: 'test-project',
-      apiName: SERVICE_NAMES.ADMIN_SDK,
-      enable: true,
-    }, { requestInfo: {} })
+    const result = await handler(
+      {
+        projectId: 'test-project',
+        apiName: SERVICE_NAMES.ADMIN_SDK,
+        enable: true,
+      },
+      { requestInfo: {} },
+    )
 
     assert.ok(result.content[0].text.includes(`API [${SERVICE_NAMES.ADMIN_SDK}] has been successfully ENABLED`))
     // Should NOT include other APIs
@@ -109,12 +129,16 @@ describe('check_and_enable_api tool', () => {
     const state = {}
     registerCheckAndEnableApiTool(server, { serviceUsageClient }, state)
 
-    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_api').arguments[2]
+    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_api')
+      .arguments[2]
 
-    const result = await handler({
-      projectId: 'test-project',
-      apiName: SERVICE_NAMES.ADMIN_SDK,
-    }, { requestInfo: {} })
+    const result = await handler(
+      {
+        projectId: 'test-project',
+        apiName: SERVICE_NAMES.ADMIN_SDK,
+      },
+      { requestInfo: {} },
+    )
 
     assert.ok(result.content[0].text.includes('is already ENABLED'))
   })
@@ -124,12 +148,16 @@ describe('check_and_enable_api tool', () => {
     const state = {}
     registerCheckAndEnableApiTool(server, { serviceUsageClient }, state)
 
-    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_api').arguments[2]
+    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_api')
+      .arguments[2]
 
-    const result = await handler({
-      projectId: 'test-project',
-      checkAll: true,
-    }, { requestInfo: {} })
+    const result = await handler(
+      {
+        projectId: 'test-project',
+        checkAll: true,
+      },
+      { requestInfo: {} },
+    )
 
     for (const api of Object.values(SERVICE_NAMES)) {
       assert.ok(result.content[0].text.includes(`API [${api}] is currently DISABLED`))
@@ -142,13 +170,17 @@ describe('check_and_enable_api tool', () => {
     const state = {}
     registerCheckAndEnableApiTool(server, { serviceUsageClient }, state)
 
-    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_api').arguments[2]
+    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_api')
+      .arguments[2]
 
-    const result = await handler({
-      projectId: 'test-project',
-      checkAll: true,
-      enable: true,
-    }, { requestInfo: {} })
+    const result = await handler(
+      {
+        projectId: 'test-project',
+        checkAll: true,
+        enable: true,
+      },
+      { requestInfo: {} },
+    )
 
     for (const api of Object.values(SERVICE_NAMES)) {
       assert.ok(result.content[0].text.includes(`API [${api}] has been successfully ENABLED`))
@@ -158,23 +190,35 @@ describe('check_and_enable_api tool', () => {
   it('should handle cases where Service Usage API itself is disabled', async () => {
     const serviceUsageClient = {
       getServiceStatus: mock.fn(() => {
-        throw new Error('API Error 403 (PERMISSION_DENIED): Service Usage API has not been used in project [test-project] before or it is disabled.')
+        throw new Error(
+          'API Error 403 (PERMISSION_DENIED): Service Usage API has not been used in project [test-project] before or it is disabled.',
+        )
       }),
     }
     const state = {}
     registerCheckAndEnableApiTool(server, { serviceUsageClient }, state)
 
-    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_api').arguments[2]
+    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_api')
+      .arguments[2]
 
-    const result = await handler({
-      projectId: 'test-project',
-      checkAll: true,
-    }, { requestInfo: {} })
+    const result = await handler(
+      {
+        projectId: 'test-project',
+        checkAll: true,
+      },
+      { requestInfo: {} },
+    )
 
     assert.strictEqual(result.isError, true)
     assert.ok(result.content[0].text.includes('The Service Usage API is currently disabled'))
-    assert.ok(result.content[0].text.includes('Once the API has been enabled, please notify me so that I can re-attempt the check and enablement of all other required services.'))
-    assert.ok(result.content[0].text.includes('https://console.cloud.google.com/apis/library/serviceusage.googleapis.com'))
+    assert.ok(
+      result.content[0].text.includes(
+        'Once the API has been enabled, please notify me so that I can re-attempt the check and enablement of all other required services.',
+      ),
+    )
+    assert.ok(
+      result.content[0].text.includes('https://console.cloud.google.com/apis/library/serviceusage.googleapis.com'),
+    )
   })
 
   it('should report status of only the default API when only projectId is provided', async () => {
@@ -182,15 +226,23 @@ describe('check_and_enable_api tool', () => {
     const state = {}
     registerCheckAndEnableApiTool(server, { serviceUsageClient }, state)
 
-    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_api').arguments[2]
+    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_api')
+      .arguments[2]
 
-    const result = await handler({
-      projectId: 'test-project',
-    }, { requestInfo: {} })
+    const result = await handler(
+      {
+        projectId: 'test-project',
+      },
+      { requestInfo: {} },
+    )
 
     assert.ok(result.content[0].text.includes(`API [${SERVICE_NAMES.ADMIN_SDK}] is currently DISABLED`))
     // Should NOT include other APIs
     assert.ok(!result.content[0].text.includes(`API [${SERVICE_NAMES.CHROME_POLICY}]`))
-    assert.ok(result.content[0].text.includes('Would you like to enable the missing API(s) listed above, or should I check for and enable ALL required APIs for your project?'))
+    assert.ok(
+      result.content[0].text.includes(
+        'Would you like to enable the missing API(s) listed above, or should I check for and enable ALL required APIs for your project?',
+      ),
+    )
   })
 })
