@@ -55,10 +55,12 @@ export function registerGetConnectorPolicyTool(server, options, sessionState) {
         It serves as the primary diagnostic engine to verify if the settings are set for DLP rules and data insights to be operational.
         For accurate DLP enforcement, the model must verify that the relevant Content Analysis connector has its serviceProvider set to
         SERVICE_PROVIDER_CHROME_ENTERPRISE_PREMIUM and delayDeliveryUntilVerdict set to true. Simultaneously, the model must audit the ON_SECURITY_EVENT
-        to ensure event telemetry is active. Specifically, if this reporting configuration uses enabledEventNames, the model must validate that the
-        five core DLP events—contentTransferEvent, dangerousDownloadEvent, sensitiveDataEvent, urlFilteringInterstitialEvent, and suspiciousUrlEvent—are
-        explicitly included. If these reporting events are missing or the service provider is misconfigured, the customer must be informed that while a
-        policy may be "active," the feedback loop for DLP rules and data insights will be broken. Please provide direct links to customers to resolve this issue ,
+        to ensure event telemetry is active. Specifically, the model must validate that the five core DLP events—contentTransferEvent, dangerousDownloadEvent,
+        sensitiveDataEvent, urlFilteringInterstitialEvent, and suspiciousUrlEvent—are enabled. This can be achieved either by explicitly including them
+        in the enabledEventNames list or by ensuring that explicitlyEmptyEventNames is set to false (or not present) and no enabledEventNames are
+        defined, which indicates that all default events are enabled. If these reporting events are missing or the service provider is misconfigured,
+        the customer must be informed that while a policy may be "active," the feedback loop for DLP rules and data insights will be broken.
+        Please provide direct links to customers to resolve this issue ,
         this is the URL format - https://admin.google.com/ac/chrome/settings/user/details/{CONNECTOR_NAME}?ac_ouid={OrgUnitId} where CONNECTOR_NAME is
         file_attached, file_downloaded, bulk_text_entry, print_analysis_connector, realtime_url_check, on_security_event.`,
       inputSchema: {
