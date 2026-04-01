@@ -19,7 +19,7 @@ limitations under the License.
  */
 
 import { z } from 'zod'
-import { guardedToolCall, getAuthToken, inputSchemas } from '../utils.js'
+import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 import { CHROME_TRIGGERS, POLICY_STATES } from '../../lib/util/chrome_dlp_constants.js'
@@ -96,6 +96,7 @@ export function registerCreateDefaultDlpRulesTool(server, options, sessionState)
         customerId: inputSchemas.customerId,
         orgUnitId: inputSchemas.orgUnitId.describe('The target Organizational Unit ID'),
       },
+      outputSchema: outputSchemas.defaultDlpRules,
     },
 
     guardedToolCall(

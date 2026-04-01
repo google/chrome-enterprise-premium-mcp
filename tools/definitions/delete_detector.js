@@ -56,6 +56,10 @@ export function registerDeleteDetectorTool(server, options, sessionState) {
                 text: `Successfully deleted detector policy: ${policyName}`,
               },
             ],
+            structuredContent: {
+              success: true,
+              policyName,
+            },
           }
         },
       },

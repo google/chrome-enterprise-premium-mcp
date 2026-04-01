@@ -14,77 +14,77 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * @fileoverview Tool definition for listing DLP (Data Loss Prevention) rules.
- */
-import { z } from 'zod'
-import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas } from '../utils.js'
-import { logger } from '../../lib/util/logger.js'
+import { guardedToolCall, getAuthToken, outputSchemas } from '../utils.js'
 
-const SUPPORTED_TRIGGERS = [
-  'google.workspace.chrome.file.v1.upload',
-  'google.workspace.chrome.file.v1.download',
-  'google.workspace.chrome.web_content.v1.upload',
-  'google.workspace.chrome.page.v1.print',
-  'google.workspace.chrome.url.v1.navigation',
-]
+const TRIGGERS = {
+  'google.workspace.chrome.file.v1.upload': 'Uploads',
+  'google.workspace.chrome.file.v1.download': 'Downloads',
+  'google.workspace.chrome.web_content.v1.upload': 'Web Content',
+  'google.workspace.chrome.page.v1.print': 'Printing',
+  'google.workspace.chrome.url.v1.navigation': 'Navigation',
+}
 
-/**
- * Registers the 'list_dlp_rules' tool with the MCP server.
- *
- * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
- * @param {object} options - Configuration options for the tool.
- * @param {import('../../lib/api/interfaces/cloud_identity_client.js').CloudIdentityClient} options.cloudIdentityClient - The Cloud Identity client instance.
- * @param {object} sessionState - The session state object for caching.
- */
 export function registerListDlpRulesTool(server, options, sessionState) {
   const { cloudIdentityClient } = options
-
-  logger.debug(`Registering 'list_dlp_rules' tool...`)
 
   server.registerTool(
     'list_dlp_rules',
     {
-      description: `Lists all DLP rules for a given customer.
-        The tool returns rules with multiple attributes, parse them and return resource names and display names, summarize the action`,
+      description: `Lists Chrome DLP rules.`,
       inputSchema: {},
     },
     guardedToolCall(
       {
         handler: async (_, { requestInfo }) => {
           const authToken = getAuthToken(requestInfo)
-
           const policies = await cloudIdentityClient.listDlpRules(authToken)
-          if (!policies || policies.length === 0) {
-            return { content: [{ type: 'text', text: `No DLP rules found.` }] }
+
+          const filtered = (policies || []).filter(p => p.setting?.value?.triggers?.some(t => TRIGGERS[t]))
+
+          const format = s => {
+            if (!s) {
+              return 'Not configured'
+            }
+            return String(s)
+              .replace(/_/g, ' ')
+              .toLowerCase()
+              .replace(/\b\w/g, l => l.toUpperCase())
           }
 
-          const filteredPolicies = policies.filter(policy => {
-            const triggers = policy.setting?.value?.triggers
-            if (triggers) {
-              return triggers.some(trigger => SUPPORTED_TRIGGERS.includes(trigger))
-            }
-            return false
-          })
+          const summary =
+            filtered.length === 0
+              ? 'No DLP rules found.'
+              : filtered
+                  .map(p => {
+                    const setting = p.setting || {}
+                    const value = setting.value || {}
 
-          if (!filteredPolicies || filteredPolicies.length === 0) {
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: `No DLP rules found with supported triggers.`,
-                },
-              ],
-            }
-          }
+                    const ruleId = p.name?.split('/').pop() || 'Unknown ID'
+                    const name = value.displayName || setting.displayName || p.displayName || 'Unnamed Rule'
+                    const status = format(setting.state)
+
+                    // Action extraction: look for Chrome specific actions
+                    let action = 'Unknown'
+                    const chromeAction = value.action?.chromeAction || {}
+                    if (chromeAction.blockContent) {
+                      action = 'Block'
+                    } else if (chromeAction.warnUser) {
+                      action = 'Warn'
+                    } else if (chromeAction.auditOnly) {
+                      action = 'Audit'
+                    } else if (value.action && typeof value.action === 'string') {
+                      action = format(value.action)
+                    }
+
+                    const triggers = (value.triggers || []).map(t => TRIGGERS[t] || t).join(', ')
+
+                    return `- ${name} (${ruleId})\n  * Status: ${status}\n  * Action: ${action}\n  * Triggers: ${triggers}`
+                  })
+                  .join('\n\n')
 
           return {
-            content: [
-              {
-                type: 'text',
-                text: `DLP rules:\n${JSON.stringify(filteredPolicies, null, 2)}`,
-              },
-            ],
+            content: [{ type: 'text', text: summary }],
+            structuredContent: { dlpRules: filtered },
           }
         },
       },

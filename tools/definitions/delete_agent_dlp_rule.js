@@ -71,6 +71,10 @@ export function registerDeleteAgentDlpRuleTool(server, options, sessionState) {
                   text: `Successfully deleted Chrome DLP rule: ${policyName} (Display Name: "${displayName}")`,
                 },
               ],
+              structuredContent: {
+                success: true,
+                policyName,
+              },
             }
           } else {
             const encodedPolicyName = encodeURIComponent(policyName)
@@ -91,6 +95,10 @@ The rule "${displayName || policyName}" must be deleted manually in the Google A
 ${adminConsoleLink}`,
                 },
               ],
+              structuredContent: {
+                success: false,
+                policyName,
+              },
             }
           }
         },

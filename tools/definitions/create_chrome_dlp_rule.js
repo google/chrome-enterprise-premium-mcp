@@ -346,9 +346,12 @@ Multi-Trigger Logic:
             content: [
               {
                 type: 'text',
-                text: `Successfully created Chrome DLP rule: ${createdPolicy.name}\n\nDetails:\n${JSON.stringify(createdPolicy, null, 2)}`,
+                text: `Successfully created Chrome DLP rule: ${createdPolicy.name}`,
               },
             ],
+            structuredContent: {
+              dlpRule: createdPolicy,
+            },
           }
         },
       },

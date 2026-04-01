@@ -35,10 +35,11 @@ describe('Cloud Identity API', () => {
     it('should call listDlpRules and return formatted result', async () => {
       const mockListDlpRules = mock.fn(async () => [
         {
+          displayName: 'rule1',
+          state: 'ACTIVE',
           setting: {
             value: {
               triggers: ['google.workspace.chrome.file.v1.upload'],
-              displayName: 'rule1',
             },
           },
         },
@@ -223,7 +224,7 @@ describe('Cloud Identity API', () => {
       assert.deepStrictEqual(passedConfig.condition, {
         contentCondition: "url.contains('test')",
       })
-      const expectedText = `Successfully created Chrome DLP rule: policies/123\n\nDetails:\n{\n  "name": "policies/123"\n}`
+      const expectedText = `Successfully created Chrome DLP rule: policies/123`
       assert.deepStrictEqual(result.content[0].text, expectedText)
     })
 

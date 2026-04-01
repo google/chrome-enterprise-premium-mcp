@@ -92,9 +92,12 @@ export function registerCreateWordListDetectorTool(server, options, sessionState
             content: [
               {
                 type: 'text',
-                text: `Successfully created word list detector: ${createdPolicy.name}\n\nDetails:\n${JSON.stringify(createdPolicy, null, 2)}`,
+                text: `Successfully created word list detector: ${createdPolicy.name}`,
               },
             ],
+            structuredContent: {
+              detector: createdPolicy,
+            },
           }
         },
       },
