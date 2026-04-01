@@ -28,7 +28,7 @@ describe('get_connector_policy Tool', () => {
   })
 
   describe('Tool Registration (Description)', () => {
-    it('should have the updated description with the default event reporting logic', async () => {
+    it('should have a concise description', async () => {
       const chromePolicyClient = {}
       const state = {}
       registerGetConnectorPolicyTool(server, { chromePolicyClient }, state)
@@ -36,13 +36,7 @@ describe('get_connector_policy Tool', () => {
       const toolDefinition = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_connector_policy')
         .arguments[1]
 
-      assert.ok(toolDefinition.description.includes('This can be achieved either by explicitly including them'))
-      assert.ok(
-        toolDefinition.description.includes(
-          'in the enabledEventNames list or by ensuring that explicitlyEmptyEventNames is set to false (or not present) and no enabledEventNames are',
-        ),
-      )
-      assert.ok(toolDefinition.description.includes('defined, which indicates that all default events are enabled.'))
+      assert.strictEqual(toolDefinition.description, 'Retrieves configuration for Chrome Enterprise connectors.')
     })
   })
 
@@ -83,6 +77,7 @@ describe('get_connector_policy Tool', () => {
 
       assert.ok(result.content[0].text.includes('contentTransferEvent'))
       assert.ok(result.content[0].text.includes('suspiciousUrlEvent'))
+      assert.deepStrictEqual(result.structuredContent.connectorPolicies, mockPolicy)
       assert.strictEqual(mockGetConnectorPolicy.mock.callCount(), 1)
     })
 
@@ -112,7 +107,8 @@ describe('get_connector_policy Tool', () => {
         { requestInfo: {} },
       )
 
-      assert.ok(result.content[0].text.includes('eventConfiguration": {}'))
+      assert.ok(result.content[0].text.includes('Reported Events: None'))
+      assert.deepStrictEqual(result.structuredContent.connectorPolicies, mockPolicy)
       assert.strictEqual(mockGetConnectorPolicy.mock.callCount(), 1)
     })
 
@@ -144,7 +140,8 @@ describe('get_connector_policy Tool', () => {
         { requestInfo: {} },
       )
 
-      assert.ok(result.content[0].text.includes('"explicitlyEmptyEventNames": true'))
+      assert.ok(result.content[0].text.includes('Reported Events: None'))
+      assert.deepStrictEqual(result.structuredContent.connectorPolicies, mockPolicy)
     })
 
     it('should return correctly for customized/partial events', async () => {
@@ -177,6 +174,7 @@ describe('get_connector_policy Tool', () => {
 
       assert.ok(result.content[0].text.includes('contentTransferEvent'))
       assert.ok(!result.content[0].text.includes('suspiciousUrlEvent'))
+      assert.deepStrictEqual(result.structuredContent.connectorPolicies, mockPolicy)
     })
   })
 })
