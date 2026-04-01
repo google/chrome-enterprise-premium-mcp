@@ -65,7 +65,9 @@ export function registerCustomerProfileTool(server, options, sessionState) {
 
             const formattedProfiles = profiles
               .map(profile => {
-                return `*   **Name:** ${profile.displayName || 'Unnamed Profile'}\n    *   **ID:** \`${profile.profileId || profile.profilePermanentId}\`\n    *   **Resource Name:** \`${profile.name}\``
+                const id =
+                  profile.profileId || profile.profilePermanentId || profile.name?.split('/').pop() || 'Unknown'
+                return `*   **Name:** ${profile.displayName || 'Unnamed Profile'}\n    *   **ID:** \`${id}\`\n    *   **Resource Name:** \`${profile.name}\``
               })
               .join('\n')
 

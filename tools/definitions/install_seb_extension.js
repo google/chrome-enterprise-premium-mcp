@@ -18,7 +18,7 @@ limitations under the License.
  * @fileoverview Tool definition for force-installing the SEB extension.
  */
 
-import { guardedToolCall, getAuthToken, inputSchemas } from '../utils.js'
+import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -41,13 +41,14 @@ export function registerInstallSebExtensionTool(server, options, sessionState) {
     'install_seb_extension',
     {
       description:
-        'Force-installs the Secure Enterprise Browser (SEB) extension for a given Organizational Unit. Required for data masking.',
+        'Force-installs the Secure Enterprise Browser (SEB) extension for a given Organizational Unit. Required for data masking. Returns a user-friendly text summary and an embedded JSON resource with the status.',
       inputSchema: {
         customerId: inputSchemas.customerId,
         orgUnitId: inputSchemas.orgUnitId.describe(
           'The ID of the organizational unit where the extension will be force-installed.',
         ),
       },
+      outputSchema: outputSchemas.successMessage,
     },
     guardedToolCall(
       {
@@ -111,6 +112,10 @@ export function registerInstallSebExtensionTool(server, options, sessionState) {
                 text: `✅ Successfully force-installed the Secure Enterprise Browser extension (${SEB_EXTENSION_ID}) for this Organizational Unit. It may take some time for the policy to propagate to all browsers.`,
               },
             ],
+            structuredContent: {
+              success: true,
+              newlyInstalled: true,
+            },
           }
         },
       },

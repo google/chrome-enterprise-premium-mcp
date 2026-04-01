@@ -141,10 +141,10 @@ describe('Chrome Management API', () => {
         '# Customer Profiles for C0123\n' +
         '\n' +
         '*   **Name:** Unnamed Profile\n' +
-        '    *   **ID:** `undefined`\n' +
+        '    *   **ID:** `profile1`\n' +
         '    *   **Resource Name:** `profile1`\n' +
         '*   **Name:** Unnamed Profile\n' +
-        '    *   **ID:** `undefined`\n' +
+        '    *   **ID:** `profile2`\n' +
         '    *   **Resource Name:** `profile2`'
       assert.deepStrictEqual(result.content[0].text, expectedText)
     })

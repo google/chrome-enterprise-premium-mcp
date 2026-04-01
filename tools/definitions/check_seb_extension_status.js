@@ -18,7 +18,7 @@ limitations under the License.
  * @fileoverview Tool definition for checking the status of the SEB extension.
  */
 
-import { guardedToolCall, getAuthToken, inputSchemas } from '../utils.js'
+import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -46,6 +46,7 @@ export function registerCheckSebExtensionStatusTool(server, options, sessionStat
         customerId: inputSchemas.customerId,
         orgUnitId: inputSchemas.orgUnitId.describe('The ID of the organizational unit to check.'),
       },
+      outputSchema: outputSchemas.sebStatus,
     },
     guardedToolCall(
       {
@@ -74,6 +75,10 @@ export function registerCheckSebExtensionStatusTool(server, options, sessionStat
                   : `❌ The Secure Enterprise Browser extension (${SEB_EXTENSION_ID}) is NOT force-installed for this Organizational Unit.\n\nData masking and other advanced features may not work correctly without it.`,
               },
             ],
+            structuredContent: {
+              isInstalled,
+              policies: policies || [],
+            },
           }
         },
       },

@@ -18,7 +18,7 @@ limitations under the License.
  * @fileoverview Tool definition for checking a specific user's CEP license.
  */
 
-import { guardedToolCall, inputSchemas, getAuthToken } from '../utils.js'
+import { guardedToolCall, inputSchemas, getAuthToken, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -41,6 +41,7 @@ export function registerCheckUserCepLicenseTool(server, options, sessionState) {
       inputSchema: {
         userId: inputSchemas.userId,
       },
+      outputSchema: outputSchemas.subscriptionInfo,
     },
     guardedToolCall(
       {
@@ -59,6 +60,9 @@ export function registerCheckUserCepLicenseTool(server, options, sessionState) {
                   text: `Success: User '${userId}' has a Chrome Enterprise Premium (CEP) license assigned.`,
                 },
               ],
+              structuredContent: {
+                license: result,
+              },
             }
           } else {
             logger.debug(`${TAGS.MCP} No CEP license found for user ${userId}.`)

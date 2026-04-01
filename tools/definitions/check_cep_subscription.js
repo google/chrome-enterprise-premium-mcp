@@ -18,7 +18,7 @@ limitations under the License.
  * @fileoverview Tool definition for checking CEP subscription.
  */
 
-import { guardedToolCall, inputSchemas, getAuthToken } from '../utils.js'
+import { guardedToolCall, inputSchemas, getAuthToken, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -41,6 +41,7 @@ export function registerCheckCepSubscriptionTool(server, options, sessionState) 
       inputSchema: {
         customerId: inputSchemas.customerId,
       },
+      outputSchema: outputSchemas.subscriptionInfo,
     },
     guardedToolCall(
       {
@@ -60,6 +61,9 @@ export function registerCheckCepSubscriptionTool(server, options, sessionState) 
                   text: `Success: Found ${assignments.length} Chrome Enterprise Premium (CEP) license assignment(s). The subscription is active.`,
                 },
               ],
+              structuredContent: {
+                subscription: result,
+              },
             }
           } else {
             logger.debug(`${TAGS.MCP} No CEP subscription found for customer ${customerId}.`)

@@ -77,20 +77,24 @@ export const outputSchemas = {
   activityLogs: z.array(z.any()).optional().default([]),
   subscriptionInfo: z
     .union([
-      z.object({
-        isActive: z.boolean().describe('Whether the subscription or license is active.'),
-        assignmentCount: z.number().optional().describe('Number of license assignments.'),
-      }).passthrough(),
-      z.any()
+      z
+        .object({
+          isActive: z.boolean().describe('Whether the subscription or license is active.'),
+          assignmentCount: z.number().optional().describe('Number of license assignments.'),
+        })
+        .passthrough(),
+      z.any(),
     ])
     .optional(),
   extensionStatus: z
     .union([
-      z.object({
-        isInstalled: z.boolean().describe('Whether the extension is force-installed.'),
-        extensionId: z.string().optional().describe('The ID of the extension.'),
-      }).passthrough(),
-      z.any()
+      z
+        .object({
+          isInstalled: z.boolean().describe('Whether the extension is force-installed.'),
+          extensionId: z.string().optional().describe('The ID of the extension.'),
+        })
+        .passthrough(),
+      z.any(),
     ])
     .optional(),
   connectorPolicy: z.any().optional().describe('Structured configuration for a connector policy.'),
@@ -102,7 +106,7 @@ export const outputSchemas = {
         content: z.string(),
         metadata: z.any().optional(),
       }),
-      z.any()
+      z.any(),
     ])
     .optional(),
 }
