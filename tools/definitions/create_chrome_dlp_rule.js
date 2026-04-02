@@ -203,7 +203,7 @@ Multi-Trigger Logic:
                   maskType: z
                     .enum(Object.values(MASK_TYPES).map(m => m.value))
                     .describe(`The type of masking to apply:\n${maskTypeList}`),
-                  resourceName: z.string().describe('The resource name of the detector (e.g. policies/abc-123).'),
+                  resourceName: inputSchemas.detectorResourceName,
                   displayName: z.string().describe('The display name for the detector in the UI.'),
                 }),
               )

@@ -35,6 +35,18 @@ export const inputSchemas = {
   orgUnitId: z.string().describe('The ID of the organizational unit.'),
   orgUnitIdOptional: z.string().optional().describe('The ID of the organizational unit to filter results.'),
   projectId: z.string().describe('The Google Cloud project ID or number.'),
+  policyName: z
+    .string()
+    .startsWith('policies/')
+    .describe('The resource name of the policy (e.g. policies/akajj264apk5psphei)'),
+  detectorResourceName: z
+    .string()
+    .startsWith('policies/')
+    .describe('The resource name of the detector (e.g. policies/akajj264apk5psphei)'),
+  ruleResourceName: z
+    .string()
+    .startsWith('policies/')
+    .describe('The resource name of the DLP rule (e.g. policies/ajjs664skp992kska)'),
   apiName: z
     .enum(Object.values(SERVICE_NAMES))
     .optional()

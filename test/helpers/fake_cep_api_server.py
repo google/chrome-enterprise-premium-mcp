@@ -98,6 +98,19 @@ def get_initial_state():
                   },
               },
           },
+          "policies/akajj264apk5psphei": {
+              "name": "policies/akajj264apk5psphei",
+              "customer": "customers/C0123456",
+              "policyQuery": {"orgUnit": "orgUnits/fakeOUId1"},
+              "setting": {
+                  "type": "settings/detector.regex",
+                  "value": {
+                      "displayName": "Fake Regex Detector",
+                      "description": "A fake regex detector for testing",
+                      "regular_expression": {"expression": ".*"},
+                  },
+              },
+          },
       },
       "activities": [],
       "browser_versions": [
