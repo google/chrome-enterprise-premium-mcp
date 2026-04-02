@@ -131,6 +131,7 @@ describe('Cloud Identity API', () => {
           displayName: 'Block Rule',
           triggers: ['FILE_UPLOAD'],
           action: 'BLOCK',
+          state: 'INACTIVE',
         },
         { requestInfo: {} },
       )

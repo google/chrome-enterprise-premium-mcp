@@ -46,7 +46,7 @@ describe('Rule Lifecycle Integration', () => {
       description: 'Human-readable verified integration test rule.',
       triggers: ['URL_NAVIGATION'],
       condition: "url.contains('integration-test.com')",
-      action: 'BLOCK',
+      action: 'WARN',
     }
 
     // 1. CREATE
@@ -75,7 +75,7 @@ describe('Rule Lifecycle Integration', () => {
       },
       action: {
         chromeAction: {
-          blockContent: {},
+          warnUser: {},
         },
       },
     })

@@ -23,7 +23,7 @@ import { z } from 'zod'
 import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
-import { validateCelCondition, validateActionParameters } from '../../lib/util/cel_validator.js'
+import { validateCelCondition, validateActionParameters, validateMcpSafetyConstraints } from '../../lib/util/cel_validator.js'
 import {
   CEL_SYNTAX_GUIDE,
   UNIVERSAL_CONTENT_TYPES,
@@ -43,6 +43,7 @@ import {
   ACTION_PARAMETER_CONSTRAINTS,
   WORKSPACE_RULE_LIMITS,
   AGENT_DISPLAY_NAME_PREFIX,
+  MCP_SAFETY_CONSTRAINTS,
 } from '../../lib/util/chrome_dlp_constants.js'
 
 const triggerList = Object.entries(CHROME_TRIGGERS)
@@ -120,7 +121,8 @@ export function registerCreateChromeDlpRuleTool(server, options, sessionState) {
     'create_chrome_dlp_rule',
     {
       description: `Creates a new Chrome DLP rule for a specific Organizational Unit.
-This tool is specialized for browser-level protection (e.g., uploads, downloads, printing).`,
+This tool is specialized for browser-level protection (e.g., uploads, downloads, printing).
+${MCP_SAFETY_CONSTRAINTS.ACTIVE_BLOCK_RESTRICTION}`,
       inputSchema: {
         customerId: inputSchemas.customerId,
         orgUnitId: inputSchemas.orgUnitId.describe('The target Organizational Unit ID'),
@@ -245,6 +247,12 @@ Multi-Trigger Logic:
           const authToken = getAuthToken(requestInfo)
           const fullTriggers = triggers.map(t => CHROME_TRIGGERS[t].value)
 
+          // 1. Validation: Safety constraints
+          const safetyValidation = validateMcpSafetyConstraints(action, state)
+          if (!safetyValidation.isValid) {
+            throw new Error(`MCP Safety Constraint Violation:\n- ${safetyValidation.errors.join('\n- ')}`)
+          }
+
           const ruleConfig = {
             displayName,
             description,
@@ -252,6 +260,7 @@ Multi-Trigger Logic:
             state: state || POLICY_STATES.ACTIVE.value,
           }
 
+          // 2. Validation: Condition
           if (condition) {
             const validationResult = validateCelCondition(condition, triggers)
             if (!validationResult.isValid) {
