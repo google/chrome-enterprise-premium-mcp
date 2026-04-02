@@ -42,7 +42,7 @@ class TestCreateDlpRule(McpIntegrationTestBase):
         " customer C0123456 and organizational unit fakeOUId1. Use the trigger"
         " URL_NAVIGATION, action AUDIT, and condition"
         " 'url.contains(\"secret\")'. Add a data masking"
-        " configuration to redact US_SOCIAL_SECURITY_NUMBER with display name"
+        " configuration to redact 'policies/akajj264apk5psphei' with display name"
         " 'SSN' and maskType 'MASK_TYPE_REDACT'. Give the verbatim error if"
         " there is one."
     )

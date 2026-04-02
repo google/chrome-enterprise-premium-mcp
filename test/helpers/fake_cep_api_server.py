@@ -98,6 +98,19 @@ def get_initial_state():
                   },
               },
           },
+          "policies/akajj264apk5psphei": {
+              "name": "policies/akajj264apk5psphei",
+              "customer": "customers/C0123456",
+              "policyQuery": {"orgUnit": "orgUnits/fakeOUId1"},
+              "setting": {
+                  "type": "settings/detector.regex",
+                  "value": {
+                      "displayName": "Fake Regex Detector",
+                      "description": "A fake regex detector for testing",
+                      "regular_expression": {"expression": ".*"},
+                  },
+              },
+          },
       },
       "activities": [],
       "browser_versions": [
@@ -336,15 +349,6 @@ async def fake_create_policy(customer_id: str, body: Dict[str, Any]):
           detail="Invalid config: 'orgUnit' is required in policyQuery.",
       )
 
-    if (
-        "condition" not in setting_value
-        or "contentCondition" not in setting_value.get("condition", {})
-    ):
-      raise HTTPException(
-          status_code=400,
-          detail="Invalid config: 'condition.contentCondition' is required.",
-      )
-
   elif setting_type == "settings/detector.url_list":
     url_list = setting_value.get("url_list", {}).get("urls", [])
     if not isinstance(url_list, list) or len(url_list) == 0:
@@ -362,11 +366,11 @@ async def fake_create_policy(customer_id: str, body: Dict[str, Any]):
       )
 
   elif setting_type == "settings/detector.regex":
-    regex = setting_value.get("regular_expression", {}).get("regex")
-    if not regex:
+    expression = setting_value.get("regular_expression", {}).get("expression")
+    if not expression:
       raise HTTPException(
           status_code=400,
-          detail="Invalid config: 'regular_expression.regex' is required.",
+          detail="Invalid config: 'regular_expression.expression' is required.",
       )
 
   policy_id = f"fakePolicy_{uuid.uuid4()}"
@@ -379,7 +383,7 @@ async def fake_create_policy(customer_id: str, body: Dict[str, Any]):
   if ou_id:
     new_policy["policyQuery"]["orgUnitId"] = ou_id.split("/")[-1]
   state["policies"][policy_name] = new_policy
-  return new_policy
+  return {"done": True, "response": new_policy}
 
 
 @app.get("/v1beta1/{name:path}")

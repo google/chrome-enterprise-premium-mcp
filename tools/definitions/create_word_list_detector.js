@@ -85,21 +85,20 @@ export function registerCreateWordListDetectorTool(server, options, sessionState
             word_list: { words: words },
           }
 
-          const createdPolicy = await cloudIdentityClient.createDetector(
+          const result = await cloudIdentityClient.createDetector(
             customerId,
             orgUnitId,
             detectorConfig,
             authToken,
           )
 
+          const createdPolicy = result.response
+
           return {
             content: [
               {
                 type: 'text',
-                text: `Successfully created word list detector: ${createdPolicy.name}
-
- Details:
- ${JSON.stringify(createdPolicy, null, 2)}`,
+                text: `Successfully created word list detector: ${createdPolicy.name}\n\nDetails:\n${JSON.stringify(createdPolicy, null, 2)}`,
               },
             ],
           }

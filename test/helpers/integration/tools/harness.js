@@ -141,8 +141,20 @@ export async function teardownIntegrationHarness(harness, createdResources) {
       if (!name) continue
       try {
         if (name.includes('policies/')) {
-          await harness.apiClients.cloudIdentity.deleteDlpRule(name)
-          console.log(`[CLEANUP] Deleted: ${name}`)
+          // Check policy type before deleting
+          const policy = await harness.apiClients.cloudIdentity.getDlpRule(name)
+          const type = policy.setting?.type || ''
+
+          if (type.includes('rule.dlp')) {
+            await harness.apiClients.cloudIdentity.deleteDlpRule(name)
+            console.log(`[CLEANUP] Deleted Rule: ${name}`)
+          } else if (type.includes('detector')) {
+            await harness.apiClients.cloudIdentity.deleteDetector(name)
+            console.log(`[CLEANUP] Deleted Detector: ${name}`)
+          } else {
+            console.log(`[CLEANUP] Unknown policy type for ${name}, attempting generic rule delete...`)
+            await harness.apiClients.cloudIdentity.deleteDlpRule(name)
+          }
         }
       } catch (e) {
         console.error(`[CLEANUP] Failed to delete ${name}: ${e.message}`)

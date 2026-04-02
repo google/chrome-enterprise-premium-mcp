@@ -73,21 +73,20 @@ export function registerCreateRegexDetectorTool(server, options, sessionState) {
             regular_expression: { expression: expression },
           }
 
-          const createdPolicy = await cloudIdentityClient.createDetector(
+          const result = await cloudIdentityClient.createDetector(
             customerId,
             orgUnitId,
             detectorConfig,
             authToken,
           )
 
+          const createdPolicy = result.response
+
           return {
             content: [
               {
                 type: 'text',
-                text: `Successfully created regular expression detector: ${createdPolicy.name}
-
-Details:
-${JSON.stringify(createdPolicy, null, 2)}`,
+                text: `Successfully created regex detector: ${createdPolicy.name}\n\nDetails:\n${JSON.stringify(createdPolicy, null, 2)}`,
               },
             ],
           }

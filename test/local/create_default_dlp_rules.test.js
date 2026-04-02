@@ -33,7 +33,9 @@ describe('create_default_dlp_rules Tool', () => {
 
   it('should create all default rules correctly', async () => {
     const mockCreateDlpRule = mock.fn(async (customerId, orgUnitId, config) => ({
-      name: `policies/${config.displayName.replace(/[^a-zA-Z0-9]/g, '')}`,
+      response: {
+        name: `policies/${config.displayName.replace(/[^a-zA-Z0-9]/g, '')}`,
+      },
     }))
     const MockCloudIdentityClient = class {
       constructor() {
@@ -82,7 +84,7 @@ describe('create_default_dlp_rules Tool', () => {
       if (config.displayName.includes('Audit')) {
         throw new Error('API Error')
       }
-      return { name: 'policies/success' }
+      return { response: { name: 'policies/success' } }
     })
     const MockCloudIdentityClient = class {
       constructor() {

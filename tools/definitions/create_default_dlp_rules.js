@@ -124,18 +124,18 @@ export function registerCreateDefaultDlpRulesTool(server, options, sessionState)
             }
 
             try {
-              const createdPolicy = await cloudIdentityClient.createDlpRule(
+              const result = await cloudIdentityClient.createDlpRule(
                 customerId,
                 orgUnitId,
                 ruleConfig,
                 authToken,
               )
+              const createdPolicy = result.response
               results.push(`✅ Created: ${rule.displayName}`)
               createdRules.push({
                 displayName: rule.displayName,
                 name: createdPolicy.name,
               })
-              successCount++
             } catch (error) {
               failureCount++
               let errorMsg = error.message
