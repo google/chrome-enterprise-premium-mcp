@@ -26,7 +26,7 @@ import { registerCustomerProfileTool } from './definitions/list_customer_profile
 import { registerListDlpRulesTool } from './definitions/list_dlp_rules.js'
 import { registerCreateChromeDlpRuleTool } from './definitions/create_chrome_dlp_rule.js'
 import { registerGetChromeActivityLogTool } from './definitions/get_chrome_activity_log.js'
-import { registerDeleteDlpRuleTool } from './definitions/delete_dlp_rule.js'
+import { registerDeleteAgentDlpRuleTool } from './definitions/delete_agent_dlp_rule.js'
 import { registerGetConnectorPolicyTool } from './definitions/get_connector_policy.js'
 import { registerListOrgUnitsTool } from './definitions/list_org_units.js'
 import { registerGetCustomerIdTool } from './definitions/get_customer_id.js'
@@ -66,7 +66,7 @@ function registerAllTools(server, options = {}, sessionState) {
   registerCustomerProfileTool(server, { ...commonOpts, chromeManagementClient }, state)
   registerListDlpRulesTool(server, { ...commonOpts, cloudIdentityClient }, state)
   registerCreateChromeDlpRuleTool(server, { ...commonOpts, cloudIdentityClient }, state)
-  registerDeleteDlpRuleTool(server, { ...commonOpts, cloudIdentityClient }, state)
+  registerDeleteAgentDlpRuleTool(server, { ...commonOpts, cloudIdentityClient }, state)
   registerListDetectorsTool(server, { ...commonOpts, cloudIdentityClient }, state)
   registerCreateUrlListDetectorTool(server, { ...commonOpts, cloudIdentityClient }, state)
   registerCreateWordListDetectorTool(server, { ...commonOpts, cloudIdentityClient }, state)

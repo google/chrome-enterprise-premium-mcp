@@ -40,7 +40,7 @@ export function registerDeleteDetectorTool(server, options, sessionState) {
     {
       description: 'Deletes a DLP detector (URL list, word list, or regex).',
       inputSchema: {
-        policyName: z.string().describe('The name of the detector policy to delete (e.g. policies/abc-123)'),
+        policyName: z.string().describe('The resource name of the detector policy to delete (e.g. policies/abc-123)'),
       },
       outputSchema: outputSchemas.successMessage,
     },

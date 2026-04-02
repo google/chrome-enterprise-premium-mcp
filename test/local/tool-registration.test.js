@@ -45,7 +45,7 @@ describe('SEB Tool Registration', () => {
       'list_customer_profiles',
       'list_dlp_rules',
       'create_chrome_dlp_rule',
-      'delete_dlp_rule',
+      'delete_agent_dlp_rule',
       'list_detectors',
       'create_regex_detector',
       'create_url_list_detector',

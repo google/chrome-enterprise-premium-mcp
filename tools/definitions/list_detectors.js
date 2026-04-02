@@ -38,7 +38,7 @@ export function registerListDetectorsTool(server, options, sessionState) {
     'list_detectors',
     {
       description: `Lists all DLP detectors (URL lists, word lists, regex) for a given customer.
-        The tool returns detectors with multiple attributes, parse them and return displayNames, summarize the action`,
+        The tool returns detectors with multiple attributes, parse them and return resource names and display names, summarize the action`,
       inputSchema: {},
       outputSchema: outputSchemas.policyList,
     },

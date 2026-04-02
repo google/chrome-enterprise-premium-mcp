@@ -64,7 +64,7 @@ describe('MCP Server in stdio mode', () => {
         'create_url_list_detector',
         'create_word_list_detector',
         'delete_detector',
-        'delete_dlp_rule',
+        'delete_agent_dlp_rule',
         'get_chrome_activity_log',
         'get_connector_policy',
         'get_customer_id',
