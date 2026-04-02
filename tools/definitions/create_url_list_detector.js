@@ -73,21 +73,20 @@ export function registerCreateUrlListDetectorTool(server, options, sessionState)
             url_list: { urls: urls },
           }
 
-          const createdPolicy = await cloudIdentityClient.createDetector(
+          const result = await cloudIdentityClient.createDetector(
             customerId,
             orgUnitId,
             detectorConfig,
             authToken,
           )
 
+          const createdPolicy = result.response
+
           return {
             content: [
               {
                 type: 'text',
-                text: `Successfully created URL list detector: ${createdPolicy.name}
-
-Details:
-${JSON.stringify(createdPolicy, null, 2)}`,
+                text: `Successfully created URL list detector: ${createdPolicy.name}\n\nDetails:\n${JSON.stringify(createdPolicy, null, 2)}`,
               },
             ],
           }

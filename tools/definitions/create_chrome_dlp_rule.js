@@ -127,7 +127,7 @@ This tool is specialized for browser-level protection (e.g., uploads, downloads,
         displayName: z
           .string()
           .max(USER_DISPLAY_NAME_MAX_LENGTH)
-          .describe(`Name of the rule. Will be automatically prefixed with '${AGENT_DISPLAY_NAME_PREFIX}'.`),
+          .describe(`The display name of the rule. Will be automatically prefixed with '${AGENT_DISPLAY_NAME_PREFIX}'.`),
         description: z
           .string()
           .max(WORKSPACE_RULE_LIMITS.DESCRIPTION_MAX_LENGTH)
@@ -318,13 +318,15 @@ Multi-Trigger Logic:
             chromeAction,
           }
 
-          const createdPolicy = await cloudIdentityClient.createDlpRule(
+          const result = await cloudIdentityClient.createDlpRule(
             customerId,
             orgUnitId,
             ruleConfig,
             authToken,
             requestInfo,
           )
+
+          const createdPolicy = result.response
 
           return {
             content: [

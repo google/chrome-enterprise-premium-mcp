@@ -362,11 +362,11 @@ async def fake_create_policy(customer_id: str, body: Dict[str, Any]):
       )
 
   elif setting_type == "settings/detector.regex":
-    regex = setting_value.get("regular_expression", {}).get("regex")
-    if not regex:
+    expression = setting_value.get("regular_expression", {}).get("expression")
+    if not expression:
       raise HTTPException(
           status_code=400,
-          detail="Invalid config: 'regular_expression.regex' is required.",
+          detail="Invalid config: 'regular_expression.expression' is required.",
       )
 
   policy_id = f"fakePolicy_{uuid.uuid4()}"
@@ -379,7 +379,7 @@ async def fake_create_policy(customer_id: str, body: Dict[str, Any]):
   if ou_id:
     new_policy["policyQuery"]["orgUnitId"] = ou_id.split("/")[-1]
   state["policies"][policy_name] = new_policy
-  return new_policy
+  return {"done": True, "response": new_policy}
 
 
 @app.get("/v1beta1/{name:path}")
