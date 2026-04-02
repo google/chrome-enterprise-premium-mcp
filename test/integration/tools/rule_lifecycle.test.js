@@ -21,11 +21,11 @@ import { assertObjectMatches, parseToolOutput } from '../../helpers/integration/
 import { validateAndGetOrgUnitId } from '../../../tools/utils.js'
 
 /**
- * Direct Tool Integration Tests.
+ * Rule Lifecycle Integration Tests.
  *
  * Verifies end-to-end tool flows using independent test blocks.
  */
-describe('Direct Tool Integration', () => {
+describe('Rule Lifecycle Integration', () => {
   let harness
   const createdResources = []
 
