@@ -41,6 +41,7 @@ import { registerCheckUserCepLicenseTool } from './definitions/check_user_cep_li
 import { registerCheckSebExtensionStatusTool } from './definitions/check_seb_extension_status.js'
 import { registerInstallSebExtensionTool } from './definitions/install_seb_extension.js'
 import { registerCheckAndEnableApiTool } from './definitions/check_and_enable_api.js'
+import { registerEnableChromeEnterpriseConnectorsTool } from './definitions/enable_chrome_enterprise_connectors.js'
 
 /**
  * Registers all tools with the MCP server.
@@ -82,6 +83,7 @@ function registerAllTools(server, options = {}, sessionState) {
   registerCheckSebExtensionStatusTool(server, { ...commonOpts, chromePolicyClient }, state)
   registerInstallSebExtensionTool(server, { ...commonOpts, chromePolicyClient }, state)
   registerCheckAndEnableApiTool(server, { ...commonOpts, serviceUsageClient }, state)
+  registerEnableChromeEnterpriseConnectorsTool(server, { ...commonOpts, chromePolicyClient }, state)
 }
 
 /**

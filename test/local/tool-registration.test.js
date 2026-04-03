@@ -58,6 +58,7 @@ describe('SEB Tool Registration', () => {
       'create_default_dlp_rules',
       'check_seb_extension_status',
       'install_seb_extension',
+      'enable_chrome_enterprise_connectors',
     ].sort()
     assert.deepStrictEqual(
       registeredToolNames.sort(),
