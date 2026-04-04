@@ -51,7 +51,7 @@ TYPE_MAPPING = {
     OBJECT_TYPE: dict,
 }
 
-AI_MODEL_NAME = 'gemini-2.0-flash'
+AI_MODEL_NAME = 'gemini-2.5-flash'
 
 
 def _get_pydantic_field_type(

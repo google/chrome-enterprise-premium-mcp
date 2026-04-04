@@ -68,7 +68,7 @@ class TestCreateDlpRule(McpIntegrationTestBase):
         "Create a Chrome DLP rule to add a warning when downloading things from"
         " google.com for customer C0123456 and organizational unit fakeOUId1."
         " Use trigger FILE_DOWNLOAD and condition"
-        " 'all_content.contains(\"google.com\")'. Give the verbatim error if"
+        " 'url.contains(\"google.com\")'. Give the verbatim error if"
         " there is one."
     )
     result_text = query_agent_oneshot(prompt)

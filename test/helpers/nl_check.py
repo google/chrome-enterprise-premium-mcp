@@ -18,7 +18,7 @@ import os
 
 import google.genai as genai
 
-AI_MODEL_NAME = "gemini-2.0-flash"
+AI_MODEL_NAME = "gemini-2.5-flash"
 
 # Enum to define the structured output schema for boolean result
 class BooleanResult(Enum):

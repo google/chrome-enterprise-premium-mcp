@@ -34,6 +34,8 @@ current_file_dir = os.path.dirname(os.path.abspath(__file__))
 # Construct the path to mcp-server.js relative to this file
 mcp_server_path = os.path.join(current_file_dir, '../../mcp-server.js')
 
+AI_MODEL_NAME = 'gemini-2.5-flash'
+
 def check_credentials():
     """Checks for Google Cloud Application Default Credentials."""
     try:
@@ -54,7 +56,7 @@ cep_tools_local = McpToolset(
 )
 
 metadata_agent = LlmAgent(
-    model='gemini-2.0-flash',
+    model=AI_MODEL_NAME,
     name='metadata_agent',
     description=(
         'Strict Data Retrieval Tool. Returns Customer ID and Root Org Unit ID.'
@@ -67,7 +69,7 @@ metadata_agent = LlmAgent(
 )
 
 troubleshooting_agent = LlmAgent(
-    model='gemini-2.0-flash',
+    model=AI_MODEL_NAME,
     name='troubleshooting_agent',
     description=(
         'Troubleshoots DLP rules. Requires Orchestrator to provide Customer/Org IDs.'
@@ -91,7 +93,7 @@ troubleshooting_agent = LlmAgent(
 )
 
 onboarding_agent = LlmAgent(
-    model='gemini-2.0-flash',
+    model=AI_MODEL_NAME,
     name='onboarding_agent',
     description='Handles setup and best practices.',
     instruction="""You are an onboarding specialist.
@@ -104,7 +106,7 @@ onboarding_agent = LlmAgent(
 
 # Multi-agent approach
 multi_agent = LlmAgent(
-    model='gemini-2.0-flash',
+    model=AI_MODEL_NAME,
     name='orchestrator_agent',
     instruction="""You are the Orchestrator. You control the flow to prevent hallucination.
 
@@ -139,7 +141,7 @@ multi_agent = LlmAgent(
 
 # Single Agent approach
 single_agent = LlmAgent(
-    model='gemini-2.0-flash',
+    model=AI_MODEL_NAME,
     name='chrome_enterprise_agent',
     instruction="""You are an expert on Chrome Enterprise Premium.
 You are responsible for:
