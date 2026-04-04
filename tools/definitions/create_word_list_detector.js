@@ -59,7 +59,6 @@ export function registerCreateWordListDetectorTool(server, options, sessionState
             `A list of words to match. Total character count across all words must be ${WORKSPACE_RULE_LIMITS.MAX_WORD_LIST_CHARS} or less.`,
           ),
       },
-      outputSchema: outputSchemas.singlePolicy,
     },
     guardedToolCall(
       {
@@ -85,12 +84,7 @@ export function registerCreateWordListDetectorTool(server, options, sessionState
             word_list: { words: words },
           }
 
-          const result = await cloudIdentityClient.createDetector(
-            customerId,
-            orgUnitId,
-            detectorConfig,
-            authToken,
-          )
+          const result = await cloudIdentityClient.createDetector(customerId, orgUnitId, detectorConfig, authToken)
 
           const createdPolicy = result.response
 

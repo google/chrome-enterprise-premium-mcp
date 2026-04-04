@@ -124,12 +124,7 @@ export function registerCreateDefaultDlpRulesTool(server, options, sessionState)
             }
 
             try {
-              const result = await cloudIdentityClient.createDlpRule(
-                customerId,
-                orgUnitId,
-                ruleConfig,
-                authToken,
-              )
+              const result = await cloudIdentityClient.createDlpRule(customerId, orgUnitId, ruleConfig, authToken)
               const createdPolicy = result.response
               results.push(`✅ Created: ${rule.displayName}`)
               createdRules.push({

@@ -54,7 +54,6 @@ export function registerCreateUrlListDetectorTool(server, options, sessionState)
           .describe('An optional description for the detector.'),
         urls: z.array(z.string()).min(1).describe(`A list of URLs to match.`),
       },
-      outputSchema: outputSchemas.singlePolicy,
     },
     guardedToolCall(
       {
@@ -73,12 +72,7 @@ export function registerCreateUrlListDetectorTool(server, options, sessionState)
             url_list: { urls: urls },
           }
 
-          const result = await cloudIdentityClient.createDetector(
-            customerId,
-            orgUnitId,
-            detectorConfig,
-            authToken,
-          )
+          const result = await cloudIdentityClient.createDetector(customerId, orgUnitId, detectorConfig, authToken)
 
           const createdPolicy = result.response
 

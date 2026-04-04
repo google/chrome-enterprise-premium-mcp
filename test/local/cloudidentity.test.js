@@ -623,7 +623,8 @@ describe('Cloud Identity API', () => {
         apiClients: { cloudIdentity: new MockCloudIdentityClient() },
       })
 
-      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'delete_agent_dlp_rule').arguments[2]
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'delete_agent_dlp_rule')
+        .arguments[2]
       const result = await handler({ policyName: 'policies/123' }, { requestInfo: {} })
 
       assert.strictEqual(mockDeleteDlpRule.mock.callCount(), 1)

@@ -33,10 +33,15 @@ describe('get_connector_policy Tool', () => {
       const state = {}
       registerGetConnectorPolicyTool(server, { chromePolicyClient }, state)
 
-      const toolDefinition = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_connector_policy').arguments[1]
+      const toolDefinition = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_connector_policy')
+        .arguments[1]
 
       assert.ok(toolDefinition.description.includes('This can be achieved either by explicitly including them'))
-      assert.ok(toolDefinition.description.includes('in the enabledEventNames list or by ensuring that explicitlyEmptyEventNames is set to false (or not present) and no enabledEventNames are'))
+      assert.ok(
+        toolDefinition.description.includes(
+          'in the enabledEventNames list or by ensuring that explicitlyEmptyEventNames is set to false (or not present) and no enabledEventNames are',
+        ),
+      )
       assert.ok(toolDefinition.description.includes('defined, which indicates that all default events are enabled.'))
     })
   })
@@ -54,13 +59,13 @@ describe('get_connector_policy Tool', () => {
                     'dangerousDownloadEvent',
                     'sensitiveDataEvent',
                     'urlFilteringInterstitialEvent',
-                    'suspiciousUrlEvent'
-                  ]
-                }
-              }
-            }
-          }
-        }
+                    'suspiciousUrlEvent',
+                  ],
+                },
+              },
+            },
+          },
+        },
       ]
 
       const mockGetConnectorPolicy = mock.fn(async () => mockPolicy)
@@ -68,11 +73,12 @@ describe('get_connector_policy Tool', () => {
       const state = {}
 
       registerGetConnectorPolicyTool(server, { chromePolicyClient }, state)
-      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_connector_policy').arguments[2]
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_connector_policy')
+        .arguments[2]
 
       const result = await handler(
         { customerId: 'C0123', orgUnitId: 'ou123', policy: 'ON_SECURITY_EVENT' },
-        { requestInfo: {} }
+        { requestInfo: {} },
       )
 
       assert.ok(result.content[0].text.includes('contentTransferEvent'))
@@ -86,11 +92,11 @@ describe('get_connector_policy Tool', () => {
           value: {
             value: {
               reportingConnector: {
-                eventConfiguration: {}
-              }
-            }
-          }
-        }
+                eventConfiguration: {},
+              },
+            },
+          },
+        },
       ]
 
       const mockGetConnectorPolicy = mock.fn(async () => mockPolicy)
@@ -98,11 +104,12 @@ describe('get_connector_policy Tool', () => {
       const state = {}
 
       registerGetConnectorPolicyTool(server, { chromePolicyClient }, state)
-      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_connector_policy').arguments[2]
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_connector_policy')
+        .arguments[2]
 
       const result = await handler(
         { customerId: 'C0123', orgUnitId: 'ou123', policy: 'ON_SECURITY_EVENT' },
-        { requestInfo: {} }
+        { requestInfo: {} },
       )
 
       assert.ok(result.content[0].text.includes('eventConfiguration": {}'))
@@ -116,12 +123,12 @@ describe('get_connector_policy Tool', () => {
             value: {
               reportingConnector: {
                 eventConfiguration: {
-                  explicitlyEmptyEventNames: true
-                }
-              }
-            }
-          }
-        }
+                  explicitlyEmptyEventNames: true,
+                },
+              },
+            },
+          },
+        },
       ]
 
       const mockGetConnectorPolicy = mock.fn(async () => mockPolicy)
@@ -129,11 +136,12 @@ describe('get_connector_policy Tool', () => {
       const state = {}
 
       registerGetConnectorPolicyTool(server, { chromePolicyClient }, state)
-      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_connector_policy').arguments[2]
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_connector_policy')
+        .arguments[2]
 
       const result = await handler(
         { customerId: 'C0123', orgUnitId: 'ou123', policy: 'ON_SECURITY_EVENT' },
-        { requestInfo: {} }
+        { requestInfo: {} },
       )
 
       assert.ok(result.content[0].text.includes('"explicitlyEmptyEventNames": true'))
@@ -146,12 +154,12 @@ describe('get_connector_policy Tool', () => {
             value: {
               reportingConnector: {
                 eventConfiguration: {
-                  enabledEventNames: ['contentTransferEvent']
-                }
-              }
-            }
-          }
-        }
+                  enabledEventNames: ['contentTransferEvent'],
+                },
+              },
+            },
+          },
+        },
       ]
 
       const mockGetConnectorPolicy = mock.fn(async () => mockPolicy)
@@ -159,11 +167,12 @@ describe('get_connector_policy Tool', () => {
       const state = {}
 
       registerGetConnectorPolicyTool(server, { chromePolicyClient }, state)
-      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_connector_policy').arguments[2]
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_connector_policy')
+        .arguments[2]
 
       const result = await handler(
         { customerId: 'C0123', orgUnitId: 'ou123', policy: 'ON_SECURITY_EVENT' },
-        { requestInfo: {} }
+        { requestInfo: {} },
       )
 
       assert.ok(result.content[0].text.includes('contentTransferEvent'))

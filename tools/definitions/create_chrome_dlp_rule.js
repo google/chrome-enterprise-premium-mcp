@@ -23,7 +23,11 @@ import { z } from 'zod'
 import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
-import { validateCelCondition, validateActionParameters, validateMcpSafetyConstraints } from '../../lib/util/cel_validator.js'
+import {
+  validateCelCondition,
+  validateActionParameters,
+  validateMcpSafetyConstraints,
+} from '../../lib/util/cel_validator.js'
 import {
   CEL_SYNTAX_GUIDE,
   UNIVERSAL_CONTENT_TYPES,
@@ -129,7 +133,9 @@ ${MCP_SAFETY_CONSTRAINTS.ACTIVE_BLOCK_RESTRICTION}`,
         displayName: z
           .string()
           .max(USER_DISPLAY_NAME_MAX_LENGTH)
-          .describe(`The display name of the rule. Will be automatically prefixed with '${AGENT_DISPLAY_NAME_PREFIX}'.`),
+          .describe(
+            `The display name of the rule. Will be automatically prefixed with '${AGENT_DISPLAY_NAME_PREFIX}'.`,
+          ),
         description: z
           .string()
           .max(WORKSPACE_RULE_LIMITS.DESCRIPTION_MAX_LENGTH)
@@ -216,7 +222,6 @@ Multi-Trigger Logic:
             `Data masking configurations (currently only regex detectors are supported). ${ACTION_PARAMETER_CONSTRAINTS.DATA_MASKING_SUPPORT}`,
           ),
       },
-      outputSchema: outputSchemas.singlePolicy,
     },
 
     guardedToolCall(

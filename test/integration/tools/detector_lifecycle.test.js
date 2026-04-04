@@ -60,7 +60,7 @@ describe('Detector Lifecycle Integration', () => {
     // 2. VERIFY
     const actualPolicy = details.setting?.value || details
     assert.ok(actualPolicy.displayName.includes(detectorConfig.displayName))
-    
+
     // The real API might nest the detector specific fields differently or we might need to match exactly what was sent
     const expectedMatch = {
       description: detectorConfig.description,
@@ -70,7 +70,7 @@ describe('Detector Lifecycle Integration', () => {
     } else if (actualPolicy.regularExpression) {
       expectedMatch.regularExpression = { expression: detectorConfig.expression }
     }
-    
+
     assertObjectMatches(actualPolicy, expectedMatch)
 
     // 3. LIST
@@ -103,7 +103,9 @@ describe('Detector Lifecycle Integration', () => {
 
     // Clean up createdResources list as it's already deleted
     const index = createdResources.indexOf(detectorName)
-    if (index > -1) createdResources.splice(index, 1)
+    if (index > -1) {
+      createdResources.splice(index, 1)
+    }
   })
 
   test('URL List Detector Lifecycle: Create -> Verify -> Delete', async () => {
@@ -129,7 +131,7 @@ describe('Detector Lifecycle Integration', () => {
 
     // 2. VERIFY
     const actualPolicy = details.setting?.value || details
-    
+
     const expectedMatch = {
       displayName: detectorConfig.displayName,
       description: detectorConfig.description,
@@ -139,7 +141,7 @@ describe('Detector Lifecycle Integration', () => {
     } else if (actualPolicy.urlList) {
       expectedMatch.urlList = { urls: detectorConfig.urls }
     }
-    
+
     assertObjectMatches(actualPolicy, expectedMatch)
 
     // 3. DELETE
@@ -153,6 +155,8 @@ describe('Detector Lifecycle Integration', () => {
 
     // Clean up createdResources list as it's already deleted
     const index = createdResources.indexOf(detectorName)
-    if (index > -1) createdResources.splice(index, 1)
+    if (index > -1) {
+      createdResources.splice(index, 1)
+    }
   })
 })

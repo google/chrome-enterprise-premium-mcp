@@ -108,7 +108,10 @@ function handleDiscoveryError(errorText) {
  * High-level helper to bootstrap a full MCP integration test harness.
  */
 export async function createIntegrationHarness() {
-  const server = new McpServer({ name: 'test-server', version: '1.0.0' }, { capabilities: { logging: {}, prompts: {} } })
+  const server = new McpServer(
+    { name: 'test-server', version: '1.0.0' },
+    { capabilities: { logging: {}, prompts: {} } },
+  )
 
   const apiClients = getApiClients()
   registerTools(server, { apiClients })
@@ -138,7 +141,9 @@ export async function teardownIntegrationHarness(harness, createdResources) {
   if (harness?.apiClients && createdResources && createdResources.length > 0) {
     console.log(`[CLEANUP] Deleting ${createdResources.length} integration test resources...`)
     for (const name of createdResources) {
-      if (!name) continue
+      if (!name) {
+        continue
+      }
       try {
         if (name.includes('policies/')) {
           // Check policy type before deleting

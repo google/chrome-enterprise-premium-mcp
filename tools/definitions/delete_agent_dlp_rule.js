@@ -43,7 +43,6 @@ export function registerDeleteAgentDlpRuleTool(server, options, sessionState) {
       inputSchema: {
         policyName: inputSchemas.ruleResourceName,
       },
-      outputSchema: outputSchemas.successMessage,
     },
     guardedToolCall(
       {

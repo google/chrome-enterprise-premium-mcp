@@ -59,33 +59,45 @@ export const inputSchemas = {
  * Reusable Zod schema definitions for outputs.
  */
 export const outputSchemas = {
-  // Generic success message
-  successMessage: z.object({
-    content: z.array(
-      z.object({
-        type: z.literal('text'),
-        text: z.string(),
-      }),
-    ),
+  // Generic operation outcome schema
+  operationOutcome: z.object({
+    status: z.string().optional().default('SUCCESS'),
+    message: z.string().optional().default('Operation completed successfully.'),
   }),
-  // List of policies (rules or detectors)
-  policyList: z.object({
-    content: z.array(
-      z.object({
-        type: z.literal('text'),
-        text: z.string().describe('A JSON-formatted string containing the list of policies.'),
-      }),
-    ),
-  }),
-  // Single policy (created or retrieved)
-  singlePolicy: z.object({
-    content: z.array(
-      z.object({
-        type: z.literal('text'),
-        text: z.string().describe('A JSON-formatted string containing the policy details.'),
-      }),
-    ),
-  }),
+  entityList: z
+    .union([z.object({ entities: z.array(z.record(z.any())) }), z.any()])
+    .optional()
+    .default([]),
+  orgUnits: z
+    .union([z.array(z.object({ name: z.string(), orgUnitPath: z.string() }).passthrough()), z.any()])
+    .optional()
+    .default([]),
+  customerProfiles: z.array(z.any()).optional().default([]),
+  counts: z.array(z.any()).optional().default([]),
+  activityLogs: z.array(z.any()).optional().default([]),
+  subscriptionInfo: z
+    .object({
+      isActive: z.boolean().describe('Whether the subscription or license is active.'),
+      assignmentCount: z.number().optional().describe('Number of license assignments.'),
+    })
+    .passthrough()
+    .optional(),
+  extensionStatus: z
+    .object({
+      isInstalled: z.boolean().describe('Whether the extension is force-installed.'),
+      extensionId: z.string().optional().describe('The ID of the extension.'),
+    })
+    .passthrough()
+    .optional(),
+  connectorPolicy: z.any().optional().describe('Structured configuration for a connector policy.'),
+  knowledgeSearch: z.array(z.any()).optional().default([]),
+  knowledgeDocument: z
+    .object({
+      title: z.string(),
+      content: z.string(),
+      metadata: z.any().optional(),
+    })
+    .optional(),
 }
 
 /**
@@ -203,15 +215,22 @@ export function guardedToolCall(
       console.error(`${TAGS.MCP} Tool handler error details:`, JSON.stringify(error, null, 2))
       console.error(`${TAGS.MCP} Tool handler error stack:`, error.stack)
 
+      if (options && options.onError) {
+        const customErrorResponse = options.onError(error)
+        if (customErrorResponse) {
+          return customErrorResponse
+        }
+      }
+
       const status = error.status || error.code || error.response?.status
       if (status === 401) {
         throw {
-          status: 401,
+          code: 401,
           message: 'Authentication required. Please check your credentials.',
         }
       } else if (status === 403) {
         throw {
-          status: 403,
+          code: 403,
           message: 'Permission denied. Your account lacks the required permissions.',
         }
       }
@@ -227,10 +246,12 @@ export function guardedToolCall(
         errorMessage = error.toString()
       }
 
-      return {
+      const response = {
         content: [{ type: 'text', text: `Error: ${errorMessage}` }],
         isError: true,
       }
+      response.structuredContent = { content: response.content }
+      return response
     }
   }
 }

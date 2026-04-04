@@ -54,7 +54,6 @@ export function registerCreateRegexDetectorTool(server, options, sessionState) {
           .describe('An optional description for the detector.'),
         expression: z.string().describe(`A regular expression to match.`),
       },
-      outputSchema: outputSchemas.singlePolicy,
     },
     guardedToolCall(
       {
@@ -73,12 +72,7 @@ export function registerCreateRegexDetectorTool(server, options, sessionState) {
             regular_expression: { expression: expression },
           }
 
-          const result = await cloudIdentityClient.createDetector(
-            customerId,
-            orgUnitId,
-            detectorConfig,
-            authToken,
-          )
+          const result = await cloudIdentityClient.createDetector(customerId, orgUnitId, detectorConfig, authToken)
 
           const createdPolicy = result.response
 

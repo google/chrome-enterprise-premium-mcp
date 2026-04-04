@@ -48,7 +48,6 @@ export function registerListDlpRulesTool(server, options, sessionState) {
       description: `Lists all DLP rules for a given customer.
         The tool returns rules with multiple attributes, parse them and return resource names and display names, summarize the action`,
       inputSchema: {},
-      outputSchema: outputSchemas.policyList,
     },
     guardedToolCall(
       {

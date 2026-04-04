@@ -42,7 +42,6 @@ export function registerDeleteDetectorTool(server, options, sessionState) {
       inputSchema: {
         policyName: inputSchemas.detectorResourceName,
       },
-      outputSchema: outputSchemas.successMessage,
     },
     guardedToolCall(
       {

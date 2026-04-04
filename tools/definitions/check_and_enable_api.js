@@ -48,7 +48,6 @@ export function registerCheckAndEnableApiTool(server, options, sessionState) {
         enable: inputSchemas.enable,
         checkAll: inputSchemas.checkAll,
       },
-      outputSchema: outputSchemas.apiCheckResults,
     },
     guardedToolCall(
       {

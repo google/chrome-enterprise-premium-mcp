@@ -166,7 +166,7 @@ describe('Tool Utils', () => {
       })
     })
 
-    it('should throw a 401 error when handler fails with 401', async () => {
+    it('should return a 401 error object when handler fails with 401', async () => {
       const handler = async () => {
         const error = new Error('Permission denied')
         error.code = 401
@@ -174,16 +174,13 @@ describe('Tool Utils', () => {
       }
       const tool = guardedToolCall({ handler })
 
-      try {
-        await tool({}, {})
-        assert.fail('Should have thrown an error')
-      } catch (error) {
-        assert.strictEqual(error.status, 401)
-        assert.strictEqual(error.message, 'Authentication required. Please check your credentials.')
-      }
+      await assert.rejects(tool({}, {}), {
+        code: 401,
+        message: 'Authentication required. Please check your credentials.',
+      })
     })
 
-    it('should throw a 403 error when handler fails with 403', async () => {
+    it('should return a 403 error object when handler fails with 403', async () => {
       const handler = async () => {
         const error = new Error('Permission denied')
         error.code = 403
@@ -191,13 +188,23 @@ describe('Tool Utils', () => {
       }
       const tool = guardedToolCall({ handler })
 
-      try {
-        await tool({}, {})
-        assert.fail('Should have thrown an error')
-      } catch (error) {
-        assert.strictEqual(error.status, 403)
-        assert.strictEqual(error.message, 'Permission denied. Your account lacks the required permissions.')
+      await assert.rejects(tool({}, {}), {
+        code: 403,
+        message: 'Permission denied. Your account lacks the required permissions.',
+      })
+    })
+
+    it('should call onError if provided when handler fails', async () => {
+      const handler = async () => {
+        throw new Error('Test error')
       }
+      const customResponse = { isError: true, content: [{ type: 'text', text: 'Custom Error' }] }
+      const onError = mock.fn(() => customResponse)
+      const tool = guardedToolCall({ handler }, { onError })
+
+      const result = await tool({}, {})
+      assert.strictEqual(onError.mock.callCount(), 1)
+      assert.deepStrictEqual(result, customResponse)
     })
   })
 })

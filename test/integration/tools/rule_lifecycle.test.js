@@ -110,7 +110,9 @@ describe('Rule Lifecycle Integration', () => {
 
     // Clean up createdResources list as it's already deleted
     const index = createdResources.indexOf(ruleName)
-    if (index > -1) createdResources.splice(index, 1)
+    if (index > -1) {
+      createdResources.splice(index, 1)
+    }
   })
 
   test('DLP Rule Safety: Refuses to delete non-agent rules', async () => {
