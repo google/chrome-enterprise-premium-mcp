@@ -57,7 +57,7 @@ describe('Admin SDK API', () => {
       )
 
       assert.strictEqual(mockGetCustomerId.mock.callCount(), 1)
-      const expectedText = 'Customer ID: C0123'
+      const expectedText = `✅ **Customer ID:** \`C0123\``
       assert.deepStrictEqual(result.content[0].text, expectedText)
     })
 
@@ -130,17 +130,14 @@ describe('Admin SDK API', () => {
 
       assert.strictEqual(mockListOrgUnits.mock.callCount(), 1)
       const expectedText =
-        'Organizational Units:\n' +
-        '[\n' +
-        '  {\n' +
-        '    "name": "ou1",\n' +
-        '    "orgUnitId": "ou1"\n' +
-        '  },\n' +
-        '  {\n' +
-        '    "name": "ou2",\n' +
-        '    "orgUnitId": "ou2"\n' +
-        '  }\n' +
-        ']'
+        '# Organizational Units\n' +
+        '\n' +
+        '*   **Name:** ou1\n' +
+        '    *   **ID:** `ou1`\n' +
+        '    *   **Path:** `undefined`\n' +
+        '*   **Name:** ou2\n' +
+        '    *   **ID:** `ou2`\n' +
+        '    *   **Path:** `undefined`'
       assert.deepStrictEqual(result.content[0].text, expectedText)
     })
 
@@ -206,8 +203,9 @@ describe('Admin SDK API', () => {
       assert.strictEqual(mockCheckUserCepLicense.mock.calls[0].arguments[0], userId)
       assert.deepStrictEqual(
         result.content[0].text,
-        "Success: User 'user@example.com' has a Chrome Enterprise Premium (CEP) license assigned.",
+        `✅ **Success:** User \`user@example.com\` has a Chrome Enterprise Premium (CEP) license assigned.`,
       )
+      assert.deepStrictEqual(result.structuredContent, { isActive: true, assignmentCount: 1 })
     })
 
     it('should call checkUserCepLicense and return info if license not found', async () => {
@@ -240,8 +238,9 @@ describe('Admin SDK API', () => {
       assert.strictEqual(mockCheckUserCepLicense.mock.callCount(), 1)
       assert.deepStrictEqual(
         result.content[0].text,
-        "User 'user@example.com' does NOT have a Chrome Enterprise Premium (CEP) license assigned.",
+        `❌ **No License Found:** User \`user@example.com\` does NOT have a Chrome Enterprise Premium (CEP) license assigned.`,
       )
+      assert.deepStrictEqual(result.structuredContent, { isActive: false, assignmentCount: 0 })
     })
 
     it('should return an error message if API call fails', async () => {

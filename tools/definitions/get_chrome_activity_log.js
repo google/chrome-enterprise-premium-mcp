@@ -20,7 +20,7 @@ limitations under the License.
 
 import { z } from 'zod'
 
-import { guardedToolCall, getAuthToken, inputSchemas } from '../utils.js'
+import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -97,17 +97,36 @@ export function registerGetChromeActivityLogTool(server, options, sessionState) 
                   text: 'No Chrome activity found for the specified criteria.',
                 },
               ],
+              structuredContent: [],
             }
           }
+
+          const formattedActivities = activities
+            .map(act => {
+              const time = new Date(act.id.time).toISOString()
+              const user = act.actor?.email || 'Unknown'
+              const events = (act.events || [])
+                .map(e => {
+                  const params =
+                    e.parameters
+                      ?.map(p => `${p.name}=${p.value ?? p.boolValue ?? p.intValue ?? p.multiValue ?? ''}`)
+                      .join(', ') || 'No params'
+                  return `*   **${e.name}**: ${params}`
+                })
+                .join('\n    ')
+              return `### Activity at ${time}\n*   **User:** \`${user}\`\n*   **Events:**\n    ${events}`
+            })
+            .join('\n\n---\n\n')
 
           logger.debug(`${TAGS.MCP} Successfully retrieved Chrome activity log.`)
           return {
             content: [
               {
                 type: 'text',
-                text: `Chrome activity:\n${JSON.stringify(activities, null, 2)}`,
+                text: `# Chrome Activity Log\n\n${formattedActivities}`,
               },
             ],
+            structuredContent: activities,
           }
         },
       },

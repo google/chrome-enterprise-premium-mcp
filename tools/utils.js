@@ -76,27 +76,34 @@ export const outputSchemas = {
   counts: z.array(z.any()).optional().default([]),
   activityLogs: z.array(z.any()).optional().default([]),
   subscriptionInfo: z
-    .object({
-      isActive: z.boolean().describe('Whether the subscription or license is active.'),
-      assignmentCount: z.number().optional().describe('Number of license assignments.'),
-    })
-    .passthrough()
+    .union([
+      z.object({
+        isActive: z.boolean().describe('Whether the subscription or license is active.'),
+        assignmentCount: z.number().optional().describe('Number of license assignments.'),
+      }).passthrough(),
+      z.any()
+    ])
     .optional(),
   extensionStatus: z
-    .object({
-      isInstalled: z.boolean().describe('Whether the extension is force-installed.'),
-      extensionId: z.string().optional().describe('The ID of the extension.'),
-    })
-    .passthrough()
+    .union([
+      z.object({
+        isInstalled: z.boolean().describe('Whether the extension is force-installed.'),
+        extensionId: z.string().optional().describe('The ID of the extension.'),
+      }).passthrough(),
+      z.any()
+    ])
     .optional(),
   connectorPolicy: z.any().optional().describe('Structured configuration for a connector policy.'),
   knowledgeSearch: z.array(z.any()).optional().default([]),
   knowledgeDocument: z
-    .object({
-      title: z.string(),
-      content: z.string(),
-      metadata: z.any().optional(),
-    })
+    .union([
+      z.object({
+        title: z.string(),
+        content: z.string(),
+        metadata: z.any().optional(),
+      }),
+      z.any()
+    ])
     .optional(),
 }
 

@@ -138,17 +138,14 @@ describe('Chrome Management API', () => {
 
       assert.strictEqual(mockListCustomerProfiles.mock.callCount(), 1)
       const expectedText =
-        'Customer profiles for customer C0123:\n' +
-        '[\n' +
-        '  {\n' +
-        '    "name": "profile1",\n' +
-        '    "value": "value1"\n' +
-        '  },\n' +
-        '  {\n' +
-        '    "name": "profile2",\n' +
-        '    "value": "value2"\n' +
-        '  }\n' +
-        ']'
+        '# Customer Profiles for C0123\n' +
+        '\n' +
+        '*   **Name:** Unnamed Profile\n' +
+        '    *   **ID:** `undefined`\n' +
+        '    *   **Resource Name:** `profile1`\n' +
+        '*   **Name:** Unnamed Profile\n' +
+        '    *   **ID:** `undefined`\n' +
+        '    *   **Resource Name:** `profile2`'
       assert.deepStrictEqual(result.content[0].text, expectedText)
     })
 

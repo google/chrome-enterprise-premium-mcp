@@ -59,17 +59,25 @@ export function registerCustomerProfileTool(server, options, sessionState) {
                     text: `No profiles found for customer ${customerId}.`,
                   },
                 ],
+                structuredContent: { profiles: [] },
               }
             }
+
+            const formattedProfiles = profiles
+              .map(profile => {
+                return `*   **Name:** ${profile.displayName || 'Unnamed Profile'}\n    *   **ID:** \`${profile.profileId || profile.profilePermanentId}\`\n    *   **Resource Name:** \`${profile.name}\``
+              })
+              .join('\n')
 
             logger.debug(`${TAGS.MCP} Successfully listed customer profiles.`)
             return {
               content: [
                 {
                   type: 'text',
-                  text: `Customer profiles for customer ${customerId}:\n${JSON.stringify(profiles, null, 2)}`, // Improved formatting
+                  text: `# Customer Profiles for ${customerId}\n\n${formattedProfiles}`,
                 },
               ],
+              structuredContent: { profiles },
             }
           } catch (error) {
             logger.error(`${TAGS.MCP} Error listing customer profiles: ${error.message}`)

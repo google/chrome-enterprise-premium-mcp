@@ -45,7 +45,7 @@ describe('check_and_enable_api tool', () => {
       { requestInfo: {} },
     )
 
-    assert.ok(result.content[0].text.includes(`API [${SERVICE_NAMES.ADMIN_SDK}] is currently DISABLED`))
+    assert.ok(result.content[0].text.includes(`⚠️ **API:** \`${SERVICE_NAMES.ADMIN_SDK}\` is currently DISABLED`))
     assert.ok(
       result.content[0].text.includes(
         'Would you like to enable the missing API(s) listed above, or should I check for and enable ALL required APIs for your project?',
@@ -70,9 +70,9 @@ describe('check_and_enable_api tool', () => {
       { requestInfo: {} },
     )
 
-    assert.ok(result.content[0].text.includes(`API [${SERVICE_NAMES.ADMIN_SDK}] is currently DISABLED`))
+    assert.ok(result.content[0].text.includes(`⚠️ **API:** \`${SERVICE_NAMES.ADMIN_SDK}\` is currently DISABLED`))
     // Should NOT include other APIs
-    assert.ok(!result.content[0].text.includes(`API [${SERVICE_NAMES.CHROME_POLICY}]`))
+    assert.ok(!result.content[0].text.includes(`API:** \`${SERVICE_NAMES.CHROME_POLICY}\``))
   })
 
   it('should enable only one API if checkAll is false and apiName is provided', async () => {
@@ -94,9 +94,11 @@ describe('check_and_enable_api tool', () => {
     )
 
     // Only Admin SDK should be ENABLED
-    assert.ok(result.content[0].text.includes(`API [${SERVICE_NAMES.ADMIN_SDK}] has been successfully ENABLED`))
+    assert.ok(
+      result.content[0].text.includes(`✅ **API:** \`${SERVICE_NAMES.ADMIN_SDK}\` has been successfully ENABLED`),
+    )
     // Others should NOT be in the results
-    assert.ok(!result.content[0].text.includes(`API [${SERVICE_NAMES.CHROME_POLICY}]`))
+    assert.ok(!result.content[0].text.includes(`API:** \`${SERVICE_NAMES.CHROME_POLICY}\``))
   })
 
   it('should enable only one API by default if apiName is provided', async () => {
@@ -116,9 +118,11 @@ describe('check_and_enable_api tool', () => {
       { requestInfo: {} },
     )
 
-    assert.ok(result.content[0].text.includes(`API [${SERVICE_NAMES.ADMIN_SDK}] has been successfully ENABLED`))
+    assert.ok(
+      result.content[0].text.includes(`✅ **API:** \`${SERVICE_NAMES.ADMIN_SDK}\` has been successfully ENABLED`),
+    )
     // Should NOT include other APIs
-    assert.ok(!result.content[0].text.includes(`API [${SERVICE_NAMES.CHROME_POLICY}]`))
+    assert.ok(!result.content[0].text.includes(`API:** \`${SERVICE_NAMES.CHROME_POLICY}\``))
   })
 
   it('should report status of an already enabled API', async () => {
@@ -160,7 +164,7 @@ describe('check_and_enable_api tool', () => {
     )
 
     for (const api of Object.values(SERVICE_NAMES)) {
-      assert.ok(result.content[0].text.includes(`API [${api}] is currently DISABLED`))
+      assert.ok(result.content[0].text.includes(`⚠️ **API:** \`${api}\` is currently DISABLED`))
     }
     assert.ok(result.content[0].text.includes('Would you like to enable the missing APIs found during the check?'))
   })
@@ -183,7 +187,7 @@ describe('check_and_enable_api tool', () => {
     )
 
     for (const api of Object.values(SERVICE_NAMES)) {
-      assert.ok(result.content[0].text.includes(`API [${api}] has been successfully ENABLED`))
+      assert.ok(result.content[0].text.includes(`✅ **API:** \`${api}\` has been successfully ENABLED`))
     }
   })
 
@@ -236,9 +240,9 @@ describe('check_and_enable_api tool', () => {
       { requestInfo: {} },
     )
 
-    assert.ok(result.content[0].text.includes(`API [${SERVICE_NAMES.ADMIN_SDK}] is currently DISABLED`))
+    assert.ok(result.content[0].text.includes(`⚠️ **API:** \`${SERVICE_NAMES.ADMIN_SDK}\` is currently DISABLED`))
     // Should NOT include other APIs
-    assert.ok(!result.content[0].text.includes(`API [${SERVICE_NAMES.CHROME_POLICY}]`))
+    assert.ok(!result.content[0].text.includes(`API:** \`${SERVICE_NAMES.CHROME_POLICY}\``))
     assert.ok(
       result.content[0].text.includes(
         'Would you like to enable the missing API(s) listed above, or should I check for and enable ALL required APIs for your project?',

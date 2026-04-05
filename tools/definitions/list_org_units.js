@@ -63,17 +63,27 @@ export function registerListOrgUnitsTool(server, options, sessionState) {
                   text: 'No organizational units found for the specified criteria.',
                 },
               ],
+              structuredContent: { orgUnits: [] },
             }
           }
+
+          const formattedOrgUnits = orgUnits
+            .map(ou => {
+              return `*   **Name:** ${ou.name}
+    *   **ID:** \`${ou.orgUnitId}\`
+    *   **Path:** \`${ou.orgUnitPath}\`${ou.description ? `\n    *   **Description:** ${ou.description}` : ''}`
+            })
+            .join('\n')
 
           logger.debug(`${TAGS.MCP} Successfully listed organizational units.`)
           return {
             content: [
               {
                 type: 'text',
-                text: `Organizational Units:\n${JSON.stringify(orgUnits, null, 2)}`,
+                text: `# Organizational Units\n\n${formattedOrgUnits}`,
               },
             ],
+            structuredContent: { orgUnits },
           }
         },
       },

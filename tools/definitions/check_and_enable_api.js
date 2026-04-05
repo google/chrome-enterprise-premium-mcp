@@ -67,14 +67,14 @@ export function registerCheckAndEnableApiTool(server, options, sessionState) {
               let status = await serviceUsageClient.getServiceStatus(projectId, api, authToken)
 
               if (status.state === 'ENABLED') {
-                results.push(`API [${api}] is already ENABLED for project [${projectId}].`)
+                results.push(`✅ **API:** \`${api}\` is already ENABLED for project \`${projectId}\`.`)
               } else if (enable) {
                 logger.info(`${TAGS.MCP} Enabling API [${api}] for project [${projectId}]...`)
                 await serviceUsageClient.enableService(projectId, api, authToken)
-                results.push(`API [${api}] has been successfully ENABLED for project [${projectId}].`)
+                results.push(`✅ **API:** \`${api}\` has been successfully ENABLED for project \`${projectId}\`.`)
               } else {
                 results.push(
-                  `API [${api}] is currently DISABLED for project [${projectId}].\n\nManual enablement: https://console.cloud.google.com/apis/library/${api}?project=${projectId}`,
+                  `⚠️ **API:** \`${api}\` is currently DISABLED for project \`${projectId}\`.\n    *   [Manual enablement](https://console.cloud.google.com/apis/library/${api}?project=${projectId})`,
                 )
               }
             } catch (error) {
@@ -87,12 +87,12 @@ export function registerCheckAndEnableApiTool(server, options, sessionState) {
               if (isServiceUsageError) {
                 serviceUsageDisabled = true
                 results.push(
-                  `Error: The Service Usage API is currently disabled for project [${projectId}]. This API is a prerequisite for checking or enabling other required services. Please enable it manually: https://console.cloud.google.com/apis/library/serviceusage.googleapis.com?project=${projectId}`,
+                  `❌ **Error:** The Service Usage API is currently disabled for project \`${projectId}\`. This API is a prerequisite for checking or enabling other required services.\n    *   [Enable Service Usage API](https://console.cloud.google.com/apis/library/serviceusage.googleapis.com?project=${projectId})`,
                 )
                 // If service usage is disabled, we can't check any more APIs
                 break
               } else {
-                results.push(`Error checking/enabling API [${api}]: ${errorMessage}`)
+                results.push(`❌ **Error checking/enabling API \`${api}\`:** ${errorMessage}`)
               }
             }
           }
