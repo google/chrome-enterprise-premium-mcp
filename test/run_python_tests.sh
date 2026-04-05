@@ -42,7 +42,11 @@ echo "--- Running Python tests ---"
 
 # Temporarily disable exit-on-error to capture the test exit code
 set +e
-python3 -m unittest discover test -p "*_test.py"
+if [ "$#" -gt 0 ]; then
+  python3 -m unittest "$@"
+else
+  python3 -m unittest discover test -p "*_test.py"
+fi
 EXIT_CODE=$?
 set -e
 

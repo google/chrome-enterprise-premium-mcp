@@ -1,109 +1,77 @@
-/*
-Copyright 2026 Google LLC
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    https://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
 /**
- * @fileoverview MCP Tool Registration Entry Point.
- *
- * Provides functions to register all available tools with the MCP server.
- * Supports both local and remote execution modes.
+ * @fileoverview Registers all tools with the MCP server.
  */
 
-import { registerCountBrowserVersionsTool } from './definitions/count_browser_versions.js'
-import { registerCustomerProfileTool } from './definitions/list_customer_profiles.js'
-import { registerListDlpRulesTool } from './definitions/list_dlp_rules.js'
-import { registerCreateChromeDlpRuleTool } from './definitions/create_chrome_dlp_rule.js'
-import { registerGetChromeActivityLogTool } from './definitions/get_chrome_activity_log.js'
-import { registerDeleteAgentDlpRuleTool } from './definitions/delete_agent_dlp_rule.js'
-import { registerGetConnectorPolicyTool } from './definitions/get_connector_policy.js'
-import { registerListOrgUnitsTool } from './definitions/list_org_units.js'
+import { TAGS } from '../lib/constants.js'
+import { logger } from '../lib/util/logger.js'
+
+// Import tool registration functions from definitions directory
 import { registerGetCustomerIdTool } from './definitions/get_customer_id.js'
-import { registerListDetectorsTool } from './definitions/list_detectors.js'
-import { registerCreateUrlListDetectorTool } from './definitions/create_url_list_detector.js'
-import { registerCreateWordListDetectorTool } from './definitions/create_word_list_detector.js'
-import { registerCreateRegexDetectorTool } from './definitions/create_regex_detector.js'
-import { registerDeleteDetectorTool } from './definitions/delete_detector.js'
-import { registerCreateDefaultDlpRulesTool } from './definitions/create_default_dlp_rules.js'
+import { registerListOrgUnitsTool } from './definitions/list_org_units.js'
 import { registerCheckCepSubscriptionTool } from './definitions/check_cep_subscription.js'
 import { registerCheckUserCepLicenseTool } from './definitions/check_user_cep_license.js'
+import { registerCountBrowserVersionsTool } from './definitions/count_browser_versions.js'
+import { registerCustomerProfileTool } from './definitions/list_customer_profiles.js'
+import { registerGetConnectorPolicyTool } from './definitions/get_connector_policy.js'
+import { registerGetChromeActivityLogTool } from './definitions/get_chrome_activity_log.js'
+import { registerListDlpRulesTool } from './definitions/list_dlp_rules.js'
+import { registerListDetectorsTool } from './definitions/list_detectors.js'
+import { registerCreateChromeDlpRuleTool } from './definitions/create_chrome_dlp_rule.js'
+import { registerDeleteAgentDlpRuleTool } from './definitions/delete_agent_dlp_rule.js'
+import { registerDeleteDetectorTool } from './definitions/delete_detector.js'
+import { registerCreateRegexDetectorTool } from './definitions/create_regex_detector.js'
+import { registerCreateUrlListDetectorTool } from './definitions/create_url_list_detector.js'
+import { registerCreateWordListDetectorTool } from './definitions/create_word_list_detector.js'
+import { registerCreateDefaultDlpRulesTool } from './definitions/create_default_dlp_rules.js'
 import { registerCheckSebExtensionStatusTool } from './definitions/check_seb_extension_status.js'
 import { registerInstallSebExtensionTool } from './definitions/install_seb_extension.js'
 import { registerCheckAndEnableApiTool } from './definitions/check_and_enable_api.js'
 import { registerEnableChromeEnterpriseConnectorsTool } from './definitions/enable_chrome_enterprise_connectors.js'
+import { registerFeedbackTool } from './definitions/feedback.js'
 
 /**
  * Registers all tools with the MCP server.
  *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
- * @param {object} [options={}] - Configuration options for the tools.
- * @param {object} [sessionState] - Shared session state object.
+ * @param {object} options - Configuration options for the tools.
+ * @param {import('../lib/api/interfaces/api_clients.js').ApiClients} options.apiClients - The API clients collection.
+ * @param {object} sessionState - The session state object for caching.
  */
-function registerAllTools(server, options = {}, sessionState) {
+export function registerTools(server, options = {}, sessionState) {
+  const { apiClients = {} } = options
+  const { adminSdk, chromeManagement, chromePolicy, cloudIdentity, serviceUsage } = apiClients
+
   const apiOptions = options.apiOptions || {}
-  const state = sessionState || { customerId: null, cachedRootOrgUnitId: null }
-  const {
-    adminSdk: adminSdkClient,
-    cloudIdentity: cloudIdentityClient,
-    chromePolicy: chromePolicyClient,
-    chromeManagement: chromeManagementClient,
-    serviceUsage: serviceUsageClient,
-  } = options.apiClients || {}
+  const commonOpts = { adminSdkClient: adminSdk, apiOptions, apiClients }
+  const chromeManagementClient = chromeManagement
+  const chromePolicyClient = chromePolicy
+  const cloudIdentityClient = cloudIdentity
+  const serviceUsageClient = serviceUsage
 
-  const commonOpts = { ...options, apiOptions }
+  logger.debug(`${TAGS.MCP} Registering all tools...`)
 
+  const state = sessionState || {}
+
+  registerGetCustomerIdTool(server, commonOpts, state)
+  registerListOrgUnitsTool(server, commonOpts, state)
+  registerCheckCepSubscriptionTool(server, commonOpts, state)
+  registerCheckUserCepLicenseTool(server, commonOpts, state)
   registerCountBrowserVersionsTool(server, { ...commonOpts, chromeManagementClient }, state)
   registerCustomerProfileTool(server, { ...commonOpts, chromeManagementClient }, state)
-  registerListDlpRulesTool(server, { ...commonOpts, cloudIdentityClient }, state)
+  registerGetConnectorPolicyTool(server, { chromePolicyClient }, state)
+  registerGetChromeActivityLogTool(server, { ...commonOpts, chromeManagementClient }, state)
+  registerListDlpRulesTool(server, { cloudIdentityClient }, state)
+  registerListDetectorsTool(server, { cloudIdentityClient }, state)
   registerCreateChromeDlpRuleTool(server, { ...commonOpts, cloudIdentityClient }, state)
-  registerDeleteAgentDlpRuleTool(server, { ...commonOpts, cloudIdentityClient }, state)
-  registerListDetectorsTool(server, { ...commonOpts, cloudIdentityClient }, state)
+  registerDeleteAgentDlpRuleTool(server, { cloudIdentityClient }, state)
+  registerDeleteDetectorTool(server, { cloudIdentityClient }, state)
+  registerCreateRegexDetectorTool(server, { ...commonOpts, cloudIdentityClient }, state)
   registerCreateUrlListDetectorTool(server, { ...commonOpts, cloudIdentityClient }, state)
   registerCreateWordListDetectorTool(server, { ...commonOpts, cloudIdentityClient }, state)
-  registerCreateRegexDetectorTool(server, { ...commonOpts, cloudIdentityClient }, state)
-  registerDeleteDetectorTool(server, { ...commonOpts, cloudIdentityClient }, state)
-  registerGetChromeActivityLogTool(server, { ...commonOpts, adminSdkClient }, state)
-  registerGetConnectorPolicyTool(server, { ...commonOpts, chromePolicyClient }, state)
-  registerListOrgUnitsTool(server, { ...commonOpts, adminSdkClient }, state)
-  registerGetCustomerIdTool(server, { ...commonOpts, adminSdkClient }, state)
-  registerCheckCepSubscriptionTool(server, { ...commonOpts, adminSdkClient }, state)
-  registerCheckUserCepLicenseTool(server, { ...commonOpts, adminSdkClient }, state)
   registerCreateDefaultDlpRulesTool(server, { ...commonOpts, cloudIdentityClient }, state)
   registerCheckSebExtensionStatusTool(server, { ...commonOpts, chromePolicyClient }, state)
   registerInstallSebExtensionTool(server, { ...commonOpts, chromePolicyClient }, state)
   registerCheckAndEnableApiTool(server, { ...commonOpts, serviceUsageClient }, state)
   registerEnableChromeEnterpriseConnectorsTool(server, { ...commonOpts, chromePolicyClient }, state)
-}
-
-/**
- * Registers tools for local execution.
- *
- * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
- * @param {object} [options={}] - Configuration options.
- * @param {object} [sessionState] - Shared session state object.
- */
-export const registerTools = (server, options = {}, sessionState) => {
-  registerAllTools(server, options, sessionState)
-}
-
-/**
- * Registers tools for remote execution (e.g., on Cloud Run).
- *
- * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
- * @param {object} [options={}] - Configuration options.
- * @param {object} [sessionState] - Shared session state object.
- */
-export const registerToolsRemote = (server, options = {}, sessionState) => {
-  registerAllTools(server, options, sessionState)
+  registerFeedbackTool(server, { ...commonOpts }, state)
 }

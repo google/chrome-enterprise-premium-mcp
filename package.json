@@ -15,6 +15,7 @@
     "test:integration_tools:fake": "CEP_BACKEND=fake node --test test/integration/tools/*.test.js",
     "test:integration_tools:real": "CEP_BACKEND=real node --test test/integration/tools/*.test.js",
     "test:integration_agent": "./test/run_python_tests.sh",
+    "test:eval_full": "export FULL_EVAL=3 && ./test/run_python_tests.sh test.integration.golden_evals_test",
     "test": "./test/run_all_tests.sh",
     "smoke": "GCP_STDIO=false node test/local/smoke-test.js",
     "lint": "eslint .",

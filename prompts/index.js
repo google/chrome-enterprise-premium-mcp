@@ -24,6 +24,7 @@ import { registerCepPrompt } from './definitions/cep.js'
 import { registerDiagnosePrompt } from './definitions/diagnose.js'
 import { registerMaturityPrompt } from './definitions/maturity.js'
 import { registerNoisePrompt } from './definitions/noise.js'
+import { registerFeedbackPrompt } from './definitions/feedback.js'
 
 /**
  * Registers all prompts with the MCP server.
@@ -35,4 +36,5 @@ export function registerPrompts(server) {
   registerDiagnosePrompt(server)
   registerMaturityPrompt(server)
   registerNoisePrompt(server)
+  registerFeedbackPrompt(server)
 }

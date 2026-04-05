@@ -31,7 +31,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { SetLevelRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 
-import { registerTools, registerToolsRemote } from './tools/tools.js'
+import { registerTools } from './tools/tools.js'
 import { registerPrompts } from './prompts/index.js'
 import { checkGCP } from './lib/util/gcp.js'
 import { verifyToken, oauthMiddleware } from './lib/util/auth.js'
@@ -139,7 +139,7 @@ async function getServer(gcpInfo, sharedSessionState) {
     registerPrompts(server)
   } else {
     console.error(`${TAGS.MCP} Running on GCP environment. Using tools optimized for remote use.`)
-    registerToolsRemote(server, toolOptions, sharedSessionState)
+    registerTools(server, toolOptions, sharedSessionState)
     registerPrompts(server)
   }
 
@@ -155,7 +155,12 @@ async function main() {
     const isStdio = shouldStartStdio(gcpInfo)
 
     // Maintain session state globally for all server connections
-    const sharedSessionState = { customerId: null, cachedRootOrgUnitId: null, pendingRule: null }
+    const sharedSessionState = {
+      customerId: null,
+      cachedRootOrgUnitId: null,
+      pendingRule: null,
+      history: [],
+    }
 
     if (isStdio) {
       makeLoggingCompatibleWithStdio()
