@@ -18,7 +18,14 @@ limitations under the License.
  * @fileoverview Prompt definition for the main '/cep' command.
  */
 
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
+import { logger } from '../../lib/util/logger.js'
 import { SHARED_DIAGNOSTIC_RULES } from './shared.js'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 export const CEP_PROMPT_NAME = 'cep'
 
@@ -31,17 +38,43 @@ export const registerCepPrompt = server => {
   server.registerPrompt(
     CEP_PROMPT_NAME,
     {
-      description: 'Chrome Enterprise Premium diagnostics and analysis tool. Use sub-commands for specific tasks.',
+      description:
+        'Chrome Enterprise Premium diagnostics and analysis tool. Initializes the agent with full expert instructions.',
       arguments: [],
     },
     async () => {
+      let systemPrompt = 'You are a specialized Chrome Enterprise Premium (CEP) security expert AI agent.'
+      try {
+        const promptPath = path.resolve(__dirname, '../system-prompt.md')
+        logger.info(`[MCP PROMPT] Attempting to load system prompt from: ${promptPath}`)
+        systemPrompt = fs.readFileSync(promptPath, 'utf-8')
+
+        const capabilitiesPath = path.resolve(__dirname, '../../lib/knowledge/0-agent-capabilities.md')
+        if (fs.existsSync(capabilitiesPath)) {
+          const capabilitiesContent = fs.readFileSync(capabilitiesPath, 'utf-8')
+          systemPrompt = systemPrompt.replace('{{CAPABILITIES_DOC}}', capabilitiesContent)
+        }
+      } catch (err) {
+        logger.error(
+          `[MCP PROMPT] CRITICAL: Could not load system prompt from ${path.resolve(__dirname, '../system-prompt.md')}:`,
+          err,
+        )
+      }
+
       return {
         messages: [
           {
             role: 'user',
             content: {
               type: 'text',
-              text: `You are a Chrome Enterprise security expert. To run a health check on the user's environment, follow these steps:
+              text: systemPrompt,
+            },
+          },
+          {
+            role: 'user',
+            content: {
+              type: 'text',
+              text: `To run a health check on the user's environment, follow these steps:
 
 1. List the organizational units.
 2. For each organizational unit, verify these settings:

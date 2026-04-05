@@ -116,7 +116,49 @@ npm run format
 | `cep:maturity` | Assesses the **DLP Maturity** level based on rule configuration and events.       |
 | `cep:noise`    | Analyzes **Rule Noise** (false positives/overrides) and recommends optimizations. |
 
+## Evaluation Runners
+
+This project includes specialized evaluation suites to measure the factual accuracy, proactive behavior, and tool utilization of the CEP agent against curated datasets.
+
+### 1. Golden Evaluation (Grounding)
+
+Runs the "Golden Dataset" (34 scenarios) to measure factual accuracy and knowledge retrieval. Generates a Markdown report in `eval_results_golden_evals.md`.
+
+```bash
+npm run eval:golden
+```
+
+### 2. Agentic Evaluation (Tool Use)
+
+Runs the "Agentic Dataset" (14 scenarios) to measure correct tool selection, parameters, and multi-step mutations. Generates a Markdown report in `eval_results_agentic_evals.md`.
+
+```bash
+npm run eval:agentic
+```
+
+### 3. Full Evaluation (Redundant Judging)
+
+Runs the golden suite and executes the LLM-as-a-Judge **3 times per evaluation** to ensure consistent results and mitigate LLM variance. Generates `eval_results_golden_evals_full.md`.
+
+```bash
+npm run eval:full
+```
+
+### 4. Custom Testing
+
+You can override the number of judge runs using the `FULL_EVAL` environment variable or target specific tests using the `EVAL_IDS` variable:
+
+```bash
+# Run judge 5 times per eval
+FULL_EVAL=5 npm run eval:golden
+
+# Run only evals 3, 5, and 8
+EVAL_IDS="3,5,8" npm run eval:golden
+```
+
 ## Environment Variables
+
+...
 
 | Variable                     | Description                                      | Default        |
 | :--------------------------- | :----------------------------------------------- | :------------- |

@@ -1,0 +1,206 @@
+[
+  {
+    "id": 1,
+    "prompt": "What is Chrome Enterprise Premium, and what capabilities does it offer?",
+    "golden_response": "Chrome Enterprise Premium (CEP) is an advanced security offering that builds upon the standard Chrome browser and Chrome Enterprise Core management. It enables secure, Zero Trust access to applications and resources without requiring a VPN. Core capabilities include Data Loss Prevention (DLP), real-time URL and file scanning for malware/phishing, and context-aware access controls for web applications.",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 2,
+    "prompt": "Is the regular Chrome browser secure enough for business use, or do I strictly need Premium?",
+    "golden_response": "The standard Chrome browser has strong built-in security (Safe Browsing, sandboxing). Chrome Enterprise Core (free) allows enforcing over 300 policies. Chrome Enterprise Premium adds *advanced* enterprise-grade security layers like deep content inspection, DLP, and Context-Aware Access controls for highly regulated environments.",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 3,
+    "prompt": "How much does Chrome Enterprise Premium cost, and can I pay with a credit card?",
+    "golden_response": "The standard list price is $6 USD per user, per month (volume discounts may apply). CEP supports credit card payments via a self-service option in the Google Cloud Console, alongside traditional offline invoicing.",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 4,
+    "prompt": "How do I start a trial, and what happens when it expires?",
+    "golden_response": "You can start a 60-day trial (up to 5,000 users) from the Google Workspace Admin console or Google Cloud Console. Upon expiration, you are not automatically charged. Premium features (custom DLP, CAA) immediately stop functioning, but your configuration settings are saved in case you purchase a subscription later.",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 5,
+    "prompt": "Why can't I complete the purchase of Chrome Enterprise Premium in the Google Cloud Console? I am a Workspace Super Admin.",
+    "golden_response": "To purchase or manage CEP via the Cloud Console, your account needs the 'Cloud BeyondCorp Admin' IAM role. This role must be explicitly granted at the Google Cloud *Organization* level, not just on a specific Project. Workspace Super Admins do not automatically inherit this GCP permission. I can verify if the necessary APIs are enabled by checking your API status.",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 6,
+    "prompt": "When trying to enable Security Insights, we get an error stating 'Something went wrong', but we have CEP licenses assigned. What is wrong?",
+    "golden_response": "This is a provisioning synchronization issue caused by: 1) License propagation delays (can take 24 hours). 2) Missing IAM roles ('Security Center Admin' or 'Cloud BeyondCorp Admin'). 3) The organization's Google Cloud billing account might not be properly linked to the Workspace instance.",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 7,
+    "prompt": "Our Helpdesk team needs to view CEP security dashboards and adjust DLP rules, but we cannot give them 'Super Admin' access. What roles are required?",
+    "golden_response": "Use custom administrative roles: assign **Security Center Admin** & **Mobile Admin** to view dashboards/inventory; **DLP Administrator** to manage Data Loss Prevention rules; and **BeyondCorp Admin** to manage Context-Aware Access policies.",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 8,
+    "prompt": "How do I deploy the Chrome browser for my organization?",
+    "golden_response": "Download the Chrome Enterprise bundle (MSI, PKG, and policy templates). Deploy via SCCM, Intune, or other MDM tools, and sync management to the cloud via Chrome Enterprise Core.",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 9,
+    "prompt": "What is the best practice for silently deploying Endpoint Verification to all endpoints using an MDM like Intune?",
+    "golden_response": "1) Use an MDM Configuration Profile to set the 'ExtensionInstallForcelist' policy for the EV extension. 2) Deploy the standalone EV Native Helper installer (MSI/PKG) as a required app. Both are mandatory.",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 10,
+    "prompt": "A user sees a 'Failed to sync' error on the EV extension. We reinstalled the extension but it didn't help. Fixes?",
+    "golden_response": "The issue is usually OS-level. Check for: 1) Missing EV Native Helper. 2) EDR/Antivirus blocking the Native Helper. 3) Corrupted macOS Keychain or Windows DPAPI. 4) Firewalls blocking `*.google.com`.",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 11,
+    "prompt": "EV logs show \"Specified native messaging host not found for com.google.endpoint_verification.api_helper\". What does this mean?",
+    "golden_response": "The Chrome extension cannot communicate with the Native Helper component. It is either missing, the registry keys/plist files are corrupted, or execution permissions are denied. Reinstalling the standalone Native Helper is the primary fix.",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 12,
+    "prompt": "After a user updates macOS, EV doesn't report the new OS immediately, blocking their access. Can we trigger a sync programmatically?",
+    "golden_response": "No native API exists to trigger this sync via MDM post-update. The user must manually click 'Sync Now' in the EV extension toolbar to push the new OS version to the access engine.",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 13,
+    "prompt": "What exact information does the Endpoint Verification extension collect from employee devices?",
+    "golden_response": "EV collects device posture: OS version, serial number, MAC address, disk encryption status, screen lock, and the signed-in Workspace identity. It does *not* collect browsing history, personal files, or keystrokes. A full attribute list is available by searching the knowledge base.",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 14,
+    "prompt": "Can CEP help manage risks when employees use personal (BYOD) devices?",
+    "golden_response": "Yes. CEP enforces policies when users sign into a managed Chrome Profile. It detects if security settings are overridden and can block access to corporate apps if the device fails compliance.",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 15,
+    "prompt": "Do CEP security features and Endpoint Verification work when a user is in Incognito mode?",
+    "golden_response": "By default, extensions are disabled in Incognito. Admins must use policies like 'ExtensionAllowedTypes' or force-enabling specific extensions to ensure EV and DLP remain active.",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 16,
+    "prompt": "How can I prevent users from copying data from company apps to personal apps like ChatGPT?",
+    "golden_response": "Use DLP rules to restrict copy/paste actions from managed corporate URLs to unapproved destinations like ChatGPT.",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 17,
+    "prompt": "What is the Evidence Locker feature?",
+    "golden_response": "The Evidence Locker stores files that trigger DLP or malware rules in a designated Google Cloud Storage bucket (up to 2GB) for forensic analysis.",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 18,
+    "prompt": "How does Enterprise Cache Encryption enhance security?",
+    "golden_response": "It encrypts local HTTP cache data in Chrome, ensuring corporate content remains inaccessible if a device is lost, stolen, or compromised.",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 19,
+    "prompt": "My DLP rule blocks uploads of password-protected ZIP archives, but allows password-protected PDFs. Is this expected?",
+    "golden_response": "Yes. ZIP headers are easily read for password status. Encrypted PDFs/Docs use complex wrappers that might be unscannable by default.",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 20,
+    "prompt": "What is the size limit for deep scanning files?",
+    "golden_response": "The default synchronous scan limit is typically 50MB. This relates to the behavior for files exceeding the 50 MB scan limit.",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 21,
+    "prompt": "Can CEP's DLP engine detect sensitive text like credit card numbers embedded inside images?",
+    "golden_response": "Yes, via Optical Character Recognition (OCR).",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 22,
+    "prompt": "Our CAA policy blocks access from unmanaged devices in Chrome, but users can still use the native Apple Mail app on macOS. How do we fix this?",
+    "golden_response": "EV context is browser-specific. Native apps (IMAP/EWS) lack this context. To secure them, use Certificate-Based Access (CBA) or ZTNA agents.",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 23,
+    "prompt": "Users are getting '401 Unauthorized' errors when accessing an internal web app via the BeyondCorp Security Gateway.",
+    "golden_response": "A 401 Unauthorized error at the IAP Gateway indicates access was denied based on identity, device posture, or Context-Aware Access (CAA) rules.",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 24,
+    "prompt": "We set up the Device Trust Connector with Okta, but Okta says the device is unmanaged. Where is the signal breaking?",
+    "golden_response": "You should check Google's side for management status and Okta's side for attribute mappings. The agent cannot inspect third-party IdP integrations directly.",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 25,
+    "prompt": "We deployed certificates to the Windows key store, but Google isn't recognizing them during CBA login. Why?",
+    "golden_response": "Ensure the Root CA is in the Workspace Console and the 'AutoSelectCertificateForUrls' policy is set.",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 26,
+    "prompt": "How do I properly use wildcards when configuring URL filtering policies in CEP?",
+    "golden_response": "In Chrome policy syntax, example.com automatically matches the domain and all subdomains. To match only the exact domain and NOT its subdomains, use the syntax .example.com (with a leading dot).",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 27,
+    "prompt": "How can administrators verify that a browser is actually receiving the correct security policies?",
+    "golden_response": "Use `chrome://policy` on the endpoint.",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 28,
+    "prompt": "We are not seeing any data in the Chrome security event dashboard. What should we check locally?",
+    "golden_response": "Check `chrome://safe-browsing/#tab-reporting` on the device.",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 29,
+    "prompt": "We set a cloud policy to block an extension, but `chrome://policy` shows it's allowed with the source 'Platform'.",
+    "golden_response": "Local 'Platform' policies (like GPOs) override Cloud policies by default.",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 30,
+    "prompt": "Support asked for logs regarding a DLP rule that isn't triggering. Which logs are needed?",
+    "golden_response": "Client-side: `chrome://safe-browsing/#tab-reporting`. Server-side: Chrome log events in the Admin Console.",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 31,
+    "prompt": "Safe Browsing is blocking a legitimate internal site, showing a red warning screen. How do we bypass this?",
+    "golden_response": "Add the domain to the 'SafeBrowsingAllowlistDomains' policy.",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 32,
+    "prompt": "Our Jamf BeyondCorp integration works for Chrome, but doesn't stop unmanaged devices from syncing the native macOS Calendar app.",
+    "golden_response": "Native apps like Calendar (CalDAV) don't natively present device context. You must restrict API access using certificates or IdP device trust.",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 33,
+    "prompt": "How do we unenroll a device and remove Chrome Enterprise management policies?",
+    "golden_response": "Delete the enrollment token from the Registry (Windows) or remove the profile (macOS), then delete the device from the Admin Console.",
+    "expected_tools": ["search_content"]
+  },
+  {
+    "id": 34,
+    "prompt": "What does the \"Audit\" action do in a DLP rule compared to \"Warn\" or \"Block\"?",
+    "golden_response": "The 'Audit' action is a silent mode that logs events without notifying the end-user, useful for tuning rules during a PoC.",
+    "expected_tools": ["search_content"]
+  }
+]

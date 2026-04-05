@@ -60,7 +60,7 @@ class TestCreateDlpRule(McpIntegrationTestBase):
         " name the tool and do nothing else."
     )
     result_text = query_agent_oneshot(prompt)
-    self.assertIn("create_chrome_dlp_rule", result_text)
+    self.assertIn("create_chrome_dlp_rule", str(result_text))
 
   def test_create_dlp_rule_download_warning(self):
     """Verify agent can actually use the tool when provided needed info."""
@@ -85,7 +85,7 @@ class TestCreateDlpRule(McpIntegrationTestBase):
         " do nothing else."
     )
     result_text = query_agent_oneshot(prompt)
-    self.assertIn("create_chrome_dlp_rule", result_text)
+    self.assertIn("create_chrome_dlp_rule", str(result_text))
 
   def test_create_dlp_rule_social_media_audit(self):
     """Verify agent can actually use the tool when provided needed info."""
@@ -111,7 +111,7 @@ class TestCreateDlpRule(McpIntegrationTestBase):
         " nothing else."
     )
     result_text = query_agent_oneshot(prompt)
-    self.assertIn("create_chrome_dlp_rule", result_text)
+    self.assertIn("create_chrome_dlp_rule", str(result_text))
 
   def test_create_dlp_rule_warn_screenshot(self):
     """Verify agent can actually use the tool when provided needed info."""
@@ -136,7 +136,7 @@ class TestCreateDlpRule(McpIntegrationTestBase):
         " else."
     )
     result_text = query_agent_oneshot(prompt)
-    self.assertIn("create_chrome_dlp_rule", result_text)
+    self.assertIn("create_chrome_dlp_rule", str(result_text))
 
   def test_create_dlp_rule_warn_navigation(self):
     """Verify agent can actually use the tool when provided needed info."""

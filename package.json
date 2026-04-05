@@ -15,7 +15,9 @@
     "test:integration_tools:fake": "CEP_BACKEND=fake node --test test/integration/tools/*.test.js",
     "test:integration_tools:real": "CEP_BACKEND=real node --test test/integration/tools/*.test.js",
     "test:integration_agent": "./test/run_python_tests.sh",
-    "test:eval_full": "export FULL_EVAL=3 && ./test/run_python_tests.sh test.integration.golden_evals_test",
+    "eval:golden": "EVAL_FILE=golden_evals.json ./test/run_python_tests.sh test.integration.golden_evals_test",
+    "eval:agentic": "EVAL_FILE=agentic_evals.json ./test/run_python_tests.sh test.integration.golden_evals_test",
+    "eval:full": "FULL_EVAL=3 EVAL_FILE=golden_evals.json ./test/run_python_tests.sh test.integration.golden_evals_test",
     "test": "./test/run_all_tests.sh",
     "smoke": "GCP_STDIO=false node test/local/smoke-test.js",
     "lint": "eslint .",
@@ -43,6 +45,7 @@
     "eslint-plugin-prettier": "^5.0.0",
     "esmock": "^2.7.1",
     "prettier": "^3.8.1",
-    "typescript-eslint": "^8.0.0-alpha.20"
+    "typescript-eslint": "^8.5.0",
+    "uuid": "^13.0.0"
   }
 }

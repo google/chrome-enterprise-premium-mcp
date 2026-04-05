@@ -33,7 +33,8 @@ class TestGoldenEvaluations(McpIntegrationTestBase):
     def setUpClass(cls):
         super().setUpClass()
         # Load the evaluation dataset
-        data_path = os.path.join(os.path.dirname(__file__), "../data/golden_evals.json")
+        cls.eval_file = os.environ.get("EVAL_FILE", "golden_evals.json")
+        data_path = os.path.join(os.path.dirname(__file__), f"../data/{cls.eval_file}")
         with open(data_path, "r") as f:
             all_evals = json.load(f)
             
@@ -45,7 +46,7 @@ class TestGoldenEvaluations(McpIntegrationTestBase):
                 print(f"Filtered to evaluations: {target_ids}")
 
             cls.evals = all_evals
-        
+
         # Initialize the agent once for all tests in this class
         print(f"Initializing agent for {len(cls.evals)} golden evaluations...")
         cls.agent = get_agent()
@@ -57,7 +58,9 @@ class TestGoldenEvaluations(McpIntegrationTestBase):
             cls.num_runs = 1
         
         cls.is_full_eval = cls.num_runs > 1
-        cls.results_file = "eval_results_full.md" if cls.is_full_eval else "eval_results.md"
+        
+        base_name = os.path.splitext(cls.eval_file)[0]
+        cls.results_file = f"eval_results_{base_name}_full.md" if cls.is_full_eval else f"eval_results_{base_name}.md"
         cls.start_time = time.time()
         cls.report_content = []
 
@@ -74,7 +77,7 @@ You are an expert evaluator for an enterprise security AI agent. Evaluate the ag
    - Additional accurate info is ENCOURAGED.
 2. PROACTIVE TROUBLESHOOTING: If the agent asks for missing prerequisites (OU ID, Email, URL) to perform a real diagnostic action, grade it as PASS.
 3. HALLUCINATION & CONTRADICTION: If the agent provides incorrect steps or denies a feature exists, grade it as FAIL.
-4. EXPLICIT TOOL NAMING: The agent MUST NOT name internal tools (e.g., "searchContent"). Description is fine. If it names them, grade it as FAIL.
+4. EXPLICIT TOOL NAMING: The agent MUST NOT name internal tools (e.g., "search_content"). Description is fine. If it names them, grade it as FAIL.
 
 Evaluate strictly but prioritize technical correctness and helpful diagnostic intent over word-for-word matching.
 """

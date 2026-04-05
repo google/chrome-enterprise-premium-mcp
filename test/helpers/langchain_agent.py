@@ -29,10 +29,11 @@ from pydantic import create_model
 from pydantic import Field
 from test.helpers.mcp_client import execute_mcp_tool
 from test.helpers.mcp_client import list_mcp_tools
+from test.helpers.mcp_client import get_mcp_prompt
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s'
+    level=logging.WARNING, format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
 # JSON Schema type constants
@@ -210,8 +211,11 @@ def _create_tools_from_specs(
   return tools
 
 
+_CACHED_TOOLS = None
+
+
 # --------------- Agent Setup ---------------
-def get_agent():
+def get_agent(clear_cache=False):
   """Creates and returns a configured LangChain agent.
 
   Returns:
@@ -220,29 +224,36 @@ def get_agent():
   Raises:
     ValueError: If the GEMINI_API_KEY environment variable is not set.
   """
+  global _CACHED_TOOLS
   if not os.environ.get('GEMINI_API_KEY'):
     raise ValueError('GEMINI_API_KEY not set')
 
-  logging.info('Fetching tools from MCP server...')
-  mcp_tools_specs = list_mcp_tools()
-  logging.info('Found %d tools.', len(mcp_tools_specs))
+  if _CACHED_TOOLS is None or clear_cache:
+    logging.info('Fetching tools from MCP server...')
+    mcp_tools_specs = list_mcp_tools()
+    logging.info('Found %d tools.', len(mcp_tools_specs))
+    _CACHED_TOOLS = _create_tools_from_specs(mcp_tools_specs)
 
-  tools = _create_tools_from_specs(mcp_tools_specs)
-
-  if not tools:
+  if not _CACHED_TOOLS:
     logging.warning(
         'No tools were dynamically created. Agent will have no tools.'
     )
 
-  llm = ChatGoogleGenerativeAI(model=AI_MODEL_NAME)
+  llm = ChatGoogleGenerativeAI(model=AI_MODEL_NAME, temperature=0.0)
+
+  try:
+    # Bypass MCP prompt fetch to avoid diagnostic hangs. Load directly from disk.
+    local_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../prompts/system-prompt.md'))
+    with open(local_path, 'r') as f:
+      system_prompt = f.read()
+  except Exception as e:
+    logging.error(f"CRITICAL: Could not load system prompt: {e}")
+    system_prompt = "You are a specialized Chrome Enterprise Premium (CEP) security expert AI agent."
 
   agent = create_agent(
       model=llm,
-      tools=tools,
-      system_prompt=(
-          'You are a helpful assistant for Chrome Enterprise Premium. Use the'
-          ' provided tools to answer user questions.'
-      ),
+      tools=_CACHED_TOOLS,
+      system_prompt=system_prompt,
   )
   return agent
 

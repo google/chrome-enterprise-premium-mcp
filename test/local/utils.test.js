@@ -118,6 +118,35 @@ describe('Tool Utils', () => {
       })
     })
 
+    describe('First-Call Injection (hasInjectedSystemPrompt)', () => {
+      it('should inject system prompt on the first tool call and update session state', async () => {
+        const handler = async () => {
+          return { content: [{ type: 'text', text: 'Original content' }] }
+        }
+        const sessionState = { hasInjectedSystemPrompt: false, history: [] }
+        const tool = guardedToolCall({ handler }, {}, sessionState)
+
+        // First call
+        const result1 = await tool({}, {})
+
+        assert.strictEqual(sessionState.hasInjectedSystemPrompt, true)
+        assert.strictEqual(result1.content.length, 2)
+        assert.strictEqual(result1.content[0].text, 'Original content')
+        assert.ok(
+          result1.content[1].text.includes(
+            '[AGENT DIRECTIVE] You are a specialized Chrome Enterprise Premium (CEP) security expert.',
+          ),
+        )
+
+        // Second call
+        const result2 = await tool({}, {})
+
+        // Should not inject again
+        assert.strictEqual(result2.content.length, 1)
+        assert.strictEqual(result2.content[0].text, 'Original content')
+      })
+    })
+
     describe('Root OrgUnit Auto-Resolution (resolveRootOrgUnitId helper)', () => {
       it('should resolve root orgUnitId and cache it', async () => {
         const mockListOrgUnits = mock.fn(async () => ({

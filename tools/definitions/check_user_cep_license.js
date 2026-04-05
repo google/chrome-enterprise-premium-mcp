@@ -41,7 +41,6 @@ export function registerCheckUserCepLicenseTool(server, options, sessionState) {
       inputSchema: {
         userId: inputSchemas.userId,
       },
-      outputSchema: outputSchemas.subscriptionInfo,
     },
     guardedToolCall(
       {

@@ -25,7 +25,7 @@ class TestCreateDetector(McpIntegrationTestBase):
     prompt = "Create a new DLP URL list detector named 'End-to-End Temp Detector' for customer C0123456 with URLs 'malware.com' and 'phishing.net'. Give verbatim error if there is one."
     result_text = query_agent_oneshot(prompt)
     self.assert_nl(
-        result_text, "The answer confirms that the 'End-to-End Temp Detector' detector was successfully created"
+        result_text, "The answer confirms that the URL list detector was successfully created"
     )
 
   def test_create_word_list_detector(self):

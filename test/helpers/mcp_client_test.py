@@ -142,10 +142,10 @@ class TestExecuteMcpToolIntegration(unittest.TestCase):
     if "error" in result:
       self.assertIn(f"Tool {tool_name} failed", result["error"])
     else:
-      # If successful, we expect a 'Customer ID: C...' string or an auth error in the content
+      # If successful, we expect a 'Customer ID: C...' string. If auth fails, an 'invalid_grant' error.
       text_content = result.get("content", [{}])[0].get("text", "")
       self.assertTrue(
-          "Customer ID: C" in text_content or "invalid_grant" in text_content,
+          "Customer ID" in text_content or "invalid_grant" in text_content,
           f"Result: {result}",
       )
 

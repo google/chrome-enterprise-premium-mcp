@@ -94,27 +94,24 @@ def start_mcp_server(fake_api_url=None, server_port=None):
 
 def terminate_mcp_server(server_process):
     if server_process and server_process.pid:
-        print("Terminating MCP server...")
+        print("Terminating MCP server...", flush=True)
         try:
             os.killpg(os.getpgid(server_process.pid), signal.SIGTERM)
-            server_process.wait(timeout=10)
-            print("Server process terminated.")
+            stdout, stderr = server_process.communicate(timeout=10)
+            print("Server process terminated.", flush=True)
         except subprocess.TimeoutExpired:
-            print("Server did not stop gracefully, killing...")
+            print("Server did not stop gracefully, killing...", flush=True)
             os.killpg(os.getpgid(server_process.pid), signal.SIGKILL)
+            stdout, stderr = server_process.communicate()
         except ProcessLookupError:
-            print("Server process already stopped.")
+            print("Server process already stopped.", flush=True)
+            stdout, stderr = server_process.communicate()
         except Exception as e:
-            print(f"Error stopping server: {e}")
-        finally:
-            if server_process and server_process.stdout:
-                stdout = server_process.stdout.read()
-                if stdout:
-                    print(f"MCP Server stdout:\n{stdout}")
-                server_process.stdout.close()
-            if server_process and server_process.stderr:
-                stderr = server_process.stderr.read()
-                if stderr:
-                    print(f"MCP Server stderr:\n{stderr}")
-                server_process.stderr.close()
-    print("--- MCP Server Teardown Complete ---")
+            print(f"Error stopping server: {e}", flush=True)
+            stdout, stderr = b"", b""
+
+        if stdout:
+            print(f"MCP Server stdout:\n{stdout}", flush=True)
+        if stderr:
+            print(f"MCP Server stderr:\n{stderr}", flush=True)
+    print("--- MCP Server Teardown Complete ---", flush=True)

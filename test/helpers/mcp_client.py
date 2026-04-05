@@ -186,3 +186,41 @@ def list_mcp_tools() -> list[dict[str, Any]]:
   except Exception as e:
     logging.error("Unexpected error in list_mcp_tools: %s", e, exc_info=True)
     return []
+
+
+def get_mcp_prompt(prompt_name: str, arguments: dict[str, str] = None) -> Optional[str]:
+  """Retrieves a specific prompt from the MCP server.
+
+  Args:
+    prompt_name: The name of the prompt to retrieve.
+    arguments: Optional arguments for the prompt.
+
+  Returns:
+    The prompt text, or None if retrieval fails.
+  """
+  payload = {
+      "jsonrpc": "2.0",
+      "method": "prompts/get",
+      "id": f"test-prompt-{os.urandom(4).hex()}",
+      "params": {"name": prompt_name, "arguments": arguments or {}},
+  }
+  headers = {
+      "Content-Type": "application/json",
+      "Accept": "application/json, text/event-stream",
+  }
+  try:
+    response = requests.post(
+        MCP_SERVER_URL, json=payload, headers=headers, timeout=10
+    )
+    response.raise_for_status()
+    response_json = _parse_sse_response(response.text)
+
+    if response_json and "result" in response_json:
+      messages = response_json["result"].get("messages", [])
+      if messages:
+        # Concatenate message contents if multiple
+        return "\n\n".join([m.get("content", {}).get("text", "") for m in messages])
+    return None
+  except Exception as e:
+    logging.error("Error retrieving prompt %s: %s", prompt_name, e)
+    return None

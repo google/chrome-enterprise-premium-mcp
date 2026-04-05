@@ -24,6 +24,7 @@ limitations under the License.
  */
 
 import { config } from '@dotenvx/dotenvx'
+config({ quiet: true, ignore: ['MISSING_ENV_FILE'] })
 import express from 'express'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js'
@@ -57,9 +58,6 @@ import { FakeCloudIdentityClient } from './lib/api/fake_cloud_identity_client.js
 import { FakeChromePolicyClient } from './lib/api/fake_chrome_policy_client.js'
 import { FakeChromeManagementClient } from './lib/api/fake_chrome_management_client.js'
 import { FakeServiceUsageClient } from './lib/api/fake_service_usage_client.js'
-
-//Suppress the warning related to missing .env file in case of non-OAuth mode
-config({ quiet: true, ignore: ['MISSING_ENV_FILE'] })
 
 /**
  * Redirects console.log to console.error for compatibility with Stdio transport.
@@ -131,6 +129,7 @@ async function getServer(gcpInfo, sharedSessionState) {
   const toolOptions = {
     apiClients,
     apiOptions,
+    dbPath: process.env.KNOWLEDGE_DB_PATH,
   }
 
   if (shouldStartStdio(gcpInfo)) {

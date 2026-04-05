@@ -61,7 +61,7 @@ export function registerCountBrowserVersionsTool(server, options, sessionState) 
                   text: `No browser versions found for customer ${customerId}.`,
                 },
               ],
-              structuredContent: [],
+              structuredContent: { versions: [] },
             }
           }
 
@@ -77,7 +77,7 @@ export function registerCountBrowserVersionsTool(server, options, sessionState) 
                 text: `Browser versions for customer ${customerId}:\n${versionList}`,
               },
             ],
-            structuredContent: versions,
+            structuredContent: { versions },
           }
         },
       },

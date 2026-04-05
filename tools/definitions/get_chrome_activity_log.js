@@ -97,7 +97,6 @@ export function registerGetChromeActivityLogTool(server, options, sessionState) 
                   text: 'No Chrome activity found for the specified criteria.',
                 },
               ],
-              structuredContent: [],
             }
           }
 
@@ -126,7 +125,6 @@ export function registerGetChromeActivityLogTool(server, options, sessionState) 
                 text: `# Chrome Activity Log\n\n${formattedActivities}`,
               },
             ],
-            structuredContent: activities,
           }
         },
       },

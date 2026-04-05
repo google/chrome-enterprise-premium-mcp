@@ -53,7 +53,7 @@ describe('MCP Prompts', () => {
     await client.close()
   })
 
-  it('should list all registered prompts', async () => {
+  it('should list all available prompts', async () => {
     const result = await client.listPrompts()
     const promptNames = result.prompts.map(p => p.name).sort()
 
@@ -64,12 +64,16 @@ describe('MCP Prompts', () => {
     const result = await client.getPrompt({ name: 'cep' })
 
     assert.ok(result.messages)
-    assert.equal(result.messages.length, 1)
+    assert.equal(result.messages.length, 2)
     assert.equal(result.messages[0].role, 'user')
-    assert.ok(result.messages[0].content.text.includes('List the organizational units'))
-    assert.ok(result.messages[0].content.text.includes('Chrome Enterprise Premium'))
+    assert.ok(
+      result.messages[0].content.text.includes('Chrome Enterprise Premium (CEP) Technical Expert') ||
+        result.messages[0].content.text.includes('Chrome Enterprise Premium (CEP) security expert'),
+    )
+    assert.equal(result.messages[1].role, 'user')
+    assert.ok(result.messages[1].content.text.includes('List the organizational units'))
+    assert.ok(result.messages[1].content.text.includes('Chrome Enterprise Premium'))
   })
-
   it('should retrieve the "cep:diagnose" prompt content', async () => {
     const result = await client.getPrompt({ name: 'cep:diagnose' })
 

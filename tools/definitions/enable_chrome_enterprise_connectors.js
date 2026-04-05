@@ -54,7 +54,7 @@ const CONNECTOR_CONFIGS = {
   },
   BULK_TEXT_ENTRY: {
     schema: 'chrome.users.OnBulkTextEntryConnectorPolicy',
-    displayName: 'Bulk Text Entry (Paste)',
+    displayName: 'Bulk Text Entry Analysis (paste)',
     check: policy => {
       const config = policy?.value?.value?.onBulkTextEntryAnalysisConnectorConfiguration?.bulkTextEntryConfiguration
       return config && config.serviceProvider !== 'SERVICE_PROVIDER_UNSPECIFIED'
@@ -108,7 +108,7 @@ const CONNECTOR_CONFIGS = {
   },
   FILE_UPLOAD: {
     schema: 'chrome.users.OnFileAttachedConnectorPolicy',
-    displayName: 'File Upload Analysis',
+    displayName: 'Upload content analysis',
     check: policy => {
       const config = policy?.value?.value?.onFileAttachedAnalysisConnectorConfiguration?.fileAttachedConfiguration
       return config && config.serviceProvider !== 'SERVICE_PROVIDER_UNSPECIFIED'
@@ -136,7 +136,7 @@ const CONNECTOR_CONFIGS = {
   },
   REALTIME_URL_CHECK: {
     schema: 'chrome.users.RealtimeUrlCheck',
-    displayName: 'Real-time URL Navigation Check',
+    displayName: 'Real-time URL check',
     check: policy => {
       return policy?.value?.value?.realtimeUrlCheckEnabled === 'ENTERPRISE_REAL_TIME_URL_CHECK_MODE_ENUM_ENABLED'
     },
@@ -168,8 +168,16 @@ export function registerEnableChromeEnterpriseConnectorsTool(server, options, se
   server.registerTool(
     'enable_chrome_enterprise_connectors',
     {
-      description:
-        'Enables and configures selected Chrome Enterprise connectors (Print, Bulk Text Entry, File Download, File Upload, Real-time URL Check) for a given Organizational Unit. It will ONLY apply changes to connectors that are not already configured.',
+      description: `Enables and configures selected Chrome Enterprise connectors.
+        - Print Analysis (PRINT)
+        - Bulk Text Entry Analysis (paste) (BULK_TEXT_ENTRY)
+        - File Download Analysis (FILE_DOWNLOAD)
+        - Upload content analysis (FILE_UPLOAD)
+        - Real-time URL check (REALTIME_URL_CHECK)
+
+        CRITICAL: When responding to the user, you MUST use the public-facing names (e.g., "Upload content analysis") and NEVER output the internal IDs (e.g., "FILE_UPLOAD").
+
+        It will ONLY apply changes to connectors that are not already configured.`,
       inputSchema: {
         customerId: inputSchemas.customerId,
         orgUnitId: inputSchemas.orgUnitId.describe(

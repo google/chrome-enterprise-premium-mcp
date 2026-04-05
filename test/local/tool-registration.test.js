@@ -60,6 +60,9 @@ describe('SEB Tool Registration', () => {
       'check_seb_extension_status',
       'install_seb_extension',
       'enable_chrome_enterprise_connectors',
+      'search_content',
+      'get_document',
+      'list_documents',
     ].sort()
     assert.deepStrictEqual(
       registeredToolNames.sort(),

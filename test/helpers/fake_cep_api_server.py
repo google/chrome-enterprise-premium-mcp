@@ -57,7 +57,7 @@ def get_initial_state():
               "setting": {
                   "type": "settings/rule.dlp",
                   "value": {
-                      "displayName": "Block test123.com",
+                      "displayName": "🤖 Block test123.com",
                       "description": (
                           "Prevent upload of sensitive data to test123.com"
                       ),
@@ -118,6 +118,15 @@ def get_initial_state():
           {"version": "121.0.6167.85", "count": "3", "channel": "BETA"},
       ],
       "profiles": [],
+      "licenses": {
+          "C0123456": {
+              "101040": {
+                  "1010400001": [
+                      {"userId": "user1@example.com", "skuId": "1010400001", "productId": "101040"}
+                  ]
+              }
+          }
+      }
   }
 
 
@@ -190,16 +199,25 @@ async def fake_list_activities(
     endTime: Optional[str] = None,
     maxResults: Optional[int] = None,
 ):
-  if eventName or startTime or endTime or maxResults:
-    raise HTTPException(
-        status_code=501,
-        detail=(
-            "Filtering activities by eventName, startTime, endTime, or"
-            " maxResults is not implemented in fake server"
-        ),
-    )
-  # Basic mock, can be expanded with more filtering logic
-  return {"items": state["activities"]}
+  # Ignore filters for mock simplicity
+  return {"items": state.get("activities", [])}
+
+
+@app.get("/licensing/v1/product/{productId}/sku/{skuId}/user")
+async def fake_list_licenses(productId: str, skuId: str, customerId: str):
+  customer_id = get_customer_id_key(customerId)
+  licenses = state.get("licenses", {}).get(customer_id, {}).get(productId, {}).get(skuId, [])
+  return {"items": licenses}
+
+@app.get("/licensing/v1/product/{productId}/sku/{skuId}/user/{userId}")
+async def fake_get_user_license(productId: str, skuId: str, userId: str):
+  for customer_licenses in state.get("licenses", {}).values():
+    product_licenses = customer_licenses.get(productId, {})
+    sku_licenses = product_licenses.get(skuId, [])
+    for license in sku_licenses:
+      if license.get("userId") == userId:
+        return license
+  raise HTTPException(status_code=404, detail="User license not found")
 
 
 # --- Fake Chrome Management Endpoints ---
@@ -210,11 +228,8 @@ async def fake_count_chrome_versions(
     customer_id: str, orgUnitId: Optional[str] = None
 ):
   get_customer_id_key(customer_id)  # Validate customer
-  if orgUnitId:
-    raise HTTPException(
-        status_code=501, detail="orgUnitId is not implemented in fake server"
-    )
-  return {"browserVersions": state["browser_versions"]}
+  # Ignore orgUnitId filtering for mock simplicity
+  return {"browserVersions": state.get("browser_versions", [])}
 
 
 @app.get("/v1/customers/{customer_id}/profiles")

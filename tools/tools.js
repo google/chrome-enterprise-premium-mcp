@@ -28,6 +28,7 @@ import { registerInstallSebExtensionTool } from './definitions/install_seb_exten
 import { registerCheckAndEnableApiTool } from './definitions/check_and_enable_api.js'
 import { registerEnableChromeEnterpriseConnectorsTool } from './definitions/enable_chrome_enterprise_connectors.js'
 import { registerFeedbackTool } from './definitions/feedback.js'
+import { registerKnowledgeTools } from './definitions/knowledge.js'
 
 /**
  * Registers all tools with the MCP server.
@@ -74,4 +75,5 @@ export function registerTools(server, options = {}, sessionState) {
   registerCheckAndEnableApiTool(server, { ...commonOpts, serviceUsageClient }, state)
   registerEnableChromeEnterpriseConnectorsTool(server, { ...commonOpts, chromePolicyClient }, state)
   registerFeedbackTool(server, { ...commonOpts }, state)
+  registerKnowledgeTools(server, options, state)
 }

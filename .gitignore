@@ -7,7 +7,6 @@
 
 # Node.js
 node_modules/
-package-lock.json
 
 # Test coverage
 coverage/
@@ -21,3 +20,6 @@ session.db
 .adk/
 
 .DS_Store
+eval_results*.md
+cep_feedback_*.md
+test_output.txt

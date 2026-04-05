@@ -27,11 +27,11 @@ const ConnectorPolicyFilter = {
 }
 
 const POLICY_DISPLAY_NAMES = {
-  ON_FILE_ATTACHED: 'File Attachment Analysis',
+  ON_FILE_ATTACHED: 'Upload content analysis',
   ON_FILE_DOWNLOAD: 'File Download Analysis',
-  ON_BULK_TEXT_ENTRY: 'Bulk Text Entry Analysis',
+  ON_BULK_TEXT_ENTRY: 'Bulk Text Entry Analysis (paste)',
   ON_PRINT: 'Print Analysis',
-  ON_REALTIME_URL_NAVIGATION: 'Real-time URL Check',
+  ON_REALTIME_URL_NAVIGATION: 'Real-time URL check',
   ON_SECURITY_EVENT: 'Security Event Reporting',
 }
 
