@@ -77,17 +77,20 @@ describe('get_connector_policy Tool', () => {
 
       assert.ok(result.content[0].text.includes('contentTransferEvent'))
       assert.ok(result.content[0].text.includes('suspiciousUrlEvent'))
+      assert.ok(!result.content[0].text.includes('⚠️ WARNING'))
       assert.deepStrictEqual(result.structuredContent.connectorPolicies, mockPolicy)
-      assert.strictEqual(mockGetConnectorPolicy.mock.callCount(), 1)
     })
 
-    it('should return correctly for default configuration (empty configuration)', async () => {
+    it('should return "Default (Core Events Enabled)" for empty configuration when explicitlyEmptyEventNames is not true', async () => {
       const mockPolicy = [
         {
           value: {
             value: {
               reportingConnector: {
-                eventConfiguration: {},
+                eventConfiguration: {
+                  enabledEventNames: [],
+                  explicitlyEmptyEventNames: false,
+                },
               },
             },
           },
@@ -107,9 +110,9 @@ describe('get_connector_policy Tool', () => {
         { requestInfo: {} },
       )
 
-      assert.ok(result.content[0].text.includes('Reported Events: None'))
+      assert.ok(result.content[0].text.includes('Reported Events: Default (Core Events Enabled)'))
+      assert.ok(!result.content[0].text.includes('⚠️ WARNING'))
       assert.deepStrictEqual(result.structuredContent.connectorPolicies, mockPolicy)
-      assert.strictEqual(mockGetConnectorPolicy.mock.callCount(), 1)
     })
 
     it('should return correctly when explicitlyEmptyEventNames is true', async () => {
@@ -141,17 +144,26 @@ describe('get_connector_policy Tool', () => {
       )
 
       assert.ok(result.content[0].text.includes('Reported Events: None'))
-      assert.deepStrictEqual(result.structuredContent.connectorPolicies, mockPolicy)
+      assert.ok(
+        result.content[0].text.includes(
+          '⚠️ WARNING: The following core DLP events are missing from your customized configuration: contentTransferEvent, dangerousDownloadEvent, sensitiveDataEvent, urlFilteringInterstitialEvent, suspiciousUrlEvent',
+        ),
+      )
     })
 
-    it('should return correctly for customized/partial events', async () => {
+    it('should warn when some core events are missing from customized configuration', async () => {
       const mockPolicy = [
         {
           value: {
             value: {
               reportingConnector: {
                 eventConfiguration: {
-                  enabledEventNames: ['contentTransferEvent'],
+                  enabledEventNames: [
+                    'browserCrashEvent',
+                    'contentTransferEvent',
+                    'sensitiveDataEvent',
+                    'urlFilteringInterstitialEvent',
+                  ],
                 },
               },
             },
@@ -173,8 +185,74 @@ describe('get_connector_policy Tool', () => {
       )
 
       assert.ok(result.content[0].text.includes('contentTransferEvent'))
-      assert.ok(!result.content[0].text.includes('suspiciousUrlEvent'))
-      assert.deepStrictEqual(result.structuredContent.connectorPolicies, mockPolicy)
+      assert.ok(
+        result.content[0].text.includes(
+          '⚠️ WARNING: The following core DLP events are missing from your customized configuration: dangerousDownloadEvent, suspiciousUrlEvent',
+        ),
+      )
+    })
+
+    it('should warn when all core events are missing from customized configuration', async () => {
+      const mockPolicy = [
+        {
+          value: {
+            value: {
+              reportingConnector: {
+                eventConfiguration: {
+                  enabledEventNames: ['browserCrashEvent'],
+                },
+              },
+            },
+          },
+        },
+      ]
+
+      const mockGetConnectorPolicy = mock.fn(async () => mockPolicy)
+      const chromePolicyClient = { getConnectorPolicy: mockGetConnectorPolicy }
+      const state = {}
+
+      registerGetConnectorPolicyTool(server, { chromePolicyClient }, state)
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_connector_policy')
+        .arguments[2]
+
+      const result = await handler(
+        { customerId: 'C0123', orgUnitId: 'ou123', policy: 'ON_SECURITY_EVENT' },
+        { requestInfo: {} },
+      )
+
+      assert.ok(result.content[0].text.includes('browserCrashEvent'))
+      assert.ok(
+        result.content[0].text.includes(
+          '⚠️ WARNING: The following core DLP events are missing from your customized configuration: contentTransferEvent, dangerousDownloadEvent, sensitiveDataEvent, urlFilteringInterstitialEvent, suspiciousUrlEvent',
+        ),
+      )
+    })
+
+    it('should show "Disabled" when eventConfiguration is missing', async () => {
+      const mockPolicy = [
+        {
+          value: {
+            value: {
+              reportingConnector: {},
+            },
+          },
+        },
+      ]
+
+      const mockGetConnectorPolicy = mock.fn(async () => mockPolicy)
+      const chromePolicyClient = { getConnectorPolicy: mockGetConnectorPolicy }
+      const state = {}
+
+      registerGetConnectorPolicyTool(server, { chromePolicyClient }, state)
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_connector_policy')
+        .arguments[2]
+
+      const result = await handler(
+        { customerId: 'C0123', orgUnitId: 'ou123', policy: 'ON_SECURITY_EVENT' },
+        { requestInfo: {} },
+      )
+
+      assert.ok(result.content[0].text.includes('Reported Events: Disabled'))
     })
   })
 })
