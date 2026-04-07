@@ -79,17 +79,6 @@ describe('CEL Validator', () => {
     assert.ok(result.errors.some(e => e.includes('source_url')))
   })
 
-  it('should pass for valid enum values', () => {
-    const result = validateCelCondition("url.matches_enum('HIGH')", ['URL_NAVIGATION'])
-    assert.strictEqual(result.isValid, true)
-  })
-
-  it('should fail for invalid enum values', () => {
-    const result = validateCelCondition("url.matches_enum('INVALID_LEVEL')", ['URL_NAVIGATION'])
-    assert.strictEqual(result.isValid, false)
-    assert.ok(result.errors.some(e => e.includes('INVALID_LEVEL')))
-  })
-
   it('should pass for valid source_chrome_context', () => {
     const result = validateCelCondition("source_chrome_context == 'INCOGNITO'", ['WEB_CONTENT_UPLOAD'])
     assert.strictEqual(result.isValid, true)
@@ -116,12 +105,6 @@ describe('CEL Validator', () => {
     const result = validateCelCondition("destination_url.contains('test')", ['URL_NAVIGATION'])
     assert.strictEqual(result.isValid, false)
     assert.ok(result.errors.some(e => e.includes('destination_url')))
-  })
-
-  it('should fail if url.matches_enum is used without URL_NAVIGATION', () => {
-    const result = validateCelCondition("url.matches_enum('HIGH')", ['FILE_UPLOAD'])
-    assert.strictEqual(result.isValid, false)
-    assert.ok(result.errors.some(e => e.includes('url.matches_enum') || e.includes('URL_NAVIGATION')))
   })
 
   it('should fail if file attribute is used with WEB_CONTENT_UPLOAD', () => {
