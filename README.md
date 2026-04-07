@@ -251,6 +251,76 @@ C. **Set Environment Variables:**
 
       Use a real API key.
 
+## Feature Flags & Experiments
+
+This project uses a simple feature flag system to gate experimental or dangerous tools (e.g., deletion tools).
+
+### 1. Adding a New Flag
+
+Add the flag name to the `FLAGS` constant in `lib/util/feature_flags.js`:
+
+```javascript
+export const FLAGS = {
+  DELETE_TOOL_ENABLED: 'DELETE_TOOL_ENABLED',
+  EXAMPLE_GUARDED_FEATURE: 'EXAMPLE_GUARDED_FEATURE',
+}
+```
+
+### 2. Using a Flag
+
+In `tools/tools.js` (or anywhere else), use the `featureFlags` utility:
+
+```javascript
+import { featureFlags, FLAGS } from '../lib/util/feature_flags.js'
+
+if (featureFlags.isEnabled(FLAGS.EXAMPLE_GUARDED_FEATURE)) {
+  // Register experimental tool or enable logic
+}
+```
+
+### 3. Enabling a Flag
+
+Experimental flags are **opt-in** and disabled by default. Enable them via environment variables with the `EXPERIMENT_` prefix:
+
+```bash
+export EXPERIMENT_DELETE_TOOL_ENABLED=true
+export EXPERIMENT_EXAMPLE_GUARDED_FEATURE=true
+npm start
+```
+
+### 4. Testing Feature Flags
+
+Every feature flag should be tested in two ways:
+
+1.  **Unit Tests**: Verify the parsing logic in `test/unit/feature_flags.test.js`.
+2.  **Isolation Tests**: Create a dedicated test file in `test/local/experiments/` to verify the behavior when the flag is toggled.
+
+**Example Isolation Test Pattern:**
+
+```javascript
+import { featureFlags, FLAGS } from '../../../lib/util/feature_flags.js'
+
+describe('Experiment: MY_FEATURE', () => {
+  beforeEach(() => {
+    process.env.EXPERIMENT_MY_FEATURE = 'true'
+  })
+
+  it('should behave correctly when enabled', () => {
+    if (featureFlags.isEnabled(FLAGS.MY_FEATURE)) {
+      // assert expected behavior
+    }
+  })
+})
+```
+
+### 5. Removing a Flag (Cleanup)
+
+Once a feature is stable (GA):
+
+1. Remove the conditional check and make the feature code permanent.
+2. Delete the flag from `lib/util/feature_flags.js`.
+3. Delete any experiment-specific test files in `test/local/experiments/`.
+
 ## License
 
 Apache-2.0

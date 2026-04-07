@@ -29,17 +29,19 @@ import { registerCheckAndEnableApiTool } from './definitions/check_and_enable_ap
 import { registerEnableChromeEnterpriseConnectorsTool } from './definitions/enable_chrome_enterprise_connectors.js'
 import { registerFeedbackTool } from './definitions/feedback.js'
 import { registerKnowledgeTools } from './definitions/knowledge.js'
+import { featureFlags, FLAGS } from '../lib/util/feature_flags.js'
 
 /**
  * Registers all tools with the MCP server.
  *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tools.
- * @param {import('../lib/api/interfaces/api_clients.js').ApiClients} options.apiClients - The API clients collection.
- * @param {object} sessionState - The session state object for caching.
+ * @param {import('../lib/api/interfaces/api_clients.js').ApiClients} [options.apiClients] - The API clients collection.
+ * @param {import('../lib/util/feature_flags.js').FeatureFlags} [options.featureFlags] - The feature flags manager.
+ * @param {object} [sessionState] - The session state object for caching.
  */
 export function registerTools(server, options = {}, sessionState) {
-  const { apiClients = {} } = options
+  const { apiClients = {}, featureFlags: flags = featureFlags } = options
   const { adminSdk, chromeManagement, chromePolicy, cloudIdentity, serviceUsage } = apiClients
 
   const apiOptions = options.apiOptions || {}
@@ -64,8 +66,13 @@ export function registerTools(server, options = {}, sessionState) {
   registerListDlpRulesTool(server, { cloudIdentityClient }, state)
   registerListDetectorsTool(server, { cloudIdentityClient }, state)
   registerCreateChromeDlpRuleTool(server, { ...commonOpts, cloudIdentityClient }, state)
-  registerDeleteAgentDlpRuleTool(server, { cloudIdentityClient }, state)
-  registerDeleteDetectorTool(server, { cloudIdentityClient }, state)
+
+  if (flags.isEnabled(FLAGS.DELETE_TOOL_ENABLED)) {
+    logger.debug(`${TAGS.MCP} Registering delete tools (EXPERIMENT_DELETE_TOOL_ENABLED is active)`)
+    registerDeleteAgentDlpRuleTool(server, { cloudIdentityClient }, state)
+    registerDeleteDetectorTool(server, { cloudIdentityClient }, state)
+  }
+
   registerCreateRegexDetectorTool(server, { ...commonOpts, cloudIdentityClient }, state)
   registerCreateUrlListDetectorTool(server, { ...commonOpts, cloudIdentityClient }, state)
   registerCreateWordListDetectorTool(server, { ...commonOpts, cloudIdentityClient }, state)

@@ -36,6 +36,8 @@ import { registerTools } from './tools/tools.js'
 import { registerPrompts } from './prompts/index.js'
 import { checkGCP } from './lib/util/gcp.js'
 import { verifyToken, oauthMiddleware } from './lib/util/auth.js'
+import { featureFlags, FLAGS } from './lib/util/feature_flags.js'
+import { logger } from './lib/util/logger.js'
 import {
   TAGS,
   DEFAULT_CONFIG,
@@ -65,6 +67,7 @@ import { FakeServiceUsageClient } from './lib/api/fake_service_usage_client.js'
  */
 function makeLoggingCompatibleWithStdio() {
   console.log = console.error
+  logger.enableStdioMode()
 }
 
 /**
@@ -130,6 +133,7 @@ async function getServer(gcpInfo, sharedSessionState) {
     apiClients,
     apiOptions,
     dbPath: process.env.KNOWLEDGE_DB_PATH,
+    featureFlags,
   }
 
   if (shouldStartStdio(gcpInfo)) {
@@ -152,6 +156,13 @@ async function main() {
   try {
     const gcpInfo = await checkGCP()
     const isStdio = shouldStartStdio(gcpInfo)
+
+    // Log all enabled feature flags
+    Object.values(FLAGS).forEach(flag => {
+      if (featureFlags.isEnabled(flag)) {
+        logger.info(`${TAGS.MCP} EXPERIMENT_${flag} is active.`)
+      }
+    })
 
     // Maintain session state globally for all server connections
     const sharedSessionState = {

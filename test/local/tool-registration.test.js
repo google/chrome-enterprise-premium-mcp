@@ -22,6 +22,34 @@ import assert from 'node:assert/strict'
 import { describe, it, mock, beforeEach } from 'node:test'
 import { registerTools } from '../../tools/tools.js'
 
+const CORE_TOOLS = [
+  'cep_feedback',
+  'check_and_enable_api',
+  'check_cep_subscription',
+  'check_seb_extension_status',
+  'check_user_cep_license',
+  'count_browser_versions',
+  'create_chrome_dlp_rule',
+  'create_default_dlp_rules',
+  'create_regex_detector',
+  'create_url_list_detector',
+  'create_word_list_detector',
+  'enable_chrome_enterprise_connectors',
+  'get_chrome_activity_log',
+  'get_connector_policy',
+  'get_customer_id',
+  'install_seb_extension',
+  'list_customer_profiles',
+  'list_detectors',
+  'list_dlp_rules',
+  'list_org_units',
+  'search_content',
+  'get_document',
+  'list_documents',
+].sort()
+
+const EXPERIMENTAL_TOOLS = ['delete_agent_dlp_rule', 'delete_detector'].sort()
+
 // Tests for SEB tool registration and individual tool handler logic.
 describe('SEB Tool Registration', () => {
   let server
@@ -37,37 +65,10 @@ describe('SEB Tool Registration', () => {
     registerTools(server)
 
     const registeredToolNames = server.registerTool.mock.calls.map(call => call.arguments[0])
-    const expectedToolNames = [
-      'cep_feedback',
-      'check_and_enable_api',
-      'check_cep_subscription',
-      'check_user_cep_license',
-      'count_browser_versions',
-      'list_customer_profiles',
-      'list_dlp_rules',
-      'create_chrome_dlp_rule',
-      'delete_agent_dlp_rule',
-      'list_detectors',
-      'create_regex_detector',
-      'create_url_list_detector',
-      'create_word_list_detector',
-      'delete_detector',
-      'get_chrome_activity_log',
-      'get_connector_policy',
-      'get_customer_id',
-      'list_org_units',
-      'create_default_dlp_rules',
-      'check_seb_extension_status',
-      'install_seb_extension',
-      'enable_chrome_enterprise_connectors',
-      'search_content',
-      'get_document',
-      'list_documents',
-    ].sort()
     assert.deepStrictEqual(
       registeredToolNames.sort(),
-      expectedToolNames,
-      'The list of registered tool names does not match the expected list.',
+      CORE_TOOLS,
+      'The list of registered tool names does not match the expected core list.',
     )
   })
 
