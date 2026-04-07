@@ -32,13 +32,17 @@ export async function setupTestContext(client) {
     console.log('[TEST] Discovering real resources...')
     try {
       const customerResult = await client.callTool({ name: 'get_customer_id', arguments: {} })
-      const { text: customerOutput } = parseToolOutput(customerResult)
+      const { text: customerOutput, details: customerData } = parseToolOutput(customerResult)
 
       if (customerOutput.startsWith('Error:')) {
         handleDiscoveryError(customerOutput)
       }
 
-      const customerId = process.env.TEST_CUSTOMER_ID || extractValue(customerOutput, 'Customer ID')
+      // Use structured data if available, fallback to regex for backwards compatibility/safety
+      const customerId =
+        process.env.TEST_CUSTOMER_ID ||
+        customerData?.customerId ||
+        extractValue(customerOutput, 'Customer ID')
 
       const ouResult = await client.callTool({ name: 'list_org_units', arguments: { customerId } })
       const { text: ouOutput, details: ous } = parseToolOutput(ouResult)

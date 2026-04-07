@@ -54,7 +54,10 @@ export function registerGetCustomerIdTool(server, options, sessionState) {
             }
           }
           logger.debug(`${TAGS.MCP} Successfully retrieved customer ID.`)
-          return { content: [{ type: 'text', text: `✅ **Customer ID:** \`${customer.id}\`` }] }
+          return {
+            content: [{ type: 'text', text: `✅ **Customer ID:** \`${customer.id}\`` }],
+            structuredContent: { customerId: customer.id },
+          }
         },
         skipAutoResolve: true,
       },
