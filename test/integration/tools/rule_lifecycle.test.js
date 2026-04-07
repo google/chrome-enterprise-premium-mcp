@@ -58,16 +58,18 @@ describe('Rule Lifecycle Integration', () => {
     const { text, details } = parseToolOutput(result)
     assert.match(text, /Successfully created Chrome DLP rule/)
 
-    const ruleName = details.name
+    const rule = details.dlpRule
+    const ruleName = rule.name
     createdResources.push(ruleName)
 
     // 2. VERIFY
-    const actualPolicy = details.setting?.value || details
+    const settings = rule.setting?.value || rule
 
-    assert.ok(actualPolicy.displayName.includes(ruleConfig.displayName))
-    assert.ok(actualPolicy.triggers.includes('google.workspace.chrome.url.v1.navigation'))
+    assert.ok(settings.displayName.includes(ruleConfig.displayName))
+    const triggers = settings.triggers || []
+    assert.ok(triggers.includes('google.workspace.chrome.url.v1.navigation'))
 
-    assertObjectMatches(actualPolicy, {
+    assertObjectMatches(settings, {
       description: ruleConfig.description,
       state: 'ACTIVE',
       condition: {
@@ -87,7 +89,8 @@ describe('Rule Lifecycle Integration', () => {
     })
 
     const listOutput = parseToolOutput(listResult).text
-    assert.ok(listOutput.includes(ruleName), 'Created rule not visible in list output')
+    const shortId = ruleName.split('/').pop()
+    assert.ok(listOutput.includes(shortId), `Created rule short ID (${shortId}) not visible in list output`)
 
     // 4. DELETE
     const deleteResult = await client.callTool({
@@ -106,7 +109,7 @@ describe('Rule Lifecycle Integration', () => {
     })
 
     const listAfterDeleteOutput = parseToolOutput(listAfterDeleteResult).text
-    assert.ok(!listAfterDeleteOutput.includes(ruleName), 'Deleted rule still visible in list output')
+    assert.ok(!listAfterDeleteOutput.includes(shortId), `Deleted rule short ID (${shortId}) still visible in list output`)
 
     // Clean up createdResources list as it's already deleted
     const index = createdResources.indexOf(ruleName)
@@ -118,7 +121,7 @@ describe('Rule Lifecycle Integration', () => {
   test('DLP Rule Safety: Refuses to delete non-agent rules', async () => {
     const { client, apiClients, testContext } = harness
     const ruleConfig = {
-      displayName: `HUMAN_RULE_${Date.now()}`, // NO robot emoji prefix
+      displayName: `MANUAL_RULE_${Date.now()}`, // NO robot emoji prefix
       description: 'A rule created outside the agent.',
       triggers: ['google.workspace.chrome.url.v1.navigation'],
       state: 'ACTIVE',
@@ -153,7 +156,9 @@ describe('Rule Lifecycle Integration', () => {
       arguments: {},
     })
 
-    const listOutput = parseToolOutput(listResult).text
-    assert.ok(listOutput.includes(ruleName), 'Human rule was incorrectly deleted by the agent tool')
+    const { text: listOutput, details: listData } = parseToolOutput(listResult)
+    const rules = listData?.dlpRules || []
+    const ruleExists = rules.some(r => r.name === ruleName)
+    assert.ok(ruleExists, 'Human rule was incorrectly deleted by the agent tool')
   })
 })

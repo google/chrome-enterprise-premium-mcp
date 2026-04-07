@@ -25,21 +25,7 @@ export function assertObjectMatches(actual, expected) {
 }
 
 /**
- * Robustly extracts a value following a specific label (e.g., "Customer ID: C123").
- *
- * @param {string} text - The text to search.
- * @param {string} label - The label to find.
- * @returns {string|null} The extracted value or null.
- */
-export function extractValue(text, label) {
-  // Use a regex that finds the label and captures the non-whitespace string following it.
-  const regex = new RegExp(`${label}:\\s*([^\\n\\r\\s]+)`, 'i')
-  const match = text.match(regex)
-  return match ? match[1].trim() : null
-}
-
-/**
- * Robustly extracts text and parsed JSON details from a tool result.
+ * Extracts text and structured details from a tool result.
  *
  * @param {object} result - The result object from client.callTool.
  * @returns {object} { text, details }
@@ -48,22 +34,8 @@ export function parseToolOutput(result) {
   assert.ok(result?.content, 'Tool result missing content')
   const text = result.content[0].text
 
-  let details = null
-  // Non-greedy find for the outermost { ... } or [ ... ] block.
-  // We look for a JSON block that follows the 'Details:' marker if it exists.
-  const detailsMarker = 'Details:'
-  const markerIndex = text.lastIndexOf(detailsMarker)
-  const searchArea = markerIndex !== -1 ? text.substring(markerIndex + detailsMarker.length) : text
-
-  const jsonMatch = searchArea.match(/(\{[\s\S]*\}|\[[\s\S]*\])/)
-
-  if (jsonMatch) {
-    try {
-      details = JSON.parse(jsonMatch[0])
-    } catch (e) {
-      // Not valid JSON
-    }
-  }
+  // Use structured data provided by the MCP server.
+  const details = result.structuredContent || null
 
   return { text, details }
 }

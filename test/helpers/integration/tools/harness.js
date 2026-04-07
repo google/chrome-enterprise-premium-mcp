@@ -20,7 +20,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { registerTools } from '../../../../tools/tools.js'
 import { getApiClients } from './client_factory.js'
-import { extractValue, parseToolOutput } from './tool_utils.js'
+import { parseToolOutput } from './tool_utils.js'
 
 /**
  * Sets up the standard IDs needed for integration tests.
@@ -38,20 +38,22 @@ export async function setupTestContext(client) {
         handleDiscoveryError(customerOutput)
       }
 
-      // Use structured data if available, fallback to regex for backwards compatibility/safety
-      const customerId =
-        process.env.TEST_CUSTOMER_ID ||
-        customerData?.customerId ||
-        extractValue(customerOutput, 'Customer ID')
+      const customerId = process.env.TEST_CUSTOMER_ID || customerData?.customerId
+
+      if (!customerId) {
+        throw new Error('Failed to discover Customer ID from tool output.')
+      }
 
       const ouResult = await client.callTool({ name: 'list_org_units', arguments: { customerId } })
-      const { text: ouOutput, details: ous } = parseToolOutput(ouResult)
+      const { text: ouOutput, details: ouData } = parseToolOutput(ouResult)
 
       if (ouOutput.startsWith('Error:')) {
         handleDiscoveryError(ouOutput)
       }
 
-      if (!ous || ous.length === 0) {
+      const ous = ouData?.orgUnits
+
+      if (!ous || !Array.isArray(ous) || ous.length === 0) {
         throw new Error('No Organizational Units found in this account.')
       }
 

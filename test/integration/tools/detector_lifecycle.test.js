@@ -22,7 +22,7 @@ import { assertObjectMatches, parseToolOutput } from '../../helpers/integration/
 /**
  * Detector Lifecycle Integration Tests.
  *
- * Verifies end-to-end detector flows (URL list, Word list, Regex).
+ * Verifies end-to-end tool flows using independent test blocks.
  */
 describe('Detector Lifecycle Integration', () => {
   let harness
@@ -52,26 +52,27 @@ describe('Detector Lifecycle Integration', () => {
     })
 
     const { text, details } = parseToolOutput(result)
-    assert.match(text, /Successfully created regex detector/)
+    assert.match(text, /Successfully created regular expression detector/)
 
-    const detectorName = details.name
+    const detector = details.detector
+    const detectorName = detector.name
     createdResources.push(detectorName)
 
     // 2. VERIFY
-    const actualPolicy = details.setting?.value || details
-    assert.ok(actualPolicy.displayName.includes(detectorConfig.displayName))
+    const settings = detector.setting?.value || detector
+    assert.ok(settings.displayName.includes(detectorConfig.displayName))
 
     // The real API might nest the detector specific fields differently or we might need to match exactly what was sent
     const expectedMatch = {
       description: detectorConfig.description,
     }
-    if (actualPolicy.regular_expression) {
+    if (settings.regular_expression) {
       expectedMatch.regular_expression = { expression: detectorConfig.expression }
-    } else if (actualPolicy.regularExpression) {
+    } else if (settings.regularExpression) {
       expectedMatch.regularExpression = { expression: detectorConfig.expression }
     }
 
-    assertObjectMatches(actualPolicy, expectedMatch)
+    assertObjectMatches(settings, expectedMatch)
 
     // 3. LIST
     const listResult = await client.callTool({
@@ -80,7 +81,8 @@ describe('Detector Lifecycle Integration', () => {
     })
 
     const listOutput = parseToolOutput(listResult).text
-    assert.ok(listOutput.includes(detectorName), 'Created detector not visible in list output')
+    const shortId = detectorName.split('/').pop()
+    assert.ok(listOutput.includes(shortId), `Created detector short ID (${shortId}) not visible in list output`)
 
     // 4. DELETE
     const deleteResult = await client.callTool({
@@ -99,7 +101,7 @@ describe('Detector Lifecycle Integration', () => {
     })
 
     const listAfterDeleteOutput = parseToolOutput(listAfterDeleteResult).text
-    assert.ok(!listAfterDeleteOutput.includes(detectorName), 'Deleted detector still visible in list output')
+    assert.ok(!listAfterDeleteOutput.includes(shortId), `Deleted detector short ID (${shortId}) still visible in list output`)
 
     // Clean up createdResources list as it's already deleted
     const index = createdResources.indexOf(detectorName)
@@ -126,23 +128,24 @@ describe('Detector Lifecycle Integration', () => {
     const { text, details } = parseToolOutput(result)
     assert.match(text, /Successfully created URL list detector/)
 
-    const detectorName = details.name
+    const detector = details.detector
+    const detectorName = detector.name
     createdResources.push(detectorName)
 
     // 2. VERIFY
-    const actualPolicy = details.setting?.value || details
+    const settings = detector.setting?.value || detector
 
     const expectedMatch = {
       displayName: detectorConfig.displayName,
       description: detectorConfig.description,
     }
-    if (actualPolicy.url_list) {
+    if (settings.url_list) {
       expectedMatch.url_list = { urls: detectorConfig.urls }
-    } else if (actualPolicy.urlList) {
+    } else if (settings.urlList) {
       expectedMatch.urlList = { urls: detectorConfig.urls }
     }
 
-    assertObjectMatches(actualPolicy, expectedMatch)
+    assertObjectMatches(settings, expectedMatch)
 
     // 3. DELETE
     const deleteResult = await client.callTool({
