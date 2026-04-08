@@ -94,11 +94,8 @@ export function registerGetConnectorPolicyTool(server, options, sessionState) {
               return JSON.stringify(val)
             }
             const s = String(val)
-            if (s === 'SERVICE_PROVIDER_CHROME_ENTERPRISE_PREMIUM') {
+            if (s === 'SERVICE_PROVIDER_CHROME_ENTERPRISE_PREMIUM' || s === 'ENTERPRISE_REAL_TIME_URL_CHECK_MODE_ENUM_ENABLED') {
               return 'Chrome Enterprise Premium (CEP)'
-            }
-            if (s === 'ENTERPRISE_REAL_TIME_URL_CHECK_MODE_ENUM_ENABLED') {
-              return 'Enabled (Standard)'
             }
             if (s === 'REAL_TIME_CHECK_ENFORCED') {
               return 'Enforced'
@@ -139,7 +136,11 @@ export function registerGetConnectorPolicyTool(server, options, sessionState) {
                     }
 
                     if (policy === 'ON_REALTIME_URL_NAVIGATION') {
-                      return `  - Status: ${format(getVal(v, 'realtimeUrlCheckEnabled'))}\n  - Mode: ${format(getVal(v, 'realtimeUrlCheckMode'))}`
+                      const val = getVal(v, 'realtimeUrlCheckEnabled')
+                      const isEnabled =
+                        val === 'ENTERPRISE_REAL_TIME_URL_CHECK_MODE_ENUM_ENABLED' || val === true
+                      const status = isEnabled ? 'Chrome Enterprise Premium (CEP)' : 'None'
+                      return `  - Status: ${status}`
                     }
 
                     if (policy === 'ON_SECURITY_EVENT') {
