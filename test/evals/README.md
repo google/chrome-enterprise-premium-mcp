@@ -350,7 +350,7 @@ The eval agent uses the **actual server code**:
 
 - System prompt loaded from `prompts/system-prompt.md` (same one the production
   agent uses)
-- Tool schemas from `tools/tools.js` via the MCP SDK's `client.listTools()`
+- Tool schemas from `tools/index.js` via the MCP SDK's `client.listTools()`
 - Tool execution through the in-memory MCP transport (same as integration tests)
 - Fake API backend in `test/helpers/fake-api-server.js` (Express, in-process)
 

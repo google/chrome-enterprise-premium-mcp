@@ -19,8 +19,8 @@ A Model Context Protocol (MCP) server that provides AI agents with access to Chr
 │   └── index.js
 ├── tools/
 │   ├── definitions/      # Individual tool implementations
-│   ├── tools.js          # Entry point for tool registration
-│   └── utils.js          # Tool-specific utilities
+│   ├── utils/            # Tool-specific utilities
+│   └── index.js          # Entry point for tool registration
 ├── test/                 # Unit and integration tests
 └── mcp-server.js         # Server entry point
 ```
@@ -238,7 +238,7 @@ export const FLAGS = {
 
 ### 2. Using a Flag
 
-In `tools/tools.js` (or anywhere else), use the `featureFlags` utility:
+In `tools/index.js` (or anywhere else), use the `featureFlags` utility:
 
 ```javascript
 import { featureFlags, FLAGS } from '../lib/util/feature_flags.js'
