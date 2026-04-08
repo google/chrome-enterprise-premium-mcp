@@ -17,7 +17,7 @@ limitations under the License.
 import assert from 'node:assert/strict'
 import { describe, it, mock, beforeEach } from 'node:test'
 import { validateAndGetOrgUnitId, commonTransform, guardedToolCall, resolveRootOrgUnitId } from '../../tools/utils.js'
-import { registerTools } from '../../tools/tools.js'
+import { registerTools } from '../../tools/index.js'
 
 describe('Tool Utils', () => {
   describe('commonTransform', () => {

@@ -39,7 +39,7 @@ describe('check_cep_subscription Tool', () => {
     }
 
     const { registerTools } = await esmock(
-      '../../tools/tools.js',
+      '../../tools/index.js',
       {},
       {
         '../../lib/api/real_admin_sdk_client.js': {
@@ -73,7 +73,7 @@ describe('check_cep_subscription Tool', () => {
     }
 
     const { registerTools } = await esmock(
-      '../../tools/tools.js',
+      '../../tools/index.js',
       {},
       {
         '../../lib/api/real_admin_sdk_client.js': {
@@ -112,7 +112,7 @@ describe('check_cep_subscription Tool', () => {
     }
 
     const { registerTools } = await esmock(
-      '../../tools/tools.js',
+      '../../tools/index.js',
       {},
       {
         '../../lib/api/real_admin_sdk_client.js': {
@@ -149,7 +149,7 @@ describe('check_cep_subscription Tool', () => {
     }
 
     const { registerTools } = await esmock(
-      '../../tools/tools.js',
+      '../../tools/index.js',
       {},
       {
         '../../lib/api/real_admin_sdk_client.js': {

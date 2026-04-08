@@ -18,7 +18,7 @@ import assert from 'node:assert/strict'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
-import { registerTools } from '../../../../tools/tools.js'
+import { registerTools } from '../../../../tools/index.js'
 import { getApiClients } from './client_factory.js'
 import { parseToolOutput } from './tool_utils.js'
 

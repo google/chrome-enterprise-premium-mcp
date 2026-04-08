@@ -52,7 +52,7 @@ describe('Cloud Identity API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/tools.js',
+        '../../tools/index.js',
         {},
         {
           '../../lib/api/real_cloud_identity_client.js': {
@@ -82,7 +82,7 @@ describe('Cloud Identity API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/tools.js',
+        '../../tools/index.js',
         {},
         {
           '../../lib/api/real_cloud_identity_client.js': {
@@ -111,7 +111,7 @@ describe('Cloud Identity API', () => {
         }
       }
       const { registerTools } = await esmock(
-        '../../tools/tools.js',
+        '../../tools/index.js',
         {},
         {
           '../../lib/api/real_cloud_identity_client.js': {
@@ -151,7 +151,7 @@ describe('Cloud Identity API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/tools.js',
+        '../../tools/index.js',
         {},
         {
           '../../lib/api/real_cloud_identity_client.js': {
@@ -192,7 +192,7 @@ describe('Cloud Identity API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/tools.js',
+        '../../tools/index.js',
         {},
         {
           '../../lib/api/real_cloud_identity_client.js': {
@@ -239,7 +239,7 @@ describe('Cloud Identity API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/tools.js',
+        '../../tools/index.js',
         {},
         {
           '../../lib/api/real_cloud_identity_client.js': {
@@ -298,7 +298,7 @@ describe('Cloud Identity API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/tools.js',
+        '../../tools/index.js',
         {},
         {
           '../../lib/api/real_cloud_identity_client.js': {
@@ -343,7 +343,7 @@ describe('Cloud Identity API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/tools.js',
+        '../../tools/index.js',
         {},
         {
           '../../lib/api/real_cloud_identity_client.js': {
@@ -392,7 +392,7 @@ describe('Cloud Identity API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/tools.js',
+        '../../tools/index.js',
         {},
         {
           '../../lib/api/real_cloud_identity_client.js': {
@@ -455,7 +455,7 @@ describe('Cloud Identity API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/tools.js',
+        '../../tools/index.js',
         {},
         {
           '../../lib/api/real_cloud_identity_client.js': {
@@ -515,7 +515,7 @@ describe('Cloud Identity API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/tools.js',
+        '../../tools/index.js',
         {},
         {
           '../../lib/api/real_cloud_identity_client.js': {
@@ -571,7 +571,7 @@ describe('Cloud Identity API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/tools.js',
+        '../../tools/index.js',
         {},
         {
           '../../lib/api/real_cloud_identity_client.js': {
@@ -619,7 +619,7 @@ describe('Cloud Identity API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/tools.js',
+        '../../tools/index.js',
         {},
         {
           '../../lib/api/real_cloud_identity_client.js': {
@@ -652,7 +652,7 @@ describe('Cloud Identity API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/tools.js',
+        '../../tools/index.js',
         {},
         {
           '../../lib/api/real_cloud_identity_client.js': {

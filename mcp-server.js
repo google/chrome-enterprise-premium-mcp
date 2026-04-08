@@ -32,7 +32,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { SetLevelRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 
-import { registerTools } from './tools/tools.js'
+import { registerTools } from './tools/index.js'
 import { registerPrompts } from './prompts/index.js'
 import { checkGCP } from './lib/util/gcp.js'
 import { verifyToken, oauthMiddleware } from './lib/util/auth.js'

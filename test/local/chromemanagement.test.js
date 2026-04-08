@@ -43,7 +43,7 @@ describe('Chrome Management API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/tools.js',
+        '../../tools/index.js',
         {},
         {
           '../../lib/api/real_chrome_management_client.js': {
@@ -83,7 +83,7 @@ describe('Chrome Management API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/tools.js',
+        '../../tools/index.js',
         {},
         {
           '../../lib/api/real_chrome_management_client.js': {
@@ -119,7 +119,7 @@ describe('Chrome Management API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/tools.js',
+        '../../tools/index.js',
         {},
         {
           '../../lib/api/real_chrome_management_client.js': {
@@ -161,7 +161,7 @@ describe('Chrome Management API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/tools.js',
+        '../../tools/index.js',
         {},
         {
           '../../lib/api/real_chrome_management_client.js': {

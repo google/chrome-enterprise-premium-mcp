@@ -20,7 +20,7 @@ limitations under the License.
 
 import assert from 'node:assert/strict'
 import { describe, it, mock, beforeEach } from 'node:test'
-import { registerTools } from '../../tools/tools.js'
+import { registerTools } from '../../tools/index.js'
 
 const CORE_TOOLS = [
   'cep_feedback',

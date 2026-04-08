@@ -44,7 +44,7 @@ describe('create_default_dlp_rules Tool', () => {
     }
 
     const { registerTools } = await esmock(
-      '../../tools/tools.js',
+      '../../tools/index.js',
       {},
       {
         '../../lib/api/real_cloud_identity_client.js': {
@@ -93,7 +93,7 @@ describe('create_default_dlp_rules Tool', () => {
     }
 
     const { registerTools } = await esmock(
-      '../../tools/tools.js',
+      '../../tools/index.js',
       {},
       {
         '../../lib/api/real_cloud_identity_client.js': {
@@ -133,7 +133,7 @@ describe('create_default_dlp_rules Tool', () => {
     }
 
     const { registerTools } = await esmock(
-      '../../tools/tools.js',
+      '../../tools/index.js',
       {},
       {
         '../../lib/api/real_cloud_identity_client.js': {

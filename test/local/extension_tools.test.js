@@ -52,7 +52,7 @@ describe('Extension Tools', () => {
     }
 
     const { registerTools } = await esmock(
-      '../../tools/tools.js',
+      '../../tools/index.js',
       {},
       {
         '../../lib/api/real_chrome_policy_client.js': {
@@ -84,7 +84,7 @@ describe('Extension Tools', () => {
     }
 
     const { registerTools } = await esmock(
-      '../../tools/tools.js',
+      '../../tools/index.js',
       {},
       {
         '../../lib/api/real_chrome_policy_client.js': {
@@ -127,7 +127,7 @@ describe('Extension Tools', () => {
     }
 
     const { registerTools } = await esmock(
-      '../../tools/tools.js',
+      '../../tools/index.js',
       {},
       {
         '../../lib/api/real_chrome_policy_client.js': {
@@ -161,7 +161,7 @@ describe('Extension Tools', () => {
     }
 
     const { registerTools } = await esmock(
-      '../../tools/tools.js',
+      '../../tools/index.js',
       {},
       {
         '../../lib/api/real_chrome_policy_client.js': {

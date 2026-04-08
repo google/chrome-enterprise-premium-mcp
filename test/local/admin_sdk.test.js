@@ -37,7 +37,7 @@ describe('Admin SDK API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/tools.js',
+        '../../tools/index.js',
         {},
         {
           '../../lib/api/real_admin_sdk_client.js': {
@@ -72,7 +72,7 @@ describe('Admin SDK API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/tools.js',
+        '../../tools/index.js',
         {},
         {
           '../../lib/api/real_admin_sdk_client.js': {
@@ -109,7 +109,7 @@ describe('Admin SDK API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/tools.js',
+        '../../tools/index.js',
         {},
         {
           '../../lib/api/real_admin_sdk_client.js': {
@@ -152,7 +152,7 @@ describe('Admin SDK API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/tools.js',
+        '../../tools/index.js',
         {},
         {
           '../../lib/api/real_admin_sdk_client.js': {
@@ -182,7 +182,7 @@ describe('Admin SDK API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/tools.js',
+        '../../tools/index.js',
         {},
         {
           '../../lib/api/real_admin_sdk_client.js': {
@@ -220,7 +220,7 @@ describe('Admin SDK API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/tools.js',
+        '../../tools/index.js',
         {},
         {
           '../../lib/api/real_admin_sdk_client.js': {
@@ -256,7 +256,7 @@ describe('Admin SDK API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/tools.js',
+        '../../tools/index.js',
         {},
         {
           '../../lib/api/real_admin_sdk_client.js': {
@@ -289,7 +289,7 @@ describe('Admin SDK API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/tools.js',
+        '../../tools/index.js',
         {},
         {
           '../../lib/api/real_admin_sdk_client.js': {
@@ -329,7 +329,7 @@ describe('Admin SDK API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/tools.js',
+        '../../tools/index.js',
         {},
         {
           '../../lib/api/real_admin_sdk_client.js': {
