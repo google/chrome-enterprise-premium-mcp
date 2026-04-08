@@ -221,36 +221,6 @@ You must also configure the client ID and secret in your `~/.gemini/settings.jso
 }
 ```
 
-## Run Integration Tests (Including Python Env Setup)
-
-If you are working with the Python-based CEP agents in `adk/`, it's recommended to use a virtual environment.
-
-A. **Create and Activate Virtual Environment:**
-To keep the repository clean, create the environment in a directory outside the project:
-
-      ```bash
-      # Create a virtual environment outside the repo
-      python3 -m venv ~/venvs/cep-agent
-
-      # Activate the virtual environment
-      source ~/venvs/cep-agent/bin/activate
-      ```
-
-B. **Install Python Dependencies:**
-
-      ```bash
-      # Install dependencies from the repo root
-      pip install -r requirements.txt
-      ```
-
-C. **Set Environment Variables:**
-
-      ```bash
-      export GEMINI_API_KEY=XXX
-      ```
-
-      Use a real API key.
-
 ## Feature Flags & Experiments
 
 This project uses a simple feature flag system to gate experimental or dangerous tools (e.g., deletion tools).

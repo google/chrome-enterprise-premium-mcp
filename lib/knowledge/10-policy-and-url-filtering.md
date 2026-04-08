@@ -13,23 +13,25 @@ Chrome Enterprise provides granular controls for URL access and policies through
 
 Chrome uses specific syntax rules for filtering domains:
 
-- **`example.com`**: Automatically matches `example.com` and **all its subdomains** (e.g., `mail.example.com`).
-- **`.example.com`**: Matches **only the exact domain** and DOES NOT include subdomains.
+When configuring URL filtering policies, the matching behavior is precise:
+
+- **`example.com`**: Matches the domain AND all of its subdomains (e.g., www.example.com, apps.example.com).
+- **`.example.com`**: Matches ONLY the exact domain example.com and DOES NOT include subdomains.
 - **`*`**: A wildcard for path matching or blocking all URLs.
 
 ### Predefined URL Categories
 
-Chrome Enterprise Premium includes **over 286+ predefined URL content categories** (e.g., **Social Media**, Gambling, Adult Content). Administrators can use these to create rules that audit, warn, or block navigation to websites based on their categorization. I can check your current URL filtering settings by listing the active URL filtering policies.
+Chrome Enterprise Premium includes **over 286+ predefined URL content categories** (e.g., **Social Media**, Gambling, Adult Content). Administrators can use these to create rules that audit, warn, or block navigation to websites based on their categorization.
 
 ## Local Policy Verification
 
 ...
-Administrators can verify that a browser is actually receiving the correct security policies by using `chrome://policy` on the endpoint.
+To verify which policies a browser has received and applied from all sources, navigate to **chrome://policy** on the local device. This page serves as the ground truth for what is active on the client, showing the policy value and its source (Cloud or Platform).
 
 ## Managing Policy Conflicts
 
-If you set a cloud policy to block an extension, but `chrome://policy` shows it's allowed with the source 'Platform', it is because local 'Platform' policies (like GPOs) override Cloud policies by default.
+By default, local 'Platform' policies (e.g., Windows GPO, macOS Configuration Profiles) have higher precedence than policies set in the cloud. If you see a policy conflict where 'Platform' is the source, it is overriding your cloud setting. To change this, you must enable the **CloudPolicyOverridesPlatformPolicy** policy, which will give cloud policies precedence.
 
 ## Safe Browsing Bypass
 
-If Safe Browsing is blocking a legitimate internal site, showing a red warning screen, add the domain to the 'SafeBrowsingAllowlistDomains' policy.
+To prevent Safe Browsing from blocking a known-good internal site, add the site's domain to the **SafeBrowsingAllowlistDomains** policy in the Google Admin Console. This will bypass the warning for that specific domain.

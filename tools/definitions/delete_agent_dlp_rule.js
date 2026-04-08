@@ -68,7 +68,7 @@ export function registerDeleteAgentDlpRuleTool(server, options, sessionState) {
               content: [
                 {
                   type: 'text',
-                  text: `Successfully deleted Chrome DLP rule: ${policyName} (Display Name: "${displayName}")`,
+                  text: `Successfully deleted Chrome DLP rule "${displayName}".`,
                 },
               ],
               structuredContent: {
@@ -90,7 +90,7 @@ export function registerDeleteAgentDlpRuleTool(server, options, sessionState) {
                   type: 'text',
                   text: `Automated deletion is only permitted for rules created by this agent (prefixed with '${AGENT_DISPLAY_NAME_PREFIX}').
 
-The rule "${displayName || policyName}" must be deleted manually in the Google Admin Console:
+The rule "${displayName || 'this rule'}" must be deleted manually in the Google Admin Console:
 
 ${adminConsoleLink}`,
                 },

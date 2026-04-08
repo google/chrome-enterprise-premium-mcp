@@ -11,12 +11,12 @@ Administrators can use internal Chrome debug pages and Admin Console logs to dia
 
 ## Troubleshooting DLP Watermarks and Rules
 
-If a custom DLP watermark rule is configured for an OU, but it's not working for a user in that OU, to troubleshoot, I will: 1) Verify the user's license status by checking the user's license. 2) Check the active DLP rules for their OU by listing the active DLP rules.
+When troubleshooting a non-working watermark, verify that the DLP rule is configured on a supported trigger type, specifically the **URL visited** trigger. Watermarks on other triggers are not supported and will fail to apply.
 
 ## Refining Strict DLP Rules
 
-If a strict DLP rule is blocking legitimate uploads to a partner portal, refine by: 1) Adding the partner domain to 'Exclude URLs' in the rule. 2) Changing action from 'Block' to 'Warn'. 3) Increasing the confidence threshold. I can list the rule's current configuration by listing the active DLP rules and suggest modifications.
+If a strict DLP rule is blocking legitimate uploads to a partner portal, refine by adding the partner domain to Exclude URLs, or changing action to Warn. For testing, rules can be set to **'audit only'** mode, which logs violations without impacting the user. Furthermore, a **custom user message** can be configured to provide more context when an action is blocked or warned.
 
 ## Locating Diagnostic Logs
 
-When troubleshooting a failing DLP rule, support will typically require logs from two different sources to get a complete picture of the issue: the client-side and the server-side. The client-side logs provide information about what the browser is seeing and doing in real-time on the endpoint. The primary client-side log is from `chrome://safe-browsing/#tab-reporting`, which shows if the DLP engine is evaluating events. The server-side logs are found in the Google Workspace Admin Console under "Reporting" > "Audit and investigation" > "Chrome log events." These logs show what the backend has received from the browsers across your organization.
+When troubleshooting a failing DLP rule, collect logs from two locations: **1) Client-side:** On the user's machine, navigate to chrome://safe-browsing/#tab-reporting to check for locally logged events, which can show if the browser detected an action. **2) Server-side:** In the Google Admin Console, go to **Reporting > Audit and investigation > Chrome log events**. Filter by the user and time to see if the event was reported to the backend, which confirms policy evaluation.

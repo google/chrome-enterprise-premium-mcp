@@ -94,7 +94,7 @@ describe('Experiment: DELETE_TOOL_ENABLED', () => {
       const result = await handler({ policyName: 'policies/123' }, { requestInfo: {} })
 
       assert.strictEqual(mockDeleteDlpRule.mock.callCount(), 1)
-      assert.ok(result.content[0].text.includes('Successfully deleted Chrome DLP rule: policies/123'))
+      assert.ok(result.content[0].text.includes('Successfully deleted Chrome DLP rule "🤖 Test Rule".'))
     })
 
     it('should call delete_detector and return success message', async () => {
@@ -125,7 +125,7 @@ describe('Experiment: DELETE_TOOL_ENABLED', () => {
       const result = await handler({ policyName: 'policies/456' }, { requestInfo: {} })
 
       assert.strictEqual(mockDeleteDetector.mock.callCount(), 1)
-      assert.ok(result.content[0].text.includes('Successfully deleted detector policy: policies/456'))
+      assert.ok(result.content[0].text.includes('Successfully deleted detector "456".'))
     })
   })
 })

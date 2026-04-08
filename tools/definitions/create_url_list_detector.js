@@ -76,11 +76,17 @@ export function registerCreateUrlListDetectorTool(server, options, sessionState)
 
           const createdPolicy = result.response
 
+          const createdDisplayName = createdPolicy?.setting?.value?.displayName || displayName
+
           return {
             content: [
               {
                 type: 'text',
-                text: `Successfully created URL list detector: ${createdPolicy.name}`,
+                text: `Successfully created URL list detector "${createdDisplayName}".`,
+              },
+              {
+                type: 'text',
+                text: `Resource name for API operations: ${createdPolicy.name}. Display name: "${createdDisplayName}".`,
               },
             ],
             structuredContent: {

@@ -71,8 +71,8 @@ export function registerCheckSebExtensionStatusTool(server, options, sessionStat
               {
                 type: 'text',
                 text: isInstalled
-                  ? `✅ The Secure Enterprise Browser extension (${SEB_EXTENSION_ID}) is force-installed for this Organizational Unit.`
-                  : `❌ The Secure Enterprise Browser extension (${SEB_EXTENSION_ID}) is NOT force-installed for this Organizational Unit.\n\nData masking and other advanced features may not work correctly without it.`,
+                  ? `The Secure Enterprise Browser (SEB) extension is force-installed for this Organizational Unit.`
+                  : `The Secure Enterprise Browser (SEB) extension is NOT force-installed for this Organizational Unit.\n\nData masking and other advanced features may not work correctly without it.`,
               },
             ],
             structuredContent: {

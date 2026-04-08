@@ -77,7 +77,7 @@ export function registerInstallSebExtensionTool(server, options, sessionState) {
               content: [
                 {
                   type: 'text',
-                  text: `✅ The Secure Enterprise Browser extension (${SEB_EXTENSION_ID}) is already force-installed.`,
+                  text: `The Secure Enterprise Browser (SEB) extension is already force-installed for this Organizational Unit.`,
                 },
               ],
             }
@@ -109,7 +109,7 @@ export function registerInstallSebExtensionTool(server, options, sessionState) {
             content: [
               {
                 type: 'text',
-                text: `✅ Successfully force-installed the Secure Enterprise Browser extension (${SEB_EXTENSION_ID}) for this Organizational Unit. It may take some time for the policy to propagate to all browsers.`,
+                text: `Successfully force-installed the Secure Enterprise Browser (SEB) extension for this Organizational Unit. It may take some time for the policy to propagate to all browsers.`,
               },
             ],
             structuredContent: {

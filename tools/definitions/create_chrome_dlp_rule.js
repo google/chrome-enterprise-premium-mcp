@@ -340,12 +340,17 @@ Multi-Trigger Logic:
           )
 
           const createdPolicy = result.response
+          const createdDisplayName = createdPolicy?.setting?.value?.displayName || ruleConfig.displayName || 'new rule'
 
           return {
             content: [
               {
                 type: 'text',
-                text: `Successfully created Chrome DLP rule: ${createdPolicy.name}`,
+                text: `Successfully created Chrome DLP rule "${createdDisplayName}".`,
+              },
+              {
+                type: 'text',
+                text: `Resource name for API operations: ${createdPolicy.name}. Display name: "${createdDisplayName}".`,
               },
             ],
             structuredContent: {

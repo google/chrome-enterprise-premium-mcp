@@ -51,39 +51,52 @@ export function registerListDlpRulesTool(server, options, sessionState) {
               .replace(/\b\w/g, l => l.toUpperCase())
           }
 
-          const summary =
-            filtered.length === 0
-              ? 'No DLP rules found.'
-              : filtered
-                  .map(p => {
-                    const setting = p.setting || {}
-                    const value = setting.value || {}
+          if (filtered.length === 0) {
+            return {
+              content: [{ type: 'text', text: 'No DLP rules found.' }],
+              structuredContent: { dlpRules: [] },
+            }
+          }
 
-                    const ruleId = p.name?.split('/').pop() || 'Unknown ID'
-                    const name = value.displayName || setting.displayName || p.displayName || 'Unnamed Rule'
-                    const status = format(setting.state)
+          const ruleEntries = filtered.map(p => {
+            const setting = p.setting || {}
+            const value = setting.value || {}
 
-                    // Action extraction: look for Chrome specific actions
-                    let action = 'Unknown'
-                    const chromeAction = value.action?.chromeAction || {}
-                    if (chromeAction.blockContent) {
-                      action = 'Block'
-                    } else if (chromeAction.warnUser) {
-                      action = 'Warn'
-                    } else if (chromeAction.auditOnly) {
-                      action = 'Audit'
-                    } else if (value.action && typeof value.action === 'string') {
-                      action = format(value.action)
-                    }
+            const name = value.displayName || setting.displayName || p.displayName || 'Unnamed Rule'
+            const status = format(setting.state)
 
-                    const triggers = (value.triggers || []).map(t => TRIGGERS[t] || t).join(', ')
+            // Action extraction: look for Chrome specific actions
+            let action = 'Unknown'
+            const chromeAction = value.action?.chromeAction || {}
+            if (chromeAction.blockContent) {
+              action = 'Block'
+            } else if (chromeAction.warnUser) {
+              action = 'Warn'
+            } else if (chromeAction.auditOnly) {
+              action = 'Audit'
+            } else if (value.action && typeof value.action === 'string') {
+              action = format(value.action)
+            }
 
-                    return `- ${name} (${ruleId})\n  * Status: ${status}\n  * Action: ${action}\n  * Triggers: ${triggers}`
-                  })
-                  .join('\n\n')
+            const triggers = (value.triggers || []).map(t => TRIGGERS[t] || 'Other').join(', ')
+
+            return { name, status, action, triggers, resourceName: p.name }
+          })
+
+          const summary = ruleEntries
+            .map(r => `- ${r.name}\n  * Status: ${r.status}\n  * Action: ${r.action}\n  * Triggers: ${r.triggers}`)
+            .join('\n\n')
+
+          const resourceMap = ruleEntries.map(r => `- "${r.name}" → ${r.resourceName}`).join('\n')
 
           return {
-            content: [{ type: 'text', text: summary }],
+            content: [
+              { type: 'text', text: summary },
+              {
+                type: 'text',
+                text: `Resource names for API operations:\n${resourceMap}`,
+              },
+            ],
             structuredContent: { dlpRules: filtered },
           }
         },

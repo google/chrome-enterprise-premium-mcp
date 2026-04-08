@@ -101,7 +101,10 @@ describe('Detector Lifecycle Integration', () => {
     })
 
     const listAfterDeleteOutput = parseToolOutput(listAfterDeleteResult).text
-    assert.ok(!listAfterDeleteOutput.includes(shortId), `Deleted detector short ID (${shortId}) still visible in list output`)
+    assert.ok(
+      !listAfterDeleteOutput.includes(shortId),
+      `Deleted detector short ID (${shortId}) still visible in list output`,
+    )
 
     // Clean up createdResources list as it's already deleted
     const index = createdResources.indexOf(detectorName)
