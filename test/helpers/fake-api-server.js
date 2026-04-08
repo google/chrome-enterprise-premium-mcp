@@ -106,58 +106,91 @@ function getInitialState() {
         },
       },
     },
-    // Connector policies keyed by schema name, returned by policies:resolve
+    // Connector policies keyed by customerId -> orgUnitId -> schema name
+    // Returned by policies:resolve
     connectorPolicies: {
-      'chrome.users.OnFileAttachedConnectorPolicy': [
-        {
-          value: {
-            policySchema: 'chrome.users.OnFileAttachedConnectorPolicy',
-            value: {
-              onFileAttachedAnalysisConnectorConfiguration: {
-                fileAttachedConfiguration: {
-                  serviceProvider: 'SERVICE_PROVIDER_CHROME_ENTERPRISE_PREMIUM',
-                  delayDeliveryUntilVerdict: true,
-                  blockFileOnContentAnalysisFailure: false,
-                  blockPasswordProtectedFiles: true,
-                  blockLargeFileTransfer: false,
+      C0123456: {
+        fakeOUId1: {
+          'chrome.users.OnFileAttachedConnectorPolicy': [
+            {
+              value: {
+                policySchema: 'chrome.users.OnFileAttachedConnectorPolicy',
+                value: {
+                  onFileAttachedAnalysisConnectorConfiguration: {
+                    fileAttachedConfiguration: {
+                      serviceProvider: 'SERVICE_PROVIDER_CHROME_ENTERPRISE_PREMIUM',
+                      delayDeliveryUntilVerdict: true,
+                      blockFileOnContentAnalysisFailure: false,
+                      blockPasswordProtectedFiles: false,
+                      blockLargeFileTransfer: false,
+                    },
+                  },
                 },
               },
             },
-          },
-        },
-      ],
-      'chrome.users.OnFileDownloadedConnectorPolicy': [
-        {
-          value: {
-            policySchema: 'chrome.users.OnFileDownloadedConnectorPolicy',
-            value: {
-              onFileDownloadedAnalysisConnectorConfiguration: {
-                fileDownloadedConfiguration: {
-                  serviceProvider: 'SERVICE_PROVIDER_CHROME_ENTERPRISE_PREMIUM',
-                  delayDeliveryUntilVerdict: true,
-                  blockFileOnContentAnalysisFailure: false,
-                  blockPasswordProtectedFiles: true,
-                  blockLargeFileTransfer: false,
+          ],
+          'chrome.users.OnFileDownloadedConnectorPolicy': [
+            {
+              value: {
+                policySchema: 'chrome.users.OnFileDownloadedConnectorPolicy',
+                value: {
+                  onFileDownloadedAnalysisConnectorConfiguration: {
+                    fileDownloadedConfiguration: {
+                      serviceProvider: 'SERVICE_PROVIDER_CHROME_ENTERPRISE_PREMIUM',
+                      delayDeliveryUntilVerdict: true,
+                      blockFileOnContentAnalysisFailure: false,
+                      blockPasswordProtectedFiles: false,
+                      blockLargeFileTransfer: false,
+                    },
+                  },
                 },
               },
             },
-          },
-        },
-      ],
-      'chrome.users.OnBulkTextEntryConnectorPolicy': [],
-      'chrome.users.OnPrintAnalysisConnectorPolicy': [],
-      'chrome.users.RealtimeUrlCheck': [
-        {
-          value: {
-            policySchema: 'chrome.users.RealtimeUrlCheck',
-            value: {
-              realtimeUrlCheckEnabled: true,
-              realtimeUrlCheckMode: 'ENTERPRISE_REAL_TIME_URL_CHECK_MODE_ENUM_ENABLED',
+          ],
+          'chrome.users.OnBulkTextEntryConnectorPolicy': [
+            {
+              value: {
+                policySchema: 'chrome.users.OnBulkTextEntryConnectorPolicy',
+                value: {
+                  onBulkTextEntryAnalysisConnectorConfiguration: {
+                    bulkTextEntryConfiguration: {
+                      serviceProvider: 'SERVICE_PROVIDER_CHROME_ENTERPRISE_PREMIUM',
+                    },
+                  },
+                },
+              },
             },
-          },
+          ],
+          'chrome.users.OnPrintAnalysisConnectorPolicy': [
+            {
+              value: {
+                policySchema: 'chrome.users.OnPrintAnalysisConnectorPolicy',
+                value: {
+                  onPrintAnalysisConnectorConfiguration: {
+                    printConfigurations: [
+                      { serviceProvider: 'SERVICE_PROVIDER_CHROME_ENTERPRISE_PREMIUM' },
+                    ],
+                  },
+                },
+              },
+            },
+          ],
+          'chrome.users.RealtimeUrlCheck': [
+            {
+              policyValue: {
+                policySchema: 'chrome.users.RealtimeUrlCheck',
+                value: {
+                  realtimeUrlCheckEnabled: "ENTERPRISE_REAL_TIME_URL_CHECK_MODE_ENUM_ENABLED",
+                },
+              },
+            },
+          ],
+          'chrome.users.OnSecurityEvent': [],
         },
-      ],
-      'chrome.users.OnSecurityEvent': [],
+      },
+    },
+    // Global/Unassigned policies (backwards compat or generic)
+    globalConnectorPolicies: {
       'chrome.users.apps.InstallType': [
         {
           targetKey: {
@@ -317,12 +350,53 @@ export function createFakeApp() {
       return
     }
 
-    const filter = req.body.policySchemaFilter
-    if (filter && !state.connectorPolicies[filter]) {
-      return res.status(501).json({ error: { message: `Policy schema filter ${filter} not implemented` } })
+    const { policySchemaFilter, policyTargetKey = {} } = req.body
+    const targetResource = policyTargetKey.targetResource || ''
+    const orgUnitId = targetResource.split('/').pop() || 'unknown'
+
+    const customerPolicies = state.connectorPolicies[customerId] || {}
+    const ouPolicies = customerPolicies[orgUnitId] || {}
+
+    if (policySchemaFilter) {
+      const policies = ouPolicies[policySchemaFilter] || state.globalConnectorPolicies[policySchemaFilter] || []
+      return res.json({ resolvedPolicies: policies })
     }
-    const policies = filter ? state.connectorPolicies[filter] || [] : []
-    res.json({ resolvedPolicies: policies })
+
+    res.json({ resolvedPolicies: [] })
+  })
+
+  // Chrome Policy: Batch Modify Org Unit Policies
+  app.post('/v1/customers/:customerId/policies/orgunits\\:batchModify', (req, res) => {
+    const customerId = requireCustomer(state, req.params.customerId, res)
+    if (!customerId) {
+      return
+    }
+
+    const requests = req.body.requests || []
+    for (const batchReq of requests) {
+      const { policyTargetKey = {}, policyValue = {} } = batchReq
+      const targetResource = policyTargetKey.targetResource || ''
+      const orgUnitId = targetResource.split('/').pop() || 'unknown'
+      const schema = policyValue.policySchema
+
+      if (!state.connectorPolicies[customerId]) {
+        state.connectorPolicies[customerId] = {}
+      }
+      if (!state.connectorPolicies[customerId][orgUnitId]) {
+        state.connectorPolicies[customerId][orgUnitId] = {}
+      }
+
+      state.connectorPolicies[customerId][orgUnitId][schema] = [
+        {
+          value: {
+            policySchema: schema,
+            value: policyValue.value,
+          },
+        },
+      ]
+    }
+
+    res.json({})
   })
 
   // Cloud Identity: List Policies
@@ -475,5 +549,8 @@ export async function startFakeServer() {
 if (process.argv[1] && process.argv[1].endsWith('fake-api-server.js')) {
   const port = parseInt(process.env.PORT || '8008', 10)
   const { app } = createFakeApp()
-  app.listen(port, () => console.log(`Fake API server running on http://localhost:${port}`))
+  const server = app.listen(port, () => {
+    const actualPort = server.address().port
+    console.log(`Fake API server running on http://localhost:${actualPort}`)
+  })
 }
