@@ -32,7 +32,7 @@ const POLICY_DISPLAY_NAMES = {
   ON_BULK_TEXT_ENTRY: 'Bulk Text Entry Analysis (paste)',
   ON_PRINT: 'Print Analysis',
   ON_REALTIME_URL_NAVIGATION: 'Real-time URL check',
-  ON_SECURITY_EVENT: 'Security Event Reporting',
+  ON_SECURITY_EVENT: 'Event Reporting',
 }
 
 export function registerGetConnectorPolicyTool(server, options, sessionState) {

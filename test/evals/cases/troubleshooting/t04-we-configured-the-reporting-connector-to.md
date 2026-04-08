@@ -13,4 +13,4 @@ We configured the Reporting Connector to send CEP events to Splunk, but the Splu
 
 ## Golden Response
 
-Agent should check connector policies for ON_SECURITY_EVENT and find none configured. Should explain that the Security Events Reporting connector policy doesn't appear to be active, which is why no events are reaching Splunk.
+Agent should check connector policies for ON_SECURITY_EVENT and find none configured. Should explain that the Event Reporting connector policy doesn't appear to be active, which is why no events are reaching Splunk.

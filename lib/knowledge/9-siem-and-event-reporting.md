@@ -17,7 +17,7 @@ To effectively use Security Insights within Chrome Enterprise Premium, several r
 2. **Google Admin Console Configuration:**
    - The **Chrome Enterprise Security Services App** must be enabled.
    - The **Data Protection Insight Scanning and Report** global setting must be enabled.
-   - The **Security Events Reporting** policy must be applied to the desired Organizational Units (OUs).
+   - The **Event Reporting** policy must be applied to the desired Organizational Units (OUs).
 3. **Google Cloud Console (GCP) Configuration:**
    - An active and linked Google Cloud billing account is necessary.
    - Appropriate IAM roles and permissions must be granted to administrators in both the Google Admin Console and the Google Cloud Console.
@@ -29,7 +29,7 @@ To effectively use Security Insights within Chrome Enterprise Premium, several r
 
 ## SIEM Troubleshooting (e.g., Splunk)
 
-To send events to a SIEM like Splunk, the Chrome Reporting Connector must be configured in Google Cloud. If the dashboard is empty, it strongly indicates that the specific **Security Events Reporting** policy, which activates this connector, has not been enabled for the user's OU.
+To send events to a SIEM like Splunk, the Chrome Reporting Connector must be configured in Google Cloud. If the dashboard is empty, it strongly indicates that the specific **Event Reporting** policy, which activates this connector, has not been enabled for the user's OU.
 
 ## Missing Reporting Data
 
