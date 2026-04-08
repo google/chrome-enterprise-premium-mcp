@@ -71,7 +71,7 @@ describe('enable_chrome_enterprise_connectors unit tests', () => {
     assert.strictEqual(client.batchModifyPolicyCalls.length, 1)
     assert.strictEqual(client.batchModifyPolicyCalls[0].requests.length, 2)
     assert.match(result.content[0].text, /Print Analysis marked for enablement/)
-    assert.match(result.content[0].text, /Bulk Text Entry \(Paste\) marked for enablement/)
+    assert.match(result.content[0].text, /Bulk Text Entry Analysis \(paste\) marked for enablement/)
   })
 
   test('should skip connectors that are already configured', async () => {
@@ -137,6 +137,110 @@ describe('enable_chrome_enterprise_connectors unit tests', () => {
     assert.strictEqual(client.batchModifyPolicyCalls.length, 1)
     assert.strictEqual(client.batchModifyPolicyCalls[0].requests.length, 1) // Only Bulk
     assert.match(result.content[0].text, /Print Analysis is already configured/)
-    assert.match(result.content[0].text, /Bulk Text Entry \(Paste\) marked for enablement/)
+    assert.match(result.content[0].text, /Bulk Text Entry Analysis \(paste\) marked for enablement/)
+  })
+
+  test('should enable ON_SECURITY_EVENT when not configured', async () => {
+    const { client, handler } = setupTool()
+    client.resolveResponse = [] // Simulate "None"
+
+    const params = {
+      customerId: 'C123',
+      orgUnitId: 'OU456',
+      connectors: ['ON_SECURITY_EVENT'],
+    }
+
+    const result = await handler(params, {})
+
+    assert.strictEqual(client.resolvePolicyCalls.length, 1)
+    assert.strictEqual(client.resolvePolicyCalls[0].schema, 'chrome.users.OnSecurityEvent')
+    assert.strictEqual(client.batchModifyPolicyCalls.length, 1)
+    assert.strictEqual(
+      client.batchModifyPolicyCalls[0].requests[0].policyValue.policySchema,
+      'chrome.users.OnSecurityEvent',
+    )
+    assert.strictEqual(
+      client.batchModifyPolicyCalls[0].requests[0].policyValue.value.reportingConnector.eventConfiguration
+        .explicitlyEmptyEventNames,
+      false,
+    )
+    assert.match(result.content[0].text, /Event Reporting marked for enablement/)
+  })
+
+  test('should skip ON_SECURITY_EVENT when already configured', async () => {
+    const { client, handler } = setupTool()
+
+    client.resolveResponse = [
+      {
+        value: {
+          value: {
+            reportingConnector: {
+              eventConfiguration: {
+                explicitlyEmptyEventNames: false,
+              },
+            },
+          },
+        },
+      },
+    ]
+
+    const params = {
+      customerId: 'C123',
+      orgUnitId: 'OU456',
+      connectors: ['ON_SECURITY_EVENT'],
+    }
+
+    const result = await handler(params, {})
+
+    assert.strictEqual(client.resolvePolicyCalls.length, 1)
+    assert.strictEqual(client.batchModifyPolicyCalls.length, 0)
+    assert.match(result.content[0].text, /Event Reporting is already configured. Skipping update/)
+  })
+
+  test('should skip ON_SECURITY_EVENT when explicitlyEmptyEventNames is true and some events are present (Core events missing but configured)', async () => {
+    const { client, handler } = setupTool()
+
+    client.resolveResponse = [
+      {
+        value: {
+          value: {
+            reportingConnector: {
+              eventConfiguration: {
+                enabledEventNames: ['browserCrashEvent', 'extensionInstallEvent'],
+                explicitlyEmptyEventNames: true,
+              },
+            },
+          },
+        },
+      },
+    ]
+
+    const params = {
+      customerId: 'C123',
+      orgUnitId: 'OU456',
+      connectors: ['ON_SECURITY_EVENT'],
+    }
+
+    const result = await handler(params, {})
+
+    assert.strictEqual(client.resolvePolicyCalls.length, 1)
+    assert.strictEqual(client.batchModifyPolicyCalls.length, 0)
+    assert.match(result.content[0].text, /Event Reporting is already configured. Skipping update/)
+  })
+
+  test('should normalize orgUnitId by removing id: prefix', async () => {
+    const { client, handler } = setupTool()
+    client.resolveResponse = []
+
+    const params = {
+      customerId: 'C123',
+      orgUnitId: 'id:OU123',
+      connectors: ['PRINT'],
+    }
+
+    await handler(params, {})
+
+    assert.strictEqual(client.resolvePolicyCalls[0].orgUnitId, 'OU123')
+    assert.strictEqual(client.batchModifyPolicyCalls[0].orgUnitId, 'OU123')
   })
 })

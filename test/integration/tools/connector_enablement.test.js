@@ -33,7 +33,14 @@ describe('Connector Enablement Integration', () => {
 
   test('Enable All Connectors: Batch Enable -> Verify Skip', async () => {
     const { client, testContext } = harness
-    const connectors = ['PRINT', 'BULK_TEXT_ENTRY', 'FILE_DOWNLOAD', 'FILE_UPLOAD', 'REALTIME_URL_CHECK']
+    const connectors = [
+      'PRINT',
+      'BULK_TEXT_ENTRY',
+      'FILE_DOWNLOAD',
+      'FILE_UPLOAD',
+      'REALTIME_URL_CHECK',
+      'ON_SECURITY_EVENT',
+    ]
 
     const args = {
       customerId: testContext.customerId,
@@ -70,7 +77,7 @@ describe('Connector Enablement Integration', () => {
 
     // We assume some might be enabled from the previous test.
     // Let's pick just one to enable if it wasn't already.
-    const connectors = ['PRINT', 'BULK_TEXT_ENTRY']
+    const connectors = ['PRINT', 'BULK_TEXT_ENTRY', 'ON_SECURITY_EVENT']
     const args = {
       customerId: testContext.customerId,
       orgUnitId: testContext.orgUnitId,
@@ -83,9 +90,29 @@ describe('Connector Enablement Integration', () => {
     })
 
     const { text } = parseToolOutput(result)
-    // Should mention both
+    // Should mention all requested
     assert.ok(text.includes('Print Analysis'), 'Print Analysis should be mentioned')
     assert.ok(text.includes('Bulk Text Entry'), 'Bulk Text Entry should be mentioned')
+    assert.ok(text.includes('Event Reporting'), 'Event Reporting should be mentioned')
+  })
+
+  test('ON_SECURITY_EVENT: Verify enablement output', async () => {
+    const { client, testContext } = harness
+
+    const result = await client.callTool({
+      name: 'enable_chrome_enterprise_connectors',
+      arguments: {
+        customerId: testContext.customerId,
+        orgUnitId: testContext.orgUnitId,
+        connectors: ['ON_SECURITY_EVENT'],
+      },
+    })
+
+    const { text } = parseToolOutput(result)
+    assert.ok(
+      text.includes('Event Reporting marked for enablement') || text.includes('Event Reporting is already configured'),
+      'Event Reporting should be mentioned in the output',
+    )
   })
 
   test('Validation: Empty connector list should fail', async () => {

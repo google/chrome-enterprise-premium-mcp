@@ -151,6 +151,28 @@ const CONNECTOR_CONFIGS = {
       updateMask: 'realtimeUrlCheckEnabled',
     }),
   },
+  ON_SECURITY_EVENT: {
+    schema: 'chrome.users.OnSecurityEvent',
+    displayName: 'Event Reporting',
+    check: policy => {
+      const reportingConnector = policy?.value?.value?.reportingConnector
+      return reportingConnector && Object.keys(reportingConnector).length > 0
+    },
+    getRequest: orgUnitId => ({
+      policyTargetKey: { targetResource: `orgunits/${orgUnitId}` },
+      policyValue: {
+        policySchema: 'chrome.users.OnSecurityEvent',
+        value: {
+          reportingConnector: {
+            eventConfiguration: {
+              explicitlyEmptyEventNames: false,
+            },
+          },
+        },
+      },
+      updateMask: 'reportingConnector',
+    }),
+  },
 }
 
 /**
@@ -174,6 +196,7 @@ export function registerEnableChromeEnterpriseConnectorsTool(server, options, se
         - File Download Analysis (FILE_DOWNLOAD)
         - Upload content analysis (FILE_UPLOAD)
         - Real-time URL check (REALTIME_URL_CHECK)
+        - Event Reporting (ON_SECURITY_EVENT)
 
         CRITICAL: When responding to the user, you MUST use the public-facing names (e.g., "Upload content analysis") and NEVER output the internal IDs (e.g., "FILE_UPLOAD").
 
@@ -184,7 +207,16 @@ export function registerEnableChromeEnterpriseConnectorsTool(server, options, se
           'The ID of the organizational unit where connectors will be enabled.',
         ),
         connectors: z
-          .array(z.enum(['PRINT', 'BULK_TEXT_ENTRY', 'FILE_DOWNLOAD', 'FILE_UPLOAD', 'REALTIME_URL_CHECK']))
+          .array(
+            z.enum([
+              'PRINT',
+              'BULK_TEXT_ENTRY',
+              'FILE_DOWNLOAD',
+              'FILE_UPLOAD',
+              'REALTIME_URL_CHECK',
+              'ON_SECURITY_EVENT',
+            ]),
+          )
           .min(1)
           .describe('List of connectors to enable.'),
       },
@@ -197,12 +229,15 @@ export function registerEnableChromeEnterpriseConnectorsTool(server, options, se
           const results = []
           const batchRequests = []
 
+          // Normalize Org Unit ID (Strip 'id:' prefix if present)
+          const normalizedOrgUnitId = orgUnitId.startsWith('id:') ? orgUnitId.substring(3) : orgUnitId
+
           // 1. Safety Check: Parallelize policy resolution
           const resolvePromises = connectors.map(async connectorType => {
             const config = CONNECTOR_CONFIGS[connectorType]
             const resolvedPolicies = await chromePolicyClient.resolvePolicy(
               customerId,
-              orgUnitId,
+              normalizedOrgUnitId,
               config.schema,
               authToken,
             )
@@ -218,13 +253,13 @@ export function registerEnableChromeEnterpriseConnectorsTool(server, options, se
             }
 
             // 2. Prepare Request
-            batchRequests.push(config.getRequest(orgUnitId))
+            batchRequests.push(config.getRequest(normalizedOrgUnitId))
             results.push(`✅ ${config.displayName} marked for enablement.`)
           }
 
           // 3. Execute Batch
           if (batchRequests.length > 0) {
-            await chromePolicyClient.batchModifyPolicy(customerId, orgUnitId, batchRequests, authToken)
+            await chromePolicyClient.batchModifyPolicy(customerId, normalizedOrgUnitId, batchRequests, authToken)
             results.push('\nSuccessfully applied all pending updates.')
           }
 
