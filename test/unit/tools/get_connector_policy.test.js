@@ -61,6 +61,47 @@ describe('get_connector_policy tool handler', () => {
     assert.match(text, /Block on Failure: Enabled/)
   })
 
+  test('should format multiple policies in a single response', async () => {
+    const { mockServer, getRegisteredHandler } = getHandler()
+    const mockChromePolicyClient = {
+      getConnectorPolicy: async () => [
+        {
+          targetKey: { targetResource: 'orgunits/OU1' },
+          value: {
+            value: {
+              serviceProvider: 'SERVICE_PROVIDER_CHROME_ENTERPRISE_PREMIUM',
+              delayDeliveryUntilVerdict: true,
+            },
+          },
+        },
+        {
+          targetKey: { targetResource: 'orgunits/OU2' },
+          value: {
+            value: {
+              serviceProvider: 'SERVICE_PROVIDER_OTHER',
+              delayDeliveryUntilVerdict: false,
+            },
+          },
+        },
+      ],
+    }
+
+    registerGetConnectorPolicyTool(mockServer, { chromePolicyClient: mockChromePolicyClient }, {})
+    const handler = getRegisteredHandler()
+
+    const result = await handler(
+      { customerId: 'C123', orgUnitId: 'OU123', policy: 'ON_FILE_ATTACHED' },
+      { requestInfo: {} },
+    )
+    const text = result.content[0].text
+
+    // Check that both OU configurations are in the summary
+    assert.match(text, /Provider: Chrome Enterprise Premium \(CEP\)/)
+    assert.match(text, /Provider: Service Provider Other/)
+    assert.match(text, /Delay Enforcement: Enabled/)
+    assert.match(text, /Delay Enforcement: Disabled/)
+  })
+
   test('should parse snake_case keys (standard API wire format)', async () => {
     const { mockServer, getRegisteredHandler } = getHandler()
     const mockChromePolicyClient = {
@@ -170,7 +211,7 @@ describe('get_connector_policy tool handler', () => {
     assert.match(text, /Raw Value: "Just some text that is not JSON"/)
   })
 
-  test('should parse ON_SECURITY_EVENT specific fields', async () => {
+  test('should parse ON_SECURITY_EVENT specific fields with setting structure', async () => {
     const { mockServer, getRegisteredHandler } = getHandler()
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
@@ -178,8 +219,10 @@ describe('get_connector_policy tool handler', () => {
           value: {
             value: {
               reportingConnector: {
-                eventConfiguration: {
-                  enabledEventNames: ['contentTransferEvent', 'dangerousDownloadEvent'],
+                setting: {
+                  eventConfiguration: {
+                    enabledEventNames: ['contentTransferEvent', 'dangerousDownloadEvent'],
+                  },
                 },
               },
             },
@@ -198,6 +241,200 @@ describe('get_connector_policy tool handler', () => {
     const text = result.content[0].text
 
     assert.match(text, /Reported Events: contentTransferEvent, dangerousDownloadEvent/)
+  })
+
+  test('should format multiple ON_SECURITY_EVENT policies in a single response', async () => {
+    const { mockServer, getRegisteredHandler } = getHandler()
+    const mockChromePolicyClient = {
+      getConnectorPolicy: async () => [
+        {
+          targetKey: { targetResource: 'orgunits/OU_ENABLED' },
+          value: {
+            value: {
+              reportingConnector: {
+                setting: {
+                  eventConfiguration: {
+                    enabledEventNames: ['malwareEvent'],
+                  },
+                },
+              },
+            },
+          },
+        },
+        {
+          targetKey: { targetResource: 'orgunits/OU_DISABLED' },
+          value: {
+            value: {
+              reportingConnector: {},
+            },
+          },
+        },
+      ],
+    }
+
+    registerGetConnectorPolicyTool(mockServer, { chromePolicyClient: mockChromePolicyClient }, {})
+    const handler = getRegisteredHandler()
+
+    const result = await handler(
+      { customerId: 'C123', orgUnitId: 'OU123', policy: 'ON_SECURITY_EVENT' },
+      { requestInfo: {} },
+    )
+    const text = result.content[0].text
+
+    assert.match(text, /Reported Events: malwareEvent/)
+    assert.match(text, /Reported Events: Disabled/)
+  })
+
+  test('should parse ON_SECURITY_EVENT with snake_case internal fields', async () => {
+    const { mockServer, getRegisteredHandler } = getHandler()
+    const mockChromePolicyClient = {
+      getConnectorPolicy: async () => [
+        {
+          value: {
+            value: {
+              reporting_connector: {
+                setting: {
+                  event_configuration: {
+                    enabled_event_names: ['snakeEvent1', 'snakeEvent2'],
+                  },
+                },
+              },
+            },
+          },
+        },
+      ],
+    }
+
+    registerGetConnectorPolicyTool(mockServer, { chromePolicyClient: mockChromePolicyClient }, {})
+    const handler = getRegisteredHandler()
+
+    const result = await handler(
+      { customerId: 'C123', orgUnitId: 'OU123', policy: 'ON_SECURITY_EVENT' },
+      { requestInfo: {} },
+    )
+    const text = result.content[0].text
+
+    assert.match(text, /Reported Events: snakeEvent1, snakeEvent2/)
+  })
+
+  test('should report Disabled for ON_SECURITY_EVENT when eventConfiguration is missing', async () => {
+    const { mockServer, getRegisteredHandler } = getHandler()
+    const mockChromePolicyClient = {
+      getConnectorPolicy: async () => [
+        {
+          value: {
+            value: {
+              reportingConnector: {
+                setting: {},
+              },
+            },
+          },
+        },
+      ],
+    }
+
+    registerGetConnectorPolicyTool(mockServer, { chromePolicyClient: mockChromePolicyClient }, {})
+    const handler = getRegisteredHandler()
+
+    const result = await handler(
+      { customerId: 'C123', orgUnitId: 'OU123', policy: 'ON_SECURITY_EVENT' },
+      { requestInfo: {} },
+    )
+    const text = result.content[0].text
+
+    assert.match(text, /Reported Events: Disabled/)
+  })
+
+  test('should report Disabled for ON_SECURITY_EVENT when reportingConnector is empty', async () => {
+    const { mockServer, getRegisteredHandler } = getHandler()
+    const mockChromePolicyClient = {
+      getConnectorPolicy: async () => [
+        {
+          value: {
+            value: {
+              reportingConnector: {},
+            },
+          },
+        },
+      ],
+    }
+
+    registerGetConnectorPolicyTool(mockServer, { chromePolicyClient: mockChromePolicyClient }, {})
+    const handler = getRegisteredHandler()
+
+    const result = await handler(
+      { customerId: 'C123', orgUnitId: 'OU123', policy: 'ON_SECURITY_EVENT' },
+      { requestInfo: {} },
+    )
+    const text = result.content[0].text
+
+    assert.match(text, /Reported Events: Disabled/)
+  })
+
+  test('should report default core events for ON_SECURITY_EVENT when empty and not explicitlyEmptyEventNames', async () => {
+    const { mockServer, getRegisteredHandler } = getHandler()
+    const mockChromePolicyClient = {
+      getConnectorPolicy: async () => [
+        {
+          value: {
+            value: {
+              reportingConnector: {
+                setting: {
+                  eventConfiguration: {
+                    enabledEventNames: [],
+                    explicitlyEmptyEventNames: false,
+                  },
+                },
+              },
+            },
+          },
+        },
+      ],
+    }
+
+    registerGetConnectorPolicyTool(mockServer, { chromePolicyClient: mockChromePolicyClient }, {})
+    const handler = getRegisteredHandler()
+
+    const result = await handler(
+      { customerId: 'C123', orgUnitId: 'OU123', policy: 'ON_SECURITY_EVENT' },
+      { requestInfo: {} },
+    )
+    const text = result.content[0].text
+
+    assert.match(text, /Reported Events: Default \(Core Events Enabled\)/)
+  })
+
+  test('should report None for ON_SECURITY_EVENT when explicitlyEmptyEventNames is true', async () => {
+    const { mockServer, getRegisteredHandler } = getHandler()
+    const mockChromePolicyClient = {
+      getConnectorPolicy: async () => [
+        {
+          value: {
+            value: {
+              reportingConnector: {
+                setting: {
+                  eventConfiguration: {
+                    enabledEventNames: [],
+                    explicitlyEmptyEventNames: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      ],
+    }
+
+    registerGetConnectorPolicyTool(mockServer, { chromePolicyClient: mockChromePolicyClient }, {})
+    const handler = getRegisteredHandler()
+
+    const result = await handler(
+      { customerId: 'C123', orgUnitId: 'OU123', policy: 'ON_SECURITY_EVENT' },
+      { requestInfo: {} },
+    )
+    const text = result.content[0].text
+
+    assert.match(text, /Reported Events: None/)
   })
 
   test('should unpack deeply nested single-key configuration', async () => {

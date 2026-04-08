@@ -71,11 +71,11 @@ export function registerGetConnectorPolicyTool(server, options, sessionState) {
               return val ? 'Enabled' : 'Disabled'
             }
             if (typeof val === 'object') {
-              if (val.onByDefault !== undefined) {
-                return val.onByDefault ? 'Enabled (Default)' : 'Disabled'
+              if (getVal(val, 'onByDefault') !== undefined) {
+                return getVal(val, 'onByDefault') ? 'Enabled (Default)' : 'Disabled'
               }
-              if (val.customUrlPatterns) {
-                return val.customUrlPatterns.join(', ')
+              if (getVal(val, 'customUrlPatterns')) {
+                return getVal(val, 'customUrlPatterns').join(', ')
               }
               return JSON.stringify(val)
             }
@@ -129,9 +129,42 @@ export function registerGetConnectorPolicyTool(server, options, sessionState) {
                     }
 
                     if (policy === 'ON_SECURITY_EVENT') {
-                      const events =
-                        getVal(getVal(v, 'reportingConnector') || {}, 'eventConfiguration')?.enabledEventNames || []
-                      return `  - Reported Events: ${events.length > 0 ? events.join(', ') : 'None'}`
+                      const reportingConnector = getVal(v, 'reportingConnector') || {}
+                      const setting = getVal(reportingConnector, 'setting') || reportingConnector
+                      const eventCfg = getVal(setting, 'eventConfiguration')
+
+                      if (eventCfg === undefined) {
+                        return '  - Reported Events: Disabled'
+                      }
+
+                      const events = getVal(eventCfg, 'enabledEventNames') || []
+                      const explicitlyEmpty = getVal(eventCfg, 'explicitlyEmptyEventNames')
+
+                      let eventSummary = 'None'
+                      let warnings = ''
+
+                      const coreEvents = [
+                        'contentTransferEvent',
+                        'dangerousDownloadEvent',
+                        'sensitiveDataEvent',
+                        'urlFilteringInterstitialEvent',
+                        'suspiciousUrlEvent',
+                      ]
+
+                      if (events.length > 0) {
+                        eventSummary = events.join(', ')
+                        const missingCoreEvents = coreEvents.filter(e => !events.includes(e))
+                        if (missingCoreEvents.length > 0) {
+                          warnings = `\n\n  ⚠️ WARNING: The following core DLP events are missing from your customized configuration: ${missingCoreEvents.join(', ')}. Without these, your security posture is incomplete.`
+                        }
+                      } else if (explicitlyEmpty) {
+                        eventSummary = 'None'
+                        warnings = `\n\n  ⚠️ WARNING: The following core DLP events are missing from your customized configuration: ${coreEvents.join(', ')}. Without these, your security posture is incomplete.`
+                      } else {
+                        eventSummary = 'Default (Core Events Enabled)'
+                      }
+
+                      return `  - Reported Events: ${eventSummary}${warnings}`
                     }
 
                     const cfg =
