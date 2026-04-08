@@ -240,7 +240,7 @@ describe('get_connector_policy tool handler', () => {
     )
     const text = result.content[0].text
 
-    assert.match(text, /Reported Events: contentTransferEvent, dangerousDownloadEvent/)
+    assert.match(text, /Reported Events: Content transfer, Malware transfer/)
   })
 
   test('should format multiple ON_SECURITY_EVENT policies in a single response', async () => {

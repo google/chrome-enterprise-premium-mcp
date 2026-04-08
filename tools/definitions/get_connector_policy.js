@@ -35,6 +35,20 @@ const POLICY_DISPLAY_NAMES = {
   ON_SECURITY_EVENT: 'Event Reporting',
 }
 
+const EVENT_NAME_MAPPING = {
+  browserCrashEvent: 'Browser crash',
+  browserExtensionInstallEvent: 'Browser extension install',
+  contentTransferEvent: 'Content transfer',
+  unscannedFileEvent: 'Content unscanned',
+  dangerousDownloadEvent: 'Malware transfer',
+  passwordChangedEvent: 'Password changed',
+  passwordReuseEvent: 'Password reuse',
+  sensitiveDataEvent: 'Sensitive data transfer',
+  interstitialEvent: 'Unsafe site visit',
+  urlFilteringInterstitialEvent: 'URL filtering interstitial',
+  suspiciousUrlEvent: 'Suspicious URL',
+}
+
 export function registerGetConnectorPolicyTool(server, options, sessionState) {
   const { chromePolicyClient } = options
 
@@ -151,15 +165,17 @@ export function registerGetConnectorPolicyTool(server, options, sessionState) {
                         'suspiciousUrlEvent',
                       ]
 
+                      const mapEvent = e => EVENT_NAME_MAPPING[e] || e
+
                       if (events.length > 0) {
-                        eventSummary = events.join(', ')
+                        eventSummary = events.map(mapEvent).join(', ')
                         const missingCoreEvents = coreEvents.filter(e => !events.includes(e))
                         if (missingCoreEvents.length > 0) {
-                          warnings = `\n\n  ⚠️ WARNING: The following core DLP events are missing from your customized configuration: ${missingCoreEvents.join(', ')}. Without these, your security posture is incomplete.`
+                          warnings = `\n\n  ⚠️ WARNING: The following core DLP events are missing from your customized configuration: ${missingCoreEvents.map(mapEvent).join(', ')}. Without these, your security posture is incomplete.`
                         }
                       } else if (explicitlyEmpty) {
                         eventSummary = 'None'
-                        warnings = `\n\n  ⚠️ WARNING: The following core DLP events are missing from your customized configuration: ${coreEvents.join(', ')}. Without these, your security posture is incomplete.`
+                        warnings = `\n\n  ⚠️ WARNING: The following core DLP events are missing from your customized configuration: ${coreEvents.map(mapEvent).join(', ')}. Without these, your security posture is incomplete.`
                       } else {
                         eventSummary = 'Default (Core Events Enabled)'
                       }

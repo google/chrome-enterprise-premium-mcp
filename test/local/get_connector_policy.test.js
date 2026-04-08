@@ -75,8 +75,8 @@ describe('get_connector_policy Tool', () => {
         { requestInfo: {} },
       )
 
-      assert.ok(result.content[0].text.includes('contentTransferEvent'))
-      assert.ok(result.content[0].text.includes('suspiciousUrlEvent'))
+      assert.ok(result.content[0].text.includes('Content transfer'))
+      assert.ok(result.content[0].text.includes('Suspicious URL'))
       assert.ok(!result.content[0].text.includes('⚠️ WARNING'))
       assert.deepStrictEqual(result.structuredContent.connectorPolicies, mockPolicy)
     })
@@ -146,7 +146,7 @@ describe('get_connector_policy Tool', () => {
       assert.ok(result.content[0].text.includes('Reported Events: None'))
       assert.ok(
         result.content[0].text.includes(
-          '⚠️ WARNING: The following core DLP events are missing from your customized configuration: contentTransferEvent, dangerousDownloadEvent, sensitiveDataEvent, urlFilteringInterstitialEvent, suspiciousUrlEvent',
+          '⚠️ WARNING: The following core DLP events are missing from your customized configuration: Content transfer, Malware transfer, Sensitive data transfer, URL filtering interstitial, Suspicious URL',
         ),
       )
     })
@@ -184,10 +184,10 @@ describe('get_connector_policy Tool', () => {
         { requestInfo: {} },
       )
 
-      assert.ok(result.content[0].text.includes('contentTransferEvent'))
+      assert.ok(result.content[0].text.includes('Content transfer'))
       assert.ok(
         result.content[0].text.includes(
-          '⚠️ WARNING: The following core DLP events are missing from your customized configuration: dangerousDownloadEvent, suspiciousUrlEvent',
+          '⚠️ WARNING: The following core DLP events are missing from your customized configuration: Malware transfer, Suspicious URL',
         ),
       )
     })
@@ -220,10 +220,10 @@ describe('get_connector_policy Tool', () => {
         { requestInfo: {} },
       )
 
-      assert.ok(result.content[0].text.includes('browserCrashEvent'))
+      assert.ok(result.content[0].text.includes('Browser crash'))
       assert.ok(
         result.content[0].text.includes(
-          '⚠️ WARNING: The following core DLP events are missing from your customized configuration: contentTransferEvent, dangerousDownloadEvent, sensitiveDataEvent, urlFilteringInterstitialEvent, suspiciousUrlEvent',
+          '⚠️ WARNING: The following core DLP events are missing from your customized configuration: Content transfer, Malware transfer, Sensitive data transfer, URL filtering interstitial, Suspicious URL',
         ),
       )
     })
