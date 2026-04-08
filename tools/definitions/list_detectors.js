@@ -37,19 +37,32 @@ export function registerListDetectorsTool(server, options, sessionState) {
               .toLowerCase()
               .replace(/\b\w/g, l => l.toUpperCase())
 
-          const summary =
-            !detectors || detectors.length === 0
-              ? 'No detectors found.'
-              : detectors
-                  .map(p => {
-                    const name = p.displayName || p.name?.split('/').pop() || 'Unnamed Detector'
-                    return `- ${name} [Type: ${format(p.detectorType)}]`
-                  })
-                  .join('\n')
+          if (!detectors || detectors.length === 0) {
+            return {
+              content: [{ type: 'text', text: 'No detectors found.' }],
+              structuredContent: { detectors: [] },
+            }
+          }
+
+          const entries = detectors.map(p => ({
+            displayName: p.displayName || p.name?.split('/').pop() || 'Unnamed Detector',
+            type: format(p.detectorType),
+            resourceName: p.name,
+          }))
+
+          const summary = entries.map(e => `- ${e.displayName} [Type: ${e.type}]`).join('\n')
+
+          const resourceMap = entries.map(e => `- "${e.displayName}" → ${e.resourceName}`).join('\n')
 
           return {
-            content: [{ type: 'text', text: summary }],
-            structuredContent: { detectors: detectors || [] },
+            content: [
+              { type: 'text', text: summary },
+              {
+                type: 'text',
+                text: `Resource names for API operations:\n${resourceMap}`,
+              },
+            ],
+            structuredContent: { detectors },
           }
         },
       },

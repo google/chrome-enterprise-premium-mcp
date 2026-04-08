@@ -11,7 +11,7 @@ Deploying Chrome Enterprise across an organization involves managing both the br
 
 ## Browser Deployment
 
-Download the Chrome Enterprise bundle (MSI, PKG, and policy templates). Deploy via SCCM, Intune, or other MDM tools, and sync management to the cloud via Chrome Enterprise Core.
+To deploy the Chrome browser at scale, first download the **Chrome Enterprise bundle**, which includes the installer files (MSI for Windows, PKG for macOS) and policy templates. Use an enterprise management tool (e.g., Intune, SCCM, Jamf) to deploy the installer. Finally, enroll the browsers into **Chrome Enterprise Core** for cloud-based management.
 
 ## Enrollment Tokens
 
@@ -26,12 +26,15 @@ Browsers become managed when an enrollment token is successfully applied to the 
 
 Endpoint Verification (EV) is required to report device security posture to Context-Aware Access policies. For a successful silent deployment via MDM (like Intune):
 
-1.  Use an MDM Configuration Profile to set the 'ExtensionInstallForcelist' policy for the EV extension.
-2.  Deploy the standalone EV Native Helper installer (MSI/PKG) as a required app. Both are mandatory.
+The best practice for deploying Endpoint Verification requires two components:
+
+1. **The Extension:** Use the ExtensionInstallForcelist policy to force-install the extension by its ID (callobklhcbilhphinckomhgkigmfocg).
+2. **The Native Helper:** Use your MDM to deploy the Native Helper application (MSI for Windows, PKG for macOS) as a required installation. Both are mandatory for the feature to function.
 
 ## Unenrollment
 
 To unenroll a device and remove Chrome Enterprise management policies:
 
-1.  **Client-side:** Delete the enrollment token from the Registry (Windows) or remove the profile (macOS).
-2.  **Server-side:** **Mandatory Final Step:** You must manually delete the device from the Google Admin Console to fully terminate management and free up the license.
+To fully unenroll a browser, a two-step process is required:
+**1) On the client device,** remove the enrollment token (from the Windows Registry or a file on macOS/Linux).
+**2) In the Admin Console,** manually delete the inactive browser record from the 'Managed browsers' list to complete the process.

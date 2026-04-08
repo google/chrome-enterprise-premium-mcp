@@ -118,8 +118,8 @@ describe('Tool Utils', () => {
       })
     })
 
-    describe('First-Call Injection (hasInjectedSystemPrompt)', () => {
-      it('should inject system prompt on the first tool call and update session state', async () => {
+    describe('First-Call Injection', () => {
+      it('should inject system prompt and capabilities on the first tool call', async () => {
         const handler = async () => {
           return { content: [{ type: 'text', text: 'Original content' }] }
         }
@@ -132,16 +132,10 @@ describe('Tool Utils', () => {
         assert.strictEqual(sessionState.hasInjectedSystemPrompt, true)
         assert.strictEqual(result1.content.length, 2)
         assert.strictEqual(result1.content[0].text, 'Original content')
-        assert.ok(
-          result1.content[1].text.includes(
-            '[AGENT DIRECTIVE] You are a specialized Chrome Enterprise Premium (CEP) security expert.',
-          ),
-        )
+        assert.ok(result1.content[1].text.includes('Chrome Enterprise Premium'))
 
-        // Second call
+        // Second call should not inject again
         const result2 = await tool({}, {})
-
-        // Should not inject again
         assert.strictEqual(result2.content.length, 1)
         assert.strictEqual(result2.content[0].text, 'Original content')
       })

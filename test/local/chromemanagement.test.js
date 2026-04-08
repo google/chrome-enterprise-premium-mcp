@@ -142,11 +142,12 @@ describe('Chrome Management API', () => {
         '\n' +
         '*   **Name:** Unnamed Profile\n' +
         '    *   **ID:** `profile1`\n' +
-        '    *   **Resource Name:** `profile1`\n' +
         '*   **Name:** Unnamed Profile\n' +
-        '    *   **ID:** `profile2`\n' +
-        '    *   **Resource Name:** `profile2`'
+        '    *   **ID:** `profile2`'
       assert.deepStrictEqual(result.content[0].text, expectedText)
+      const expectedResourceMap =
+        'Resource names for API operations:\n' + '- "Unnamed Profile" → profile1\n' + '- "Unnamed Profile" → profile2'
+      assert.deepStrictEqual(result.content[1].text, expectedResourceMap)
     })
 
     it('should return an error message if API call fails', async () => {

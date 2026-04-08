@@ -88,11 +88,17 @@ export function registerCreateWordListDetectorTool(server, options, sessionState
 
           const createdPolicy = result.response
 
+          const createdDisplayName = createdPolicy?.setting?.value?.displayName || displayName
+
           return {
             content: [
               {
                 type: 'text',
-                text: `Successfully created word list detector: ${createdPolicy.name}`,
+                text: `Successfully created word list detector "${createdDisplayName}".`,
+              },
+              {
+                type: 'text',
+                text: `Resource name for API operations: ${createdPolicy.name}. Display name: "${createdDisplayName}".`,
               },
             ],
             structuredContent: {

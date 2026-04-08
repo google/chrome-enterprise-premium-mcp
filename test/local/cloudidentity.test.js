@@ -21,6 +21,7 @@ limitations under the License.
 import assert from 'node:assert/strict'
 import { describe, it, mock, beforeEach } from 'node:test'
 import esmock from 'esmock'
+import { FeatureFlags, FLAGS } from '../../lib/util/feature_flags.js'
 
 describe('Cloud Identity API', () => {
   let server
@@ -224,8 +225,9 @@ describe('Cloud Identity API', () => {
       assert.deepStrictEqual(passedConfig.condition, {
         contentCondition: "url.contains('test')",
       })
-      const expectedText = `Successfully created Chrome DLP rule: policies/123`
+      const expectedText = `Successfully created Chrome DLP rule "🤖 Test Rule".`
       assert.deepStrictEqual(result.content[0].text, expectedText)
+      assert.ok(result.content[1].text.includes('policies/123'))
     })
 
     it('should pass dataMasking parameters to createDlpRule', async () => {
@@ -427,7 +429,11 @@ describe('Cloud Identity API', () => {
         description: '',
         regular_expression: { expression: '.*test.*' },
       })
-      assert.ok(result.content[0].text.includes('policies/regex1'))
+      assert.deepStrictEqual(
+        result.content[0].text,
+        'Successfully created regular expression detector "Regex Detector".',
+      )
+      assert.ok(result.content[1].text.includes('policies/regex1'))
     })
   })
 
@@ -486,7 +492,8 @@ describe('Cloud Identity API', () => {
         description: '',
         url_list: { urls: ['test.com'] },
       })
-      assert.ok(result.content[0].text.includes('policies/url1'))
+      assert.deepStrictEqual(result.content[0].text, 'Successfully created URL list detector "URL Detector".')
+      assert.ok(result.content[1].text.includes('policies/url1'))
     })
   })
 
@@ -545,7 +552,8 @@ describe('Cloud Identity API', () => {
         description: '',
         word_list: { words: ['secret'] },
       })
-      assert.ok(result.content[0].text.includes('policies/word1'))
+      assert.deepStrictEqual(result.content[0].text, 'Successfully created word list detector "Word Detector".')
+      assert.ok(result.content[1].text.includes('policies/word1'))
     })
 
     it('should throw an error if root OU resolution fails', async () => {
@@ -595,6 +603,74 @@ describe('Cloud Identity API', () => {
       )
 
       assert.strictEqual(result.content[0].text, 'Error: Failed to resolve root organizational unit ID.')
+    })
+  })
+
+  describe('delete_agent_dlp_rule Tool', () => {
+    it('should call deleteDlpRule and return success message', async () => {
+      const mockDeleteDlpRule = mock.fn(async () => ({}))
+      const MockCloudIdentityClient = class {
+        constructor() {
+          this.deleteDlpRule = mockDeleteDlpRule
+          this.getDlpRule = mock.fn(async () => ({
+            setting: { value: { displayName: '🤖 Test Rule' } },
+          }))
+        }
+      }
+
+      const { registerTools } = await esmock(
+        '../../tools/tools.js',
+        {},
+        {
+          '../../lib/api/real_cloud_identity_client.js': {
+            RealCloudIdentityClient: MockCloudIdentityClient,
+          },
+        },
+      )
+      registerTools(server, {
+        gcpCredentialsAvailable: true,
+        apiClients: { cloudIdentity: new MockCloudIdentityClient() },
+        featureFlags: new FeatureFlags({ EXPERIMENT_DELETE_TOOL_ENABLED: 'true' }),
+      })
+
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'delete_agent_dlp_rule')
+        .arguments[2]
+      const result = await handler({ policyName: 'policies/123' }, { requestInfo: {} })
+
+      assert.strictEqual(mockDeleteDlpRule.mock.callCount(), 1)
+      assert.ok(result.content[0].text.includes('Successfully deleted Chrome DLP rule "🤖 Test Rule".'))
+    })
+  })
+
+  describe('delete_detector Tool', () => {
+    it('should call deleteDetector and return success message', async () => {
+      const mockDeleteDetector = mock.fn(async () => ({}))
+      const MockCloudIdentityClient = class {
+        constructor() {
+          this.deleteDetector = mockDeleteDetector
+        }
+      }
+
+      const { registerTools } = await esmock(
+        '../../tools/tools.js',
+        {},
+        {
+          '../../lib/api/real_cloud_identity_client.js': {
+            RealCloudIdentityClient: MockCloudIdentityClient,
+          },
+        },
+      )
+      registerTools(server, {
+        gcpCredentialsAvailable: true,
+        apiClients: { cloudIdentity: new MockCloudIdentityClient() },
+        featureFlags: new FeatureFlags({ EXPERIMENT_DELETE_TOOL_ENABLED: 'true' }),
+      })
+
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'delete_detector').arguments[2]
+      const result = await handler({ policyName: 'policies/456' }, { requestInfo: {} })
+
+      assert.strictEqual(mockDeleteDetector.mock.callCount(), 1)
+      assert.ok(result.content[0].text.includes('Successfully deleted detector "456".'))
     })
   })
 })

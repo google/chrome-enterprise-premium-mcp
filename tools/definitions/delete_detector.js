@@ -47,13 +47,23 @@ export function registerDeleteDetectorTool(server, options, sessionState) {
       {
         handler: async ({ policyName }, { requestInfo }) => {
           const authToken = getAuthToken(requestInfo)
+
+          // Fetch display name before deletion for user-friendly confirmation
+          let displayName = policyName.split('/').pop()
+          try {
+            const detector = await cloudIdentityClient.getDetector(policyName, authToken)
+            displayName = detector?.setting?.value?.displayName || displayName
+          } catch {
+            // Use extracted ID as fallback
+          }
+
           await cloudIdentityClient.deleteDetector(policyName, authToken)
 
           return {
             content: [
               {
                 type: 'text',
-                text: `Successfully deleted detector policy: ${policyName}`,
+                text: `Successfully deleted detector "${displayName}".`,
               },
             ],
             structuredContent: {

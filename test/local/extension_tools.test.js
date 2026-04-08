@@ -71,7 +71,7 @@ describe('Extension Tools', () => {
     const result = await handler({ customerId: 'C123', orgUnitId: 'ou1' }, { requestInfo: {} })
 
     assert.strictEqual(mockResolvePolicy.mock.callCount(), 1)
-    assert.ok(result.content[0].text.includes('✅'))
+    assert.ok(result.content[0].text.includes('force-installed for this Organizational Unit'))
   })
 
   it('check_seb_extension_status should return error indicator if extension is missing', async () => {
@@ -102,7 +102,7 @@ describe('Extension Tools', () => {
 
     const result = await handler({ customerId: 'C123', orgUnitId: 'ou1' }, { requestInfo: {} })
 
-    assert.ok(result.content[0].text.includes('❌'))
+    assert.ok(result.content[0].text.includes('NOT force-installed'))
   })
 
   it('install_seb_extension should skip if already installed', async () => {

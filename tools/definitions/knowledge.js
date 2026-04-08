@@ -130,7 +130,13 @@ export function registerKnowledgeTools(server, options, sessionState) {
   server.registerTool(
     'search_content',
     {
-      description: `Searches the Chrome Enterprise Premium knowledge base for policies, setup guides, and technical specifications. Use this for EVERY technical question to ensure accuracy.`,
+      description: `Searches the Chrome Enterprise Premium knowledge base. Use this for any CEP-related question to ground your response in verified documentation.
+
+Use this when the user mentions: Chrome Enterprise Premium, CEP, BeyondCorp, Data Loss Prevention, DLP, Context-Aware Access, CAA, Endpoint Verification, EV, browser security, Chrome management, connectors, evidence locker, URL filtering, or certificate-based access.
+
+Topics covered: product overview, pricing and licensing, browser deployment and enrollment, endpoint verification troubleshooting, DLP features (rules, triggers, detectors, OCR, cache encryption), DLP troubleshooting, evidence locker and scanning, context-aware access and security gateway, identity and certificate-based access, SIEM/reporting integration, policy management and URL filtering, and agent capabilities/limitations.
+
+If initial results aren't relevant, try different keywords rather than repeating the same query.`,
       inputSchema: z.object({
         query: z
           .string()

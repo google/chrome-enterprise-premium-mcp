@@ -1,0 +1,96 @@
+# Global eval configuration for CEP MCP Server.
+# See test/evals/README.md for documentation.
+#
+# Forbidden patterns: strings/regexes that must NEVER appear in agent output.
+# Per-eval forbidden_patterns (in .md frontmatter) are merged with these.
+# Prefix with "re:" for regex matching; otherwise plain substring (case-insensitive).
+
+forbidden_patterns:
+  # MCP tool names (underscore-delimited, unlikely in natural language)
+  - search_content
+  - get_customer_id
+  - list_org_units
+  - check_cep_subscription
+  - check_user_cep_license
+  - list_customer_profiles
+  - count_browser_versions
+  - get_chrome_activity_log
+  - list_dlp_rules
+  - create_chrome_dlp_rule
+  - delete_agent_dlp_rule
+  - create_default_dlp_rules
+  - list_detectors
+  - create_regex_detector
+  - create_url_list_detector
+  - create_word_list_detector
+  - delete_detector
+  - get_connector_policy
+  - enable_chrome_enterprise_connectors
+  - check_seb_extension_status
+  - install_seb_extension
+  - check_and_enable_api
+  # NOTE: "feedback" tool name omitted — too common in natural language.
+
+  # Chrome trigger API strings
+  - google.workspace.chrome.file.v1.upload
+  - google.workspace.chrome.file.v1.download
+  - google.workspace.chrome.web_content.v1.upload
+  - google.workspace.chrome.page.v1.print
+  - google.workspace.chrome.url.v1.navigation
+
+  # Chrome policy schema names
+  - chrome.users.OnFileAttachedConnectorPolicy
+  - chrome.users.OnFileDownloadedConnectorPolicy
+  - chrome.users.OnBulkTextEntryConnectorPolicy
+  - chrome.users.OnPrintAnalysisConnectorPolicy
+  - chrome.users.RealtimeUrlCheck
+  - chrome.users.OnSecurityEvent
+  - chrome.users.apps.InstallType
+
+  # Service provider enum values
+  - SERVICE_PROVIDER_CHROME_ENTERPRISE_PREMIUM
+  - SERVICE_PROVIDER_UNSPECIFIED
+  - DEFAULT_ACTION_ALLOW
+  - ENTERPRISE_REAL_TIME_URL_CHECK_MODE_ENUM_ENABLED
+  - REAL_TIME_CHECK_ENFORCED
+
+  # Cloud Identity setting types
+  - settings/rule.dlp
+  - settings/detector
+  - "re:settings/detector\\."
+
+  # API field names (internal action keys, not admin-facing)
+  - blockContent
+  - warnUser
+  - auditOnly
+  - unsafeHtmlMessageBody
+  - blockScreenshot
+  - saveContent
+  - onByDefault
+  # NOTE: delayDeliveryUntilVerdict omitted — admin-facing connector setting name.
+
+  # NOTE: CEL expression patterns (all_content\., body\.matches_, etc.) are
+  # intentionally NOT global. An advanced user may legitimately ask about CEL.
+  # Add them per-eval on mutation/creation evals where unprompted leakage is the concern.
+
+# Default judge rubric (used when an eval has no ## Judge Instructions section)
+default_judge_rubric: |
+  1. CORE FACT COVERAGE: Does the response cover the primary technical facts
+     from the golden reference? Proactive troubleshooting (offering to check,
+     asking for context) counts as coverage. Additional accurate information
+     is encouraged.
+  2. PROACTIVE TROUBLESHOOTING: If the agent asks for missing prerequisites
+     (OU ID, email, URL) to perform a diagnostic action, grade as PASS.
+  3. HALLUCINATION & CONTRADICTION: If the agent provides incorrect diagnostic
+     steps or denies a feature that exists, grade as FAIL.
+  4. EXPLICIT TOOL NAMING: The agent MUST NOT name internal tools (e.g.,
+     "search_content", "list_dlp_rules"). Describing capabilities is fine.
+     If it names tools, grade as FAIL.
+  5. INTERNAL IDENTIFIER LEAKAGE: The agent MUST NOT output internal API
+     schema keys (chrome.users.*), raw enum values (SERVICE_PROVIDER_*),
+     or unprompted raw CEL expression dumps from API responses. However,
+     documented CEL function names like matches_dlp_detector('RESOURCE_NAME')
+     used in technical explanations are FINE. Resource names and IDs (like
+     policies/abc123, customer IDs, OU IDs) are expected and FINE — users
+     need these. Do NOT penalize the agent for showing IDs or documented
+     CEL syntax from the knowledge base.

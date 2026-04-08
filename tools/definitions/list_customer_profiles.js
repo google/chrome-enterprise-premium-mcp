@@ -65,9 +65,17 @@ export function registerCustomerProfileTool(server, options, sessionState) {
 
             const formattedProfiles = profiles
               .map(profile => {
+                const displayName = profile.displayName || 'Unnamed Profile'
                 const id =
                   profile.profileId || profile.profilePermanentId || profile.name?.split('/').pop() || 'Unknown'
-                return `*   **Name:** ${profile.displayName || 'Unnamed Profile'}\n    *   **ID:** \`${id}\`\n    *   **Resource Name:** \`${profile.name}\``
+                return `*   **Name:** ${displayName}\n    *   **ID:** \`${id}\``
+              })
+              .join('\n')
+
+            const resourceMap = profiles
+              .map(profile => {
+                const displayName = profile.displayName || 'Unnamed Profile'
+                return `- "${displayName}" → ${profile.name}`
               })
               .join('\n')
 
@@ -77,6 +85,10 @@ export function registerCustomerProfileTool(server, options, sessionState) {
                 {
                   type: 'text',
                   text: `# Customer Profiles for ${customerId}\n\n${formattedProfiles}`,
+                },
+                {
+                  type: 'text',
+                  text: `Resource names for API operations:\n${resourceMap}`,
                 },
               ],
               structuredContent: { profiles },

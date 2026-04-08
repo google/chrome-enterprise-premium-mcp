@@ -49,13 +49,13 @@ describe('Customer ID Caching and Auto-Resolution', () => {
       sessionState,
     )
 
-    // --- First Call ---
+    // First call
     await listOrgUnitsHandler({}, { requestInfo: {} })
     assert.strictEqual(mockGetCustomerId.mock.callCount(), 1, 'getCustomerId should be called once')
     const firstCallArgs = mockListOrgUnits.mock.calls[0].arguments
     assert.strictEqual(firstCallArgs[0].customerId, 'C_AUTO_RESOLVED', 'First call should use resolved ID')
 
-    // --- Second Call ---
+    // Second call
     await listOrgUnitsHandler({}, { requestInfo: {} })
     assert.strictEqual(mockGetCustomerId.mock.callCount(), 1, 'getCustomerId should NOT be called again')
     const secondCallArgs = mockListOrgUnits.mock.calls[1].arguments

@@ -15,4 +15,4 @@ When troubleshooting the Device Trust Connector with Okta for unmanaged devices,
 
 ## Certificate-Based Access (CBA)
 
-If you deployed certificates to the Windows key store, but Google isn't recognizing them during CBA login, ensure the Root CA is in the Workspace Console and the 'AutoSelectCertificateForUrls' policy is set.
+If Certificate-Based Access (CBA) is failing, verify two critical settings: **1) Root CA Certificate:** Ensure the appropriate Root CA certificate has been uploaded to the Google Admin Console under **Devices > Chrome > Settings > Users & browsers**. **2) Auto-Select Policy:** Configure the **AutoSelectCertificateForUrls** policy to instruct Chrome to automatically present the correct client certificate to Google's authentication URLs.

@@ -15,6 +15,9 @@ limitations under the License.
 */
 
 /* eslint-disable n/no-process-exit */
+
+process.env.GCP_STDIO ??= 'false'
+
 import { spawn } from 'child_process'
 import http from 'http'
 
@@ -107,7 +110,7 @@ function runPromptTest() {
 
     res.on('end', () => {
       console.log('responseBody:', responseBody)
-      if (res.statusCode === 200 && responseBody.includes('"name":"cep"')) {
+      if (res.statusCode === 200 && responseBody.includes('"name":"cep:diagnose"')) {
         console.log('Prompt smoke test passed!')
         server.kill()
         runOAuthTest()

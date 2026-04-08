@@ -29,8 +29,8 @@ To effectively use Security Insights within Chrome Enterprise Premium, several r
 
 ## SIEM Troubleshooting (e.g., Splunk)
 
-If you configured the Reporting Connector to send CEP events to Splunk, but the dashboard is empty, I can verify if the **Security Events Reporting** policy is enabled for your endpoints by checking your connector policies.
+To send events to a SIEM like Splunk, the Chrome Reporting Connector must be configured in Google Cloud. If the dashboard is empty, it strongly indicates that the specific **Security Events Reporting** policy, which activates this connector, has not been enabled for the user's OU.
 
 ## Missing Reporting Data
 
-If we are not seeing any data in the Chrome security event dashboard, check `chrome://safe-browsing/#tab-reporting` on the device locally.
+If the Chrome security event dashboard is empty, verify the following: **1) Client-side:** Check chrome://safe-browsing/#tab-reporting on a user's device to see if events are being generated locally. **2) Admin Console:** Ensure 'Event reporting' is enabled under the browser reporting settings. **3) Licensing:** Confirm users have active CEP licenses assigned.

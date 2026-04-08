@@ -76,11 +76,17 @@ export function registerCreateRegexDetectorTool(server, options, sessionState) {
 
           const createdPolicy = result.response
 
+          const createdDisplayName = createdPolicy?.setting?.value?.displayName || displayName
+
           return {
             content: [
               {
                 type: 'text',
-                text: `Successfully created regular expression detector: ${createdPolicy.name}`,
+                text: `Successfully created regular expression detector "${createdDisplayName}".`,
+              },
+              {
+                type: 'text',
+                text: `Resource name for API operations: ${createdPolicy.name}. Display name: "${createdDisplayName}".`,
               },
             ],
             structuredContent: {
