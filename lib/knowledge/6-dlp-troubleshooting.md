@@ -1,7 +1,6 @@
 ---
+summary: 'Outlines troubleshooting steps for Data Loss Prevention (DLP) rules, including verifying URL triggers, refining strict rules, and locating client and server-side logs.'
 title: 'Chrome Data Loss Prevention (DLP) Troubleshooting'
-kind: curated
-articleType: curated-guide
 articleId: 6
 ---
 
@@ -19,4 +18,4 @@ If a strict DLP rule is blocking legitimate uploads to a partner portal, refine 
 
 ## Locating Diagnostic Logs
 
-When troubleshooting a failing DLP rule, collect logs from two locations: **1) Client-side:** On the user's machine, navigate to chrome://safe-browsing/#tab-reporting to check for locally logged events, which can show if the browser detected an action. **2) Server-side:** In the Google Admin Console, go to **Reporting > Audit and investigation > Chrome log events**. Filter by the user and time to see if the event was reported to the backend, which confirms policy evaluation.
+When troubleshooting a failing DLP rule, collect logs from two locations: **1) Client-side:** On the user's machine, navigate to chrome://safe-browsing/#tab-reporting to check for locally logged events, which can show if the browser detected an action. **2) Server-side:** In the Google Admin Console, go to **Reporting > Audit and investigation > Chrome log events**. Filter by the user, time, and event type (e.g., 'Data Loss Prevention') to see if the event was reported to the backend, which confirms policy evaluation. Additionally, always ensure the user has an active CEP license and the DLP rule is correctly scoped to their Organizational Unit (OU) or group.

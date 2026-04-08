@@ -4,8 +4,8 @@ category: inspection
 tags:
   - inspection
 expected_tools:
-  - check_cep_subscription
   - search_content
+priority: P2
 ---
 
 ## Prompt

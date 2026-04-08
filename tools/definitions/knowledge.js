@@ -107,10 +107,11 @@ export function registerKnowledgeTools(server, options, sessionState) {
               content: content,
               articleType: metadata.articleType,
               articleId: metadata.articleId,
+              summary: metadata.summary,
             }
 
             allDocs.push(doc)
-            docLookup.set(`${doc.kind}/${doc.filename}`, doc)
+            docLookup.set(doc.filename, doc)
             idToDoc.set(String(doc.id), doc)
           }
         })
@@ -130,18 +131,18 @@ export function registerKnowledgeTools(server, options, sessionState) {
   server.registerTool(
     'search_content',
     {
-      description: `Searches the Chrome Enterprise Premium knowledge base. Use this for any CEP-related question to ground your response in verified documentation.
+      description: `Searches the Chrome Enterprise Premium knowledge base to retrieve verified documentation for grounding responses.
 
-Use this when the user mentions: Chrome Enterprise Premium, CEP, BeyondCorp, Data Loss Prevention, DLP, Context-Aware Access, CAA, Endpoint Verification, EV, browser security, Chrome management, connectors, evidence locker, URL filtering, or certificate-based access.
+This tool is the primary source of truth for CEP features. Call this tool before responding to any question concerning CEP capabilities, pricing, policies, troubleshooting, or general product information to ensure responses are factually accurate and up-to-date.
 
-Topics covered: product overview, pricing and licensing, browser deployment and enrollment, endpoint verification troubleshooting, DLP features (rules, triggers, detectors, OCR, cache encryption), DLP troubleshooting, evidence locker and scanning, context-aware access and security gateway, identity and certificate-based access, SIEM/reporting integration, policy management and URL filtering, and agent capabilities/limitations.
+Use this tool before answering any questions about: Chrome Enterprise Premium, CEP, BeyondCorp, Data Loss Prevention, DLP, Context-Aware Access, CAA, Endpoint Verification, EV, browser security, Chrome management, connectors, evidence locker, URL filtering, certificate-based access, product overview, pricing and licensing, deployment, and enrollment.
 
 If initial results aren't relevant, try different keywords rather than repeating the same query.`,
       inputSchema: z.object({
         query: z
           .string()
           .min(1)
-          .describe('Search query. Use concise keywords. Do not use full sentences or FTS5 syntax.'),
+          .describe('Search query. Use concise keywords.'),
         kind: z
           .enum(['policies', 'helpcenter', 'cloud-docs', 'curated'])
           .optional()
@@ -236,9 +237,9 @@ If initial results aren't relevant, try different keywords rather than repeating
               const rareTerms = queryTerms.filter(t => !commonWords.includes(t))
               const searchTerms = rareTerms.length > 0 ? rareTerms : queryTerms
 
-              // Slide a window of 500 chars to find the most terms
-              for (let i = 0; i < contentLower.length; i += 250) {
-                const windowText = contentLower.substring(i, i + 800)
+              // Slide a window of 200 chars to find the most terms
+              for (let i = 0; i < contentLower.length; i += 100) {
+                const windowText = contentLower.substring(i, i + 200)
                 let score = 0
                 for (const term of searchTerms) {
                   if (windowText.includes(term)) {
@@ -252,7 +253,7 @@ If initial results aren't relevant, try different keywords rather than repeating
               }
 
               const start = Math.max(0, bestIndex)
-              const end = Math.min(r.content.length, bestIndex + 800)
+              const end = Math.min(r.content.length, bestIndex + 200)
               snippet =
                 (start > 0 ? '...' : '') +
                 r.content.substring(start, end).replace(/\n/g, ' ') +
@@ -311,9 +312,8 @@ If initial results aren't relevant, try different keywords rather than repeating
     'get_document',
     {
       description:
-        'Retrieves the full text content of a specific knowledge base document. Use the "kind" and "filename" returned by search_content.',
+        'Retrieves the full text content of a specific knowledge base document. Use the "filename" returned by search_content.',
       inputSchema: z.object({
-        kind: z.enum(['policies', 'helpcenter', 'cloud-docs', 'curated']).describe('The content type / directory.'),
         filename: z.string().min(1).describe('The filename (without .md extension) as returned by search_content.'),
       }),
     },
@@ -323,34 +323,20 @@ If initial results aren't relevant, try different keywords rather than repeating
           const db = await loadDb()
           const docLookup = db.docLookup
 
-          const doc = docLookup.get(`${args.kind}/${args.filename}`)
+          const doc = docLookup.get(args.filename)
 
           if (!doc) {
             return {
               content: [
                 {
                   type: 'text',
-                  text: `⚠️ **Error:** Document not found for \`${args.kind}/${args.filename}\`.`,
+                  text: `⚠️ **Error:** Document not found for \`${args.filename}\`.`,
                 },
               ],
             }
           }
 
-          const urlLink = doc.url ? `[View Source](${doc.url})` : 'N/A'
-          const facts = []
-          if (doc.kind === 'policies') {
-            if (doc.policyId) {
-              facts.push(`- **Policy ID:** ${doc.policyId}`)
-            }
-            if (doc.supportedPlatformsText) {
-              facts.push(`- **Platforms:** ${doc.supportedPlatformsText}`)
-            }
-          }
-          const factsHeader = facts.length > 0 ? `### Key Facts\n${facts.join('\n')}\n\n` : ''
-
-          const sourcesFooter = doc.url ? `\n\n---\n### Sources\n- [Official Documentation](${doc.url})` : ''
-
-          const text = `# ${doc.title}\n\n**Category:** ${doc.kind} | **Source:** ${urlLink}\n\n${factsHeader}--- \n\n${doc.content}${sourcesFooter}`
+          const text = `# ${doc.title}\n\n--- \n\n${doc.content}`
 
           return {
             content: [
@@ -373,27 +359,23 @@ If initial results aren't relevant, try different keywords rather than repeating
     'list_documents',
     {
       description: `
-<what>Lists all available documents within a specific category, or provides aggregated counts across all categories.</what>
+<what>Lists all available documents.</what>
 <when>Use this to browse the library structure or when you need to verify the existence of a set of policies without a specific keyword search.</when>
-<returns>A list of document titles or category counts.</returns>`,
+<returns>A list of document titles.</returns>`,
       inputSchema: z.object({
-        kind: z
-          .enum(['policies', 'helpcenter', 'cloud-docs', 'curated'])
-          .optional()
-          .describe('Filter to a specific content type. Omit for counts across all kinds.'),
         limit: z
           .number()
           .int()
           .min(1)
           .max(200)
           .optional()
-          .describe('Maximum number of documents to list (default 50). Ignored when kind is omitted.'),
+          .describe('Maximum number of documents to list (default 50).'),
         offset: z
           .number()
           .int()
           .min(0)
           .optional()
-          .describe('Pagination offset to skip records (default 0). Ignored when kind is omitted.'),
+          .describe('Pagination offset to skip records (default 0).'),
       }),
     },
     guardedToolCall(
@@ -404,35 +386,11 @@ If initial results aren't relevant, try different keywords rather than repeating
 
           const allDocs = Array.from(docLookup.values())
 
-          if (!args.kind) {
-            const countsMap = new Map()
-            for (const doc of allDocs) {
-              countsMap.set(doc.kind, (countsMap.get(doc.kind) || 0) + 1)
-            }
-            const counts = Object.fromEntries(countsMap)
-
-            const text =
-              `## Knowledge Base Overview\n\n` +
-              Object.entries(counts)
-                .map(([kind, count]) => `- **${kind}**: ${count} articles`)
-                .join('\n')
-
-            return {
-              content: [{ type: 'text', text }],
-              structuredContent: { counts },
-            }
-          }
-
           const limit = args.limit ?? 50
           const offset = args.offset ?? 0
 
-          let filtered = allDocs.filter(d => d.kind === args.kind)
+          let filtered = allDocs
           filtered.sort((a, b) => {
-            const depA = a.deprecated || 0
-            const depB = b.deprecated || 0
-            if (depA !== depB) {
-              return depA - depB
-            }
             return (a.title || '').localeCompare(b.title || '')
           })
 
@@ -441,19 +399,17 @@ If initial results aren't relevant, try different keywords rather than repeating
           const documents = sliced.map(r => ({
             title: r.title,
             url: r.url || null,
-            isDeprecated: r.deprecated === 1,
             get_document_arguments: {
-              kind: r.kind,
               filename: r.filename,
             },
           }))
 
           const text =
-            `## Articles in "${args.kind}"\n\n` +
+            `## Articles\n\n` +
             documents
               .map((doc, idx) => {
                 const titleLink = doc.url ? `[${doc.title}](${doc.url})` : doc.title
-                return `${idx + 1 + offset}. ${titleLink}${doc.isDeprecated ? ' ⚠️' : ''}`
+                return `${idx + 1 + offset}. ${titleLink}`
               })
               .join('\n')
 

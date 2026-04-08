@@ -1,7 +1,6 @@
 ---
+summary: 'Provides instructions for deploying the Chrome browser and Endpoint Verification extension using MDM, as well as the steps for device unenrollment.'
 title: 'Chrome Browser Deployment and Enrollment'
-kind: curated
-articleType: curated-guide
 articleId: 2
 ---
 
@@ -36,5 +35,5 @@ The best practice for deploying Endpoint Verification requires two components:
 To unenroll a device and remove Chrome Enterprise management policies:
 
 To fully unenroll a browser, a two-step process is required:
-**1) On the client device,** remove the enrollment token (from the Windows Registry or a file on macOS/Linux).
+**1) On the client device,** remove the enrollment token (from the Windows Registry at `HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Google\Chrome\CloudManagementEnrollmentToken` or a file on macOS/Linux).
 **2) In the Admin Console,** manually delete the inactive browser record from the 'Managed browsers' list to complete the process.

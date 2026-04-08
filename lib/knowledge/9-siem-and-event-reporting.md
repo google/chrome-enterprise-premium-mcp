@@ -1,7 +1,6 @@
 ---
+summary: 'Details the requirements and troubleshooting steps for Chrome Reporting Connector and SIEM integration (like Splunk) to track security insights.'
 title: 'Chrome Reporting Connector and SIEM Integration'
-kind: curated
-articleType: curated-guide
 articleId: 9
 ---
 
@@ -33,4 +32,4 @@ To send events to a SIEM like Splunk, the Chrome Reporting Connector must be con
 
 ## Missing Reporting Data
 
-If the Chrome security event dashboard is empty, verify the following: **1) Client-side:** Check chrome://safe-browsing/#tab-reporting on a user's device to see if events are being generated locally. **2) Admin Console:** Ensure 'Event reporting' is enabled under the browser reporting settings. **3) Licensing:** Confirm users have active CEP licenses assigned.
+If the Chrome security event dashboard is empty, verify the following: **1) Client-side:** Check chrome://safe-browsing/#tab-reporting on a user's device to see if events are being generated locally. **2) Admin Console:** Ensure 'Event reporting' is enabled under the browser reporting settings. **3) Licensing:** Confirm users have active CEP licenses assigned and the reporting connector is configured if sending to a SIEM.

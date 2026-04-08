@@ -7,6 +7,7 @@ expected_tools:
   - search_content
 required_patterns:
   - SafeBrowsingAllowlistDomains
+priority: P1
 ---
 
 ## Prompt

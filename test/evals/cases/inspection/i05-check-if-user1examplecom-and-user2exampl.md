@@ -7,6 +7,8 @@ expected_tools:
   - check_user_cep_license
 required_patterns:
   - user1@example.com
+priority: P0
+stability: 1.0
 ---
 
 ## Prompt

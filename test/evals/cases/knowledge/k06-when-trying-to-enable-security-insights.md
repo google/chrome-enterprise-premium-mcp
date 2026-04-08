@@ -5,6 +5,7 @@ tags:
   - provisioning
 expected_tools:
   - search_content
+priority: P2
 ---
 
 ## Prompt

@@ -124,8 +124,25 @@ export async function createEvalAgent({ apiKey, baseUrl, mcpClient }) {
   }
 
   const genAI = new GoogleGenerativeAI(apiKey)
-  const systemPrompt = loadSystemPrompt()
   const agentOpts = { useUppercaseTypes: !!baseUrl }
+
+  let systemPrompt = ''
+  if (process.env.NO_EXPERT_PROMPT === 'true') {
+    systemPrompt = 'You are a helpful AI assistant. Use the tools provided to answer the user.'
+  } else {
+    try {
+      const expertPromptResult = await mcpClient.getPrompt({ name: 'cep:expert' })
+      systemPrompt = expertPromptResult.messages.map(m => m.content.text).join('\n')
+      
+      const capabilitiesPath = path.resolve(__dirname, '../../../lib/knowledge/0-agent-capabilities.md')
+      if (fs.existsSync(capabilitiesPath)) {
+        systemPrompt += '\n\n---\n\n' + fs.readFileSync(capabilitiesPath, 'utf8')
+      }
+    } catch (err) {
+      console.warn('Failed to load cep:expert prompt via MCP, falling back to local load.', err.message)
+      systemPrompt = loadSystemPrompt()
+    }
+  }
 
   // Fetch tool definitions from MCP server
   const { tools: mcpTools } = await mcpClient.listTools()

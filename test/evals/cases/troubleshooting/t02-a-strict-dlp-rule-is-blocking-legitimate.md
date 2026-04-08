@@ -7,6 +7,7 @@ expected_tools:
   - list_dlp_rules
 required_patterns:
   - Block test123.com
+priority: P2
 ---
 
 ## Prompt

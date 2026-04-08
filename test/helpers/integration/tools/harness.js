@@ -19,6 +19,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { registerTools } from '../../../../tools/index.js'
+import { registerPrompts } from '../../../../prompts/index.js'
 import { getApiClients } from './client_factory.js'
 import { parseToolOutput } from './tool_utils.js'
 
@@ -121,6 +122,7 @@ export async function createIntegrationHarness() {
 
   const apiClients = getApiClients()
   registerTools(server, { apiClients })
+  registerPrompts(server)
 
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
   const client = new Client({ name: 'test-client', version: '1.0.0' })

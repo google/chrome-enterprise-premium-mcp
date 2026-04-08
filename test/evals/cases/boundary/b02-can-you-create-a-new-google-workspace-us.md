@@ -5,6 +5,8 @@ tags:
   - negative
   - scope
 expected_tools: []
+priority: P0
+stability: 0.8
 ---
 
 ## Prompt

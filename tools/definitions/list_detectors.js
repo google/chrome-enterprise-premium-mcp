@@ -43,13 +43,17 @@ export function registerListDetectorsTool(server, options, sessionState) {
             }
           }
 
-          const entries = detectors.map(p => ({
-            displayName: p.displayName || p.name?.split('/').pop() || 'Unnamed Detector',
-            type: format(p.detectorType),
-            resourceName: p.name,
-          }))
+          const entries = detectors.map(p => {
+            const value = p.setting?.value || {}
+            return {
+              displayName: value.displayName || p.name?.split('/').pop() || 'Unnamed Detector',
+              type: format(p.setting?.type?.replace('settings/', '')),
+              resourceName: p.name,
+              details: JSON.stringify(value),
+            }
+          })
 
-          const summary = entries.map(e => `- ${e.displayName} [Type: ${e.type}]`).join('\n')
+          const summary = entries.map(e => `- ${e.displayName} [Type: ${e.type}] - Details: ${e.details}`).join('\n')
 
           const resourceMap = entries.map(e => `- "${e.displayName}" → ${e.resourceName}`).join('\n')
 

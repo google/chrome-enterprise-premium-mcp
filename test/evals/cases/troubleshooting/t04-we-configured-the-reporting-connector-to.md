@@ -5,6 +5,8 @@ tags:
   - troubleshooting
 expected_tools:
   - get_connector_policy
+priority: P0
+stability: 0.0
 ---
 
 ## Prompt

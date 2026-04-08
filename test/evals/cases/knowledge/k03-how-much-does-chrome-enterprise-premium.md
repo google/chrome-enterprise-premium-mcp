@@ -8,6 +8,8 @@ expected_tools:
   - search_content
 required_patterns:
   - $6
+priority: P0
+stability: 0.9
 ---
 
 ## Prompt

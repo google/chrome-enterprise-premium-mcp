@@ -61,8 +61,8 @@ export function registerListDlpRulesTool(server, options, sessionState) {
             const setting = p.setting || {}
             const value = setting.value || {}
 
-            const name = value.displayName || setting.displayName || p.displayName || 'Unnamed Rule'
-            const status = format(setting.state)
+            const name = value.displayName || setting.displayName || p.name?.split('/').pop() || 'Unnamed Rule'
+            const status = format(value.state || 'Not configured')
 
             // Action extraction: look for Chrome specific actions
             let action = 'Unknown'
@@ -93,7 +93,7 @@ export function registerListDlpRulesTool(server, options, sessionState) {
               { type: 'text', text: summary },
               {
                 type: 'text',
-                text: `Resource names for API operations:\n${resourceMap}`,
+                text: JSON.stringify(filtered, null, 2),
               },
             ],
             structuredContent: { dlpRules: filtered },

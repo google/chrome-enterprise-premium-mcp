@@ -8,6 +8,8 @@ expected_tools:
 required_patterns:
   - '120'
   - '121'
+priority: P0
+stability: 1.0
 ---
 
 ## Prompt

@@ -8,6 +8,7 @@ expected_tools:
   - search_content
 required_patterns:
   - 'chrome://policy'
+priority: P1
 ---
 
 ## Prompt

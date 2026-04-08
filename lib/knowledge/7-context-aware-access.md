@@ -1,7 +1,6 @@
 ---
+summary: 'Guides troubleshooting for Context-Aware Access (CAA) and Security Gateway errors, and securing native apps via Certificate-Based Access.'
 title: 'Context-Aware Access (CAA) and Security Gateway'
-kind: curated
-articleType: curated-guide
 articleId: 7
 ---
 

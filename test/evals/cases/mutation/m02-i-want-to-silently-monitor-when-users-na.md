@@ -8,6 +8,8 @@ expected_tools:
   - create_chrome_dlp_rule
 forbidden_patterns: []
 required_patterns: []
+priority: P0
+stability: 1.0
 ---
 
 ## Prompt

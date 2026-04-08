@@ -58,6 +58,7 @@ const { values: args } = parseArgs({
     category: { type: 'string' },
     tags: { type: 'string' },
     id: { type: 'string' },
+    priority: { type: 'string' },
     runs: { type: 'string', default: '1' },
     output: { type: 'string' },
     concurrency: { type: 'string', default: '5' },
@@ -100,11 +101,12 @@ async function main() {
   const category = args.category || process.env.EVAL_CATEGORY
   const tags = (args.tags || process.env.EVAL_TAGS)?.split(',').map(t => t.trim())
   const ids = (args.id || process.env.EVAL_IDS)?.split(',').map(t => t.trim())
+  const priority = args.priority?.split(',').map(t => t.trim())
   const numRuns = parseInt(args.runs, 10) || 1
-  const concurrency = parseInt(args.concurrency, 10) || 5
+  const concurrency = parseInt(args.concurrency, 10) || 10
 
   // Load evals
-  const evals = loadAllEvals({ dir: evalsDir, category, tags, ids })
+  const evals = loadAllEvals({ dir: evalsDir, category, tags, ids, priority })
   if (evals.length === 0) {
     console.error('No evals matched the given filters.')
     process.exit(1)
@@ -178,10 +180,7 @@ async function main() {
   const judgeFn = noJudge ? null : createJudge(apiKey, baseUrl || undefined).judge
   const agent = await createEvalAgent({ apiKey, baseUrl: baseUrl || undefined, mcpClient: harness.client })
 
-  // Most evals are read-only so shared fake-server state is safe at higher
-  // concurrency. Mutation evals (m01-m03) may interact if they run simultaneously.
-  // We force concurrency=1 for fake backend to avoid race conditions on resets.
-  const effectiveConcurrency = Math.min(backend === 'fake' ? 1 : concurrency, evals.length)
+  const effectiveConcurrency = Math.min(concurrency, evals.length)
   const mode = noJudge ? 'deterministic only' : 'full (agent + judge)'
   console.log(`Running ${evals.length} eval(s) [${mode}] concurrency=${effectiveConcurrency}, runs=${numRuns}...\n`)
 
@@ -192,8 +191,10 @@ async function main() {
   async function runSingleEval(evalCase, _index) {
     const start = Date.now()
     let bestResult = null
+    const allResults = []
 
     for (let run = 0; run < numRuns; run++) {
+      const start = Date.now()
       if (fakeServer) {
         fakeServer.resetState()
       }
@@ -232,40 +233,40 @@ async function main() {
         toolCalls,
         responseText,
         durationMs: Date.now() - start,
+        runIndex: run + 1,
       }
 
-      if (!bestResult || !passed) {
-        bestResult = result
+      allResults.push(result)
+
+      // Live output as each run completes
+      const r = result
+      const G = '\x1b[32m'
+      const R = '\x1b[31m'
+      const D = '\x1b[2m'
+      const RST = '\x1b[0m'
+      const status = r.passed ? `${G}PASS${RST}` : `${R}FAIL${RST}`
+      const title = r.prompt.length > 50 ? r.prompt.slice(0, 47) + '...' : r.prompt
+      const sec = `${D}${(r.durationMs / 1000).toFixed(1)}s${RST}`
+      const runStr = numRuns > 1 ? ` [Run ${run + 1}/${numRuns}]` : ''
+      console.log(`  ${r.id.padEnd(5)} ${status}  ${(title + runStr).padEnd(52)} ${sec}`)
+      if (!r.passed && r.deterministic.failures.length > 0) {
+        for (const f of r.deterministic.failures) {
+          console.log(`  ${' '.repeat(5)}       ${R}${f}${RST}`)
+        }
+      }
+      if (
+        r.judge.reasoning &&
+        r.judge.reasoning !== 'skipped (--no-judge)' &&
+        r.judge.reasoning !== 'skipped (dry run)'
+      ) {
+        console.log(`  ${' '.repeat(5)}       ${D}Judge: ${r.judge.reasoning}${RST}`)
+      }
+      if (verbose && r.toolCalls.length > 0) {
+        console.log(`  ${' '.repeat(5)}       ${D}Tools: ${r.toolCalls.map(tc => tc.name).join(', ')}${RST}`)
       }
     }
 
-    // Live output as each eval completes
-    const r = bestResult
-    const G = '\x1b[32m'
-    const R = '\x1b[31m'
-    const D = '\x1b[2m'
-    const RST = '\x1b[0m'
-    const status = r.passed ? `${G}PASS${RST}` : `${R}FAIL${RST}`
-    const title = r.prompt.length > 50 ? r.prompt.slice(0, 47) + '...' : r.prompt
-    const sec = `${D}${(r.durationMs / 1000).toFixed(1)}s${RST}`
-    console.log(`  ${r.id.padEnd(5)} ${status}  ${title.padEnd(52)} ${sec}`)
-    if (!r.passed && r.deterministic.failures.length > 0) {
-      for (const f of r.deterministic.failures) {
-        console.log(`  ${' '.repeat(5)}       ${R}${f}${RST}`)
-      }
-    }
-    if (
-      r.judge.reasoning &&
-      r.judge.reasoning !== 'skipped (--no-judge)' &&
-      r.judge.reasoning !== 'skipped (dry run)'
-    ) {
-      console.log(`  ${' '.repeat(5)}       ${D}Judge: ${r.judge.reasoning}${RST}`)
-    }
-    if (verbose && r.toolCalls.length > 0) {
-      console.log(`  ${' '.repeat(5)}       ${D}Tools: ${r.toolCalls.map(tc => tc.name).join(', ')}${RST}`)
-    }
-
-    return bestResult
+    return allResults
   }
 
   // Run evals with bounded concurrency
@@ -278,8 +279,8 @@ async function main() {
       if (!item) {
         break
       }
-      const result = await runSingleEval(item.evalCase, item.index)
-      results.push(result)
+      const runResults = await runSingleEval(item.evalCase, item.index)
+      results.push(...runResults)
     }
   }
 
@@ -297,6 +298,33 @@ async function main() {
 
   if (args.output) {
     writeResults(results, args.output)
+
+    // Automatically generate AI failure summary for CI runs
+    if (args.priority && args.priority.includes('P0') && hasFailures) {
+      console.log(`\nP0 tests failed. Generating AI summary for CI...`)
+      try {
+        const { GoogleGenerativeAI } = await import('@google/generative-ai')
+        const genAI = new GoogleGenerativeAI(apiKey)
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' }, baseUrl ? { baseUrl } : {})
+
+        const failedResults = results.filter(r => !r.passed)
+        const failureDetails = failedResults
+          .map(
+            r =>
+              `Test ID: ${r.id}\nPrompt: ${r.prompt}\nDeterministic Failures: ${JSON.stringify(r.deterministic.failures)}\nJudge Reasoning: ${r.judge.reasoning}\nAgent Response: ${r.responseText}`,
+          )
+          .join('\n\n---\n\n')
+
+        const prompt = `Analyze the following evaluation failures from our CI pipeline. Provide a concise, structured summary suitable for a PR comment. Group similar issues if applicable. Highlight the likely root causes based on the deterministic failures, judge reasoning, and agent responses provided.\n\nFailures:\n\n${failureDetails}`
+
+        const summaryResponse = await model.generateContent(prompt)
+        console.log('\n=== AI Failure Summary ===\n')
+        console.log(summaryResponse.response.text())
+        console.log('\n==========================\n')
+      } catch (err) {
+        console.error('Failed to generate AI summary:', err.message)
+      }
+    }
   }
 
   // Cleanup

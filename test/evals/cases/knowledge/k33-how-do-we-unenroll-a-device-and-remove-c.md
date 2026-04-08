@@ -5,6 +5,7 @@ tags:
   - unenroll
 expected_tools:
   - search_content
+priority: P1
 ---
 
 ## Prompt

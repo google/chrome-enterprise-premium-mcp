@@ -1,7 +1,6 @@
 ---
+summary: 'Explains Chrome DLP core features, including predefined content detectors, OCR scanning, file size limits, and protections for screen capture and clipboard actions.'
 title: 'Chrome Data Loss Prevention (DLP) Core Features'
-kind: curated
-articleType: curated-guide
 articleId: 4
 ---
 

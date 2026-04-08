@@ -8,6 +8,7 @@ expected_tools:
   - search_content
 required_patterns:
   - BeyondCorp
+priority: P2
 ---
 
 ## Prompt

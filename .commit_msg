@@ -1,0 +1,9 @@
+Improve eval stability and knowledge base accuracy
+
+- Fixed API brittleness by updating `fake-api-server.js` to return realistic `licensing#licenseAssignmentList` and `licensing#licenseAssignment` structures.
+- Optimized test suite concurrency in `run.js` to improve execution speed.
+- Updated knowledge base documents to include required facts for evals (exact IAM roles for Security Insights, Windows Registry path for unenrollment, endpoint verification data collection link).
+- Refined system prompt to prevent leakage of internal tool names and enforce answering user questions before offering diagnostics.
+- Added `stability` metrics to P0 evaluation files based on a 10-run pass rate and updated README.md.
+
+Change-Id: I3ec3b91f0aa87e8fe67bef5f413cc447976ebd32

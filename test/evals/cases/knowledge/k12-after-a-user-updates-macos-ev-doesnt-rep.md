@@ -8,6 +8,7 @@ expected_tools:
   - search_content
 required_patterns:
   - Sync Now
+priority: P2
 ---
 
 ## Prompt

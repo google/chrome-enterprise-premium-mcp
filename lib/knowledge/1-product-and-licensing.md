@@ -1,7 +1,6 @@
 ---
+summary: 'Covers Chrome Enterprise Premium pricing ($6/user/month), licensing assignment requirements, free trial terms, and necessary IAM roles.'
 title: 'Chrome Enterprise Premium Product & Licensing Overview'
-kind: curated
-articleType: curated-guide
 articleId: 1
 ---
 
@@ -32,15 +31,16 @@ The standard Chrome browser has strong built-in security (Safe Browsing, sandbox
 
 - **Assignment:** Purchasing Chrome Enterprise Premium licenses **does not** automatically protect users. An administrator must **manually assign licenses** to specific users, groups, or OUs in the Google Admin Console. Users and administrators who configure settings both require a license to be assigned.
 - **Auto-Assignment:** An automatic license assignment feature is available in the Google Workspace Admin Console, but it must be manually enabled by an administrator for the CEP subscription.
-- **Troubleshooting Security Insights:** The 'Something went wrong' error when enabling Security Insights indicates a server-side provisioning issue. The most common causes are: 1) **License Propagation Delay:** It can take up to 24 hours. 2) **Missing IAM Roles:** The user needs the 'Security Center Admin' or 'Cloud BeyondCorp Admin' Google Cloud role. 3) **Billing Account Link:** The Cloud billing account may not be properly linked to Workspace.
+- **Troubleshooting Security Insights:** The 'Something went wrong' error when enabling Security Insights indicates a server-side provisioning issue. The most common causes are: 1) **License Propagation Delay:** It can take up to 24 hours. 2) **Missing IAM Roles:** The user needs specific administrator privileges: 'Manage Chrome DLP application insights settings', 'View Chrome DLP application insights settings', and 'Chrome Enterprise Security Services Settings'. 3) **Billing Account Link:** The Cloud billing account may not be properly linked to Workspace.
 
 ## Delegated Administration (IAM & Admin Roles)
 
 To allow management without full Super Admin access, use custom administrative roles within the Google Workspace Admin Console. This follows the security principle of least privilege, ensuring the Helpdesk team has only the access they need to perform their duties. You can create a custom role that includes a specific combination of privileges.
 
 - **Cloud BeyondCorp Admin:** Mandatory at the Google Cloud Organization level to purchase or manage CEP via the Cloud Console. Workspace Super Admins do not automatically inherit this GCP permission.
-- **Security Center Admin:** For Viewing Dashboards: roles with 'Security Center / Dashboards and Reports' permissions.
-- **DLP Administrator:** For Managing DLP Rules: roles with 'DLP / View DLP rule' and 'DLP / Manage DLP rule' permissions.
+- **Security Center Admin:** For Viewing Dashboards: roles with 'Chrome Security Insights / View' permissions.
+- **DLP Administrator:** For Managing DLP Rules: roles with 'DLP / Manage DLP rule' permissions.
 - **BeyondCorp Admin:** If they also need to manage access policies for Context-Aware Access (CAA) web applications, you would add the BeyondCorp Admin privilege.
 - **Mobile Admin:** Recommended for device inventory and viewing dashboards/inventory.
 - **Helpdesk:** To view CEP security dashboards without making changes, Helpdesk team members need the **"Chrome Enterprise Security Services"** Workspace Admin privilege AND the **`roles/beyondcorp.viewer`** Google Cloud IAM role.
+ members need the **"Chrome Enterprise Security Services"** Workspace Admin privilege AND the **`roles/beyondcorp.viewer`** Google Cloud IAM role.

@@ -81,6 +81,7 @@ export function loadEval(filepath, globalConfig) {
   return {
     id: String(frontmatter.id),
     category: frontmatter.category || path.basename(path.dirname(filepath)),
+    priority: frontmatter.priority || 'P2',
     tags: frontmatter.tags || [],
     expectedTools: frontmatter.expected_tools || [],
     forbiddenPatterns: mergedForbidden,
@@ -100,9 +101,10 @@ export function loadEval(filepath, globalConfig) {
  * @param {string} [options.category] - Comma-separated category filter.
  * @param {string[]} [options.tags] - Tag filter (eval must have at least one).
  * @param {string[]} [options.ids] - Specific eval IDs to load.
+ * @param {string[]} [options.priority] - Specific priority levels to load (e.g., ['P0', 'P1']).
  * @returns {EvalCase[]}
  */
-export function loadAllEvals({ dir, category, tags, ids }) {
+export function loadAllEvals({ dir, category, tags, ids, priority }) {
   const globalConfig = loadGlobalConfig(dir)
   const casesDir = path.join(dir, 'cases')
 
@@ -121,6 +123,12 @@ export function loadAllEvals({ dir, category, tags, ids }) {
   walk(casesDir)
 
   let evals = files.map(f => loadEval(f, globalConfig))
+
+  // Filter by priority
+  if (priority && priority.length > 0) {
+    const prioritySet = new Set(priority.map(p => p.trim().toUpperCase()))
+    evals = evals.filter(e => prioritySet.has(e.priority))
+  }
 
   // Filter by category
   if (category) {

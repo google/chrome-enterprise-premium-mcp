@@ -9,6 +9,7 @@ expected_tools:
   - search_content
 required_patterns:
   - ExtensionInstallForcelist
+priority: P1
 ---
 
 ## Prompt

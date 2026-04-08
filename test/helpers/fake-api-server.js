@@ -216,6 +216,9 @@ export function createFakeApp() {
 
   // Admin SDK: Get Customer
   app.get('/admin/directory/v1/customers/:customerKey', (req, res) => {
+    if (req.params.customerKey === 'my_customer') {
+      return res.json(state.customers[state.defaultCustomerId])
+    }
     const customerId = requireCustomer(state, req.params.customerKey, res)
     if (!customerId) {
       return
@@ -254,7 +257,14 @@ export function createFakeApp() {
   app.get('/licensing/v1/product/:productId/sku/:skuId/user', (req, res) => {
     const customerId = resolveCustomerId(state, req.query.customerId) || req.query.customerId
     const licenses = state.licenses[customerId]?.[req.params.productId]?.[req.params.skuId] || []
-    res.json({ items: licenses })
+    
+    // Return a structure matching the real Google Licensing API list response
+    res.json({
+      kind: "licensing#licenseAssignmentList",
+      etag: "\"mockEtagList\"",
+      items: licenses,
+      nextPageToken: licenses.length > 0 ? "mockNextPageToken" : undefined
+    })
   })
 
   // Licensing: Get User License
@@ -263,7 +273,17 @@ export function createFakeApp() {
       const skuLicenses = customerLicenses[req.params.productId]?.[req.params.skuId] || []
       const license = skuLicenses.find(l => l.userId === req.params.userId)
       if (license) {
-        return res.json(license)
+        // Return a structure matching the real Google Licensing API single response
+        return res.json({
+           kind: "licensing#licenseAssignment",
+           etags: "\"mockEtagSingle\"",
+           productId: license.productId,
+           userId: license.userId,
+           selfLink: `https://licensing.googleapis.com/apps/licensing/v1/product/${license.productId}/sku/${license.skuId}/user/${license.userId}`,
+           skuId: license.skuId,
+           skuName: "Chrome Enterprise Premium",
+           productName: "Chrome Enterprise Premium"
+        })
       }
     }
     res.status(404).json({ error: { message: 'User license not found' } })

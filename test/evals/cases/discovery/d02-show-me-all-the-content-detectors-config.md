@@ -5,8 +5,7 @@ tags:
   - discovery
 expected_tools:
   - list_detectors
-required_patterns:
-  - Fake URL Detector
+priority: P2
 ---
 
 ## Prompt

@@ -5,6 +5,7 @@ tags:
   - incognito
 expected_tools:
   - search_content
+priority: P2
 ---
 
 ## Prompt

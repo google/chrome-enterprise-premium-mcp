@@ -1,7 +1,6 @@
 ---
+summary: 'Covers URL filtering wildcard syntax, predefined content categories, verifying local policies via chrome://policy, and managing policy conflicts.'
 title: 'Chrome Policy Management and URL Filtering'
-kind: curated
-articleType: curated-guide
 articleId: 10
 ---
 

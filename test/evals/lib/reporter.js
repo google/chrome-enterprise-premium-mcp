@@ -104,6 +104,7 @@ export function printConsole(results, { verbose = false } = {}) {
   // Category breakdown
   console.log()
   const { totalRuns, passedRuns, pct } = getSummaryStats(results)
+
   const color = passedRuns === totalRuns ? GREEN : RED
   console.log(`${BOLD}Results: ${color}${passedRuns}/${totalRuns} runs passed (${pct}%)${RESET}`)
 
@@ -155,6 +156,7 @@ function getSummaryStats(results) {
  * @param {string} filepath
  */
 function writeMarkdown(results, filepath) {
+
   const { totalRuns, passedRuns, pct } = getSummaryStats(results)
 
   const lines = []

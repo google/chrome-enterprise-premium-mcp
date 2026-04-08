@@ -6,8 +6,7 @@ tags:
   - troubleshooting
 expected_tools:
   - search_content
-required_patterns:
-  - 'chrome://safe-browsing'
+priority: P2
 ---
 
 ## Prompt

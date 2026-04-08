@@ -6,6 +6,7 @@ tags:
 expected_tools:
   - check_user_cep_license
   - list_dlp_rules
+priority: P2
 ---
 
 ## Prompt

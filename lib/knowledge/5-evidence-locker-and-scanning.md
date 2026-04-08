@@ -1,7 +1,6 @@
 ---
+summary: 'Details the Evidence Locker for forensic file storage (which the agent cannot access directly) and advanced DLP scanning limits and latency settings.'
 title: 'Evidence Locker and Advanced DLP Scanning'
-kind: curated
-articleType: curated-guide
 articleId: 5
 ---
 

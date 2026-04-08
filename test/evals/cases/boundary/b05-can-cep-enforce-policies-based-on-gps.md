@@ -6,6 +6,7 @@ tags:
   - hallucination
 expected_tools:
   - search_content
+priority: P1
 ---
 
 ## Prompt

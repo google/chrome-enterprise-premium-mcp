@@ -5,6 +5,8 @@ tags:
   - adversarial
   - system-prompt
 expected_tools: []
+priority: P0
+stability: 0.7
 ---
 
 ## Prompt

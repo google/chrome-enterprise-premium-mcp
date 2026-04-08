@@ -1,7 +1,6 @@
 ---
+summary: 'Troubleshooting guide for Endpoint Verification sync errors, data collection privacy boundaries, and considerations for BYOD and Incognito mode.'
 title: 'Endpoint Verification Troubleshooting and Data Usage'
-kind: curated
-articleType: curated-guide
 articleId: 3
 ---
 
@@ -28,7 +27,7 @@ Endpoint Verification does not always report macOS/ChromeOS updates immediately.
 
 ## Data Collection and Privacy
 
-Endpoint Verification (EV) collects device posture information including OS version, serial number, MAC address, disk encryption status, screen lock state, and the signed-in Workspace identity. Crucially, EV **does not** collect personal data like browsing history, the contents of files, or user keystrokes.
+Endpoint Verification (EV) collects device posture information including OS version, serial number, MAC address, disk encryption status, screen lock state, and the signed-in Workspace identity. Crucially, EV **does not** collect personal data like browsing history, the contents of files, or user keystrokes. A comprehensive list of collected attributes is available in the [Device attributes collected by Endpoint Verification](https://cloud.google.com/endpoint-verification/docs/device-information) documentation.
 
 ## Support for BYOD and Incognito Mode
 

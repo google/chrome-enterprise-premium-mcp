@@ -8,6 +8,7 @@ expected_tools:
   - search_content
 required_patterns:
   - Security Center
+priority: P1
 ---
 
 ## Prompt
