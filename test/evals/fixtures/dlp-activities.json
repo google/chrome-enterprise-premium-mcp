@@ -1,0 +1,20 @@
+{
+  "kind": "admin#reports#activities",
+  "items": [
+    {
+      "kind": "admin#reports#activity",
+      "id": { "applicationName": "chrome", "customerId": "C01b1e65b" },
+      "actor": { "email": "tim@cep-netnew.cc" },
+      "events": [
+        {
+          "type": "CONTENT_UNSCANNED_TYPE",
+          "name": "CONTENT_UNSCANNED",
+          "parameters": [
+            { "name": "CONTENT_NAME", "value": "GitHubDesktopSetup-x64.exe" },
+            { "name": "TRIGGER_TYPE", "value": "FILE_DOWNLOAD" }
+          ]
+        }
+      ]
+    }
+  ]
+}

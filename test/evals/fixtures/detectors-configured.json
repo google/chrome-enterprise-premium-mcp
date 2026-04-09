@@ -1,0 +1,31 @@
+{
+  "kind": "cloudidentity#policies",
+  "policies": [
+    {
+      "name": "policies/piiDetector",
+      "customer": "customers/C01b1e65b",
+      "policyQuery": { "orgUnit": "orgUnits/id:03ph8a2z1hiis1t" },
+      "setting": {
+        "type": "settings/detector.regex",
+        "value": {
+          "displayName": "PII Detector",
+          "description": "Detects PII using regex",
+          "regular_expression": { "expression": ".*SSN.*" }
+        }
+      }
+    },
+    {
+      "name": "policies/malwareDetector",
+      "customer": "customers/C01b1e65b",
+      "policyQuery": { "orgUnit": "orgUnits/id:03ph8a2z1hiis1t" },
+      "setting": {
+        "type": "settings/detector.url_list",
+        "value": {
+          "displayName": "Malware URL Detector",
+          "description": "Detects malware URLs",
+          "url_list": { "urls": ["malware.com", "evil.com"] }
+        }
+      }
+    }
+  ]
+}

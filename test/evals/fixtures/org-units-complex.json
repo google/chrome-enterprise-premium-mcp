@@ -1,0 +1,19 @@
+{
+  "kind": "admin#directory#orgUnits",
+  "organizationUnits": [
+    {
+      "kind": "admin#directory#orgUnit",
+      "name": "Engineering-Test-07b4581a",
+      "orgUnitPath": "/Engineering-Test-07b4581a",
+      "orgUnitId": "id:03ph8a2z1hiis1t",
+      "parentOrgUnitPath": "/",
+      "parentOrgUnitId": "id:03ph8a2z23yjui6"
+    },
+    {
+      "kind": "admin#directory#orgUnit",
+      "name": "cep-netnew.cc",
+      "orgUnitPath": "/",
+      "orgUnitId": "id:03ph8a2z23yjui6"
+    }
+  ]
+}

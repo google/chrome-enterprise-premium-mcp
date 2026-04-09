@@ -1,0 +1,8 @@
+{
+  "kind": "licensing#licenseAssignment",
+  "productId": "101040",
+  "userId": "user1@example.com",
+  "skuId": "1010400001",
+  "skuName": "Chrome Enterprise Premium",
+  "productName": "Chrome Enterprise Premium"
+}

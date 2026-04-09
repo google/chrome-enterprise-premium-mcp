@@ -1,0 +1,11 @@
+{
+  "kind": "admin#directory#customer",
+  "id": "C01b1e65b",
+  "customerDomain": "cep-netnew.cc",
+  "postalAddress": {
+    "contactName": "Tim Feeley",
+    "organizationName": "CEP Netnew",
+    "countryCode": "US"
+  },
+  "language": "en"
+}
