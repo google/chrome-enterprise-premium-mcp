@@ -19,7 +19,8 @@ limitations under the License.
  */
 
 import { z } from 'zod'
-import { guardedToolCall } from '../utils/wrapper.js'
+import { guardedToolCall, formatToolResponse } from '../utils/wrapper.js'
+import { commonOutputSchemas } from './shared.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -38,13 +39,16 @@ export function registerListOrgUnitsTool(server, options, sessionState) {
   server.registerTool(
     'list_org_units',
     {
-      description: `Lists all organizational units for a given customer.
-        This tool should be used whenever another tool requires an org unit ID.
-        It provides users with a list of organizational unit names,
-        so they do not need to manually search for the org unit ID.`,
+      description: `Lists the Organizational Units (OUs) for the customer.
+Use this tool to find the 'orgUnitId' required by most other Chrome management and policy tools. It provides the human-readable path and unique ID for each OU.`,
       inputSchema: {
         customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
       },
+      outputSchema: z
+        .object({
+          orgUnits: z.array(commonOutputSchemas.orgUnit),
+        })
+        .passthrough(),
     },
     guardedToolCall(
       {
@@ -56,35 +60,30 @@ export function registerListOrgUnitsTool(server, options, sessionState) {
 
           if (!orgUnits || orgUnits.length === 0) {
             logger.debug(`${TAGS.MCP} No organizational units found.`)
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: 'No organizational units found for the specified criteria.',
-                },
-              ],
-              structuredContent: { orgUnits: [] },
-            }
+            const sc = { orgUnits: [] }
+            return formatToolResponse({
+              summary: 'No organizational units found for the specified criteria.',
+              data: sc,
+              structuredContent: sc,
+            })
           }
 
           const formattedOrgUnits = orgUnits
             .map(ou => {
-              return `*   **Name:** ${ou.name}
-    *   **ID:** \`${ou.orgUnitId}\`
-    *   **Path:** \`${ou.orgUnitPath}\`${ou.description ? `\n    *   **Description:** ${ou.description}` : ''}`
+              const parentInfo = ou.parentOrgUnitPath || ou.parentOrgUnitId || '(none)'
+              return `- **${ou.name}** — path: ${ou.orgUnitPath}, ID: \`${ou.orgUnitId}\`, parent: ${parentInfo}`
             })
             .join('\n')
 
+          const resourceMap = orgUnits.map(ou => `- "${ou.name}" → \`${ou.orgUnitId}\``).join('\n')
+
           logger.debug(`${TAGS.MCP} Successfully listed organizational units.`)
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `# Organizational Units\n\n${formattedOrgUnits}`,
-              },
-            ],
-            structuredContent: { orgUnits },
-          }
+          const sc = { orgUnits }
+          return formatToolResponse({
+            summary: `## Organizational Units (${orgUnits.length})\n\n${formattedOrgUnits}\n\nResource names for API operations:\n${resourceMap}`,
+            data: sc,
+            structuredContent: sc,
+          })
         },
       },
       options,

@@ -58,7 +58,10 @@ describe('check_cep_subscription Tool', () => {
     const result = await handler({ customerId: 'C0123' }, {})
 
     assert.strictEqual(mockCheckCepSubscription.mock.callCount(), 1)
-    assert.match(result.content[0].text, /Success: Found 1 Chrome Enterprise Premium \(CEP\) license assignment\(s\)/)
+    assert.match(
+      result.content[0].text,
+      /Chrome Enterprise Premium subscription is active\. 1 license assignment\(s\) found\./,
+    )
   })
 
   it('should return info message when no CEP subscription is found', async () => {
@@ -94,8 +97,10 @@ describe('check_cep_subscription Tool', () => {
     assert.strictEqual(mockCheckCepSubscription.mock.callCount(), 1)
     assert.match(
       result.content[0].text,
-      /No Chrome Enterprise Premium \(CEP\) license assignments found\. Note that the customer might have a CEP subscription, but no licenses have been assigned yet\./,
+      /Chrome Enterprise Premium license assignments found\. The customer may have a subscription but no licenses assigned yet\./,
     )
+    assert.strictEqual(result.structuredContent.isActive, false)
+    assert.strictEqual(result.structuredContent.assignmentCount, 0)
   })
 
   it('should return error message when Licensing API is not enabled', async () => {

@@ -19,7 +19,7 @@ limitations under the License.
  */
 
 import { z } from 'zod'
-import { guardedToolCall } from '../utils/wrapper.js'
+import { guardedToolCall, formatToolResponse } from '../utils/wrapper.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -38,21 +38,18 @@ export function registerCheckCepSubscriptionTool(server, options, sessionState) 
   server.registerTool(
     'check_cep_subscription',
     {
-      description: 'Checks if the customer has an active Chrome Enterprise Premium (CEP) subscription.',
+      description:
+        'Verifies the current Chrome Enterprise Premium (CEP) license assignments for an organization. This is useful for checking the actual protection state of users.',
       inputSchema: {
         customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
       },
       outputSchema: z
-        .union([
-          z
-            .object({
-              isActive: z.boolean().describe('Whether the subscription or license is active.'),
-              assignmentCount: z.number().optional().describe('Number of license assignments.'),
-            })
-            .passthrough(),
-          z.any(),
-        ])
-        .optional(),
+        .object({
+          isActive: z.boolean(),
+          assignmentCount: z.number(),
+          assignments: z.array(z.object({}).passthrough()).optional(),
+        })
+        .passthrough(),
     },
     guardedToolCall(
       {
@@ -63,28 +60,17 @@ export function registerCheckCepSubscriptionTool(server, options, sessionState) 
 
           const assignments = result?.items || []
           if (assignments.length > 0) {
-            logger.debug(`${TAGS.MCP} CEP subscription found for customer ${customerId}.`)
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: `Success: Found ${assignments.length} Chrome Enterprise Premium (CEP) license assignment(s). The subscription is active.`,
-                },
-              ],
-              structuredContent: {
-                subscription: result,
-              },
-            }
+            return formatToolResponse({
+              summary: `Chrome Enterprise Premium subscription is active. ${assignments.length} license assignment(s) found.`,
+              data: { isActive: true, assignmentCount: assignments.length, assignments },
+              structuredContent: { isActive: true, assignmentCount: assignments.length, assignments },
+            })
           } else {
-            logger.debug(`${TAGS.MCP} No CEP subscription found for customer ${customerId}.`)
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: `No Chrome Enterprise Premium (CEP) license assignments found. Note that the customer might have a CEP subscription, but no licenses have been assigned yet.`,
-                },
-              ],
-            }
+            return formatToolResponse({
+              summary: `No Chrome Enterprise Premium license assignments found. The customer may have a subscription but no licenses assigned yet.`,
+              data: { isActive: false, assignmentCount: 0, assignments: [] },
+              structuredContent: { isActive: false, assignmentCount: 0, assignments: [] },
+            })
           }
         },
       },

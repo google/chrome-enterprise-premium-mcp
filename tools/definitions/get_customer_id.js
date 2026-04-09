@@ -18,10 +18,10 @@ limitations under the License.
  * @fileoverview Tool definition for retrieving the customer ID.
  */
 
-import { guardedToolCall } from '../utils/wrapper.js'
+import { z } from 'zod'
+import { guardedToolCall, formatToolResponse } from '../utils/wrapper.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
-import { z } from 'zod'
 
 /**
  * Registers the 'get_customer_id' tool with the MCP server.
@@ -38,7 +38,8 @@ export function registerGetCustomerIdTool(server, options, sessionState) {
   server.registerTool(
     'get_customer_id',
     {
-      description: `Gets the customer ID for the authenticated user. All other tools that require a customer ID should get it using this tool instead of asking the user for it.`,
+      description: `Retrieves the unique Google customer ID for the authenticated account.
+This ID (often starting with 'C') is required as a parameter for many other Chrome management tools.`,
       inputSchema: {},
       outputSchema: z
         .object({
@@ -51,18 +52,27 @@ export function registerGetCustomerIdTool(server, options, sessionState) {
         handler: async (params, { _requestInfo, authToken }) => {
           logger.debug(`${TAGS.MCP} Calling 'get_customer_id'`)
           const customer = await adminSdkClient.getCustomerId(authToken)
+          logger.debug(`${TAGS.MCP} Raw customer data:`, JSON.stringify(customer, null, 2))
 
           if (!customer) {
-            logger.error(`${TAGS.MCP} ✗ get_customer_id tool: Could not retrieve customer ID. Response:`, customer)
-            return {
-              content: [{ type: 'text', text: 'Could not retrieve customer ID.' }],
-            }
+            logger.error(`${TAGS.MCP} ✗ get_customer_id tool: Could not retrieve customer ID.`)
+            const sc = { customerId: null }
+            return formatToolResponse({
+              summary: 'Could not retrieve customer ID.',
+              data: sc,
+              structuredContent: sc,
+            })
           }
-          logger.debug(`${TAGS.MCP} Successfully retrieved customer ID.`)
-          return {
-            content: [{ type: 'text', text: `✅ **Customer ID:** \`${customer.id}\`` }],
-            structuredContent: { customerId: customer.id, ...customer },
-          }
+          logger.debug(`${TAGS.MCP} Successfully retrieved customer ID: ${customer.id}`)
+          const sc = { customerId: customer.id, ...customer }
+          return formatToolResponse({
+            summary: `Customer ID: \`${customer.id}\`
+
+  - domain: ${customer.customerDomain}
+  - language: ${customer.language}`,
+            data: sc,
+            structuredContent: sc,
+          })
         },
         skipAutoResolve: true,
       },

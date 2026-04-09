@@ -57,8 +57,9 @@ describe('Admin SDK API', () => {
       )
 
       assert.strictEqual(mockGetCustomerId.mock.callCount(), 1)
-      const expectedText = `✅ **Customer ID:** \`C0123\``
-      assert.deepStrictEqual(result.content[0].text, expectedText)
+      assert.ok(result.content[0].text.includes('Customer ID: `C0123`'))
+      assert.ok(result.content[1].text.includes('```json'))
+      assert.ok(result.content[1].text.includes('"id": "C0123"'))
     })
 
     it('should return an error message if API call fails', async () => {
@@ -129,16 +130,10 @@ describe('Admin SDK API', () => {
       )
 
       assert.strictEqual(mockListOrgUnits.mock.callCount(), 1)
-      const expectedText =
-        '# Organizational Units\n' +
-        '\n' +
-        '*   **Name:** ou1\n' +
-        '    *   **ID:** `ou1`\n' +
-        '    *   **Path:** `undefined`\n' +
-        '*   **Name:** ou2\n' +
-        '    *   **ID:** `ou2`\n' +
-        '    *   **Path:** `undefined`'
-      assert.deepStrictEqual(result.content[0].text, expectedText)
+      assert.ok(result.content[0].text.includes('## Organizational Units (2)'))
+      assert.ok(result.content[0].text.includes('- **ou1**'))
+      assert.ok(result.content[0].text.includes('ID: `ou1`'))
+      assert.ok(result.content[1].text.includes('```json'))
     })
 
     it('should return an error message if API call fails', async () => {
@@ -201,11 +196,10 @@ describe('Admin SDK API', () => {
 
       assert.strictEqual(mockCheckUserCepLicense.mock.callCount(), 1)
       assert.strictEqual(mockCheckUserCepLicense.mock.calls[0].arguments[0], userId)
-      assert.deepStrictEqual(
-        result.content[0].text,
-        `Success: User 'user@example.com' has a Chrome Enterprise Premium (CEP) license assigned.`,
-      )
+      assert.ok(result.content[0].text.includes('User user@example.com has a Chrome Enterprise Premium license.'))
+      assert.ok(result.content[1].text.includes('```json'))
       assert.deepStrictEqual(result.structuredContent, {
+        hasLicense: true,
         license: { productId: '101040', skuId: '1010400001' },
       })
     })
@@ -238,11 +232,13 @@ describe('Admin SDK API', () => {
       const result = await handler({ userId }, {})
 
       assert.strictEqual(mockCheckUserCepLicense.mock.callCount(), 1)
-      assert.deepStrictEqual(
-        result.content[0].text,
-        `User 'user@example.com' does NOT have a Chrome Enterprise Premium (CEP) license assigned.`,
+      assert.ok(
+        result.content[0].text.includes('User user@example.com does not have a Chrome Enterprise Premium license.'),
       )
-      assert.deepStrictEqual(result.structuredContent, undefined)
+      assert.deepStrictEqual(result.structuredContent, {
+        hasLicense: false,
+        license: null,
+      })
     })
 
     it('should return an error message if API call fails', async () => {

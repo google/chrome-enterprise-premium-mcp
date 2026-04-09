@@ -92,7 +92,7 @@ and describe what was configured in user-friendly terms.
 | `id`                 | string   | Unique identifier (e.g., `k01`, `m01`, `t03`)                                                                        |
 | `category`           | string   | One of: `knowledge`, `inspection`, `troubleshooting`, `mutation`, `discovery`                                        |
 | `priority`           | string   | Classification: `P0` (launch blocking - must work), `P1` (agent must not get egregiously wrong), `P2` (nice to have) |
-| `stability`          | number   | A float from `0.0` to `1.0` representing the pass rate of the test over a 10-run evaluation (e.g., `0.9`).       |
+| `stability`          | number   | A float from `0.0` to `1.0` representing the pass rate of the test over a 10-run evaluation (e.g., `0.9`).           |
 | `tags`               | string[] | Freeform tags for filtering (e.g., `[dlp, create]`)                                                                  |
 | `expected_tools`     | string[] | Tools the agent should call. Validated deterministically.                                                            |
 | `forbidden_patterns` | string[] | Strings/regexes that must NOT appear in the response. Merged with global patterns.                                   |

@@ -19,7 +19,7 @@ limitations under the License.
  */
 
 import { z } from 'zod'
-import { guardedToolCall } from '../utils/wrapper.js'
+import { guardedToolCall, formatToolResponse } from '../utils/wrapper.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -38,10 +38,17 @@ export function registerCheckUserCepLicenseTool(server, options, sessionState) {
   server.registerTool(
     'check_user_cep_license',
     {
-      description: 'Checks if a specific user has a Chrome Enterprise Premium (CEP) license assigned.',
+      description: `Checks if a specific user has a Chrome Enterprise Premium (CEP) license assigned.
+Use this to verify if an individual user (by email or unique ID) is licensed for CEP features.`,
       inputSchema: {
         userId: z.string().describe("The user's primary email address or unique ID."),
       },
+      outputSchema: z
+        .object({
+          hasLicense: z.boolean(),
+          license: z.record(z.unknown()).nullable(),
+        })
+        .passthrough(),
     },
     guardedToolCall(
       {
@@ -51,28 +58,17 @@ export function registerCheckUserCepLicenseTool(server, options, sessionState) {
           const result = await adminSdkClient.checkUserCepLicense(userId, authToken)
 
           if (result) {
-            logger.debug(`${TAGS.MCP} CEP license found for user ${userId}.`)
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: `Success: User '${userId}' has a Chrome Enterprise Premium (CEP) license assigned.`,
-                },
-              ],
-              structuredContent: {
-                license: result,
-              },
-            }
+            return formatToolResponse({
+              summary: `User ${userId} has a Chrome Enterprise Premium license.`,
+              data: { hasLicense: true, license: result },
+              structuredContent: { hasLicense: true, license: result },
+            })
           } else {
-            logger.debug(`${TAGS.MCP} No CEP license found for user ${userId}.`)
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: `User '${userId}' does NOT have a Chrome Enterprise Premium (CEP) license assigned.`,
-                },
-              ],
-            }
+            return formatToolResponse({
+              summary: `User ${userId} does not have a Chrome Enterprise Premium license.`,
+              data: { hasLicense: false, license: null },
+              structuredContent: { hasLicense: false, license: null },
+            })
           }
         },
       },

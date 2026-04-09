@@ -43,4 +43,4 @@ To allow management without full Super Admin access, use custom administrative r
 - **BeyondCorp Admin:** If they also need to manage access policies for Context-Aware Access (CAA) web applications, you would add the BeyondCorp Admin privilege.
 - **Mobile Admin:** Recommended for device inventory and viewing dashboards/inventory.
 - **Helpdesk:** To view CEP security dashboards without making changes, Helpdesk team members need the **"Chrome Enterprise Security Services"** Workspace Admin privilege AND the **`roles/beyondcorp.viewer`** Google Cloud IAM role.
- members need the **"Chrome Enterprise Security Services"** Workspace Admin privilege AND the **`roles/beyondcorp.viewer`** Google Cloud IAM role.
+  members need the **"Chrome Enterprise Security Services"** Workspace Admin privilege AND the **`roles/beyondcorp.viewer`** Google Cloud IAM role.
