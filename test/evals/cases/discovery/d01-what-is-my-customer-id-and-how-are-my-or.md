@@ -8,9 +8,13 @@ expected_tools:
   - list_org_units
 forbidden_patterns: []
 required_patterns:
-  - C0123456
+  - C01b1e65b
+  - Engineering-Test-07b4581a
 priority: P0
 stability: 1.0
+fixtures:
+  - customer-default.json
+  - org-units-complex.json
 ---
 
 ## Prompt
@@ -19,4 +23,4 @@ What is my customer ID and how are my organizational units structured?
 
 ## Golden Response
 
-Customer ID is C0123456. Two organizational units: Root OU at "/" and Child OU at "/Child OU" (child of Root).
+Customer ID is C01b1e65b. Organizational units include Engineering-Test-07b4581a and cep-netnew.cc.

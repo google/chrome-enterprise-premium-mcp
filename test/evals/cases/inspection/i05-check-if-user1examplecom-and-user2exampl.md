@@ -9,6 +9,8 @@ required_patterns:
   - user1@example.com
 priority: P0
 stability: 1.0
+fixtures:
+  - licenses-mixed.json
 ---
 
 ## Prompt
