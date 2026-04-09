@@ -94,7 +94,11 @@ describe('Experiment: DELETE_TOOL_ENABLED', () => {
       const result = await handler({ policyName: 'policies/123' }, { requestInfo: {} })
 
       assert.strictEqual(mockDeleteDlpRule.mock.callCount(), 1)
-      assert.ok(result.content[0].text.includes('Successfully deleted Chrome DLP rule "🤖 Test Rule".'))
+      assert.ok(
+        result.content[0].text.includes(
+          'The agent-created Chrome DLP rule "🤖 Test Rule" (ID: `policies/123`) has been successfully deleted.',
+        ),
+      )
     })
 
     it('should call delete_detector and return success message', async () => {
@@ -103,6 +107,7 @@ describe('Experiment: DELETE_TOOL_ENABLED', () => {
       const MockCloudIdentityClient = class {
         constructor() {
           this.deleteDetector = mockDeleteDetector
+          this.getDetector = mock.fn(async () => ({}))
         }
       }
 
@@ -125,7 +130,7 @@ describe('Experiment: DELETE_TOOL_ENABLED', () => {
       const result = await handler({ policyName: 'policies/456' }, { requestInfo: {} })
 
       assert.strictEqual(mockDeleteDetector.mock.callCount(), 1)
-      assert.ok(result.content[0].text.includes('Successfully deleted detector "456".'))
+      assert.ok(result.content[0].text.includes('Successfully deleted detector "456" (`policies/456`).'))
     })
   })
 })

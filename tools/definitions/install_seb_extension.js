@@ -19,7 +19,7 @@ limitations under the License.
  */
 
 import { z } from 'zod'
-import { guardedToolCall } from '../utils/wrapper.js'
+import { guardedToolCall, formatToolResponse } from '../utils/wrapper.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -41,8 +41,8 @@ export function registerInstallSebExtensionTool(server, options, sessionState) {
   server.registerTool(
     'install_seb_extension',
     {
-      description:
-        'Force-installs the Secure Enterprise Browser (SEB) extension for a given Organizational Unit. Required for data masking. Returns a user-friendly text summary and an embedded JSON resource with the status.',
+      description: `Force-installs the Secure Enterprise Browser (SEB) extension for a given Organizational Unit.
+The SEB extension is REQUIRED for advanced Chrome Enterprise Premium features like data masking.`,
       inputSchema: {
         customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
         orgUnitId: z
@@ -52,8 +52,9 @@ export function registerInstallSebExtensionTool(server, options, sessionState) {
       },
       outputSchema: z
         .object({
-          status: z.string().optional().default('SUCCESS'),
-          message: z.string().optional().default('Operation completed successfully.'),
+          success: z.boolean(),
+          alreadyInstalled: z.boolean(),
+          newlyInstalled: z.boolean(),
         })
         .passthrough(),
     },
@@ -79,14 +80,12 @@ export function registerInstallSebExtensionTool(server, options, sessionState) {
           )
 
           if (sebPolicy?.value?.value?.appInstallType === 'FORCED') {
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: `The Secure Enterprise Browser (SEB) extension is already force-installed for this Organizational Unit.`,
-                },
-              ],
-            }
+            const sc = { success: true, alreadyInstalled: true, newlyInstalled: false }
+            return formatToolResponse({
+              summary: 'SEB extension is already force-installed on this OU.',
+              data: sc,
+              structuredContent: sc,
+            })
           }
 
           // 2. Update the policy to set it to FORCED
@@ -110,19 +109,12 @@ export function registerInstallSebExtensionTool(server, options, sessionState) {
 
           await chromePolicyClient.batchModifyPolicy(customerId, orgUnitId, requests, authToken)
 
-          logger.debug(`${TAGS.MCP} Successfully updated SEB extension policy.`)
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Successfully force-installed the Secure Enterprise Browser (SEB) extension for this Organizational Unit. It may take some time for the policy to propagate to all browsers.`,
-              },
-            ],
-            structuredContent: {
-              success: true,
-              newlyInstalled: true,
-            },
-          }
+          const sc = { success: true, alreadyInstalled: false, newlyInstalled: true }
+          return formatToolResponse({
+            summary: 'Successfully force-installed SEB extension on this OU. Policy propagation may take time.',
+            data: sc,
+            structuredContent: sc,
+          })
         },
       },
       options,

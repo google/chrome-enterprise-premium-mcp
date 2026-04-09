@@ -19,7 +19,7 @@ limitations under the License.
  */
 
 import { z } from 'zod'
-import { guardedToolCall } from '../utils/wrapper.js'
+import { guardedToolCall, formatToolResponse } from '../utils/wrapper.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -41,8 +41,8 @@ export function registerCheckSebExtensionStatusTool(server, options, sessionStat
   server.registerTool(
     'check_seb_extension_status',
     {
-      description:
-        'Checks if the Secure Enterprise Browser (SEB) extension is force-installed for a given Organizational Unit.',
+      description: `Checks if the Secure Enterprise Browser (SEB) extension is force-installed for a given Organizational Unit.
+The SEB extension is REQUIRED for advanced Chrome Enterprise Premium features like data masking. If not installed, use 'install_seb_extension' to fix it.`,
       inputSchema: {
         customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
         orgUnitId: z
@@ -51,16 +51,12 @@ export function registerCheckSebExtensionStatusTool(server, options, sessionStat
           .describe('The ID of the organizational unit to check.'),
       },
       outputSchema: z
-        .union([
-          z
-            .object({
-              isInstalled: z.boolean().describe('Whether the extension is force-installed.'),
-              extensionId: z.string().optional().describe('The ID of the extension.'),
-            })
-            .passthrough(),
-          z.any(),
-        ])
-        .optional(),
+        .object({
+          isInstalled: z.boolean(),
+          extensionId: z.string(),
+          policies: z.array(z.object({}).passthrough()),
+        })
+        .passthrough(),
     },
     guardedToolCall(
       {
@@ -78,21 +74,11 @@ export function registerCheckSebExtensionStatusTool(server, options, sessionStat
           )
           const isInstalled = sebPolicy?.value?.value?.appInstallType === 'FORCED'
 
-          logger.debug(`${TAGS.MCP} Successfully checked SEB extension status.`)
-          return {
-            content: [
-              {
-                type: 'text',
-                text: isInstalled
-                  ? `The Secure Enterprise Browser (SEB) extension is force-installed for this Organizational Unit.`
-                  : `The Secure Enterprise Browser (SEB) extension is NOT force-installed for this Organizational Unit.\n\nData masking and other advanced features may not work correctly without it.`,
-              },
-            ],
-            structuredContent: {
-              isInstalled,
-              policies: policies || [],
-            },
-          }
+          const sc = { isInstalled, extensionId: SEB_EXTENSION_ID, policies: policies || [] }
+          const summary = isInstalled
+            ? `SEB extension (\`${SEB_EXTENSION_ID}\`) is force-installed on this OU.`
+            : `SEB extension (\`${SEB_EXTENSION_ID}\`) is NOT force-installed on this OU. Data masking may not work.`
+          return formatToolResponse({ summary, data: sc, structuredContent: sc })
         },
       },
       options,

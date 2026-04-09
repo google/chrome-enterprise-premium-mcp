@@ -37,9 +37,13 @@ describe('check_and_enable_api tool description', () => {
 
     assert.ok(
       toolDefinition.description.includes(
-        'The model MUST specifically ask the customer whether they would like to check and enable ALL missing required APIs or just the specific one currently identified as missing.',
+        'Verify or enable Google Cloud APIs required for Chrome Enterprise Premium features.',
       ),
     )
-    assert.ok(toolDefinition.description.includes("(and 'checkAll: true' if they agreed to enable all)"))
+    assert.ok(
+      toolDefinition.description.includes(
+        'Always ask the user before enabling APIs unless they have explicitly authorized it in this turn.',
+      ),
+    )
   })
 })

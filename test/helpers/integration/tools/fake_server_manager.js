@@ -37,10 +37,12 @@ class FakeServerManager {
     process.on('exit', () => this.stopSync())
     process.on('SIGINT', () => {
       this.stopSync()
+      // eslint-disable-next-line n/no-process-exit
       process.exit()
     })
     process.on('SIGTERM', () => {
       this.stopSync()
+      // eslint-disable-next-line n/no-process-exit
       process.exit()
     })
   }
@@ -129,7 +131,7 @@ class FakeServerManager {
           console.log(`${TAGS.MCP} Fake API Server is healthy at ${this.rootUrl}`)
           return
         }
-      } catch {
+      } catch (_e) {
         await new Promise(resolve => {
           setTimeout(resolve, 500)
         })

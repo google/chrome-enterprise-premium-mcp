@@ -22,7 +22,7 @@ import { z } from 'zod'
 import fs from 'fs'
 import path from 'path'
 
-import { guardedToolCall } from '../utils/wrapper.js'
+import { guardedToolCall, formatToolResponse } from '../utils/wrapper.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -39,15 +39,21 @@ export function registerFeedbackTool(server, options, sessionState) {
   server.registerTool(
     'cep_feedback',
     {
-      description: `Gathers diagnostic data from the current session and creates a detailed feedback report. 
-        Use this when the agent is failing, providing incorrect information, or if you encounter technical errors.
-        It collects tool call history, session state (Customer/OU IDs), and user-provided context.`,
+      description: `Gathers diagnostic data from the current session and creates a detailed feedback report file.
+Use this when the agent is failing, providing incorrect information, or if you encounter technical errors. It collects tool call history, session state, and user-provided context.`,
       inputSchema: z.object({
         userMessage: z
           .string()
           .describe('A detailed description of what went wrong or what you were trying to achieve.'),
         transcripts: z.string().optional().describe('Optional: The last few messages of the conversation for context.'),
       }),
+      outputSchema: z
+        .object({
+          reportPath: z.string(),
+          reportName: z.string(),
+          eventCount: z.number(),
+        })
+        .passthrough(),
     },
     guardedToolCall(
       {
@@ -99,21 +105,19 @@ export function registerFeedbackTool(server, options, sessionState) {
 
           try {
             fs.writeFileSync(filePath, report, 'utf8')
-            const successMsg = `✅ Diagnostic feedback report successfully created at: \`${filePath}\`\n\nPlease share this file with the development team for troubleshooting.`
+            const summary = `Feedback report saved: ${filename} (${sessionState.history?.length || 0} events)\nPath: \`${filePath}\``
 
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: successMsg,
-                },
-              ],
-              structuredContent: {
-                reportPath: filePath,
-                reportName: filename,
-                eventCount: sessionState.history?.length || 0,
-              },
+            const sc = {
+              reportPath: filePath,
+              reportName: filename,
+              eventCount: sessionState.history?.length || 0,
             }
+
+            return formatToolResponse({
+              summary,
+              data: sc,
+              structuredContent: sc,
+            })
           } catch (e) {
             logger.error(`${TAGS.MCP} Failed to write feedback report:`, e)
             throw new Error(`Failed to save feedback report: ${e.message}`)

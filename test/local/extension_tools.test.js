@@ -71,7 +71,7 @@ describe('Extension Tools', () => {
     const result = await handler({ customerId: 'C123', orgUnitId: 'ou1' }, { requestInfo: {} })
 
     assert.strictEqual(mockResolvePolicy.mock.callCount(), 1)
-    assert.ok(result.content[0].text.includes('force-installed for this Organizational Unit'))
+    assert.ok(result.content[0].text.includes(`SEB extension (\`${SEB_EXTENSION_ID}\`) is force-installed on this OU.`))
   })
 
   it('check_seb_extension_status should return error indicator if extension is missing', async () => {
@@ -102,7 +102,9 @@ describe('Extension Tools', () => {
 
     const result = await handler({ customerId: 'C123', orgUnitId: 'ou1' }, { requestInfo: {} })
 
-    assert.ok(result.content[0].text.includes('NOT force-installed'))
+    assert.ok(
+      result.content[0].text.includes('SEB extension') && result.content[0].text.includes('NOT force-installed'),
+    )
   })
 
   it('install_seb_extension should skip if already installed', async () => {
@@ -146,7 +148,7 @@ describe('Extension Tools', () => {
     const result = await handler({ customerId: 'C123', orgUnitId: 'ou1' }, { requestInfo: {} })
 
     assert.strictEqual(mockBatchModifyPolicy.mock.callCount(), 0)
-    assert.ok(result.content[0].text.includes('already force-installed'))
+    assert.ok(result.content[0].text.includes('SEB extension is already force-installed on this OU.'))
   })
 
   it('install_seb_extension should install if missing', async () => {
@@ -183,6 +185,6 @@ describe('Extension Tools', () => {
     const passedRequests = mockBatchModifyPolicy.mock.calls[0].arguments[2]
     assert.strictEqual(passedRequests[0].policyValue.value.appInstallType, 'FORCED')
     assert.strictEqual(passedRequests[0].policyTargetKey.additionalTargetKeys.app_id, `chrome:${SEB_EXTENSION_ID}`)
-    assert.ok(result.content[0].text.includes('Successfully force-installed'))
+    assert.ok(result.content[0].text.includes('Successfully force-installed SEB extension on this OU.'))
   })
 })
