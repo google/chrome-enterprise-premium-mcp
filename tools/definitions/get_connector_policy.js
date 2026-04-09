@@ -79,6 +79,7 @@ To modify these settings, use 'enable_chrome_enterprise_connectors'.`,
           // Normalize Org Unit ID (Strip 'id:' prefix if present)
           const normalizedOrgUnitId = orgUnitId.startsWith('id:') ? orgUnitId.substring(3) : orgUnitId
 
+          // Note: authToken is now provided directly by guardedToolCall context.
           const policies = await chromePolicyClient.getConnectorPolicy(
             customerId,
             normalizedOrgUnitId,
