@@ -406,10 +406,10 @@ export function createFakeApp() {
 
     const filter = req.query.filter
     if (filter) {
-      if (filter.includes('setting.type.matches("rule.dlp")')) {
-        policies = policies.filter(p => p.setting?.type === 'settings/rule.dlp')
-      } else if (filter.includes('setting.type.matches("detector")')) {
-        policies = policies.filter(p => p.setting?.type?.startsWith('settings/detector'))
+      if (filter.includes('setting.type.startsWith("settings/rule.dlp")') || filter.includes('setting.type.includes("rule.dlp")') || filter.includes('setting.type.matches("rule.dlp")')) {
+        policies = policies.filter(p => p.setting?.type?.includes('rule.dlp'))
+      } else if (filter.includes('setting.type.startsWith("settings/detector")') || filter.includes('setting.type.includes("detector")') || filter.includes('setting.type.matches("detector")')) {
+        policies = policies.filter(p => p.setting?.type?.includes('detector'))
       } else {
         return res.status(501).json({ error: { message: `Filter ${filter} not implemented` } })
       }

@@ -87,13 +87,14 @@ describe('Rule Lifecycle Integration', () => {
       name: 'list_dlp_rules',
       arguments: {},
     })
-
-    const { text: listOutput, details: listData } = parseToolOutput(listResult)
+    const listData = parseToolOutput(listResult).details
     const rules = listData?.dlpRules || []
-    const ruleExists = rules.some(r => r.name === ruleName || r.resourceName === ruleName)
-    assert.ok(ruleExists, `Created rule (${ruleName}) not visible in list output. List output: ${listOutput}`)
+    const found = rules.some(r => r.name === ruleName)
+    
+    assert.ok(found, `Created rule (${ruleName}) not visible in structured list output.`)
 
     // 4. DELETE
+    const shortId = ruleName.split('/').pop()
     const deleteResult = await client.callTool({
       name: 'delete_agent_dlp_rule',
       arguments: { policyName: ruleName },
@@ -101,7 +102,7 @@ describe('Rule Lifecycle Integration', () => {
 
     const deleteOutput = parseToolOutput(deleteResult).text
     assert.match(deleteOutput, /Successfully deleted Chrome DLP rule/)
-    assert.match(deleteOutput, new RegExp(ruleName))
+    assert.match(deleteOutput, new RegExp(ruleConfig.displayName))
 
     // 5. VERIFY DELETION
     const listAfterDeleteResult = await client.callTool({

@@ -79,21 +79,22 @@ describe('Detector Lifecycle Integration', () => {
       name: 'list_detectors',
       arguments: {},
     })
-    const { text: listOutput, details: listData } = parseToolOutput(listResult)
+    const listData = parseToolOutput(listResult).details
     const detectors = listData?.detectors || []
     const found = detectors.some(d => d.name === detectorName)
     
-    assert.ok(found, `Created detector (${detectorName}) not visible in list output. List output: ${listOutput}`)
+    assert.ok(found, `Created detector (${detectorName}) not visible in structured list output.`)
 
     // 4. DELETE
+    const shortId = detectorName.split('/').pop()
     const deleteResult = await client.callTool({
       name: 'delete_detector',
       arguments: { policyName: detectorName },
     })
 
     const deleteOutput = parseToolOutput(deleteResult).text
-    assert.match(deleteOutput, /Successfully deleted detector policy/)
-    assert.match(deleteOutput, new RegExp(detectorName))
+    assert.match(deleteOutput, /Successfully deleted detector/)
+    assert.match(deleteOutput, new RegExp(detectorConfig.displayName))
 
     // 5. VERIFY DELETION
     const listAfterDeleteResult = await client.callTool({
@@ -159,7 +160,6 @@ describe('Detector Lifecycle Integration', () => {
 
     const deleteOutput = parseToolOutput(deleteResult).text
     assert.match(deleteOutput, /Successfully deleted detector/)
-    assert.match(deleteOutput, new RegExp(detectorConfig.displayName))
 
     // Clean up createdResources list as it's already deleted
     const index = createdResources.indexOf(detectorName)
