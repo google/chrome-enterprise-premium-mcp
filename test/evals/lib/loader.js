@@ -86,6 +86,8 @@ export function loadEval(filepath, globalConfig) {
     expectedTools: frontmatter.expected_tools || [],
     forbiddenPatterns: mergedForbidden,
     requiredPatterns: frontmatter.required_patterns || [],
+    scenario: frontmatter.scenario || null,
+    promptName: frontmatter.prompt_name || null,
     prompt: extractSection(body, 'Prompt') || '',
     goldenResponse: extractSection(body, 'Golden Response') || '',
     judgeInstructions: extractSection(body, 'Judge Instructions'),
@@ -163,6 +165,8 @@ export function loadAllEvals({ dir, category, tags, ids, priority }) {
  * @property {string[]} expectedTools
  * @property {string[]} forbiddenPatterns
  * @property {string[]} requiredPatterns
+ * @property {string|null} scenario - Scenario name from test/evals/scenarios/.
+ * @property {string|null} promptName - MCP prompt name to fetch at runtime.
  * @property {string} prompt
  * @property {string} goldenResponse
  * @property {string|null} judgeInstructions

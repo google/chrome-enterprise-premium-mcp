@@ -47,6 +47,7 @@ import { createJudge } from './lib/judge.js'
 import { createEvalAgent } from './lib/agent.js'
 import { printConsole, writeResults } from './lib/reporter.js'
 import { startFakeServer } from '../helpers/fake-api-server.js'
+import { applyScenario } from './scenarios/index.js'
 import { createIntegrationHarness, teardownIntegrationHarness } from '../helpers/integration/tools/harness.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -193,14 +194,25 @@ async function main() {
 
     for (let run = 0; run < numRuns; run++) {
       if (fakeServer) {
-        fakeServer.resetState()
+        if (evalCase.scenario) {
+          fakeServer.setState(applyScenario(evalCase.scenario))
+        } else {
+          fakeServer.resetState()
+        }
+      }
+
+      // Resolve prompt: MCP prompt definition or inline from eval markdown
+      let promptText = evalCase.prompt
+      if (evalCase.promptName) {
+        const mcpPrompt = await harness.client.getPrompt({ name: evalCase.promptName })
+        promptText = mcpPrompt.messages[0].content.text
       }
 
       let responseText = ''
       let toolCalls = []
 
       try {
-        const result = await agent.query(evalCase.prompt)
+        const result = await agent.query(promptText)
         responseText = result.responseText
         toolCalls = result.toolCalls
       } catch (err) {

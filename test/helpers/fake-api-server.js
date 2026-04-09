@@ -522,6 +522,9 @@ export function createFakeApp() {
     resetState: () => {
       state = getInitialState()
     },
+    setState: (/** @type {ReturnType<typeof getInitialState>} */ newState) => {
+      state = newState
+    },
   }
 }
 
@@ -529,10 +532,10 @@ export function createFakeApp() {
 
 /**
  * Starts the fake API server on a dynamic port.
- * @returns {Promise<{ url: string, close: () => Promise<void>, resetState: () => void }>}
+ * @returns {Promise<{ url: string, close: () => Promise<void>, resetState: () => void, setState: (newState: ReturnType<typeof getInitialState>) => void }>}
  */
 export async function startFakeServer() {
-  const { app, resetState } = createFakeApp()
+  const { app, resetState, setState } = createFakeApp()
   return new Promise((resolve, reject) => {
     const server = app.listen(0, () => {
       const { port } = server.address()
@@ -540,6 +543,7 @@ export async function startFakeServer() {
       resolve({
         url,
         resetState,
+        setState,
         close: () =>
           new Promise((res, rej) => {
             server.close(err => (err ? rej(err) : res()))
