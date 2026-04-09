@@ -65,9 +65,7 @@ export function registerGetConnectorPolicyTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
-        handler: async ({ customerId, orgUnitId, policy }, { requestInfo }) => {
-          const authToken = getAuthToken(requestInfo)
-
+        handler: async ({ customerId, orgUnitId, policy }, { authToken }) => {
           // Normalize Org Unit ID (Strip 'id:' prefix if present)
           const normalizedOrgUnitId = orgUnitId.startsWith('id:') ? orgUnitId.substring(3) : orgUnitId
 
