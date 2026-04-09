@@ -34,3 +34,44 @@ export const commonInputSchemas = {
     .optional()
     .describe('An optional description for the detector.'),
 }
+
+/**
+ * Shared output schemas for MCP tools.
+ * All use z.object().passthrough() to satisfy MCP SDK normalizeObjectSchema().
+ */
+export const commonOutputSchemas = {
+  orgUnit: z
+    .object({
+      name: z.string().optional(),
+      orgUnitId: z.string().optional(),
+      orgUnitPath: z.string().optional(),
+    })
+    .passthrough(),
+
+  cloudIdentityPolicy: z.object({ name: z.string().optional() }).passthrough(),
+
+  resolvedChromePolicy: z
+    .object({
+      targetKey: z.record(z.unknown()).optional(),
+      value: z.record(z.unknown()).optional(),
+    })
+    .passthrough(),
+
+  browserProfile: z
+    .object({
+      displayName: z.string().optional(),
+      name: z.string().optional(),
+    })
+    .passthrough(),
+
+  browserVersion: z
+    .object({
+      version: z.string().optional(),
+      count: z.number().optional(),
+    })
+    .passthrough(),
+
+  activity: z.object({}).passthrough(),
+
+  licenseAssignment: z.object({}).passthrough(),
+}

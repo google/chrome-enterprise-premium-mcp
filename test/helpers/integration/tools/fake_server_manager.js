@@ -88,10 +88,12 @@ class FakeServerManager {
           process.env.GOOGLE_API_ROOT_URL = this.rootUrl
 
           // Perform a quick health check
-          this._waitForHealth().then(() => {
-            resolved = true
-            resolve()
-          }).catch(reject)
+          this._waitForHealth()
+            .then(() => {
+              resolved = true
+              resolve()
+            })
+            .catch(reject)
         }
       })
 
@@ -107,7 +109,7 @@ class FakeServerManager {
         }
       })
 
-      this.process.on('exit', (code) => {
+      this.process.on('exit', code => {
         if (!resolved) {
           resolved = true
           reject(new Error(`Fake API Server exited prematurely with code ${code}`))
@@ -143,13 +145,13 @@ class FakeServerManager {
       this.startPromise = null
       this.rootUrl = null
 
-      return new Promise((resolve) => {
+      return new Promise(resolve => {
         p.on('exit', () => resolve())
         p.kill()
         // Safety timeout
         setTimeout(() => {
-            p.kill('SIGKILL')
-            resolve()
+          p.kill('SIGKILL')
+          resolve()
         }, 2000)
       })
     }

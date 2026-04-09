@@ -515,10 +515,7 @@ describe('get_connector_policy tool handler', () => {
     registerGetConnectorPolicyTool(mockServer, { chromePolicyClient: mockChromePolicyClient }, {})
     const handler = getRegisteredHandler()
 
-    const result = await handler(
-      { customerId: 'C123', orgUnitId: 'OU123', policy: 'ON_PRINT' },
-      { requestInfo: {} },
-    )
+    const result = await handler({ customerId: 'C123', orgUnitId: 'OU123', policy: 'ON_PRINT' }, { requestInfo: {} })
     const text = result.content[0].text
 
     assert.match(text, /Provider: Chrome Enterprise Premium \(CEP\)/)
@@ -538,10 +535,7 @@ describe('get_connector_policy tool handler', () => {
     registerGetConnectorPolicyTool(mockServer, { chromePolicyClient: mockChromePolicyClient }, {})
     const handler = getRegisteredHandler()
 
-    await handler(
-      { customerId: 'C123', orgUnitId: 'id:OU123', policy: 'ON_FILE_ATTACHED' },
-      { requestInfo: {} },
-    )
+    await handler({ customerId: 'C123', orgUnitId: 'id:OU123', policy: 'ON_FILE_ATTACHED' }, { requestInfo: {} })
 
     assert.strictEqual(capturedOrgUnitId, 'OU123')
   })

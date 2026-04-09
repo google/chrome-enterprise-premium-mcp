@@ -242,7 +242,7 @@ describe('Admin SDK API', () => {
         result.content[0].text,
         `User 'user@example.com' does NOT have a Chrome Enterprise Premium (CEP) license assigned.`,
       )
-      assert.deepStrictEqual(result.structuredContent, { content: result.content })
+      assert.deepStrictEqual(result.structuredContent, undefined)
     })
 
     it('should return an error message if API call fails', async () => {
@@ -272,7 +272,9 @@ describe('Admin SDK API', () => {
         .arguments[2]
 
       const result = await handler({ userId: 'user@example.com' }, {})
+      // Verify both human-readable text and structured error content are returned
       assert.deepStrictEqual(result.content[0].text, 'Error: API Error')
+      assert.deepStrictEqual(result.structuredContent, { error: true, message: 'API Error' })
     })
 
     it('should return error message when Licensing API is not enabled', async () => {

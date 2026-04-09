@@ -139,10 +139,7 @@ Use this tool before answering any questions about: Chrome Enterprise Premium, C
 
 If initial results aren't relevant, try different keywords rather than repeating the same query.`,
       inputSchema: z.object({
-        query: z
-          .string()
-          .min(1)
-          .describe('Search query. Use concise keywords.'),
+        query: z.string().min(1).describe('Search query. Use concise keywords.'),
         kind: z
           .enum(['policies', 'helpcenter', 'cloud-docs', 'curated'])
           .optional()
@@ -370,12 +367,7 @@ If initial results aren't relevant, try different keywords rather than repeating
           .max(200)
           .optional()
           .describe('Maximum number of documents to list (default 50).'),
-        offset: z
-          .number()
-          .int()
-          .min(0)
-          .optional()
-          .describe('Pagination offset to skip records (default 0).'),
+        offset: z.number().int().min(0).optional().describe('Pagination offset to skip records (default 0).'),
       }),
     },
     guardedToolCall(

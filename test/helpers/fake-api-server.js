@@ -167,9 +167,7 @@ function getInitialState() {
                 policySchema: 'chrome.users.OnPrintAnalysisConnectorPolicy',
                 value: {
                   onPrintAnalysisConnectorConfiguration: {
-                    printConfigurations: [
-                      { serviceProvider: 'SERVICE_PROVIDER_CHROME_ENTERPRISE_PREMIUM' },
-                    ],
+                    printConfigurations: [{ serviceProvider: 'SERVICE_PROVIDER_CHROME_ENTERPRISE_PREMIUM' }],
                   },
                 },
               },
@@ -180,7 +178,7 @@ function getInitialState() {
               policyValue: {
                 policySchema: 'chrome.users.RealtimeUrlCheck',
                 value: {
-                  realtimeUrlCheckEnabled: "ENTERPRISE_REAL_TIME_URL_CHECK_MODE_ENUM_ENABLED",
+                  realtimeUrlCheckEnabled: 'ENTERPRISE_REAL_TIME_URL_CHECK_MODE_ENUM_ENABLED',
                 },
               },
             },
@@ -290,13 +288,13 @@ export function createFakeApp() {
   app.get('/licensing/v1/product/:productId/sku/:skuId/user', (req, res) => {
     const customerId = resolveCustomerId(state, req.query.customerId) || req.query.customerId
     const licenses = state.licenses[customerId]?.[req.params.productId]?.[req.params.skuId] || []
-    
+
     // Return a structure matching the real Google Licensing API list response
     res.json({
-      kind: "licensing#licenseAssignmentList",
-      etag: "\"mockEtagList\"",
+      kind: 'licensing#licenseAssignmentList',
+      etag: '"mockEtagList"',
       items: licenses,
-      nextPageToken: licenses.length > 0 ? "mockNextPageToken" : undefined
+      nextPageToken: licenses.length > 0 ? 'mockNextPageToken' : undefined,
     })
   })
 
@@ -308,14 +306,14 @@ export function createFakeApp() {
       if (license) {
         // Return a structure matching the real Google Licensing API single response
         return res.json({
-           kind: "licensing#licenseAssignment",
-           etags: "\"mockEtagSingle\"",
-           productId: license.productId,
-           userId: license.userId,
-           selfLink: `https://licensing.googleapis.com/apps/licensing/v1/product/${license.productId}/sku/${license.skuId}/user/${license.userId}`,
-           skuId: license.skuId,
-           skuName: "Chrome Enterprise Premium",
-           productName: "Chrome Enterprise Premium"
+          kind: 'licensing#licenseAssignment',
+          etags: '"mockEtagSingle"',
+          productId: license.productId,
+          userId: license.userId,
+          selfLink: `https://licensing.googleapis.com/apps/licensing/v1/product/${license.productId}/sku/${license.skuId}/user/${license.userId}`,
+          skuId: license.skuId,
+          skuName: 'Chrome Enterprise Premium',
+          productName: 'Chrome Enterprise Premium',
         })
       }
     }
@@ -406,9 +404,17 @@ export function createFakeApp() {
 
     const filter = req.query.filter
     if (filter) {
-      if (filter.includes('setting.type.startsWith("settings/rule.dlp")') || filter.includes('setting.type.includes("rule.dlp")') || filter.includes('setting.type.matches("rule.dlp")')) {
+      if (
+        filter.includes('setting.type.startsWith("settings/rule.dlp")') ||
+        filter.includes('setting.type.includes("rule.dlp")') ||
+        filter.includes('setting.type.matches("rule.dlp")')
+      ) {
         policies = policies.filter(p => p.setting?.type?.includes('rule.dlp'))
-      } else if (filter.includes('setting.type.startsWith("settings/detector")') || filter.includes('setting.type.includes("detector")') || filter.includes('setting.type.matches("detector")')) {
+      } else if (
+        filter.includes('setting.type.startsWith("settings/detector")') ||
+        filter.includes('setting.type.includes("detector")') ||
+        filter.includes('setting.type.matches("detector")')
+      ) {
         policies = policies.filter(p => p.setting?.type?.includes('detector'))
       } else {
         return res.status(501).json({ error: { message: `Filter ${filter} not implemented` } })

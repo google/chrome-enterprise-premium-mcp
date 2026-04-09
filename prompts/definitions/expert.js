@@ -36,7 +36,7 @@ export const registerExpertPrompt = server => {
   server.registerPrompt(
     EXPERT_PROMPT_NAME,
     {
-      description: "Primes the agent with Chrome Enterprise Premium expert context.",
+      description: 'Primes the agent with Chrome Enterprise Premium expert context.',
       arguments: [],
     },
     async () => {

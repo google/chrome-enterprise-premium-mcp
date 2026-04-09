@@ -21,6 +21,7 @@ limitations under the License.
 import { guardedToolCall } from '../utils/wrapper.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
+import { z } from 'zod'
 
 /**
  * Registers the 'get_customer_id' tool with the MCP server.
@@ -39,6 +40,11 @@ export function registerGetCustomerIdTool(server, options, sessionState) {
     {
       description: `Gets the customer ID for the authenticated user. All other tools that require a customer ID should get it using this tool instead of asking the user for it.`,
       inputSchema: {},
+      outputSchema: z
+        .object({
+          customerId: z.string().nullable().describe('The unique customer ID.'),
+        })
+        .passthrough(),
     },
     guardedToolCall(
       {
@@ -55,7 +61,7 @@ export function registerGetCustomerIdTool(server, options, sessionState) {
           logger.debug(`${TAGS.MCP} Successfully retrieved customer ID.`)
           return {
             content: [{ type: 'text', text: `✅ **Customer ID:** \`${customer.id}\`` }],
-            structuredContent: { customerId: customer.id },
+            structuredContent: { customerId: customer.id, ...customer },
           }
         },
         skipAutoResolve: true,

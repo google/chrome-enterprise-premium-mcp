@@ -50,10 +50,12 @@ export function registerInstallSebExtensionTool(server, options, sessionState) {
           .describe('The ID of the organizational unit.')
           .describe('The ID of the organizational unit where the extension will be force-installed.'),
       },
-      outputSchema: z.object({
-        status: z.string().optional().default('SUCCESS'),
-        message: z.string().optional().default('Operation completed successfully.'),
-      }),
+      outputSchema: z
+        .object({
+          status: z.string().optional().default('SUCCESS'),
+          message: z.string().optional().default('Operation completed successfully.'),
+        })
+        .passthrough(),
     },
     guardedToolCall(
       {

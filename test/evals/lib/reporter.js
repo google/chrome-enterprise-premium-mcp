@@ -156,7 +156,6 @@ function getSummaryStats(results) {
  * @param {string} filepath
  */
 function writeMarkdown(results, filepath) {
-
   const { totalRuns, passedRuns, pct } = getSummaryStats(results)
 
   const lines = []

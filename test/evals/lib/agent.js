@@ -133,7 +133,7 @@ export async function createEvalAgent({ apiKey, baseUrl, mcpClient }) {
     try {
       const expertPromptResult = await mcpClient.getPrompt({ name: 'cep:expert' })
       systemPrompt = expertPromptResult.messages.map(m => m.content.text).join('\n')
-      
+
       const capabilitiesPath = path.resolve(__dirname, '../../../lib/knowledge/0-agent-capabilities.md')
       if (fs.existsSync(capabilitiesPath)) {
         systemPrompt += '\n\n---\n\n' + fs.readFileSync(capabilitiesPath, 'utf8')

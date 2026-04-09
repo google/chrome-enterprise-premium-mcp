@@ -90,7 +90,7 @@ describe('Rule Lifecycle Integration', () => {
     const listData = parseToolOutput(listResult).details
     const rules = listData?.dlpRules || []
     const found = rules.some(r => r.name === ruleName)
-    
+
     assert.ok(found, `Created rule (${ruleName}) not visible in structured list output.`)
 
     // 4. DELETE

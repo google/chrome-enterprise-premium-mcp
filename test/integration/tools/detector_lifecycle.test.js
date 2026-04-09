@@ -82,7 +82,7 @@ describe('Detector Lifecycle Integration', () => {
     const listData = parseToolOutput(listResult).details
     const detectors = listData?.detectors || []
     const found = detectors.some(d => d.name === detectorName)
-    
+
     assert.ok(found, `Created detector (${detectorName}) not visible in structured list output.`)
 
     // 4. DELETE

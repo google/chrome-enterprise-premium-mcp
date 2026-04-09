@@ -22,6 +22,7 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { TAGS } from '../../lib/constants.js'
+import { logger } from '../../lib/util/logger.js'
 import { validateAndGetOrgUnitId } from './org-unit.js'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -90,6 +91,47 @@ function injectSystemContext(sessionState, result) {
 }
 
 /**
+ * Formats a tool response with a summary and a fenced JSON block.
+ *
+ * @param {object} params
+ * @param {string} params.summary - Human-readable summary (markdown)
+ * @param {object} [params.data] - Data to be serialized in the JSON block
+ * @param {object} [params.structuredContent] - Machine-readable content for SDK
+ * @returns {object} MCP-compatible tool response
+ */
+export function formatToolResponse({ summary, data, structuredContent }) {
+  return {
+    content: [
+      { type: 'text', text: summary },
+      { type: 'text', text: '```json\n' + JSON.stringify(data, null, 2) + '\n```' },
+    ],
+    structuredContent,
+  }
+}
+
+/**
+ * Wraps a formatting function with graceful degradation if it fails.
+ *
+ * @param {object} params
+ * @param {any} params.rawData - The raw data to format
+ * @param {Function} params.formatFn - Function that returns a formatToolResponse-compatible object
+ * @param {string} params.toolName - Name of the tool for logging
+ * @returns {object} Formatted tool response
+ */
+export function safeFormatResponse({ rawData, formatFn, toolName }) {
+  try {
+    return formatFn(rawData)
+  } catch (e) {
+    console.warn(`${TAGS.MCP} ${toolName}: formatting failed, returning raw data`, e)
+    return formatToolResponse({
+      summary: `${toolName} completed. Raw data attached.`,
+      data: rawData,
+      structuredContent: rawData,
+    })
+  }
+}
+
+/**
  * Helper to wrap tool handlers with common logic like customerId resolution
  * and error handling.
  *
@@ -150,16 +192,20 @@ export function guardedToolCall(
       }
 
       const result = await handler(transformedParams, { ...context, authToken })
+      logger.debug(`${TAGS.MCP} Handler result for '${context?.name || 'unknown'}':`, JSON.stringify(result, null, 2))
 
       injectSystemContext(sessionState, result)
 
       if (result && !result.structuredContent && result.content) {
-        result.structuredContent = { content: result.content }
+        logger.warn(`${TAGS.MCP} Tool handler returned content without structuredContent`)
       }
       return result
     } catch (error) {
-      console.error(`${TAGS.MCP} Tool handler error details:`, JSON.stringify(error, null, 2))
-      console.error(`${TAGS.MCP} Tool handler error stack:`, error.stack)
+      logger.error(`${TAGS.MCP} Tool handler error for '${context?.name || 'unknown'}':`, {
+        message: error.message,
+        stack: error.stack,
+        details: error.response?.data || error,
+      })
 
       if (options && options.onError) {
         const customErrorResponse = options.onError(error)
@@ -190,12 +236,11 @@ export function guardedToolCall(
         errorMessage = error.toString()
       }
 
-      const response = {
+      return {
         content: [{ type: 'text', text: `Error: ${errorMessage}` }],
         isError: true,
+        structuredContent: { error: true, message: errorMessage },
       }
-      response.structuredContent = { content: response.content }
-      return response
     }
   }
 }
