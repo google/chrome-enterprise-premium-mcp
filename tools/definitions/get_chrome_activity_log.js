@@ -20,7 +20,8 @@ limitations under the License.
 
 import { z } from 'zod'
 
-import { guardedToolCall } from '../utils/wrapper.js'
+import { guardedToolCall, formatToolResponse, safeFormatResponse } from '../utils/wrapper.js'
+import { commonOutputSchemas } from './shared.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -39,9 +40,8 @@ export function registerGetChromeActivityLogTool(server, options, sessionState) 
   server.registerTool(
     'get_chrome_activity_log',
     {
-      description: `Gets a log of Chrome browser activity for a given user.
-        By default, it retrieves events from the last 10 days unless a specific start time is provided.
-        Do not prompt users for additional inputs; use the defaults if no values are provided.`,
+      description: `Retrieves audit logs of Chrome browser activity (e.g., login events, policy violations, extension installs).
+Use this for security investigations and auditing user actions within the managed browser environment.`,
       inputSchema: {
         userKey: z.string().describe(`The user key to get activities for. Use "all" for all users.`).default('all'),
         eventName: z.string().optional().describe(`The name of the event to filter by.`),
@@ -58,6 +58,11 @@ export function registerGetChromeActivityLogTool(server, options, sessionState) 
         maxResults: z.number().optional().describe(`The maximum number of results to return.`),
         customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
       },
+      outputSchema: z
+        .object({
+          activities: z.array(commonOutputSchemas.activity),
+        })
+        .passthrough(),
     },
     guardedToolCall(
       {
@@ -90,44 +95,37 @@ export function registerGetChromeActivityLogTool(server, options, sessionState) 
             authToken,
           )
 
-          if (!activities || activities.length === 0) {
-            logger.debug(`${TAGS.MCP} No Chrome activity found.`)
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: 'No Chrome activity found for the specified criteria.',
-                },
-              ],
-            }
-          }
-
-          const formattedActivities = activities
-            .map(act => {
-              const time = new Date(act.id.time).toISOString()
-              const user = act.actor?.email || 'Unknown'
-              const events = (act.events || [])
-                .map(e => {
-                  const params =
-                    e.parameters
-                      ?.map(p => `${p.name}=${p.value ?? p.boolValue ?? p.intValue ?? p.multiValue ?? ''}`)
-                      .join(', ') || 'No params'
-                  return `*   **${e.name}**: ${params}`
+          return safeFormatResponse({
+            rawData: activities,
+            toolName: 'get_chrome_activity_log',
+            formatFn: data => {
+              if (!data || data.length === 0) {
+                logger.debug(`${TAGS.MCP} No Chrome activity found.`)
+                return formatToolResponse({
+                  summary: 'No Chrome activity found for the specified criteria.',
+                  data: { activities: [] },
+                  structuredContent: { activities: [] },
                 })
-                .join('\n    ')
-              return `### Activity at ${time}\n*   **User:** \`${user}\`\n*   **Events:**\n    ${events}`
-            })
-            .join('\n\n---\n\n')
+              }
 
-          logger.debug(`${TAGS.MCP} Successfully retrieved Chrome activity log.`)
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `# Chrome Activity Log\n\n${formattedActivities}`,
-              },
-            ],
-          }
+              const formattedActivities = data
+                .map(act => {
+                  const time = new Date(act.id.time).toISOString()
+                  const user = act.actor?.email || 'Unknown'
+                  const eventNames = (act.events || []).map(e => e.name).join(', ')
+                  const eventType = act.events?.[0]?.type || 'Unknown'
+                  return `- **${time}** — actor: ${user}, events: ${eventNames}, type: ${eventType}`
+                })
+                .join('\n')
+
+              logger.debug(`${TAGS.MCP} Successfully retrieved Chrome activity log.`)
+              return formatToolResponse({
+                summary: `## Chrome Activity Log (${data.length} events)\n\n${formattedActivities}`,
+                data: { activities: data },
+                structuredContent: { activities: data },
+              })
+            },
+          })
         },
       },
       options,

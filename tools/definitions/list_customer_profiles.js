@@ -19,7 +19,8 @@ limitations under the License.
  */
 
 import { z } from 'zod'
-import { guardedToolCall } from '../utils/wrapper.js'
+import { guardedToolCall, formatToolResponse } from '../utils/wrapper.js'
+import { commonOutputSchemas } from './shared.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -38,10 +39,17 @@ export function registerCustomerProfileTool(server, options, sessionState) {
   server.registerTool(
     'list_customer_profiles',
     {
-      description: 'Lists all customer profiles for a given customer.',
+      description: `Lists Chrome browser profiles for the customer.
+These profiles represent managed browser instances and provide details like OS version, platform, and associated user email.`,
       inputSchema: {
         customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
       },
+      outputSchema: z
+        .object({
+          profiles: z.array(commonOutputSchemas.browserProfile),
+          totalCount: z.number(),
+        })
+        .passthrough(),
     },
     guardedToolCall(
       {
@@ -52,15 +60,12 @@ export function registerCustomerProfileTool(server, options, sessionState) {
 
             if (!profiles || profiles.length === 0) {
               logger.debug(`${TAGS.MCP} No profiles found.`)
-              return {
-                content: [
-                  {
-                    type: 'text',
-                    text: `No profiles found for customer ${customerId}.`,
-                  },
-                ],
-                structuredContent: { profiles: [] },
-              }
+              const sc = { profiles: [], totalCount: 0 }
+              return formatToolResponse({
+                summary: `No profiles found for customer ${customerId}.`,
+                data: sc,
+                structuredContent: sc,
+              })
             }
 
             const formattedProfiles = profiles
@@ -68,36 +73,36 @@ export function registerCustomerProfileTool(server, options, sessionState) {
                 const displayName = profile.displayName || 'Unnamed Profile'
                 const id =
                   profile.profileId || profile.profilePermanentId || profile.name?.split('/').pop() || 'Unknown'
-                return `*   **Name:** ${displayName}\n    *   **ID:** \`${id}\``
+                const email = profile.userEmail || 'Unknown'
+                const os = profile.osPlatformType ? `${profile.osPlatformType} ${profile.osVersion || ''}` : 'Unknown'
+                return `- **${displayName}** — Email: ${email}, OS: ${os}, Profile: \`${id}\``
               })
               .join('\n')
 
             const resourceMap = profiles
               .map(profile => {
                 const displayName = profile.displayName || 'Unnamed Profile'
-                return `- "${displayName}" → ${profile.name}`
+                return `- "${displayName}" → \`${profile.name}\``
               })
               .join('\n')
 
             logger.debug(`${TAGS.MCP} Successfully listed customer profiles.`)
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: `# Customer Profiles for ${customerId}\n\n${formattedProfiles}`,
-                },
-                {
-                  type: 'text',
-                  text: `Resource names for API operations:\n${resourceMap}`,
-                },
-              ],
-              structuredContent: { profiles },
-            }
+            const text = `## Browser Profiles (${profiles.length})\n\n${formattedProfiles}\n\nResource names for API operations:\n${resourceMap}`
+
+            const sc = { profiles, totalCount: profiles.length }
+            return formatToolResponse({
+              summary: text,
+              data: sc,
+              structuredContent: sc,
+            })
           } catch (error) {
             logger.error(`${TAGS.MCP} Error listing customer profiles: ${error.message}`)
-            return {
-              content: [{ type: 'text', text: `Error listing customer profiles: ${error.message}` }],
-            }
+            const sc = { profiles: [], totalCount: 0, error: true, message: error.message }
+            return formatToolResponse({
+              summary: `Error listing customer profiles: ${error.message}`,
+              data: sc,
+              structuredContent: sc,
+            })
           }
         },
       },

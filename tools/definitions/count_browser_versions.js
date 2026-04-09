@@ -19,7 +19,8 @@ limitations under the License.
  */
 
 import { z } from 'zod'
-import { guardedToolCall } from '../utils/wrapper.js'
+import { guardedToolCall, formatToolResponse, safeFormatResponse } from '../utils/wrapper.js'
+import { commonOutputSchemas } from './shared.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -38,11 +39,17 @@ export function registerCountBrowserVersionsTool(server, options, sessionState) 
   server.registerTool(
     'count_browser_versions',
     {
-      description: 'Counts Chrome browser versions reported by devices.',
+      description: `Counts Chrome browser versions reported by managed devices.
+Use this for auditing and reporting on the distribution of browser versions across your organization or a specific Organizational Unit.`,
       inputSchema: {
         customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
         orgUnitId: z.string().optional().describe('The ID of the organizational unit to filter results.'),
       },
+      outputSchema: z
+        .object({
+          versions: z.array(commonOutputSchemas.browserVersion),
+        })
+        .passthrough(),
     },
     guardedToolCall(
       {
@@ -52,33 +59,37 @@ export function registerCountBrowserVersionsTool(server, options, sessionState) 
           )
           const versions = await chromeManagementClient.countBrowserVersions(customerId, orgUnitId, authToken)
 
-          if (!versions || versions.length === 0) {
-            logger.debug(`${TAGS.MCP} No browser versions found.`)
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: `No browser versions found for customer ${customerId}.`,
-                },
-              ],
-              structuredContent: { versions: [] },
-            }
-          }
+          return safeFormatResponse({
+            rawData: versions,
+            toolName: 'count_browser_versions',
+            formatFn: raw => {
+              if (!raw || raw.length === 0) {
+                const sc = { versions: [] }
+                return formatToolResponse({
+                  summary: `No browser versions found for customer ${customerId}.`,
+                  data: sc,
+                  structuredContent: sc,
+                })
+              }
 
-          const versionList = versions
-            .map(v => `- ${v.version} (${v.count} devices) - ${v.channel || 'UNKNOWN'}`) // Added fallback for channel
-            .join('\n')
+              // Coerce counts to numbers for schema compatibility
+              const coerced = raw.map(v => ({
+                ...v,
+                count: v.count ? Number(v.count) : 0,
+              }))
 
-          logger.debug(`${TAGS.MCP} Successfully counted browser versions.`)
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Browser versions for customer ${customerId}:\n${versionList}`,
-              },
-            ],
-            structuredContent: { versions },
-          }
+              const versionList = coerced
+                .map(v => `- **${v.version}** — count: ${v.count}, channel: ${v.channel || 'UNKNOWN'}`)
+                .join('\n')
+
+              const sc = { versions: coerced }
+              return formatToolResponse({
+                summary: `## Browser Versions (${coerced.length})\n\n${versionList}`,
+                data: sc,
+                structuredContent: sc,
+              })
+            },
+          })
         },
       },
       options,

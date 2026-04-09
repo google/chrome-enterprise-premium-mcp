@@ -61,11 +61,9 @@ describe('Chrome Management API', () => {
       )
 
       assert.strictEqual(mockCountBrowserVersions.mock.callCount(), 1)
-      const expectedText =
-        'Browser versions for customer C0123:\n' +
-        '- 120.0.6099.71 (10 devices) - Stable\n' +
-        '- 119.0.0.0 (5 devices) - Beta'
-      assert.deepStrictEqual(result.content[0].text, expectedText)
+      assert.ok(result.content[0].text.includes('## Browser Versions (2)'))
+      assert.ok(result.content[0].text.includes('**120.0.6099.71**'))
+      assert.ok(result.content[1].text.includes('```json'))
     })
 
     // Test error handling when the API call fails.
@@ -134,17 +132,9 @@ describe('Chrome Management API', () => {
       const result = await handler({ customerId: 'C0123' }, {})
 
       assert.strictEqual(mockListCustomerProfiles.mock.callCount(), 1)
-      const expectedText =
-        '# Customer Profiles for C0123\n' +
-        '\n' +
-        '*   **Name:** Unnamed Profile\n' +
-        '    *   **ID:** `profile1`\n' +
-        '*   **Name:** Unnamed Profile\n' +
-        '    *   **ID:** `profile2`'
-      assert.deepStrictEqual(result.content[0].text, expectedText)
-      const expectedResourceMap =
-        'Resource names for API operations:\n' + '- "Unnamed Profile" → profile1\n' + '- "Unnamed Profile" → profile2'
-      assert.deepStrictEqual(result.content[1].text, expectedResourceMap)
+      assert.ok(result.content[0].text.includes('## Browser Profiles (2)'))
+      assert.ok(result.content[0].text.includes('Profile: `profile1`'))
+      assert.ok(result.content[1].text.includes('```json'))
     })
 
     it('should return an error message if API call fails', async () => {
