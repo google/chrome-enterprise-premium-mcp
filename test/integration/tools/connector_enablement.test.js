@@ -110,7 +110,7 @@ describe('Connector Enablement Integration', () => {
 
     const { text } = parseToolOutput(result)
     assert.ok(
-      text.includes('Event Reporting marked for enablement') || text.includes('Event Reporting is already configured'),
+      text.includes('Event Reporting') && (text.includes('enabled') || text.includes('already configured')),
       'Event Reporting should be mentioned in the output',
     )
   })

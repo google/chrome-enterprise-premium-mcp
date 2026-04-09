@@ -19,7 +19,7 @@ limitations under the License.
  */
 
 import { z } from 'zod'
-import { guardedToolCall } from '../utils/wrapper.js'
+import { guardedToolCall, formatToolResponse } from '../utils/wrapper.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -190,23 +190,11 @@ export function registerEnableChromeEnterpriseConnectorsTool(server, options, se
   server.registerTool(
     'enable_chrome_enterprise_connectors',
     {
-      description: `Enables and configures selected Chrome Enterprise connectors.
-        - Print Analysis (PRINT)
-        - Bulk Text Entry Analysis (paste) (BULK_TEXT_ENTRY)
-        - File Download Analysis (FILE_DOWNLOAD)
-        - Upload content analysis (FILE_UPLOAD)
-        - Real-time URL check (REALTIME_URL_CHECK)
-        - Event Reporting (ON_SECURITY_EVENT)
-
-        CRITICAL: When responding to the user, you MUST use the public-facing names (e.g., "Upload content analysis") and NEVER output the internal IDs (e.g., "FILE_UPLOAD").
-
-        It will ONLY apply changes to connectors that are not already configured.`,
+      description: `Enables and configures selected Chrome Enterprise connectors (e.g., Print, Paste, File Upload/Download).
+Use this tool to ACTIVATE security protections. It will ONLY apply changes to connectors that are not already configured. To check current status without modifying, use 'get_connector_policy'.`,
       inputSchema: {
         customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
-        orgUnitId: z
-          .string()
-          .describe('The ID of the organizational unit.')
-          .describe('The ID of the organizational unit where connectors will be enabled.'),
+        orgUnitId: z.string().describe('The ID of the organizational unit where connectors will be enabled.'),
         connectors: z
           .array(
             z.enum([
@@ -221,56 +209,79 @@ export function registerEnableChromeEnterpriseConnectorsTool(server, options, se
           .min(1)
           .describe('List of connectors to enable.'),
       },
+      outputSchema: z
+        .object({
+          connectors: z.array(
+            z
+              .object({
+                name: z.string(),
+                displayName: z.string(),
+                status: z.string(),
+                wasModified: z.boolean(),
+              })
+              .passthrough(),
+          ),
+        })
+        .passthrough(),
     },
     guardedToolCall(
       {
         handler: async ({ customerId, orgUnitId, connectors }, { _requestInfo, authToken }) => {
           logger.debug(`${TAGS.MCP} Calling 'enable_chrome_enterprise_connectors' for ${connectors.join(', ')}`)
-          const results = []
+          const connectorResults = []
           const batchRequests = []
-
-          // Normalize Org Unit ID (Strip 'id:' prefix if present)
-          const normalizedOrgUnitId = orgUnitId.startsWith('id:') ? orgUnitId.substring(3) : orgUnitId
 
           // 1. Safety Check: Parallelize policy resolution
           const resolvePromises = connectors.map(async connectorType => {
             const config = CONNECTOR_CONFIGS[connectorType]
             const resolvedPolicies = await chromePolicyClient.resolvePolicy(
               customerId,
-              normalizedOrgUnitId,
+              orgUnitId,
               config.schema,
               authToken,
             )
-            return { config, resolvedPolicies }
+            return { config, connectorType, resolvedPolicies }
           })
 
           const resolutions = await Promise.all(resolvePromises)
 
-          for (const { config, resolvedPolicies } of resolutions) {
+          for (const { config, connectorType, resolvedPolicies } of resolutions) {
             if (resolvedPolicies && resolvedPolicies.length > 0 && config.check(resolvedPolicies[0])) {
-              results.push(`ℹ️ ${config.displayName} is already configured. Skipping update.`)
+              connectorResults.push({
+                name: connectorType,
+                displayName: config.displayName,
+                status: 'ALREADY_CONFIGURED',
+                wasModified: false,
+              })
               continue
             }
 
             // 2. Prepare Request
-            batchRequests.push(config.getRequest(normalizedOrgUnitId))
-            results.push(`✅ ${config.displayName} marked for enablement.`)
+            batchRequests.push(config.getRequest(orgUnitId))
+            connectorResults.push({
+              name: connectorType,
+              displayName: config.displayName,
+              status: 'ENABLED',
+              wasModified: true,
+            })
           }
 
           // 3. Execute Batch
           if (batchRequests.length > 0) {
-            await chromePolicyClient.batchModifyPolicy(customerId, normalizedOrgUnitId, batchRequests, authToken)
-            results.push('\nSuccessfully applied all pending updates.')
+            await chromePolicyClient.batchModifyPolicy(customerId, orgUnitId, batchRequests, authToken)
           }
 
-          return {
-            content: [
-              {
-                type: 'text',
-                text: results.join('\n'),
-              },
-            ],
-          }
+          const summaryLines = connectorResults.map(
+            r => `- **${r.displayName}** — ${r.status.toLowerCase().replace(/_/g, ' ')}`,
+          )
+
+          const summary = `## Connector Enablement Results (${connectorResults.length})\n\n${summaryLines.join('\n')}`
+
+          return formatToolResponse({
+            summary,
+            data: { connectors: connectorResults },
+            structuredContent: { connectors: connectorResults },
+          })
         },
       },
       options,

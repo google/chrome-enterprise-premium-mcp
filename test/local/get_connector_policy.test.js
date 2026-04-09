@@ -36,7 +36,10 @@ describe('get_connector_policy Tool', () => {
       const toolDefinition = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_connector_policy')
         .arguments[1]
 
-      assert.strictEqual(toolDefinition.description, 'Retrieves configuration for Chrome Enterprise connectors.')
+      assert.strictEqual(
+        toolDefinition.description,
+        `Retrieves the current configuration for a specific Chrome Enterprise connector.\nUse this to AUDIT or VERIFY settings for features like "printing sensitive data", "real-time URL checks", or "event reporting". \n\nRecommended Flow: Use this tool to retrieve technical settings, then use a knowledge base search to verify the documented meaning and troubleshooting steps for those settings.\n\nTo modify these settings, use 'enable_chrome_enterprise_connectors'.`,
+      )
     })
   })
 
@@ -110,8 +113,8 @@ describe('get_connector_policy Tool', () => {
         { requestInfo: {} },
       )
 
-      assert.ok(result.content[0].text.includes('Reported Events: Default (Core Events Enabled)'))
-      assert.ok(!result.content[0].text.includes('⚠️ WARNING'))
+      assert.ok(result.content[0].text.includes('**Reported Events**: Default (Core Events Enabled)'))
+      assert.ok(!result.content[0].text.includes('WARNING'))
       assert.deepStrictEqual(result.structuredContent.connectorPolicies, mockPolicy)
     })
 
@@ -143,10 +146,10 @@ describe('get_connector_policy Tool', () => {
         { requestInfo: {} },
       )
 
-      assert.ok(result.content[0].text.includes('Reported Events: None'))
+      assert.ok(result.content[0].text.includes('**Reported Events**: None'))
       assert.ok(
         result.content[0].text.includes(
-          '⚠️ WARNING: The following core DLP events are missing from your customized configuration: Content transfer, Malware transfer, Sensitive data transfer, URL filtering interstitial, Suspicious URL',
+          'WARNING: The following core DLP events are missing from your customized configuration: Content transfer, Malware transfer, Sensitive data transfer, URL filtering interstitial, Suspicious URL',
         ),
       )
     })
@@ -187,7 +190,7 @@ describe('get_connector_policy Tool', () => {
       assert.ok(result.content[0].text.includes('Content transfer'))
       assert.ok(
         result.content[0].text.includes(
-          '⚠️ WARNING: The following core DLP events are missing from your customized configuration: Malware transfer, Suspicious URL',
+          'WARNING: The following core DLP events are missing from your customized configuration: Malware transfer, Suspicious URL',
         ),
       )
     })
@@ -223,7 +226,7 @@ describe('get_connector_policy Tool', () => {
       assert.ok(result.content[0].text.includes('Browser crash'))
       assert.ok(
         result.content[0].text.includes(
-          '⚠️ WARNING: The following core DLP events are missing from your customized configuration: Content transfer, Malware transfer, Sensitive data transfer, URL filtering interstitial, Suspicious URL',
+          'WARNING: The following core DLP events are missing from your customized configuration: Content transfer, Malware transfer, Sensitive data transfer, URL filtering interstitial, Suspicious URL',
         ),
       )
     })
@@ -252,7 +255,7 @@ describe('get_connector_policy Tool', () => {
         { requestInfo: {} },
       )
 
-      assert.ok(result.content[0].text.includes('Reported Events: Disabled'))
+      assert.ok(result.content[0].text.includes('**Reported Events**: Disabled'))
     })
   })
 })

@@ -15,7 +15,8 @@ limitations under the License.
 */
 
 import { z } from 'zod'
-import { guardedToolCall } from '../utils/wrapper.js'
+import { guardedToolCall, formatToolResponse, safeFormatResponse } from '../utils/wrapper.js'
+import { commonOutputSchemas } from './shared.js'
 
 const ConnectorPolicyFilter = {
   ON_FILE_ATTACHED: 'chrome.users.OnFileAttachedConnectorPolicy',
@@ -55,17 +56,26 @@ export function registerGetConnectorPolicyTool(server, options, sessionState) {
   server.registerTool(
     'get_connector_policy',
     {
-      description: `Retrieves configuration for Chrome Enterprise connectors.`,
+      description: `Retrieves the current configuration for a specific Chrome Enterprise connector.
+Use this to AUDIT or VERIFY settings for features like "blocking screenshots", "printing sensitive data", "real-time URL checks", or "event reporting". 
+
+To modify these settings, use 'enable_chrome_enterprise_connectors'.`,
       inputSchema: {
         customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
-        orgUnitId: z.string().describe('The ID of the organizational unit.'),
-        policy: z.enum(Object.keys(ConnectorPolicyFilter)),
+        orgUnitId: z.string().describe('The ID of the organizational unit to check.'),
+        policy: z.enum(Object.keys(ConnectorPolicyFilter)).describe('The connector type to retrieve.'),
       },
-      outputSchema: z.any().optional().describe('Structured configuration for a connector policy.'),
+      outputSchema: z
+        .object({
+          connectorPolicies: z.array(commonOutputSchemas.resolvedChromePolicy),
+          connectorType: z.string(),
+          orgUnitId: z.string(),
+        })
+        .passthrough(),
     },
     guardedToolCall(
       {
-        handler: async ({ customerId, orgUnitId, policy }, { authToken }) => {
+        handler: async ({ customerId, orgUnitId, policy }, { _requestInfo, authToken }) => {
           // Normalize Org Unit ID (Strip 'id:' prefix if present)
           const normalizedOrgUnitId = orgUnitId.startsWith('id:') ? orgUnitId.substring(3) : orgUnitId
 
@@ -76,151 +86,148 @@ export function registerGetConnectorPolicyTool(server, options, sessionState) {
             authToken,
           )
 
-          const displayName = POLICY_DISPLAY_NAMES[policy] || policy
-          const header = `Organizational Unit: ${normalizedOrgUnitId}\nConnector: ${displayName}\n\n`
+          return safeFormatResponse({
+            rawData: policies,
+            toolName: 'get_connector_policy',
+            formatFn: raw => {
+              const displayName = POLICY_DISPLAY_NAMES[policy] || policy
+              const header = `Connector policy: ${displayName} (OU: \`${orgUnitId}\`)\n\n`
 
-          const format = val => {
-            if (val === undefined || val === null) {
-              return 'Not set'
-            }
-            if (typeof val === 'boolean') {
-              return val ? 'Enabled' : 'Disabled'
-            }
-            if (typeof val === 'object') {
-              if (getVal(val, 'onByDefault') !== undefined) {
-                return getVal(val, 'onByDefault') ? 'Enabled (Default)' : 'Disabled'
+              const getVal = (obj, key) => {
+                if (!obj || typeof obj !== 'object') {
+                  return undefined
+                }
+                if (obj[key] !== undefined) {
+                  return obj[key]
+                }
+                const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`)
+                return obj[snakeKey]
               }
-              if (getVal(val, 'customUrlPatterns')) {
-                return getVal(val, 'customUrlPatterns').join(', ')
+
+              const format = val => {
+                if (val === undefined || val === null) {
+                  return 'Not set'
+                }
+                if (typeof val === 'boolean') {
+                  return val ? 'Enabled' : 'Disabled'
+                }
+                if (typeof val === 'object') {
+                  if (getVal(val, 'onByDefault') !== undefined) {
+                    return getVal(val, 'onByDefault') ? 'Enabled (Default)' : 'Disabled'
+                  }
+                  if (getVal(val, 'customUrlPatterns')) {
+                    return getVal(val, 'customUrlPatterns').join(', ')
+                  }
+                  return JSON.stringify(val)
+                }
+                const s = String(val)
+                if (s === 'REAL_TIME_CHECK_ENFORCED') {
+                  return 'Enforced'
+                }
+
+                return s
+                  .replace(/^[A-Z_]+_ENUM_/, '')
+                  .replace(/^[A-Z_]+_MODE_/, '')
+                  .replace(/_/g, ' ')
+                  .toLowerCase()
+                  .replace(/\b\w/g, c => c.toUpperCase())
               }
-              return JSON.stringify(val)
-            }
-            const s = String(val)
-            if (
-              s === 'SERVICE_PROVIDER_CHROME_ENTERPRISE_PREMIUM' ||
-              s === 'ENTERPRISE_REAL_TIME_URL_CHECK_MODE_ENUM_ENABLED'
-            ) {
-              return 'Chrome Enterprise Premium (CEP)'
-            }
-            if (s === 'REAL_TIME_CHECK_ENFORCED') {
-              return 'Enforced'
-            }
 
-            return s
-              .replace(/^[A-Z_]+_ENUM_/, '')
-              .replace(/^[A-Z_]+_MODE_/, '')
-              .replace(/_/g, ' ')
-              .toLowerCase()
-              .replace(/\b\w/g, c => c.toUpperCase())
-          }
-
-          const getVal = (obj, key) => {
-            if (!obj || typeof obj !== 'object') {
-              return undefined
-            }
-            if (obj[key] !== undefined) {
-              return obj[key]
-            }
-            const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`)
-            return obj[snakeKey]
-          }
-
-          const summary =
-            policies.length === 0
-              ? 'No policy configured.'
-              : policies
-                  .map(p => {
-                    let v = p.value?.value || {}
-                    if (typeof v === 'string') {
-                      try {
-                        v = JSON.parse(v)
-                      } catch (_e) {
-                        // Fallback to raw string if not JSON
-                      }
-                    }
-
-                    if (typeof v !== 'object' || v === null) {
-                      return `  - Raw Value: ${JSON.stringify(v)}`
-                    }
-
-                    if (policy === 'ON_REALTIME_URL_NAVIGATION') {
-                      const val = getVal(v, 'realtimeUrlCheckEnabled')
-                      const isEnabled = val === 'ENTERPRISE_REAL_TIME_URL_CHECK_MODE_ENUM_ENABLED' || val === true
-                      const status = isEnabled ? 'Chrome Enterprise Premium (CEP)' : 'None'
-                      return `  - Status: ${status}`
-                    }
-
-                    if (policy === 'ON_SECURITY_EVENT') {
-                      const reportingConnector = getVal(v, 'reportingConnector') || {}
-                      const setting = getVal(reportingConnector, 'setting') || reportingConnector
-                      const eventCfg = getVal(setting, 'eventConfiguration')
-
-                      if (eventCfg === undefined) {
-                        return '  - Reported Events: Disabled'
+              const summaryLines =
+                raw.length === 0
+                  ? ['No policy configured.']
+                  : raw.map(p => {
+                      const v = p.value?.value || {}
+                      if (policy === 'ON_REALTIME_URL_NAVIGATION') {
+                        const val = getVal(v, 'realtimeUrlCheckEnabled')
+                        const status = format(val)
+                        return `  - **Status**: ${status}`
                       }
 
-                      const events = getVal(eventCfg, 'enabledEventNames') || []
-                      const explicitlyEmpty = getVal(eventCfg, 'explicitlyEmptyEventNames')
+                      if (policy === 'ON_SECURITY_EVENT') {
+                        const reportingConnector = getVal(v, 'reportingConnector') || {}
+                        const setting = getVal(reportingConnector, 'setting') || reportingConnector
+                        const eventCfg = getVal(setting, 'eventConfiguration')
 
-                      let eventSummary = 'None'
-                      let warnings = ''
-
-                      const coreEvents = [
-                        'contentTransferEvent',
-                        'dangerousDownloadEvent',
-                        'sensitiveDataEvent',
-                        'urlFilteringInterstitialEvent',
-                        'suspiciousUrlEvent',
-                      ]
-
-                      const mapEvent = e => EVENT_NAME_MAPPING[e] || e
-
-                      if (events.length > 0) {
-                        eventSummary = events.map(mapEvent).join(', ')
-                        const missingCoreEvents = coreEvents.filter(e => !events.includes(e))
-                        if (missingCoreEvents.length > 0) {
-                          warnings = `\n\n  ⚠️ WARNING: The following core DLP events are missing from your customized configuration: ${missingCoreEvents.map(mapEvent).join(', ')}. Without these, your security posture is incomplete.`
+                        if (eventCfg === undefined) {
+                          return '  - **Reported Events**: Disabled'
                         }
-                      } else if (explicitlyEmpty) {
-                        eventSummary = 'None'
-                        warnings = `\n\n  ⚠️ WARNING: The following core DLP events are missing from your customized configuration: ${coreEvents.map(mapEvent).join(', ')}. Without these, your security posture is incomplete.`
-                      } else {
-                        eventSummary = 'Default (Core Events Enabled)'
+
+                        const events = getVal(eventCfg, 'enabledEventNames') || []
+                        const explicitlyEmpty = getVal(eventCfg, 'explicitlyEmptyEventNames')
+
+                        let eventSummary = 'None'
+                        let warnings = ''
+
+                        const coreEvents = [
+                          'contentTransferEvent',
+                          'dangerousDownloadEvent',
+                          'sensitiveDataEvent',
+                          'urlFilteringInterstitialEvent',
+                          'suspiciousUrlEvent',
+                        ]
+
+                        const mapEvent = e => EVENT_NAME_MAPPING[e] || e
+
+                        if (events.length > 0) {
+                          eventSummary = events.map(mapEvent).join(', ')
+                          const missingCoreEvents = coreEvents.filter(e => !events.includes(e))
+                          if (missingCoreEvents.length > 0) {
+                            warnings = `\n\n  ⚠️ WARNING: The following core DLP events are missing from your customized configuration: ${missingCoreEvents.map(mapEvent).join(', ')}. Without these, your security posture is incomplete.`
+                          }
+                        } else if (explicitlyEmpty) {
+                          eventSummary = 'None'
+                          warnings = `\n\n  ⚠️ WARNING: The following core DLP events are missing from your customized configuration: ${coreEvents.map(mapEvent).join(', ')}. Without these, your security posture is incomplete.`
+                        } else {
+                          eventSummary = 'Default (Core Events Enabled)'
+                        }
+
+                        return `  - **Reported Events**: ${eventSummary}${warnings}`
                       }
 
-                      return `  - Reported Events: ${eventSummary}${warnings}`
-                    }
+                      const cfg =
+                        v.onFileAttachedAnalysisConnectorConfiguration?.fileAttachedConfiguration ||
+                        v.onFileDownloadedAnalysisConnectorConfiguration?.fileDownloadedConfiguration ||
+                        v.onBulkTextEntryAnalysisConnectorConfiguration?.bulkTextEntryConfiguration ||
+                        v.onPrintAnalysisConnectorConfiguration?.printConfigurations?.[0] ||
+                        v
 
-                    const cfg =
-                      v.onFileAttachedAnalysisConnectorConfiguration?.fileAttachedConfiguration ||
-                      v.onFileDownloadedAnalysisConnectorConfiguration?.fileDownloadedConfiguration ||
-                      v.onBulkTextEntryAnalysisConnectorConfiguration?.bulkTextEntryConfiguration ||
-                      v.onPrintAnalysisConnectorConfiguration?.printConfigurations?.[0] ||
-                      v
+                      const patterns = []
+                      if (getVal(cfg, 'sensitiveUrlPatterns')) {
+                        patterns.push(`**Sensitive URLs**: ${format(getVal(cfg, 'sensitiveUrlPatterns'))}`)
+                      }
+                      if (getVal(cfg, 'malwareUrlPatterns')) {
+                        patterns.push(`**Malware URLs**: ${format(getVal(cfg, 'malwareUrlPatterns'))}`)
+                      }
 
-                    const patterns = []
-                    if (getVal(cfg, 'sensitiveUrlPatterns')) {
-                      patterns.push(`Sensitive URLs: ${format(getVal(cfg, 'sensitiveUrlPatterns'))}`)
-                    }
-                    if (getVal(cfg, 'malwareUrlPatterns')) {
-                      patterns.push(`Malware URLs: ${format(getVal(cfg, 'malwareUrlPatterns'))}`)
-                    }
+                      return [
+                        `  - **Provider**: ${format(getVal(cfg, 'serviceProvider'))}`,
+                        `  - **Delay Enforcement**: ${format(getVal(cfg, 'delayDeliveryUntilVerdict'))}`,
+                        `  - **Block on Failure**: ${format(getVal(cfg, 'blockFileOnContentAnalysisFailure') || getVal(cfg, 'blockUntilVerdict'))}`,
+                        `  - **Block Password Protected**: ${format(getVal(cfg, 'blockPasswordProtectedFiles'))}`,
+                        `  - **Block Large Files**: ${format(getVal(cfg, 'blockLargeFileTransfer'))}`,
+                        ...patterns.map(pat => `  - ${pat}`),
+                      ].join('\n')
+                    })
 
-                    return [
-                      `  - Provider: ${format(getVal(cfg, 'serviceProvider'))}`,
-                      `  - Delay Enforcement: ${format(getVal(cfg, 'delayDeliveryUntilVerdict'))}`,
-                      `  - Block on Failure: ${format(getVal(cfg, 'blockFileOnContentAnalysisFailure') || getVal(cfg, 'blockUntilVerdict'))}`,
-                      `  - Block Password Protected: ${format(getVal(cfg, 'blockPasswordProtectedFiles'))}`,
-                      `  - Block Large Files: ${format(getVal(cfg, 'blockLargeFileTransfer'))}`,
-                      ...patterns.map(p => `  - ${p}`),
-                    ].join('\n')
-                  })
-                  .join('\n\n')
+              const sc = {
+                connectorPolicies: raw,
+                connectorType: policy,
+                orgUnitId: orgUnitId,
+              }
 
-          return {
-            content: [{ type: 'text', text: header + summary }],
-            structuredContent: { connectorPolicies: policies },
-          }
+              const text =
+                header +
+                summaryLines.join('\n\n') +
+                '\n\n**Next Step**: Search the knowledge base for documentation to interpret these settings.'
+
+              return formatToolResponse({
+                summary: text,
+                data: sc,
+                structuredContent: sc,
+              })
+            },
+          })
         },
       },
       options,
