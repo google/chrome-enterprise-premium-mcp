@@ -61,6 +61,52 @@ describe('get_connector_policy tool handler', () => {
     assert.match(text, /Block on Failure: Enabled/)
   })
 
+  test('should report CEP or None for ON_REALTIME_URL_NAVIGATION', async () => {
+    const { mockServer, getRegisteredHandler } = getHandler()
+    const mockChromePolicyClient = {
+      getConnectorPolicy: async (customerId, orgUnitId, policy) => {
+        if (policy === 'chrome.users.RealtimeUrlCheck') {
+          return [
+            {
+              value: {
+                value: {
+                  realtimeUrlCheckEnabled: 'ENTERPRISE_REAL_TIME_URL_CHECK_MODE_ENUM_ENABLED',
+                },
+              },
+            },
+            {
+              value: {
+                value: {
+                  realtimeUrlCheckEnabled: true,
+                },
+              },
+            },
+            {
+              value: {
+                value: {
+                  realtimeUrlCheckEnabled: false,
+                },
+              },
+            },
+          ]
+        }
+        return []
+      },
+    }
+
+    registerGetConnectorPolicyTool(mockServer, { chromePolicyClient: mockChromePolicyClient }, {})
+    const handler = getRegisteredHandler()
+
+    const result = await handler(
+      { customerId: 'C123', orgUnitId: 'OU123', policy: 'ON_REALTIME_URL_NAVIGATION' },
+      { requestInfo: {} },
+    )
+    const text = result.content[0].text
+
+    assert.match(text, /Status: Chrome Enterprise Premium \(CEP\)/)
+    assert.match(text, /Status: None/)
+  })
+
   test('should format multiple policies in a single response', async () => {
     const { mockServer, getRegisteredHandler } = getHandler()
     const mockChromePolicyClient = {
