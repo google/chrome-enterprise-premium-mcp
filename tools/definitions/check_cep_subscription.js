@@ -56,7 +56,7 @@ export function registerCheckCepSubscriptionTool(server, options, sessionState) 
     },
     guardedToolCall(
       {
-        handler: async ({ customerId }, { requestInfo, authToken }) => {
+        handler: async ({ customerId }, { _requestInfo, authToken }) => {
           logger.debug(`${TAGS.MCP} Calling 'check_cep_subscription' for customer: ${customerId}`)
 
           const result = await adminSdkClient.checkCepSubscription(customerId, authToken)

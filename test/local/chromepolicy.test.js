@@ -15,8 +15,7 @@ limitations under the License.
 */
 
 import assert from 'node:assert/strict'
-import { describe, it, mock, beforeEach } from 'node:test'
-import esmock from 'esmock'
+import { describe, it } from 'node:test'
 
 describe('Chrome Policy API', () => {
   it('should have tests', () => {

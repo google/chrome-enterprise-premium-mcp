@@ -48,7 +48,7 @@ export function registerDeleteDetectorTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
-        handler: async ({ policyName }, { requestInfo, authToken }) => {
+        handler: async ({ policyName }, { _requestInfo, authToken }) => {
           // Fetch display name before deletion for user-friendly confirmation
           let displayName = policyName.split('/').pop()
           try {

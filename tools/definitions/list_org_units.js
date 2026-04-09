@@ -48,7 +48,7 @@ export function registerListOrgUnitsTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
-        handler: async ({ customerId }, { requestInfo, authToken }) => {
+        handler: async ({ customerId }, { _requestInfo, authToken }) => {
           logger.debug(`${TAGS.MCP} Calling 'list_org_units' with customerId: ${customerId}`)
           const orgUnitsData = await adminSdkClient.listOrgUnits({ customerId }, authToken)
 

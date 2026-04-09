@@ -104,7 +104,7 @@ export function registerCreateDefaultDlpRulesTool(server, options, sessionState)
 
     guardedToolCall(
       {
-        handler: async (params, { requestInfo, authToken }) => {
+        handler: async (params, { _requestInfo, authToken }) => {
           logger.debug(`${TAGS.MCP} Calling 'create_default_dlp_rules' with params: ${JSON.stringify(params)}`)
           const { customerId, orgUnitId } = params
 

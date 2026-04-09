@@ -155,7 +155,6 @@ If initial results aren't relevant, try different keywords rather than repeating
           logger.info(`${TAGS.MCP} search_content called with query: "${args.query}"`)
           const db = await loadDb()
           const allDocs = db.allDocs
-          const idToDoc = db.idToDoc
 
           if (!allDocs) {
             return { content: [{ type: 'text', text: 'Search index not loaded.' }] }

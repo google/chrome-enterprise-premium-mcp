@@ -49,7 +49,7 @@ export function registerDeleteAgentDlpRuleTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
-        handler: async ({ policyName }, { requestInfo, authToken }) => {
+        handler: async ({ policyName }, { _requestInfo, authToken }) => {
           logger.debug(`${TAGS.MCP} Calling 'delete_agent_dlp_rule' with policyName: ${policyName}`)
 
           let rule

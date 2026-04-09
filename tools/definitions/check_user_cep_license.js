@@ -45,7 +45,7 @@ export function registerCheckUserCepLicenseTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
-        handler: async ({ userId }, { requestInfo, authToken }) => {
+        handler: async ({ userId }, { _requestInfo, authToken }) => {
           logger.debug(`${TAGS.MCP} Calling 'check_user_cep_license' for user: ${userId}`)
 
           const result = await adminSdkClient.checkUserCepLicense(userId, authToken)

@@ -1,30 +1,27 @@
 {
   "name": "@google-cloud/chrome-management-mcp",
   "version": "0.1.0",
-  "type": "module",
   "description": "Chrome Management MCP server",
+  "license": "Apache-2.0",
+  "type": "module",
   "main": "mcp-server.js",
   "bin": {
     "chrome-management-mcp": "mcp-server.js"
   },
   "scripts": {
-    "start": "node mcp-server.js",
-    "mcp-inspector": "npx @modelcontextprotocol/inspector node mcp-server.js",
-    "test": "node test/run-all.js",
-    "test:unit": "node test/run-unit.js",
-    "test:smoke": "GCP_STDIO=false node test/local/smoke-test.js",
-    "test:integration:fake": "EXPERIMENT_DELETE_TOOL_ENABLED=true node test/run-integration.js fake",
-    "test:integration:real": "EXPERIMENT_DELETE_TOOL_ENABLED=true node test/run-integration.js real",
     "eval": "node test/evals/run.js",
-    "eval:knowledge": "node test/evals/run.js --category knowledge",
     "eval:agentic": "node test/evals/run.js --category inspection,troubleshooting,mutation,discovery",
     "eval:full": "node test/evals/run.js --runs 3 --output results/eval-full.md",
+    "eval:knowledge": "node test/evals/run.js --category knowledge",
+    "format": "prettier --write .",
     "lint": "eslint .",
-    "format": "prettier --write ."
-  },
-  "license": "Apache-2.0",
-  "engines": {
-    "node": ">=18.0.0"
+    "mcp-inspector": "npx @modelcontextprotocol/inspector node mcp-server.js",
+    "start": "node mcp-server.js",
+    "test": "node test/run-all.js",
+    "test:integration:fake": "EXPERIMENT_DELETE_TOOL_ENABLED=true node test/run-integration.js fake",
+    "test:integration:real": "EXPERIMENT_DELETE_TOOL_ENABLED=true node test/run-integration.js real",
+    "test:smoke": "GCP_STDIO=false node test/local/smoke-test.js",
+    "test:unit": "node test/run-unit.js"
   },
   "dependencies": {
     "@dotenvx/dotenvx": "^1.52.0",
@@ -48,7 +45,10 @@
     "gray-matter": "^4.0.3",
     "js-yaml": "^4.1.0",
     "prettier": "^3.8.1",
-    "typescript-eslint": "^8.5.0",
+    "prettier-plugin-packagejson": "^3.0.2",
     "uuid": "^13.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

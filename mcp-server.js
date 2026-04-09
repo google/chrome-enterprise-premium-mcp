@@ -35,17 +35,10 @@ import { SetLevelRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import { registerTools } from './tools/index.js'
 import { registerPrompts } from './prompts/index.js'
 import { checkGCP } from './lib/util/gcp.js'
-import { verifyToken, oauthMiddleware } from './lib/util/auth.js'
+import { oauthMiddleware } from './lib/util/auth.js'
 import { featureFlags, FLAGS } from './lib/util/feature_flags.js'
 import { logger } from './lib/util/logger.js'
-import {
-  TAGS,
-  DEFAULT_CONFIG,
-  SCOPES,
-  BEARER_METHODS_SUPPORTED,
-  RESPONSE_TYPES_SUPPORTED,
-  OAUTH_ISSUER,
-} from './lib/constants.js'
+import { TAGS, SCOPES, BEARER_METHODS_SUPPORTED, RESPONSE_TYPES_SUPPORTED, OAUTH_ISSUER } from './lib/constants.js'
 
 // Import Real Clients
 import { RealAdminSdkClient } from './lib/api/real_admin_sdk_client.js'

@@ -18,7 +18,6 @@ limitations under the License.
  * @fileoverview Tool definition for creating regular expression DLP detectors.
  */
 
-import { WORKSPACE_RULE_LIMITS } from '../../lib/util/chrome_dlp_constants.js'
 import { z } from 'zod'
 
 import { guardedToolCall } from '../utils/wrapper.js'
@@ -53,7 +52,7 @@ export function registerCreateRegexDetectorTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
-        handler: async (params, { requestInfo, authToken }) => {
+        handler: async (params, { _requestInfo, authToken }) => {
           const { customerId, displayName, description, expression } = params
 
           const detectorConfig = {

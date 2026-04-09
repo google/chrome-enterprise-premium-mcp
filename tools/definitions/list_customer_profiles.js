@@ -45,7 +45,7 @@ export function registerCustomerProfileTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
-        handler: async ({ customerId }, { requestInfo, authToken }) => {
+        handler: async ({ customerId }, { _requestInfo, authToken }) => {
           logger.debug(`${TAGS.MCP} Calling 'list_customer_profiles' with customerId: ${customerId}`)
           try {
             const profiles = await chromeManagementClient.listCustomerProfiles(customerId, authToken)

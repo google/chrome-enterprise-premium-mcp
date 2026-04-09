@@ -20,9 +20,6 @@ import esmock from 'esmock'
 
 describe('Chrome Management API', () => {
   let server
-  let mockCountBrowserVersions
-  let mockListCustomerProfiles
-  let registerTools
 
   beforeEach(async () => {
     server = {

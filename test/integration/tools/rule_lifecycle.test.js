@@ -159,7 +159,7 @@ describe('Rule Lifecycle Integration', () => {
       arguments: {},
     })
 
-    const { text: listOutput, details: listData } = parseToolOutput(listResult)
+    const { details: listData } = parseToolOutput(listResult)
     const rules = listData?.dlpRules || []
     const ruleExists = rules.some(r => r.name === ruleName)
     assert.ok(ruleExists, 'Human rule was incorrectly deleted by the agent tool')

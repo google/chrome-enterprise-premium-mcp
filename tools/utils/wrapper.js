@@ -170,15 +170,13 @@ export function guardedToolCall(
 
       const status = error.status || error.code || error.response?.status
       if (status === 401) {
-        throw {
-          code: 401,
-          message: 'Authentication required. Please check your credentials.',
-        }
+        const authErr = new Error('Authentication required. Please check your credentials.')
+        authErr.code = 401
+        throw authErr
       } else if (status === 403) {
-        throw {
-          code: 403,
-          message: 'Permission denied. Your account lacks the required permissions.',
-        }
+        const permErr = new Error('Permission denied. Your account lacks the required permissions.')
+        permErr.code = 403
+        throw permErr
       }
 
       let errorMessage = error.message

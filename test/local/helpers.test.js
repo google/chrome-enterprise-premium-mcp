@@ -17,7 +17,6 @@ limitations under the License.
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import { callWithRetry } from '../../lib/util/helpers.js'
-import { ERROR_MESSAGES } from '../../lib/constants.js'
 
 describe('Helpers', () => {
   describe('callWithRetry', () => {
