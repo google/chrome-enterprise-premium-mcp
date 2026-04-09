@@ -21,7 +21,6 @@ limitations under the License.
 import { z } from 'zod'
 
 import { guardedToolCall } from '../utils/wrapper.js'
-import { inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -57,7 +56,7 @@ export function registerGetChromeActivityLogTool(server, options, sessionState) 
           .optional()
           .describe(`The end time of the range to get activities for (RFC3339 timestamp). Defaults to now.`),
         maxResults: z.number().optional().describe(`The maximum number of results to return.`),
-        customerId: inputSchemas.customerId,
+        customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
       },
     },
     guardedToolCall(

@@ -18,8 +18,8 @@ limitations under the License.
  * @fileoverview Tool definition for counting browser versions.
  */
 
+import { z } from 'zod'
 import { guardedToolCall } from '../utils/wrapper.js'
-import { inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -40,8 +40,8 @@ export function registerCountBrowserVersionsTool(server, options, sessionState) 
     {
       description: 'Counts Chrome browser versions reported by devices.',
       inputSchema: {
-        customerId: inputSchemas.customerId,
-        orgUnitId: inputSchemas.orgUnitIdOptional,
+        customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
+        orgUnitId: z.string().optional().describe('The ID of the organizational unit to filter results.'),
       },
     },
     guardedToolCall(

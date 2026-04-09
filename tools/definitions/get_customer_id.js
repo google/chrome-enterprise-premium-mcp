@@ -19,7 +19,6 @@ limitations under the License.
  */
 
 import { guardedToolCall } from '../utils/wrapper.js'
-import { inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 

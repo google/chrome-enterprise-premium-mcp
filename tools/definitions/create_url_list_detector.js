@@ -18,13 +18,14 @@ limitations under the License.
  * @fileoverview Tool definition for creating URL list DLP detectors.
  */
 
+import { WORKSPACE_RULE_LIMITS } from '../../lib/util/chrome_dlp_constants.js'
 import { z } from 'zod'
 
 import { guardedToolCall } from '../utils/wrapper.js'
-import { inputSchemas, outputSchemas } from '../utils.js'
-import { resolveRootOrgUnitId } from '../utils/org-unit.js'
+import { createDetectorAndFormatResponse } from '../utils/detector.js'
 import { logger } from '../../lib/util/logger.js'
-import { WORKSPACE_RULE_LIMITS } from '../../lib/util/chrome_dlp_constants.js'
+
+import { commonInputSchemas } from './shared.js'
 
 /**
  * Registers the 'create_url_list_detector' tool with the MCP server.
@@ -44,16 +45,9 @@ export function registerCreateUrlListDetectorTool(server, options, sessionState)
     {
       description: 'Creates a new DLP URL list detector.',
       inputSchema: {
-        customerId: inputSchemas.customerId,
-        displayName: z
-          .string()
-          .max(WORKSPACE_RULE_LIMITS.NAME_MAX_LENGTH)
-          .describe('The display name for the detector.'),
-        description: z
-          .string()
-          .max(WORKSPACE_RULE_LIMITS.DESCRIPTION_MAX_LENGTH)
-          .optional()
-          .describe('An optional description for the detector.'),
+        customerId: commonInputSchemas.customerId,
+        displayName: commonInputSchemas.detectorDisplayName,
+        description: commonInputSchemas.detectorDescription,
         urls: z.array(z.string()).min(1).describe(`A list of URLs to match.`),
       },
     },
@@ -62,38 +56,21 @@ export function registerCreateUrlListDetectorTool(server, options, sessionState)
         handler: async (params, { requestInfo, authToken }) => {
           const { customerId, displayName, description, urls } = params
 
-          const orgUnitId = await resolveRootOrgUnitId(apiClients, customerId, authToken, sessionState)
-          if (!orgUnitId) {
-            throw new Error('Failed to resolve root organizational unit ID.')
-          }
-
           const detectorConfig = {
             displayName: displayName,
             description: description || '',
             url_list: { urls: urls },
           }
 
-          const result = await cloudIdentityClient.createDetector(customerId, orgUnitId, detectorConfig, authToken)
-
-          const createdPolicy = result.response
-
-          const createdDisplayName = createdPolicy?.setting?.value?.displayName || displayName
-
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Successfully created URL list detector "${createdDisplayName}".`,
-              },
-              {
-                type: 'text',
-                text: `Resource name for API operations: ${createdPolicy.name}. Display name: "${createdDisplayName}".`,
-              },
-            ],
-            structuredContent: {
-              detector: createdPolicy,
-            },
-          }
+          return createDetectorAndFormatResponse(
+            apiClients,
+            cloudIdentityClient,
+            customerId,
+            authToken,
+            sessionState,
+            detectorConfig,
+            'URL list',
+          )
         },
       },
       options,

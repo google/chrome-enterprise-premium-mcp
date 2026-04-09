@@ -20,7 +20,6 @@ limitations under the License.
 
 import { z } from 'zod'
 import { guardedToolCall } from '../utils/wrapper.js'
-import { inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 import { CHROME_TRIGGERS, POLICY_STATES } from '../../lib/util/chrome_dlp_constants.js'
@@ -94,10 +93,13 @@ export function registerCreateDefaultDlpRulesTool(server, options, sessionState)
       description:
         "Creates the default Chrome DLP rules as a starting pack for a specific Organizational Unit. This tool is only for customers who don't have DLP rules to get them started.",
       inputSchema: {
-        customerId: inputSchemas.customerId,
-        orgUnitId: inputSchemas.orgUnitId.describe('The target Organizational Unit ID'),
+        customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
+        orgUnitId: z
+          .string()
+          .describe('The ID of the organizational unit.')
+          .describe('The target Organizational Unit ID'),
       },
-      outputSchema: outputSchemas.defaultDlpRules,
+      outputSchema: z.array(z.any()).optional().default([]),
     },
 
     guardedToolCall(

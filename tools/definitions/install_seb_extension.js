@@ -18,8 +18,8 @@ limitations under the License.
  * @fileoverview Tool definition for force-installing the SEB extension.
  */
 
+import { z } from 'zod'
 import { guardedToolCall } from '../utils/wrapper.js'
-import { inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -44,12 +44,16 @@ export function registerInstallSebExtensionTool(server, options, sessionState) {
       description:
         'Force-installs the Secure Enterprise Browser (SEB) extension for a given Organizational Unit. Required for data masking. Returns a user-friendly text summary and an embedded JSON resource with the status.',
       inputSchema: {
-        customerId: inputSchemas.customerId,
-        orgUnitId: inputSchemas.orgUnitId.describe(
-          'The ID of the organizational unit where the extension will be force-installed.',
-        ),
+        customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
+        orgUnitId: z
+          .string()
+          .describe('The ID of the organizational unit.')
+          .describe('The ID of the organizational unit where the extension will be force-installed.'),
       },
-      outputSchema: outputSchemas.successMessage,
+      outputSchema: z.object({
+        status: z.string().optional().default('SUCCESS'),
+        message: z.string().optional().default('Operation completed successfully.'),
+      }),
     },
     guardedToolCall(
       {

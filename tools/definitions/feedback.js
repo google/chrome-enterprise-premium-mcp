@@ -24,7 +24,6 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 
 import { guardedToolCall } from '../utils/wrapper.js'
-import { inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 

@@ -18,8 +18,8 @@ limitations under the License.
  * @fileoverview Tool definition for checking CEP subscription.
  */
 
+import { z } from 'zod'
 import { guardedToolCall } from '../utils/wrapper.js'
-import { inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -40,9 +40,19 @@ export function registerCheckCepSubscriptionTool(server, options, sessionState) 
     {
       description: 'Checks if the customer has an active Chrome Enterprise Premium (CEP) subscription.',
       inputSchema: {
-        customerId: inputSchemas.customerId,
+        customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
       },
-      outputSchema: outputSchemas.subscriptionInfo,
+      outputSchema: z
+        .union([
+          z
+            .object({
+              isActive: z.boolean().describe('Whether the subscription or license is active.'),
+              assignmentCount: z.number().optional().describe('Number of license assignments.'),
+            })
+            .passthrough(),
+          z.any(),
+        ])
+        .optional(),
     },
     guardedToolCall(
       {

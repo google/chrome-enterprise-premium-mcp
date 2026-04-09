@@ -18,8 +18,8 @@ limitations under the License.
  * @fileoverview Tool definition for listing customer profiles.
  */
 
+import { z } from 'zod'
 import { guardedToolCall } from '../utils/wrapper.js'
-import { inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -40,7 +40,7 @@ export function registerCustomerProfileTool(server, options, sessionState) {
     {
       description: 'Lists all customer profiles for a given customer.',
       inputSchema: {
-        customerId: inputSchemas.customerId,
+        customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
       },
     },
     guardedToolCall(

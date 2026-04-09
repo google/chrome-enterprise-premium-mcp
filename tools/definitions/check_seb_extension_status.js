@@ -18,8 +18,8 @@ limitations under the License.
  * @fileoverview Tool definition for checking the status of the SEB extension.
  */
 
+import { z } from 'zod'
 import { guardedToolCall } from '../utils/wrapper.js'
-import { inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -44,10 +44,23 @@ export function registerCheckSebExtensionStatusTool(server, options, sessionStat
       description:
         'Checks if the Secure Enterprise Browser (SEB) extension is force-installed for a given Organizational Unit.',
       inputSchema: {
-        customerId: inputSchemas.customerId,
-        orgUnitId: inputSchemas.orgUnitId.describe('The ID of the organizational unit to check.'),
+        customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
+        orgUnitId: z
+          .string()
+          .describe('The ID of the organizational unit.')
+          .describe('The ID of the organizational unit to check.'),
       },
-      outputSchema: outputSchemas.sebStatus,
+      outputSchema: z
+        .union([
+          z
+            .object({
+              isInstalled: z.boolean().describe('Whether the extension is force-installed.'),
+              extensionId: z.string().optional().describe('The ID of the extension.'),
+            })
+            .passthrough(),
+          z.any(),
+        ])
+        .optional(),
     },
     guardedToolCall(
       {

@@ -18,8 +18,8 @@ limitations under the License.
  * @fileoverview Tool definition for checking and enabling APIs.
  */
 
+import { z } from 'zod'
 import { guardedToolCall } from '../utils/wrapper.js'
-import { inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS, SERVICE_NAMES } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -44,10 +44,13 @@ export function registerCheckAndEnableApiTool(server, options, sessionState) {
       The model MUST specifically ask the customer whether they would like to check and enable ALL missing required APIs or just the specific one currently identified as missing.
       ONLY if the user explicitly agrees should the model call this tool again with 'enable: true' (and 'checkAll: true' if they agreed to enable all).`,
       inputSchema: {
-        projectId: inputSchemas.projectId,
-        apiName: inputSchemas.apiName,
-        enable: inputSchemas.enable,
-        checkAll: inputSchemas.checkAll,
+        projectId: z.string().describe('The Google Cloud project ID or number.'),
+        apiName: z
+          .enum(Object.values(SERVICE_NAMES))
+          .optional()
+          .describe('The API name to check/enable (e.g., admin.googleapis.com).'),
+        enable: z.boolean().optional().describe('Whether to enable the API if it is disabled.'),
+        checkAll: z.boolean().optional().describe('Whether to check all required APIs and enable the missing ones.'),
       },
     },
     guardedToolCall(

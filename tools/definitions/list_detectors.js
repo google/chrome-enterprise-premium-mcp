@@ -15,7 +15,6 @@ limitations under the License.
 */
 
 import { guardedToolCall } from '../utils/wrapper.js'
-import { inputSchemas, outputSchemas } from '../utils.js'
 
 export function registerListDetectorsTool(server, options, sessionState) {
   const { cloudIdentityClient } = options

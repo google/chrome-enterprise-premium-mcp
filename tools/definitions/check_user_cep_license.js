@@ -18,8 +18,8 @@ limitations under the License.
  * @fileoverview Tool definition for checking a specific user's CEP license.
  */
 
+import { z } from 'zod'
 import { guardedToolCall } from '../utils/wrapper.js'
-import { inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -40,7 +40,7 @@ export function registerCheckUserCepLicenseTool(server, options, sessionState) {
     {
       description: 'Checks if a specific user has a Chrome Enterprise Premium (CEP) license assigned.',
       inputSchema: {
-        userId: inputSchemas.userId,
+        userId: z.string().describe("The user's primary email address or unique ID."),
       },
     },
     guardedToolCall(

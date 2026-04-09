@@ -20,7 +20,6 @@ limitations under the License.
 
 import { z } from 'zod'
 import { guardedToolCall } from '../utils/wrapper.js'
-import { inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -203,10 +202,11 @@ export function registerEnableChromeEnterpriseConnectorsTool(server, options, se
 
         It will ONLY apply changes to connectors that are not already configured.`,
       inputSchema: {
-        customerId: inputSchemas.customerId,
-        orgUnitId: inputSchemas.orgUnitId.describe(
-          'The ID of the organizational unit where connectors will be enabled.',
-        ),
+        customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
+        orgUnitId: z
+          .string()
+          .describe('The ID of the organizational unit.')
+          .describe('The ID of the organizational unit where connectors will be enabled.'),
         connectors: z
           .array(
             z.enum([

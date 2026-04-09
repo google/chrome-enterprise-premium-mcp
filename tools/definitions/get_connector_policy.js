@@ -16,7 +16,6 @@ limitations under the License.
 
 import { z } from 'zod'
 import { guardedToolCall } from '../utils/wrapper.js'
-import { inputSchemas, outputSchemas } from '../utils.js'
 
 const ConnectorPolicyFilter = {
   ON_FILE_ATTACHED: 'chrome.users.OnFileAttachedConnectorPolicy',
@@ -58,11 +57,11 @@ export function registerGetConnectorPolicyTool(server, options, sessionState) {
     {
       description: `Retrieves configuration for Chrome Enterprise connectors.`,
       inputSchema: {
-        customerId: inputSchemas.customerId,
-        orgUnitId: inputSchemas.orgUnitId,
+        customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
+        orgUnitId: z.string().describe('The ID of the organizational unit.'),
         policy: z.enum(Object.keys(ConnectorPolicyFilter)),
       },
-      outputSchema: outputSchemas.connectorPolicies,
+      outputSchema: z.any().optional().describe('Structured configuration for a connector policy.'),
     },
     guardedToolCall(
       {

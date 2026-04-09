@@ -21,7 +21,6 @@ limitations under the License.
 import { z } from 'zod'
 
 import { guardedToolCall } from '../utils/wrapper.js'
-import { inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 import {
@@ -128,8 +127,11 @@ export function registerCreateChromeDlpRuleTool(server, options, sessionState) {
 This tool is specialized for browser-level protection (e.g., uploads, downloads, printing).
 ${MCP_SAFETY_CONSTRAINTS.ACTIVE_BLOCK_RESTRICTION}`,
       inputSchema: {
-        customerId: inputSchemas.customerId,
-        orgUnitId: inputSchemas.orgUnitId.describe('The target Organizational Unit ID'),
+        customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
+        orgUnitId: z
+          .string()
+          .describe('The ID of the organizational unit.')
+          .describe('The target Organizational Unit ID'),
         displayName: z
           .string()
           .max(USER_DISPLAY_NAME_MAX_LENGTH)
@@ -211,7 +213,10 @@ Multi-Trigger Logic:
                   maskType: z
                     .enum(Object.values(MASK_TYPES).map(m => m.value))
                     .describe(`The type of masking to apply:\n${maskTypeList}`),
-                  resourceName: inputSchemas.detectorResourceName,
+                  resourceName: z
+                    .string()
+                    .startsWith('policies/')
+                    .describe('The resource name of the detector (e.g. policies/akajj264apk5psphei)'),
                   displayName: z.string().describe('The display name for the detector in the UI.'),
                 }),
               )

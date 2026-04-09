@@ -20,7 +20,6 @@ limitations under the License.
 
 import { z } from 'zod'
 import { guardedToolCall } from '../utils/wrapper.js'
-import { inputSchemas, outputSchemas } from '../utils.js'
 import { logger } from '../../lib/util/logger.js'
 
 /**
@@ -41,7 +40,10 @@ export function registerDeleteDetectorTool(server, options, sessionState) {
     {
       description: 'Deletes a DLP detector (URL list, word list, or regex).',
       inputSchema: {
-        policyName: inputSchemas.detectorResourceName,
+        policyName: z
+          .string()
+          .startsWith('policies/')
+          .describe('The resource name of the detector (e.g. policies/akajj264apk5psphei)'),
       },
     },
     guardedToolCall(

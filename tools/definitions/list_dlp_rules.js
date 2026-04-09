@@ -15,7 +15,6 @@ limitations under the License.
 */
 
 import { guardedToolCall } from '../utils/wrapper.js'
-import { inputSchemas, outputSchemas } from '../utils.js'
 
 const TRIGGERS = {
   'google.workspace.chrome.file.v1.upload': 'Uploads',

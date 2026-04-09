@@ -18,8 +18,8 @@ limitations under the License.
  * @fileoverview Tool definition for listing organizational units.
  */
 
+import { z } from 'zod'
 import { guardedToolCall } from '../utils/wrapper.js'
-import { inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -43,7 +43,7 @@ export function registerListOrgUnitsTool(server, options, sessionState) {
         It provides users with a list of organizational unit names,
         so they do not need to manually search for the org unit ID.`,
       inputSchema: {
-        customerId: inputSchemas.customerId,
+        customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
       },
     },
     guardedToolCall(

@@ -20,7 +20,6 @@ limitations under the License.
 
 import { z } from 'zod'
 import { guardedToolCall } from '../utils/wrapper.js'
-import { inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 import { AGENT_DISPLAY_NAME_PREFIX, ADMIN_CONSOLE_DLP_RULE_LINK_TEMPLATE } from '../../lib/util/chrome_dlp_constants.js'
@@ -42,7 +41,10 @@ export function registerDeleteAgentDlpRuleTool(server, options, sessionState) {
     {
       description: `Deletes an agent-created DLP rule (prefixed with '${AGENT_DISPLAY_NAME_PREFIX}'). To manually manage any rule, use: ${ADMIN_CONSOLE_DLP_RULE_LINK_TEMPLATE}`,
       inputSchema: {
-        policyName: inputSchemas.ruleResourceName,
+        policyName: z
+          .string()
+          .startsWith('policies/')
+          .describe('The resource name of the DLP rule (e.g. policies/ajjs664skp992kska)'),
       },
     },
     guardedToolCall(
