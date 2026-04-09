@@ -25,32 +25,13 @@ limitations under the License.
  * Usage: node test/run-unit.js
  */
 
-import { readdirSync } from 'node:fs'
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { execFileSync } from 'node:child_process'
+import { findTestFiles } from './run-utils.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const root = resolve(__dirname, '..')
-
-/**
- * Recursively finds all files ending with `.test.js` under the given directory.
- *
- * @param {string} dir - Absolute path to the directory to search.
- * @returns {string[]} Absolute paths of discovered test files.
- */
-function findTestFiles(dir) {
-  const results = []
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const full = join(dir, entry.name)
-    if (entry.isDirectory()) {
-      results.push(...findTestFiles(full))
-    } else if (entry.name.endsWith('.test.js')) {
-      results.push(full)
-    }
-  }
-  return results
-}
 
 const testFiles = findTestFiles(join(root, 'test', 'local')).sort()
 
