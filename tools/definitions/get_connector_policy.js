@@ -65,16 +65,21 @@ export function registerGetConnectorPolicyTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
-        handler: async ({ customerId, orgUnitId, policy }, { _requestInfo, authToken }) => {
+        handler: async ({ customerId, orgUnitId, policy }, { requestInfo }) => {
+          const authToken = getAuthToken(requestInfo)
+
+          // Normalize Org Unit ID (Strip 'id:' prefix if present)
+          const normalizedOrgUnitId = orgUnitId.startsWith('id:') ? orgUnitId.substring(3) : orgUnitId
+
           const policies = await chromePolicyClient.getConnectorPolicy(
             customerId,
-            orgUnitId,
+            normalizedOrgUnitId,
             ConnectorPolicyFilter[policy],
             authToken,
           )
 
           const displayName = POLICY_DISPLAY_NAMES[policy] || policy
-          const header = `Organizational Unit: ${orgUnitId}\nConnector: ${displayName}\n\n`
+          const header = `Organizational Unit: ${normalizedOrgUnitId}\nConnector: ${displayName}\n\n`
 
           const format = val => {
             if (val === undefined || val === null) {
@@ -109,6 +114,7 @@ export function registerGetConnectorPolicyTool(server, options, sessionState) {
           }
 
           const getVal = (obj, key) => {
+            if (!obj || typeof obj !== 'object') return undefined
             if (obj[key] !== undefined) {
               return obj[key]
             }
@@ -187,7 +193,7 @@ export function registerGetConnectorPolicyTool(server, options, sessionState) {
                       v.onFileAttachedAnalysisConnectorConfiguration?.fileAttachedConfiguration ||
                       v.onFileDownloadedAnalysisConnectorConfiguration?.fileDownloadedConfiguration ||
                       v.onBulkTextEntryAnalysisConnectorConfiguration?.bulkTextEntryConfiguration ||
-                      v.onPrintAnalysisConnectorConfiguration?.printConfiguration ||
+                      v.onPrintAnalysisConnectorConfiguration?.printConfigurations?.[0] ||
                       v
 
                     const patterns = []

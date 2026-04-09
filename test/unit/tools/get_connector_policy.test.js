@@ -516,4 +516,60 @@ describe('get_connector_policy tool handler', () => {
     assert.match(text, /Delay Enforcement: Enabled/)
     assert.match(text, /Block on Failure: Enabled/)
   })
+
+  test('should parse ON_PRINT specific fields with printConfigurations array', async () => {
+    const { mockServer, getRegisteredHandler } = getHandler()
+    const mockChromePolicyClient = {
+      getConnectorPolicy: async () => [
+        {
+          value: {
+            value: {
+              onPrintAnalysisConnectorConfiguration: {
+                printConfigurations: [
+                  {
+                    serviceProvider: 'SERVICE_PROVIDER_CHROME_ENTERPRISE_PREMIUM',
+                    delayDeliveryUntilVerdict: true,
+                    defaultAction: 'DEFAULT_ACTION_ALLOW',
+                  },
+                ],
+              },
+            },
+          },
+        },
+      ],
+    }
+
+    registerGetConnectorPolicyTool(mockServer, { chromePolicyClient: mockChromePolicyClient }, {})
+    const handler = getRegisteredHandler()
+
+    const result = await handler(
+      { customerId: 'C123', orgUnitId: 'OU123', policy: 'ON_PRINT' },
+      { requestInfo: {} },
+    )
+    const text = result.content[0].text
+
+    assert.match(text, /Provider: Chrome Enterprise Premium \(CEP\)/)
+    assert.match(text, /Delay Enforcement: Enabled/)
+  })
+
+  test('should normalize orgUnitId by removing id: prefix', async () => {
+    const { mockServer, getRegisteredHandler } = getHandler()
+    let capturedOrgUnitId
+    const mockChromePolicyClient = {
+      getConnectorPolicy: async (customerId, orgUnitId) => {
+        capturedOrgUnitId = orgUnitId
+        return []
+      },
+    }
+
+    registerGetConnectorPolicyTool(mockServer, { chromePolicyClient: mockChromePolicyClient }, {})
+    const handler = getRegisteredHandler()
+
+    await handler(
+      { customerId: 'C123', orgUnitId: 'id:OU123', policy: 'ON_FILE_ATTACHED' },
+      { requestInfo: {} },
+    )
+
+    assert.strictEqual(capturedOrgUnitId, 'OU123')
+  })
 })
