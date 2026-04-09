@@ -21,6 +21,7 @@ limitations under the License.
 import assert from 'node:assert/strict'
 import { describe, it, mock, beforeEach } from 'node:test'
 import esmock from 'esmock'
+import { setupCloudIdentityHandler } from './mock-utils.js'
 import { FeatureFlags } from '../../lib/util/feature_flags.js'
 
 describe('Cloud Identity API', () => {
@@ -45,27 +46,7 @@ describe('Cloud Identity API', () => {
           },
         },
       ])
-      const MockCloudIdentityClient = class {
-        constructor() {
-          this.listDlpRules = mockListDlpRules
-        }
-      }
-
-      const { registerTools } = await esmock(
-        '../../tools/index.js',
-        {},
-        {
-          '../../lib/api/real_cloud_identity_client.js': {
-            RealCloudIdentityClient: MockCloudIdentityClient,
-          },
-        },
-      )
-      registerTools(server, {
-        gcpCredentialsAvailable: true,
-        apiClients: { cloudIdentity: new MockCloudIdentityClient() },
-      })
-
-      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'list_dlp_rules').arguments[2]
+      const handler = await setupCloudIdentityHandler(server, 'list_dlp_rules', { listDlpRules: mockListDlpRules })
       const result = await handler({ type: 'rule' }, { requestInfo: {} })
       assert.strictEqual(mockListDlpRules.mock.callCount(), 1)
       assert.ok(result.content[0].text.includes('rule1'))
@@ -75,27 +56,7 @@ describe('Cloud Identity API', () => {
       const mockListDlpRules = mock.fn(async () => {
         throw new Error('API Error')
       })
-      const MockCloudIdentityClient = class {
-        constructor() {
-          this.listDlpRules = mockListDlpRules
-        }
-      }
-
-      const { registerTools } = await esmock(
-        '../../tools/index.js',
-        {},
-        {
-          '../../lib/api/real_cloud_identity_client.js': {
-            RealCloudIdentityClient: MockCloudIdentityClient,
-          },
-        },
-      )
-      registerTools(server, {
-        gcpCredentialsAvailable: true,
-        apiClients: { cloudIdentity: new MockCloudIdentityClient() },
-      })
-
-      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'list_dlp_rules').arguments[2]
+      const handler = await setupCloudIdentityHandler(server, 'list_dlp_rules', { listDlpRules: mockListDlpRules })
 
       const result = await handler({ type: 'rule' }, { requestInfo: {} })
       assert.deepStrictEqual(result.content[0].text, 'Error: API Error')
@@ -105,27 +66,9 @@ describe('Cloud Identity API', () => {
   describe('create_chrome_dlp_rule Tool', () => {
     it('should map BLOCK action correctly', async () => {
       const mockCreateDlpRule = mock.fn(async () => ({ response: { name: 'policies/123' } }))
-      const MockCloudIdentityClient = class {
-        constructor() {
-          this.createDlpRule = mockCreateDlpRule
-        }
-      }
-      const { registerTools } = await esmock(
-        '../../tools/index.js',
-        {},
-        {
-          '../../lib/api/real_cloud_identity_client.js': {
-            RealCloudIdentityClient: MockCloudIdentityClient,
-          },
-        },
-      )
-      registerTools(server, {
-        gcpCredentialsAvailable: true,
-        apiClients: { cloudIdentity: new MockCloudIdentityClient() },
+      const handler = await setupCloudIdentityHandler(server, 'create_chrome_dlp_rule', {
+        createDlpRule: mockCreateDlpRule,
       })
-
-      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'create_chrome_dlp_rule')
-        .arguments[2]
       await handler(
         {
           customerId: 'C0123',
@@ -144,28 +87,9 @@ describe('Cloud Identity API', () => {
 
     it('should prefix the displayName', async () => {
       const mockCreateDlpRule = mock.fn(async () => ({ response: { name: 'policies/123' } }))
-      const MockCloudIdentityClient = class {
-        constructor() {
-          this.createDlpRule = mockCreateDlpRule
-        }
-      }
-
-      const { registerTools } = await esmock(
-        '../../tools/index.js',
-        {},
-        {
-          '../../lib/api/real_cloud_identity_client.js': {
-            RealCloudIdentityClient: MockCloudIdentityClient,
-          },
-        },
-      )
-      registerTools(server, {
-        gcpCredentialsAvailable: true,
-        apiClients: { cloudIdentity: new MockCloudIdentityClient() },
+      const handler = await setupCloudIdentityHandler(server, 'create_chrome_dlp_rule', {
+        createDlpRule: mockCreateDlpRule,
       })
-
-      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'create_chrome_dlp_rule')
-        .arguments[2]
 
       await handler(
         {
@@ -185,28 +109,9 @@ describe('Cloud Identity API', () => {
 
     it('should call createDlpRule and return formatted result', async () => {
       const mockCreateDlpRule = mock.fn(async () => ({ response: { name: 'policies/123' } }))
-      const MockCloudIdentityClient = class {
-        constructor() {
-          this.createDlpRule = mockCreateDlpRule
-        }
-      }
-
-      const { registerTools } = await esmock(
-        '../../tools/index.js',
-        {},
-        {
-          '../../lib/api/real_cloud_identity_client.js': {
-            RealCloudIdentityClient: MockCloudIdentityClient,
-          },
-        },
-      )
-      registerTools(server, {
-        gcpCredentialsAvailable: true,
-        apiClients: { cloudIdentity: new MockCloudIdentityClient() },
+      const handler = await setupCloudIdentityHandler(server, 'create_chrome_dlp_rule', {
+        createDlpRule: mockCreateDlpRule,
       })
-
-      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'create_chrome_dlp_rule')
-        .arguments[2]
 
       const result = await handler(
         {
@@ -232,28 +137,9 @@ describe('Cloud Identity API', () => {
 
     it('should pass dataMasking parameters to createDlpRule', async () => {
       const mockCreateDlpRule = mock.fn(async () => ({ response: { name: 'policies/123' } }))
-      const MockCloudIdentityClient = class {
-        constructor() {
-          this.createDlpRule = mockCreateDlpRule
-        }
-      }
-
-      const { registerTools } = await esmock(
-        '../../tools/index.js',
-        {},
-        {
-          '../../lib/api/real_cloud_identity_client.js': {
-            RealCloudIdentityClient: MockCloudIdentityClient,
-          },
-        },
-      )
-      registerTools(server, {
-        gcpCredentialsAvailable: true,
-        apiClients: { cloudIdentity: new MockCloudIdentityClient() },
+      const handler = await setupCloudIdentityHandler(server, 'create_chrome_dlp_rule', {
+        createDlpRule: mockCreateDlpRule,
       })
-
-      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'create_chrome_dlp_rule')
-        .arguments[2]
 
       await handler(
         {
@@ -291,28 +177,9 @@ describe('Cloud Identity API', () => {
 
     it('should not include condition in ruleConfig if not provided', async () => {
       const mockCreateDlpRule = mock.fn(async () => ({ response: { name: 'policies/123' } }))
-      const MockCloudIdentityClient = class {
-        constructor() {
-          this.createDlpRule = mockCreateDlpRule
-        }
-      }
-
-      const { registerTools } = await esmock(
-        '../../tools/index.js',
-        {},
-        {
-          '../../lib/api/real_cloud_identity_client.js': {
-            RealCloudIdentityClient: MockCloudIdentityClient,
-          },
-        },
-      )
-      registerTools(server, {
-        gcpCredentialsAvailable: true,
-        apiClients: { cloudIdentity: new MockCloudIdentityClient() },
+      const handler = await setupCloudIdentityHandler(server, 'create_chrome_dlp_rule', {
+        createDlpRule: mockCreateDlpRule,
       })
-
-      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'create_chrome_dlp_rule')
-        .arguments[2]
 
       await handler(
         {
@@ -336,28 +203,9 @@ describe('Cloud Identity API', () => {
       const mockCreateDlpRule = mock.fn(async () => {
         throw new Error('API Error')
       })
-      const MockCloudIdentityClient = class {
-        constructor() {
-          this.createDlpRule = mockCreateDlpRule
-        }
-      }
-
-      const { registerTools } = await esmock(
-        '../../tools/index.js',
-        {},
-        {
-          '../../lib/api/real_cloud_identity_client.js': {
-            RealCloudIdentityClient: MockCloudIdentityClient,
-          },
-        },
-      )
-      registerTools(server, {
-        gcpCredentialsAvailable: true,
-        apiClients: { cloudIdentity: new MockCloudIdentityClient() },
+      const handler = await setupCloudIdentityHandler(server, 'create_chrome_dlp_rule', {
+        createDlpRule: mockCreateDlpRule,
       })
-
-      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'create_chrome_dlp_rule')
-        .arguments[2]
 
       const result = await handler(
         {

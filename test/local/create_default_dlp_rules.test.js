@@ -21,6 +21,7 @@ limitations under the License.
 import assert from 'node:assert/strict'
 import { describe, it, mock, beforeEach } from 'node:test'
 import esmock from 'esmock'
+import { setupCloudIdentityHandler } from './mock-utils.js'
 
 describe('create_default_dlp_rules Tool', () => {
   let server
@@ -37,28 +38,9 @@ describe('create_default_dlp_rules Tool', () => {
         name: `policies/${config.displayName.replace(/[^a-zA-Z0-9]/g, '')}`,
       },
     }))
-    const MockCloudIdentityClient = class {
-      constructor() {
-        this.createDlpRule = mockCreateDlpRule
-      }
-    }
-
-    const { registerTools } = await esmock(
-      '../../tools/index.js',
-      {},
-      {
-        '../../lib/api/real_cloud_identity_client.js': {
-          RealCloudIdentityClient: MockCloudIdentityClient,
-        },
-      },
-    )
-    registerTools(server, {
-      gcpCredentialsAvailable: true,
-      apiClients: { cloudIdentity: new MockCloudIdentityClient() },
+    const handler = await setupCloudIdentityHandler(server, 'create_default_dlp_rules', {
+      createDlpRule: mockCreateDlpRule,
     })
-
-    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'create_default_dlp_rules')
-      .arguments[2]
 
     const result = await handler(
       {
