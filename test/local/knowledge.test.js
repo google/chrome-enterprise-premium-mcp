@@ -136,7 +136,7 @@ describe('Knowledge Tools Native Search Integration', () => {
     const result = await handler({ kind: 'policies' }, { requestInfo: {} })
     const rows = result.structuredContent.documents
     assert.strictEqual(rows.length, 2) // Includes old-policy
-    assert.ok(result.content[0].text.includes('⚠️'))
+    assert.ok(result.content[0].text.includes('[Deprecated]'))
   })
 
   // SKIPPED: tool implementation currently does not return category counts
