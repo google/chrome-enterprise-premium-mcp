@@ -242,8 +242,20 @@ function requireCustomer(state, customerKey, res) {
 
 export function createFakeApp() {
   let state = getInitialState()
+  let mockErrors = {}
   const app = express()
   app.use(express.json())
+
+  // Mock error middleware
+  app.use((req, res, next) => {
+    const key = `${req.method}:${req.path}`
+    if (mockErrors[key]) {
+      const error = mockErrors[key]
+      delete mockErrors[key] // one-shot
+      return res.status(error.status).json(error.body)
+    }
+    next()
+  })
 
   // Admin SDK: Get Customer
   app.get('/admin/directory/v1/customers/:customerKey', (req, res) => {
@@ -514,17 +526,89 @@ export function createFakeApp() {
   // Test Helper: Reset State
   app.post('/test/reset', (_req, res) => {
     state = getInitialState()
+    mockErrors = {}
     res.json({ message: 'State reset' })
+  })
+
+  // Helper functions for ingestion
+  function mergeFixture(data) {
+    if (data.kind === 'admin#directory#customer') {
+      state.customers[data.id] = data
+      state.defaultCustomerId = data.id
+    } else if (data.kind === 'admin#directory#orgUnits') {
+      const customerId = state.defaultCustomerId
+      if (!state.orgUnits[customerId]) {
+        state.orgUnits[customerId] = {}
+      }
+      data.organizationUnits.forEach(ou => {
+        state.orgUnits[customerId][ou.orgUnitId.replace('id:', '')] = ou
+      })
+    } else if (data.kind === 'admin#reports#activities') {
+      state.activities.push(...data.items)
+    } else if (data.kind === 'licensing#licenseAssignment') {
+      const customerId = state.defaultCustomerId
+      if (!state.licenses[customerId]) {
+        state.licenses[customerId] = {}
+      }
+      if (!state.licenses[customerId][data.productId]) {
+        state.licenses[customerId][data.productId] = {}
+      }
+      if (!state.licenses[customerId][data.productId][data.skuId]) {
+        state.licenses[customerId][data.productId][data.skuId] = []
+      }
+      state.licenses[customerId][data.productId][data.skuId].push(data)
+    } else if (data.kind === 'licensing#licenseAssignmentList') {
+      const customerId = state.defaultCustomerId
+      if (!state.licenses[customerId]) {
+        state.licenses[customerId] = {}
+      }
+      state.licenses[customerId] = {} // Clear existing
+      data.items.forEach(item => {
+        if (!state.licenses[customerId][item.productId]) {
+          state.licenses[customerId][item.productId] = {}
+        }
+        if (!state.licenses[customerId][item.productId][item.skuId]) {
+          state.licenses[customerId][item.productId][item.skuId] = []
+        }
+        state.licenses[customerId][item.productId][item.skuId].push(item)
+      })
+    } else if (data.kind === 'cloudidentity#policies') {
+      state.policies = {} // Clear existing
+      data.policies.forEach(policy => {
+        state.policies[policy.name] = policy
+      })
+    }
+  }
+
+  function mockError(path, status, body, method = 'GET') {
+    const key = `${method.toUpperCase()}:${path}`
+    mockErrors[key] = { status, body }
+  }
+
+  // Test Helper: Merge State
+  app.post('/test/state/merge', (req, res) => {
+    mergeFixture(req.body)
+    res.json({ message: 'State merged' })
+  })
+
+  // Test Helper: Mock Error
+  app.post('/test/state/mock-error', (req, res) => {
+    const { path, status, body, method } = req.body
+    mockError(path, status, body, method)
+    res.json({ message: 'Error mocked' })
   })
 
   return {
     app,
     resetState: () => {
       state = getInitialState()
+      mockErrors = {}
     },
     setState: (/** @type {ReturnType<typeof getInitialState>} */ newState) => {
       state = newState
     },
+    mergeFixture,
+    mockError,
   }
 }
 
@@ -535,7 +619,7 @@ export function createFakeApp() {
  * @returns {Promise<{ url: string, close: () => Promise<void>, resetState: () => void, setState: (newState: ReturnType<typeof getInitialState>) => void }>}
  */
 export async function startFakeServer() {
-  const { app, resetState, setState } = createFakeApp()
+  const { app, resetState, setState, mergeFixture, mockError } = createFakeApp()
   return new Promise((resolve, reject) => {
     const server = app.listen(0, () => {
       const { port } = server.address()
@@ -544,6 +628,8 @@ export async function startFakeServer() {
         url,
         resetState,
         setState,
+        mergeFixture,
+        mockError,
         close: () =>
           new Promise((res, rej) => {
             server.close(err => (err ? rej(err) : res()))

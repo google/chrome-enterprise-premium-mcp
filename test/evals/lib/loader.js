@@ -88,6 +88,7 @@ export function loadEval(filepath, globalConfig) {
     requiredPatterns: frontmatter.required_patterns || [],
     scenario: frontmatter.scenario || null,
     promptName: frontmatter.prompt_name || null,
+    fixtures: frontmatter.fixtures || [],
     prompt: extractSection(body, 'Prompt') || '',
     goldenResponse: extractSection(body, 'Golden Response') || '',
     judgeInstructions: extractSection(body, 'Judge Instructions'),
@@ -170,5 +171,6 @@ export function loadAllEvals({ dir, category, tags, ids, priority }) {
  * @property {string} prompt
  * @property {string} goldenResponse
  * @property {string|null} judgeInstructions
+ * @property {string[]} fixtures
  * @property {string} sourceFile
  */

@@ -27,11 +27,14 @@ import { FakeChromeManagementClient } from '../../../../lib/api/fake_chrome_mana
 /**
  * Factory function to retrieve the appropriate API clients.
  *
+ * @param {object} [options] - Options to override environment variables.
+ * @param {string} [options.backend] - 'real' or 'fake'.
+ * @param {string} [options.rootUrl] - URL for fake API server.
  * @returns {object} An object containing instances of the API clients.
  */
-export function getApiClients() {
-  const backend = process.env.CEP_BACKEND || (process.env.GOOGLE_API_ROOT_URL ? 'fake' : 'real')
-  const rootUrl = process.env.GOOGLE_API_ROOT_URL || 'http://localhost:8008'
+export function getApiClients(options = {}) {
+  const backend = options.backend || process.env.CEP_BACKEND || (process.env.GOOGLE_API_ROOT_URL ? 'fake' : 'real')
+  const rootUrl = options.rootUrl || process.env.GOOGLE_API_ROOT_URL || 'http://localhost:8008'
 
   if (backend === 'real') {
     console.log('[FACTORY] Using REAL API clients (Ambient Authority/ADC)')

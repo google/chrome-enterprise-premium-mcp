@@ -114,18 +114,19 @@ function handleDiscoveryError(errorText) {
 
 /**
  * High-level helper to bootstrap a full MCP integration test harness.
+ * @param {object} [options] - Options passed to getApiClients.
  */
-export async function createIntegrationHarness() {
+export async function createIntegrationHarness(options = {}) {
   // Ensure the fake backend is running if needed
   await fakeServerManager.start()
-
   const server = new McpServer(
     { name: 'test-server', version: '1.0.0' },
     { capabilities: { logging: {}, prompts: {} } },
   )
 
-  const apiClients = getApiClients()
-  registerTools(server, { apiClients })
+  const apiClients = getApiClients(options)
+  const sessionState = {}
+  registerTools(server, { apiClients, apiOptions: { rootUrl: options.rootUrl } }, sessionState)
   registerPrompts(server)
 
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
@@ -139,7 +140,7 @@ export async function createIntegrationHarness() {
   assert.ok(testContext.customerId, 'Harness Setup Failed: Could not discover Customer ID')
   assert.ok(testContext.orgUnitId, 'Harness Setup Failed: Could not discover Org Unit ID')
 
-  return { server, client, apiClients, testContext }
+  return { server, client, apiClients, testContext, sessionState }
 }
 
 /**
