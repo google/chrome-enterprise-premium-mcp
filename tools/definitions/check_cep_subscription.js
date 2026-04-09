@@ -18,7 +18,8 @@ limitations under the License.
  * @fileoverview Tool definition for checking CEP subscription.
  */
 
-import { guardedToolCall, inputSchemas, getAuthToken, outputSchemas } from '../utils.js'
+import { guardedToolCall } from '../utils/wrapper.js'
+import { inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -45,9 +46,8 @@ export function registerCheckCepSubscriptionTool(server, options, sessionState) 
     },
     guardedToolCall(
       {
-        handler: async ({ customerId }, { requestInfo }) => {
+        handler: async ({ customerId }, { requestInfo, authToken }) => {
           logger.debug(`${TAGS.MCP} Calling 'check_cep_subscription' for customer: ${customerId}`)
-          const authToken = getAuthToken(requestInfo)
 
           const result = await adminSdkClient.checkCepSubscription(customerId, authToken)
 

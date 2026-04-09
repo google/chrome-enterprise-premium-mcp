@@ -19,7 +19,8 @@ limitations under the License.
  */
 
 import { z } from 'zod'
-import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas } from '../utils.js'
+import { guardedToolCall } from '../utils/wrapper.js'
+import { inputSchemas, outputSchemas } from '../utils.js'
 import { logger } from '../../lib/util/logger.js'
 
 /**
@@ -45,9 +46,7 @@ export function registerDeleteDetectorTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
-        handler: async ({ policyName }, { requestInfo }) => {
-          const authToken = getAuthToken(requestInfo)
-
+        handler: async ({ policyName }, { requestInfo, authToken }) => {
           // Fetch display name before deletion for user-friendly confirmation
           let displayName = policyName.split('/').pop()
           try {

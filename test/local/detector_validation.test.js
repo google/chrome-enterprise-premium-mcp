@@ -35,7 +35,7 @@ describe('Tool Input Validation', () => {
     const { registerCreateWordListDetectorTool } = await esmock(
       '../../tools/definitions/create_word_list_detector.js',
       {
-        '../../tools/utils.js': {
+        '../../tools/utils/wrapper.js': {
           guardedToolCall: t => t,
           getAuthToken: () => 'token',
           resolveRootOrgUnitId: () => 'root',
@@ -73,7 +73,7 @@ describe('Tool Input Validation', () => {
 
   describe('create_chrome_dlp_rule', async () => {
     const { registerCreateChromeDlpRuleTool } = await esmock('../../tools/definitions/create_chrome_dlp_rule.js', {
-      '../../tools/utils.js': {
+      '../../tools/utils/wrapper.js': {
         guardedToolCall: t => t,
         getAuthToken: () => 'token',
         inputSchemas: { customerId: {}, orgUnitId: { describe: () => ({}) } },

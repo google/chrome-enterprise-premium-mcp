@@ -19,7 +19,8 @@ limitations under the License.
  */
 
 import { z } from 'zod'
-import { guardedToolCall, getAuthToken, inputSchemas } from '../utils.js'
+import { guardedToolCall } from '../utils/wrapper.js'
+import { inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -223,9 +224,8 @@ export function registerEnableChromeEnterpriseConnectorsTool(server, options, se
     },
     guardedToolCall(
       {
-        handler: async ({ customerId, orgUnitId, connectors }, { requestInfo }) => {
+        handler: async ({ customerId, orgUnitId, connectors }, { requestInfo, authToken }) => {
           logger.debug(`${TAGS.MCP} Calling 'enable_chrome_enterprise_connectors' for ${connectors.join(', ')}`)
-          const authToken = getAuthToken(requestInfo)
           const results = []
           const batchRequests = []
 

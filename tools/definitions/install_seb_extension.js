@@ -18,7 +18,8 @@ limitations under the License.
  * @fileoverview Tool definition for force-installing the SEB extension.
  */
 
-import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas } from '../utils.js'
+import { guardedToolCall } from '../utils/wrapper.js'
+import { inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -52,11 +53,10 @@ export function registerInstallSebExtensionTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
-        handler: async ({ customerId, orgUnitId }, { requestInfo }) => {
+        handler: async ({ customerId, orgUnitId }, { requestInfo, authToken }) => {
           logger.debug(
             `${TAGS.MCP} Calling 'install_seb_extension' with customerId: ${customerId}, orgUnitId: ${orgUnitId}`,
           )
-          const authToken = getAuthToken(requestInfo)
 
           // 1. Resolve current policy to see if it's already force-installed
           const currentPolicies = await chromePolicyClient.resolvePolicy(

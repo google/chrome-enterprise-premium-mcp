@@ -20,7 +20,8 @@ limitations under the License.
 
 import { z } from 'zod'
 
-import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas } from '../utils.js'
+import { guardedToolCall } from '../utils/wrapper.js'
+import { inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 import {
@@ -229,7 +230,7 @@ Multi-Trigger Logic:
           const newDisplayName = `${AGENT_DISPLAY_NAME_PREFIX}${params.displayName}`
           return { ...params, displayName: newDisplayName }
         },
-        handler: async (params, { requestInfo }) => {
+        handler: async (params, { requestInfo, authToken }) => {
           const {
             customerId,
             orgUnitId,
@@ -247,8 +248,6 @@ Multi-Trigger Logic:
           } = params
 
           logger.debug(`${TAGS.MCP} Calling 'create_chrome_dlp_rule' with params: ${JSON.stringify(params)}`)
-
-          const authToken = getAuthToken(requestInfo)
           const fullTriggers = triggers.map(t => CHROME_TRIGGERS[t].value)
 
           // 1. Validation: Safety constraints

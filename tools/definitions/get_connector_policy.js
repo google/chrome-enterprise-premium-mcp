@@ -15,7 +15,8 @@ limitations under the License.
 */
 
 import { z } from 'zod'
-import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas } from '../utils.js'
+import { guardedToolCall } from '../utils/wrapper.js'
+import { inputSchemas, outputSchemas } from '../utils.js'
 
 const ConnectorPolicyFilter = {
   ON_FILE_ATTACHED: 'chrome.users.OnFileAttachedConnectorPolicy',
@@ -65,8 +66,7 @@ export function registerGetConnectorPolicyTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
-        handler: async ({ customerId, orgUnitId, policy }, { requestInfo }) => {
-          const authToken = getAuthToken(requestInfo)
+        handler: async ({ customerId, orgUnitId, policy }, { requestInfo, authToken }) => {
           const policies = await chromePolicyClient.getConnectorPolicy(
             customerId,
             orgUnitId,

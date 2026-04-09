@@ -18,7 +18,8 @@ limitations under the License.
  * @fileoverview Tool definition for retrieving the customer ID.
  */
 
-import { guardedToolCall, getAuthToken } from '../utils.js'
+import { guardedToolCall } from '../utils/wrapper.js'
+import { inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -42,9 +43,8 @@ export function registerGetCustomerIdTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
-        handler: async (params, { requestInfo }) => {
+        handler: async (params, { requestInfo, authToken }) => {
           logger.debug(`${TAGS.MCP} Calling 'get_customer_id'`)
-          const authToken = getAuthToken(requestInfo)
           const customer = await adminSdkClient.getCustomerId(authToken)
 
           if (!customer) {

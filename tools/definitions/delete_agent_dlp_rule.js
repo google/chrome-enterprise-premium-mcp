@@ -19,7 +19,8 @@ limitations under the License.
  */
 
 import { z } from 'zod'
-import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas } from '../utils.js'
+import { guardedToolCall } from '../utils/wrapper.js'
+import { inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 import { AGENT_DISPLAY_NAME_PREFIX, ADMIN_CONSOLE_DLP_RULE_LINK_TEMPLATE } from '../../lib/util/chrome_dlp_constants.js'
@@ -46,9 +47,8 @@ export function registerDeleteAgentDlpRuleTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
-        handler: async ({ policyName }, { requestInfo }) => {
+        handler: async ({ policyName }, { requestInfo, authToken }) => {
           logger.debug(`${TAGS.MCP} Calling 'delete_agent_dlp_rule' with policyName: ${policyName}`)
-          const authToken = getAuthToken(requestInfo)
 
           let rule
           try {

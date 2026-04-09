@@ -20,7 +20,9 @@ limitations under the License.
 
 import { z } from 'zod'
 
-import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas, resolveRootOrgUnitId } from '../utils.js'
+import { guardedToolCall } from '../utils/wrapper.js'
+import { inputSchemas, outputSchemas } from '../utils.js'
+import { resolveRootOrgUnitId } from '../utils/org-unit.js'
 import { logger } from '../../lib/util/logger.js'
 import { WORKSPACE_RULE_LIMITS } from '../../lib/util/chrome_dlp_constants.js'
 
@@ -57,9 +59,8 @@ export function registerCreateRegexDetectorTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
-        handler: async (params, { requestInfo }) => {
+        handler: async (params, { requestInfo, authToken }) => {
           const { customerId, displayName, description, expression } = params
-          const authToken = getAuthToken(requestInfo)
 
           const orgUnitId = await resolveRootOrgUnitId(apiClients, customerId, authToken, sessionState)
           if (!orgUnitId) {

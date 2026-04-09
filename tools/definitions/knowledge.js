@@ -18,7 +18,8 @@ limitations under the License.
  * @fileoverview Tool definitions for content search and document retrieval.
  */
 
-import { guardedToolCall, outputSchemas } from '../utils.js'
+import { guardedToolCall } from '../utils/wrapper.js'
+import { inputSchemas, outputSchemas } from '../utils.js'
 import { z } from 'zod'
 import fs from 'fs'
 import { logger } from '../../lib/util/logger.js'

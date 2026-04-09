@@ -19,7 +19,8 @@ limitations under the License.
  */
 
 import { z } from 'zod'
-import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas } from '../utils.js'
+import { guardedToolCall } from '../utils/wrapper.js'
+import { inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 import { CHROME_TRIGGERS, POLICY_STATES } from '../../lib/util/chrome_dlp_constants.js'
@@ -101,10 +102,9 @@ export function registerCreateDefaultDlpRulesTool(server, options, sessionState)
 
     guardedToolCall(
       {
-        handler: async (params, { requestInfo }) => {
+        handler: async (params, { requestInfo, authToken }) => {
           logger.debug(`${TAGS.MCP} Calling 'create_default_dlp_rules' with params: ${JSON.stringify(params)}`)
           const { customerId, orgUnitId } = params
-          const authToken = getAuthToken(requestInfo)
 
           const results = []
           const createdRules = []

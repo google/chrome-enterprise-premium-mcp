@@ -18,7 +18,8 @@ limitations under the License.
  * @fileoverview Tool definition for counting browser versions.
  */
 
-import { guardedToolCall, inputSchemas, getAuthToken } from '../utils.js'
+import { guardedToolCall } from '../utils/wrapper.js'
+import { inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -45,11 +46,10 @@ export function registerCountBrowserVersionsTool(server, options, sessionState) 
     },
     guardedToolCall(
       {
-        handler: async ({ customerId, orgUnitId }, { requestInfo }) => {
+        handler: async ({ customerId, orgUnitId }, { requestInfo, authToken }) => {
           logger.debug(
             `${TAGS.MCP} Calling 'count_browser_versions' with customerId: ${customerId}, orgUnitId: ${orgUnitId}`,
           )
-          const authToken = getAuthToken(requestInfo)
           const versions = await chromeManagementClient.countBrowserVersions(customerId, orgUnitId, authToken)
 
           if (!versions || versions.length === 0) {

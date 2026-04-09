@@ -18,7 +18,8 @@ limitations under the License.
  * @fileoverview Tool definition for checking and enabling APIs.
  */
 
-import { guardedToolCall, inputSchemas, getAuthToken, outputSchemas } from '../utils.js'
+import { guardedToolCall } from '../utils/wrapper.js'
+import { inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS, SERVICE_NAMES } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -51,12 +52,11 @@ export function registerCheckAndEnableApiTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
-        handler: async ({ projectId, apiName, enable = false, checkAll = false }, { requestInfo }) => {
+        handler: async ({ projectId, apiName, enable = false, checkAll = false }, { requestInfo, authToken }) => {
           const actualApiName = apiName || SERVICE_NAMES.ADMIN_SDK
           logger.debug(
             `${TAGS.MCP} Calling 'check_and_enable_api' for project ${projectId} (enable: ${enable}, checkAll: ${checkAll}, apiName: ${actualApiName})`,
           )
-          const authToken = getAuthToken(requestInfo)
 
           const apisToCheck = checkAll ? Object.values(SERVICE_NAMES) : [actualApiName]
           const results = []

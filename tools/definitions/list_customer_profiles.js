@@ -18,7 +18,8 @@ limitations under the License.
  * @fileoverview Tool definition for listing customer profiles.
  */
 
-import { guardedToolCall, inputSchemas, getAuthToken } from '../utils.js'
+import { guardedToolCall } from '../utils/wrapper.js'
+import { inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -44,10 +45,9 @@ export function registerCustomerProfileTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
-        handler: async ({ customerId }, { requestInfo }) => {
+        handler: async ({ customerId }, { requestInfo, authToken }) => {
           logger.debug(`${TAGS.MCP} Calling 'list_customer_profiles' with customerId: ${customerId}`)
           try {
-            const authToken = getAuthToken(requestInfo)
             const profiles = await chromeManagementClient.listCustomerProfiles(customerId, authToken)
 
             if (!profiles || profiles.length === 0) {

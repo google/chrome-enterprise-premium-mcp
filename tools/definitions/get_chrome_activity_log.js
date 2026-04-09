@@ -20,7 +20,8 @@ limitations under the License.
 
 import { z } from 'zod'
 
-import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas } from '../utils.js'
+import { guardedToolCall } from '../utils/wrapper.js'
+import { inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -71,11 +72,13 @@ export function registerGetChromeActivityLogTool(server, options, sessionState) 
           }
           return params
         },
-        handler: async ({ userKey, eventName, startTime, endTime, maxResults, customerId }, { requestInfo }) => {
+        handler: async (
+          { userKey, eventName, startTime, endTime, maxResults, customerId },
+          { requestInfo, authToken },
+        ) => {
           logger.debug(
             `${TAGS.MCP} Calling 'get_chrome_activity_log' with userKey: ${userKey}, eventName: ${eventName}, startTime: ${startTime}, endTime: ${endTime}, maxResults: ${maxResults}, customerId: ${customerId}`,
           )
-          const authToken = getAuthToken(requestInfo)
           const activities = await adminSdkClient.listChromeActivities(
             {
               userKey,

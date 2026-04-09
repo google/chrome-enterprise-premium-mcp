@@ -14,7 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { guardedToolCall, getAuthToken, outputSchemas } from '../utils.js'
+import { guardedToolCall } from '../utils/wrapper.js'
+import { inputSchemas, outputSchemas } from '../utils.js'
 
 const TRIGGERS = {
   'google.workspace.chrome.file.v1.upload': 'Uploads',
@@ -35,8 +36,7 @@ export function registerListDlpRulesTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
-        handler: async (_, { requestInfo }) => {
-          const authToken = getAuthToken(requestInfo)
+        handler: async (_, { requestInfo, authToken }) => {
           const policies = await cloudIdentityClient.listDlpRules(authToken)
 
           const filtered = (policies || []).filter(p => p.setting?.value?.triggers?.some(t => TRIGGERS[t]))

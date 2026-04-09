@@ -18,7 +18,8 @@ limitations under the License.
  * @fileoverview Tool definition for listing organizational units.
  */
 
-import { guardedToolCall, getAuthToken, inputSchemas } from '../utils.js'
+import { guardedToolCall } from '../utils/wrapper.js'
+import { inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -47,9 +48,8 @@ export function registerListOrgUnitsTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
-        handler: async ({ customerId }, { requestInfo }) => {
+        handler: async ({ customerId }, { requestInfo, authToken }) => {
           logger.debug(`${TAGS.MCP} Calling 'list_org_units' with customerId: ${customerId}`)
-          const authToken = getAuthToken(requestInfo)
           const orgUnitsData = await adminSdkClient.listOrgUnits({ customerId }, authToken)
 
           const orgUnits = orgUnitsData?.organizationUnits // Extract the array

@@ -14,7 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { guardedToolCall, getAuthToken, outputSchemas } from '../utils.js'
+import { guardedToolCall } from '../utils/wrapper.js'
+import { inputSchemas, outputSchemas } from '../utils.js'
 
 export function registerListDetectorsTool(server, options, sessionState) {
   const { cloudIdentityClient } = options
@@ -27,8 +28,7 @@ export function registerListDetectorsTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
-        handler: async (_, { requestInfo }) => {
-          const authToken = getAuthToken(requestInfo)
+        handler: async (_, { requestInfo, authToken }) => {
           const detectors = await cloudIdentityClient.listDetectors(authToken)
 
           const format = s =>

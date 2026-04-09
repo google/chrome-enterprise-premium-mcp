@@ -18,7 +18,8 @@ limitations under the License.
  * @fileoverview Tool definition for checking a specific user's CEP license.
  */
 
-import { guardedToolCall, inputSchemas, getAuthToken, outputSchemas } from '../utils.js'
+import { guardedToolCall } from '../utils/wrapper.js'
+import { inputSchemas, outputSchemas } from '../utils.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
@@ -44,9 +45,8 @@ export function registerCheckUserCepLicenseTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
-        handler: async ({ userId }, { requestInfo }) => {
+        handler: async ({ userId }, { requestInfo, authToken }) => {
           logger.debug(`${TAGS.MCP} Calling 'check_user_cep_license' for user: ${userId}`)
-          const authToken = getAuthToken(requestInfo)
 
           const result = await adminSdkClient.checkUserCepLicense(userId, authToken)
 

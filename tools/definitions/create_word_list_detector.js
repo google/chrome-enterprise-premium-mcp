@@ -19,7 +19,9 @@ limitations under the License.
  */
 import { z } from 'zod'
 
-import { guardedToolCall, getAuthToken, inputSchemas, outputSchemas, resolveRootOrgUnitId } from '../utils.js'
+import { guardedToolCall } from '../utils/wrapper.js'
+import { inputSchemas, outputSchemas } from '../utils.js'
+import { resolveRootOrgUnitId } from '../utils/org-unit.js'
 import { logger } from '../../lib/util/logger.js'
 import { WORKSPACE_RULE_LIMITS } from '../../lib/util/chrome_dlp_constants.js'
 
@@ -62,9 +64,8 @@ export function registerCreateWordListDetectorTool(server, options, sessionState
     },
     guardedToolCall(
       {
-        handler: async (params, { requestInfo }) => {
+        handler: async (params, { requestInfo, authToken }) => {
           const { customerId, displayName, description, words } = params
-          const authToken = getAuthToken(requestInfo)
 
           const totalChars = words.reduce((acc, word) => acc + word.length, 0)
           if (totalChars > WORKSPACE_RULE_LIMITS.MAX_WORD_LIST_CHARS) {
