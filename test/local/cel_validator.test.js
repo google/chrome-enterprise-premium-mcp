@@ -113,6 +113,28 @@ describe('CEL Validator', () => {
     assert.ok(result.errors.some(e => e.includes('file_size_in_bytes')))
   })
 
+  it('should pass for valid predefined detector', () => {
+    const result = validateCelCondition("all_content.matches_dlp_detector('US_SOCIAL_SECURITY_NUMBER')", [
+      'FILE_UPLOAD',
+    ])
+    assert.strictEqual(result.isValid, true)
+  })
+
+  it('should fail for invalid predefined detector', () => {
+    const result = validateCelCondition("all_content.matches_dlp_detector('INVALID_DETECTOR')", ['FILE_UPLOAD'])
+    assert.strictEqual(result.isValid, false)
+    assert.ok(result.errors.some(e => e.includes('INVALID_DETECTOR') && e.includes('predefined DLP detector')))
+  })
+
+  it('should fail for predefined detector with params', () => {
+    const result = validateCelCondition(
+      "all_content.matches_dlp_detector('US_SOCIAL_SECURITY_NUMBER', {minimum_match_count: 2})",
+      ['FILE_UPLOAD'],
+    )
+    assert.strictEqual(result.isValid, false)
+    assert.ok(result.errors.some(e => e.includes('does not support a second parameters argument')))
+  })
+
   describe('validateActionParameters', () => {
     it('should pass for valid parameters', () => {
       const result = validateActionParameters(CHROME_ACTION_TYPES.BLOCK, { customMessage: 'Blocked' }, ['FILE_UPLOAD'])
