@@ -37,10 +37,10 @@ describe('Cloud Identity API', () => {
     it('should call listDlpRules and return formatted result', async () => {
       const mockListDlpRules = mock.fn(async () => [
         {
-          displayName: 'rule1',
-          state: 'ACTIVE',
           setting: {
             value: {
+              displayName: 'rule1',
+              state: 'ACTIVE',
               triggers: ['google.workspace.chrome.file.v1.upload'],
             },
           },
