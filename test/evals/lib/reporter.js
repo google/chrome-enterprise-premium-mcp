@@ -40,51 +40,72 @@ export function printConsole(results, { verbose = false } = {}) {
   console.log(line)
   console.log()
 
+  // Group by ID
+  const byId = {}
   for (const r of results) {
-    const status = r.passed ? `${GREEN}PASS${RESET}` : `${RED}FAIL${RESET}`
-    const title = r.prompt.length > 50 ? r.prompt.slice(0, 47) + '...' : r.prompt
-    const duration = `${DIM}${(r.durationMs / 1000).toFixed(1)}s${RESET}`
-    console.log(`  ${r.id.padEnd(5)} ${status}  ${title.padEnd(52)} ${duration}`)
-
-    if (!r.passed) {
-      const reasons = [...r.deterministic.failures, ...(r.judge.passed ? [] : [`Judge: ${r.judge.reasoning}`])]
-      for (const reason of reasons) {
-        console.log(`  ${' '.repeat(5)}       ${RED}${reason}${RESET}`)
-      }
+    if (!byId[r.id]) {
+      byId[r.id] = { id: r.id, category: r.category, prompt: r.prompt, runs: [] }
     }
+    byId[r.id].runs.push(r)
+  }
 
-    if (verbose) {
-      if (
-        r.judge?.reasoning &&
-        r.judge.reasoning !== 'skipped (--no-judge)' &&
-        r.judge.reasoning !== 'skipped (dry run)'
-      ) {
-        console.log(`  ${' '.repeat(5)}       ${DIM}Judge: ${r.judge.reasoning}${RESET}`)
-      }
-      if (r.toolCalls?.length > 0) {
-        console.log(`  ${' '.repeat(5)}       ${DIM}Tools: ${r.toolCalls.map(tc => tc.name).join(', ')}${RESET}`)
-      }
-      if (r.responseText) {
-        const preview = r.responseText.split('\n').slice(0, 5).join('\n')
-        console.log(`  ${' '.repeat(5)}       ${DIM}Response:${RESET}`)
-        for (const ln of preview.split('\n')) {
-          console.log(`  ${' '.repeat(5)}       ${DIM}  ${ln}${RESET}`)
+  for (const id of Object.keys(byId).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))) {
+    const e = byId[id]
+    const passed = e.runs.filter(r => r.passed).length
+    const total = e.runs.length
+    const isStable = passed === total
+
+    // Status depends on stability: if all passed, it's green. If some passed, yellow? We use green/red based on 100% pass rate.
+    const status = isStable ? `${GREEN}PASS (${passed}/${total})${RESET}` : `${RED}FAIL (${passed}/${total})${RESET}`
+    const title = e.prompt.length > 50 ? e.prompt.slice(0, 47) + '...' : e.prompt
+
+    // Average duration
+    const avgDurationMs = e.runs.reduce((sum, r) => sum + r.durationMs, 0) / total
+    const duration = `${DIM}${(avgDurationMs / 1000).toFixed(1)}s/run${RESET}`
+    console.log(`  ${e.id.padEnd(5)} ${status.padEnd(30)}  ${title.padEnd(52)} ${duration}`)
+
+    if (!isStable) {
+      // Print failures for the first failed run to avoid spam
+      const failedRuns = e.runs.filter(r => !r.passed)
+      if (failedRuns.length > 0) {
+        const firstFail = failedRuns[0]
+        console.log(`  ${' '.repeat(5)}       ${DIM}(Showing first failure, Run ${firstFail.runIndex})${RESET}`)
+        const reasons = [
+          ...firstFail.deterministic.failures,
+          ...(firstFail.judge.passed ? [] : [`Judge: ${firstFail.judge.reasoning}`]),
+        ]
+        for (const reason of reasons) {
+          console.log(`  ${' '.repeat(5)}       ${RED}${reason}${RESET}`)
         }
-        if (r.responseText.split('\n').length > 5) {
-          console.log(`  ${' '.repeat(5)}       ${DIM}  ... (${r.responseText.split('\n').length} lines total)${RESET}`)
+
+        if (verbose) {
+          if (firstFail.toolCalls?.length > 0) {
+            console.log(
+              `  ${' '.repeat(5)}       ${DIM}Tools: ${firstFail.toolCalls.map(tc => tc.name).join(', ')}${RESET}`,
+            )
+          }
+          if (firstFail.responseText) {
+            const preview = firstFail.responseText.split('\n').slice(0, 5).join('\n')
+            console.log(`  ${' '.repeat(5)}       ${DIM}Response:${RESET}`)
+            for (const ln of preview.split('\n')) {
+              console.log(`  ${' '.repeat(5)}       ${DIM}  ${ln}${RESET}`)
+            }
+            if (firstFail.responseText.split('\n').length > 5) {
+              console.log(
+                `  ${' '.repeat(5)}       ${DIM}  ... (${firstFail.responseText.split('\n').length} lines total)${RESET}`,
+              )
+            }
+          }
         }
       }
-      console.log()
     }
   }
 
   // Category breakdown
   console.log()
-  const total = results.length
-  const passed = results.filter(r => r.passed).length
-  const pct = total > 0 ? ((passed / total) * 100).toFixed(1) : '0.0'
-  const color = passed === total ? GREEN : RED
-  console.log(`${BOLD}Results: ${color}${passed}/${total} passed (${pct}%)${RESET}`)
+  const { totalRuns, passedRuns, pct } = getSummaryStats(results)
+  const color = passedRuns === totalRuns ? GREEN : RED
+  console.log(`${BOLD}Results: ${color}${passedRuns}/${totalRuns} runs passed (${pct}%)${RESET}`)
 
   const categories = [...new Set(results.map(r => r.category))].sort()
   for (const cat of categories) {
@@ -116,29 +137,41 @@ export function writeResults(results, filepath) {
 }
 
 /**
+ * Calculates basic summary statistics from evaluation results.
+ * @param {EvalResult[]} results
+ * @returns {{ totalRuns: number, passedRuns: number, pct: string }}
+ */
+function getSummaryStats(results) {
+  const totalRuns = results.length
+  const passedRuns = results.filter(r => r.passed).length
+  const pct = totalRuns > 0 ? ((passedRuns / totalRuns) * 100).toFixed(1) : '0.0'
+  return { totalRuns, passedRuns, pct }
+}
+
+/**
  * Writes a Markdown report.
  *
  * @param {EvalResult[]} results
  * @param {string} filepath
  */
 function writeMarkdown(results, filepath) {
-  const total = results.length
-  const passed = results.filter(r => r.passed).length
-  const pct = total > 0 ? ((passed / total) * 100).toFixed(1) : '0.0'
+  const { totalRuns, passedRuns, pct } = getSummaryStats(results)
 
   const lines = []
   lines.push(`# CEP MCP Eval Results`)
   lines.push('')
   lines.push(`**Date:** ${new Date().toISOString()}`)
-  lines.push(`**Total:** ${total} | **Passed:** ${passed} | **Failed:** ${total - passed} | **Pass Rate:** ${pct}%`)
+  lines.push(
+    `**Total Runs:** ${totalRuns} | **Passed Runs:** ${passedRuns} | **Failed Runs:** ${totalRuns - passedRuns} | **Pass Rate:** ${pct}%`,
+  )
   lines.push('')
 
   // Category table
   const categories = [...new Set(results.map(r => r.category))].sort()
   lines.push(`## Results by Category`)
   lines.push('')
-  lines.push(`| Category | Passed | Total | Rate |`)
-  lines.push(`|----------|--------|-------|------|`)
+  lines.push(`| Category | Passed Runs | Total Runs | Rate |`)
+  lines.push(`|----------|-------------|------------|------|`)
   for (const cat of categories) {
     const catResults = results.filter(r => r.category === cat)
     const catPassed = catResults.filter(r => r.passed).length
@@ -148,48 +181,85 @@ function writeMarkdown(results, filepath) {
   lines.push('')
 
   // Detailed results
-  lines.push(`## Detailed Results`)
+  lines.push(`## Stability by Eval Case`)
   lines.push('')
+
+  // Group by ID
+  const byId = {}
   for (const r of results) {
-    const status = r.passed ? 'PASS' : 'FAIL'
-    lines.push(`### ${r.id} — ${status}`)
-    lines.push('')
-    lines.push(`**Prompt:** ${r.prompt}`)
-    lines.push(`**Duration:** ${(r.durationMs / 1000).toFixed(1)}s`)
-    if (r.toolCalls?.length > 0) {
-      lines.push(`**Tools:** ${r.toolCalls.map(tc => tc.name).join(', ')}`)
-    }
-    if (!r.passed && r.deterministic.failures.length > 0) {
-      lines.push('')
-      lines.push(`**Failures:**`)
-      for (const f of r.deterministic.failures) {
-        lines.push(`- ${f}`)
+    if (!byId[r.id]) {
+      byId[r.id] = {
+        id: r.id,
+        category: r.category,
+        prompt: r.prompt,
+        totalRuns: 0,
+        passedRuns: 0,
+        runs: [],
       }
     }
-    if (
-      r.judge?.reasoning &&
-      r.judge.reasoning !== 'skipped (--no-judge)' &&
-      r.judge.reasoning !== 'skipped (dry run)'
-    ) {
-      lines.push(`**Judge:** ${r.judge.reasoning}`)
+    byId[r.id].totalRuns++
+    if (r.passed) {
+      byId[r.id].passedRuns++
     }
-    if (r.responseText && !r.passed) {
-      const preview = r.responseText.split('\n').slice(0, 10).join('\n')
+    byId[r.id].runs.push(r)
+  }
+
+  lines.push(`| ID | Category | Pass Rate | Passed / Total |`)
+  lines.push(`|----|----------|-----------|----------------|`)
+  for (const id of Object.keys(byId).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))) {
+    const e = byId[id]
+    const rate = ((e.passedRuns / e.totalRuns) * 100).toFixed(1)
+    lines.push(`| **${id}** | ${e.category} | ${rate}% | ${e.passedRuns} / ${e.totalRuns} |`)
+  }
+  lines.push('')
+
+  lines.push(`## Detailed Run Failures`)
+  lines.push('')
+
+  for (const id of Object.keys(byId).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))) {
+    const e = byId[id]
+    const failedRuns = e.runs.filter(r => !r.passed)
+    if (failedRuns.length > 0) {
+      lines.push(`### ${id} — ${e.passedRuns}/${e.totalRuns} Passed`)
+      lines.push(`**Prompt:** ${e.prompt}`)
       lines.push('')
-      lines.push(`<details><summary>Response preview</summary>`)
-      lines.push('')
-      lines.push('```')
-      lines.push(preview)
-      if (r.responseText.split('\n').length > 10) {
-        lines.push(`... (${r.responseText.split('\n').length} lines total)`)
+      for (const r of failedRuns) {
+        lines.push(`#### Run ${r.runIndex || '?'}`)
+        if (r.toolCalls?.length > 0) {
+          lines.push(`**Tools:** ${r.toolCalls.map(tc => tc.name).join(', ')}`)
+        }
+        if (r.deterministic.failures.length > 0) {
+          lines.push(`**Failures:**`)
+          for (const f of r.deterministic.failures) {
+            lines.push(`- ${f}`)
+          }
+        }
+        if (
+          r.judge?.reasoning &&
+          r.judge.reasoning !== 'skipped (--no-judge)' &&
+          r.judge.reasoning !== 'skipped (dry run)'
+        ) {
+          lines.push(`**Judge:** ${r.judge.reasoning}`)
+        }
+        if (r.responseText) {
+          const preview = r.responseText.split('\n').slice(0, 10).join('\n')
+          lines.push('')
+          lines.push(`<details><summary>Response preview</summary>`)
+          lines.push('')
+          lines.push('```')
+          lines.push(preview)
+          if (r.responseText.split('\n').length > 10) {
+            lines.push(`... (${r.responseText.split('\n').length} lines total)`)
+          }
+          lines.push('```')
+          lines.push('')
+          lines.push(`</details>`)
+        }
+        lines.push('')
       }
-      lines.push('```')
+      lines.push('---')
       lines.push('')
-      lines.push(`</details>`)
     }
-    lines.push('')
-    lines.push('---')
-    lines.push('')
   }
 
   fs.writeFileSync(filepath, lines.join('\n'))
@@ -202,8 +272,8 @@ function writeMarkdown(results, filepath) {
  * @param {string} filepath
  */
 function writeJson(results, filepath) {
-  const total = results.length
-  const passed = results.filter(r => r.passed).length
+  const totalRuns = results.length
+  const passedRuns = results.filter(r => r.passed).length
 
   // Category breakdown
   const byCategory = {}
@@ -217,25 +287,52 @@ function writeJson(results, filepath) {
     }
   }
 
-  const output = {
-    timestamp: new Date().toISOString(),
-    summary: {
-      total,
-      passed,
-      failed: total - passed,
-      passRate: total > 0 ? parseFloat(((passed / total) * 100).toFixed(1)) : 0,
-    },
-    byCategory,
-    results: results.map(r => ({
-      id: r.id,
-      category: r.category,
-      prompt: r.prompt,
+  // Group by ID
+  const byId = {}
+  for (const r of results) {
+    if (!byId[r.id]) {
+      byId[r.id] = {
+        id: r.id,
+        category: r.category,
+        prompt: r.prompt,
+        totalRuns: 0,
+        passedRuns: 0,
+        runs: [],
+      }
+    }
+    byId[r.id].totalRuns++
+    if (r.passed) {
+      byId[r.id].passedRuns++
+    }
+    byId[r.id].runs.push({
       passed: r.passed,
       deterministic: r.deterministic,
       judge: r.judge,
-      toolsCalled: r.toolCalls.map(tc => tc.name),
+      toolsCalled: r.toolCalls?.map(tc => tc.name) || [],
       responseText: r.responseText,
       durationMs: r.durationMs,
+      runIndex: r.runIndex,
+    })
+  }
+
+  const output = {
+    timestamp: new Date().toISOString(),
+    summary: {
+      totalRuns,
+      passedRuns,
+      failedRuns: totalRuns - passedRuns,
+      passRate: totalRuns > 0 ? parseFloat(((passedRuns / totalRuns) * 100).toFixed(1)) : 0,
+    },
+    byCategory,
+    evaluations: Object.values(byId).map(e => ({
+      id: e.id,
+      category: e.category,
+      prompt: e.prompt,
+      totalRuns: e.totalRuns,
+      passedRuns: e.passedRuns,
+      passRate: e.totalRuns > 0 ? parseFloat(((e.passedRuns / e.totalRuns) * 100).toFixed(1)) : 0,
+      isStable: e.passedRuns === e.totalRuns,
+      runs: e.runs,
     })),
   }
 
@@ -253,4 +350,5 @@ function writeJson(results, filepath) {
  * @property {{ name: string, args: object }[]} toolCalls
  * @property {string} responseText
  * @property {number} durationMs
+ * @property {number} runIndex
  */
