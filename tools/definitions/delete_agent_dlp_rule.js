@@ -19,7 +19,7 @@ limitations under the License.
  */
 
 import { z } from 'zod'
-import { guardedToolCall } from '../utils/wrapper.js'
+import { guardedToolCall, formatToolResponse, safeFormatResponse } from '../utils/wrapper.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 import { AGENT_DISPLAY_NAME_PREFIX, ADMIN_CONSOLE_DLP_RULE_LINK_TEMPLATE } from '../../lib/util/chrome_dlp_constants.js'
@@ -39,17 +39,24 @@ export function registerDeleteAgentDlpRuleTool(server, options, sessionState) {
   server.registerTool(
     'delete_agent_dlp_rule',
     {
-      description: `Deletes an agent-created DLP rule (prefixed with '${AGENT_DISPLAY_NAME_PREFIX}'). To manually manage any rule, use: ${ADMIN_CONSOLE_DLP_RULE_LINK_TEMPLATE}`,
+      description: `Deletes an agent-created DLP rule (prefixed with '${AGENT_DISPLAY_NAME_PREFIX}'). For security, this tool only permits deleting rules that were originally created by the agent.`,
       inputSchema: {
         policyName: z
           .string()
           .startsWith('policies/')
           .describe('The resource name of the DLP rule (e.g. policies/ajjs664skp992kska)'),
       },
+      outputSchema: z
+        .object({
+          success: z.boolean(),
+          policyName: z.string(),
+          displayName: z.string().optional(),
+        })
+        .passthrough(),
     },
     guardedToolCall(
       {
-        handler: async ({ policyName }, { _requestInfo, authToken }) => {
+        handler: async ({ policyName }, { authToken }) => {
           logger.debug(`${TAGS.MCP} Calling 'delete_agent_dlp_rule' with policyName: ${policyName}`)
 
           let rule
@@ -66,43 +73,35 @@ export function registerDeleteAgentDlpRuleTool(server, options, sessionState) {
           if (isAgentCreated) {
             await cloudIdentityClient.deleteDlpRule(policyName, authToken)
             logger.debug(`${TAGS.MCP} Successfully deleted agent-created DLP rule: ${policyName}`)
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: `Successfully deleted Chrome DLP rule "${displayName}".`,
-                },
-              ],
-              structuredContent: {
-                success: true,
-                policyName,
-              },
-            }
-          } else {
-            const encodedPolicyName = encodeURIComponent(policyName)
-            const adminConsoleLink = ADMIN_CONSOLE_DLP_RULE_LINK_TEMPLATE.replace(
-              '{URL_ENCODED_RESOURCE_NAME}',
-              encodedPolicyName,
-            )
-
-            logger.debug(`${TAGS.MCP} Rule is not agent-created or could not be verified. Returning UI link.`)
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: `Automated deletion is only permitted for rules created by this agent (prefixed with '${AGENT_DISPLAY_NAME_PREFIX}').
-
-The rule "${displayName || 'this rule'}" must be deleted manually in the Google Admin Console:
-
-${adminConsoleLink}`,
-                },
-              ],
-              structuredContent: {
-                success: false,
-                policyName,
-              },
-            }
           }
+
+          return safeFormatResponse({
+            rawData: { success: isAgentCreated, policyName, displayName, isAgentCreated },
+            toolName: 'delete_agent_dlp_rule',
+            formatFn: raw => {
+              const sc = { success: raw.success, policyName: raw.policyName, displayName: raw.displayName }
+              if (raw.isAgentCreated) {
+                return formatToolResponse({
+                  summary: `The agent-created Chrome DLP rule "${raw.displayName}" (ID: \`${raw.policyName}\`) has been successfully deleted.`,
+                  data: sc,
+                  structuredContent: sc,
+                })
+              } else {
+                const encodedPolicyName = encodeURIComponent(raw.policyName)
+                const adminConsoleLink = ADMIN_CONSOLE_DLP_RULE_LINK_TEMPLATE.replace(
+                  '{URL_ENCODED_RESOURCE_NAME}',
+                  encodedPolicyName,
+                )
+
+                logger.debug(`${TAGS.MCP} Rule is not agent-created or could not be verified. Returning UI link.`)
+                return formatToolResponse({
+                  summary: `Automated deletion is only permitted for rules created by this agent (prefixed with '${AGENT_DISPLAY_NAME_PREFIX}').\n\nThe rule "${raw.displayName || 'this rule'}" must be deleted manually in the Google Admin Console:\n\n${adminConsoleLink}`,
+                  data: sc,
+                  structuredContent: sc,
+                })
+              }
+            },
+          })
         },
       },
       options,

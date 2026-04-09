@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/* eslint-disable n/no-process-exit */
+
 import { spawn } from 'node:child_process'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -127,8 +129,10 @@ class FakeServerManager {
           console.log(`${TAGS.MCP} Fake API Server is healthy at ${this.rootUrl}`)
           return
         }
-      } catch (e) {
-        await new Promise(resolve => setTimeout(resolve, 500))
+      } catch {
+        await new Promise(resolve => {
+          setTimeout(resolve, 500)
+        })
       }
     }
     throw new Error('Fake API Server failed to become healthy in time.')

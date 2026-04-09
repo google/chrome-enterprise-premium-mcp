@@ -20,7 +20,8 @@ limitations under the License.
 
 import { z } from 'zod'
 
-import { guardedToolCall } from '../utils/wrapper.js'
+import { guardedToolCall, formatToolResponse, safeFormatResponse } from '../utils/wrapper.js'
+import { commonOutputSchemas } from './shared.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 import {
@@ -127,10 +128,7 @@ This tool is specialized for browser-level protection (e.g., uploads, downloads,
 ${MCP_SAFETY_CONSTRAINTS.ACTIVE_BLOCK_RESTRICTION}`,
       inputSchema: {
         customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
-        orgUnitId: z
-          .string()
-          .describe('The ID of the organizational unit.')
-          .describe('The target Organizational Unit ID'),
+        orgUnitId: z.string().describe('The target Organizational Unit ID'),
         displayName: z
           .string()
           .max(USER_DISPLAY_NAME_MAX_LENGTH)
@@ -182,7 +180,9 @@ Multi-Trigger Logic:
           ),
         action: z
           .enum([CHROME_ACTION_TYPES.BLOCK, CHROME_ACTION_TYPES.WARN, CHROME_ACTION_TYPES.AUDIT])
-          .describe('Action to take when the rule is triggered.'),
+          .describe(
+            'Action to take when the rule is triggered. AUDIT mode is silent and logs events without notifying or blocking the user.',
+          ),
         state: z
           .enum(Object.values(POLICY_STATES).map(s => s.value))
           .optional()
@@ -226,15 +226,23 @@ Multi-Trigger Logic:
             `Data masking configurations (currently only regex detectors are supported). ${ACTION_PARAMETER_CONSTRAINTS.DATA_MASKING_SUPPORT}`,
           ),
       },
+      outputSchema: z
+        .object({
+          dlpRule: commonOutputSchemas.cloudIdentityPolicy,
+        })
+        .passthrough(),
     },
 
     guardedToolCall(
       {
         transform: params => {
-          const newDisplayName = `${AGENT_DISPLAY_NAME_PREFIX}${params.displayName}`
+          const prefix = AGENT_DISPLAY_NAME_PREFIX
+          const newDisplayName = params.displayName.startsWith(prefix)
+            ? params.displayName
+            : `${prefix}${params.displayName}`
           return { ...params, displayName: newDisplayName }
         },
-        handler: async (params, { _requestInfo, authToken }) => {
+        handler: async (params, { authToken }) => {
           const {
             customerId,
             orgUnitId,
@@ -254,7 +262,7 @@ Multi-Trigger Logic:
           logger.debug(`${TAGS.MCP} Calling 'create_chrome_dlp_rule' with params: ${JSON.stringify(params)}`)
           const fullTriggers = triggers.map(t => CHROME_TRIGGERS[t].value)
 
-          // 1. Validation: Safety constraints
+          // Safety constraints validation
           const safetyValidation = validateMcpSafetyConstraints(action, state)
           if (!safetyValidation.isValid) {
             throw new Error(`MCP Safety Constraint Violation:\n- ${safetyValidation.errors.join('\n- ')}`)
@@ -267,7 +275,7 @@ Multi-Trigger Logic:
             state: state || POLICY_STATES.ACTIVE.value,
           }
 
-          // 2. Validation: Condition
+          // Condition validation
           if (condition) {
             const validationResult = validateCelCondition(condition, triggers)
             if (!validationResult.isValid) {
@@ -334,32 +342,27 @@ Multi-Trigger Logic:
             chromeAction,
           }
 
-          const result = await cloudIdentityClient.createDlpRule(
-            customerId,
-            orgUnitId,
-            ruleConfig,
-            authToken,
-            _requestInfo,
-          )
+          const result = await cloudIdentityClient.createDlpRule(customerId, orgUnitId, ruleConfig, authToken)
 
           const createdPolicy = result.response
-          const createdDisplayName = createdPolicy?.setting?.value?.displayName || ruleConfig.displayName || 'new rule'
 
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Successfully created Chrome DLP rule "${createdDisplayName}".`,
-              },
-              {
-                type: 'text',
-                text: `Resource name for API operations: ${createdPolicy.name}. Display name: "${createdDisplayName}".`,
-              },
-            ],
-            structuredContent: {
-              dlpRule: createdPolicy,
+          return safeFormatResponse({
+            rawData: createdPolicy,
+            toolName: 'create_chrome_dlp_rule',
+            formatFn: raw => {
+              const createdDisplayName =
+                raw?.setting?.value?.displayName || raw.name?.split('/').pop() || 'Unnamed Rule'
+              const auditNote =
+                action === CHROME_ACTION_TYPES.AUDIT
+                  ? '\n\nNote: AUDIT mode is silent and logs events without notifying or blocking the user.'
+                  : ''
+              return formatToolResponse({
+                summary: `Successfully created Chrome DLP rule "${createdDisplayName}".\nResource name: \`${raw.name}\`${auditNote}`,
+                data: { dlpRule: raw },
+                structuredContent: { dlpRule: raw },
+              })
             },
-          }
+          })
         },
       },
       options,

@@ -101,8 +101,8 @@ describe('Rule Lifecycle Integration', () => {
     })
 
     const deleteOutput = parseToolOutput(deleteResult).text
-    assert.match(deleteOutput, /Successfully deleted Chrome DLP rule/)
-    assert.match(deleteOutput, new RegExp(ruleConfig.displayName))
+    assert.match(deleteOutput, /successfully deleted/)
+    assert.match(deleteOutput, new RegExp(ruleName))
 
     // 5. VERIFY DELETION
     const listAfterDeleteResult = await client.callTool({

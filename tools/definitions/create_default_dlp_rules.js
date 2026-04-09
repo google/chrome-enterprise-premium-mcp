@@ -19,7 +19,7 @@ limitations under the License.
  */
 
 import { z } from 'zod'
-import { guardedToolCall } from '../utils/wrapper.js'
+import { guardedToolCall, formatToolResponse, safeFormatResponse } from '../utils/wrapper.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 import { CHROME_TRIGGERS, POLICY_STATES } from '../../lib/util/chrome_dlp_constants.js'
@@ -90,29 +90,32 @@ export function registerCreateDefaultDlpRulesTool(server, options, sessionState)
   server.registerTool(
     'create_default_dlp_rules',
     {
-      description:
-        "Creates the default Chrome DLP rules as a starting pack for a specific Organizational Unit. This tool is only for customers who don't have DLP rules to get them started.",
+      description: `Creates a "Starter Pack" of default Chrome DLP rules for a specific Organizational Unit.
+Rules included:
+1. Audit visits to Generative AI sites.
+2. Apply watermarks to sensitive sites (Gmail, Salesforce, Zendesk).
+3. Warn users before pasting content on Generative AI sites (Gemini is excluded from warning).`,
       inputSchema: {
         customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
-        orgUnitId: z
-          .string()
-          .describe('The ID of the organizational unit.')
-          .describe('The target Organizational Unit ID'),
+        orgUnitId: z.string().describe('The target Organizational Unit ID'),
       },
-      outputSchema: z.array(z.any()).optional().default([]),
+      outputSchema: z
+        .object({
+          createdRules: z.array(z.object({ displayName: z.string(), name: z.string() }).passthrough()),
+          failedRules: z.array(z.object({ displayName: z.string(), error: z.string() }).passthrough()),
+          successCount: z.number(),
+          failureCount: z.number(),
+        })
+        .passthrough(),
     },
 
     guardedToolCall(
       {
-        handler: async (params, { _requestInfo, authToken }) => {
+        handler: async (params, { authToken }) => {
           logger.debug(`${TAGS.MCP} Calling 'create_default_dlp_rules' with params: ${JSON.stringify(params)}`)
           const { customerId, orgUnitId } = params
 
-          const results = []
-          const createdRules = []
-          let successCount = 0
-          let failureCount = 0
-
+          const ruleResults = []
           for (const ruleKey of Object.keys(DEFAULT_RULES)) {
             const rule = DEFAULT_RULES[ruleKey]
             const ruleConfig = {
@@ -129,13 +132,13 @@ export function registerCreateDefaultDlpRulesTool(server, options, sessionState)
             try {
               const result = await cloudIdentityClient.createDlpRule(customerId, orgUnitId, ruleConfig, authToken)
               const createdPolicy = result.response
-              results.push(`✅ Created: ${rule.displayName}`)
-              createdRules.push({
+              ruleResults.push({
                 displayName: rule.displayName,
+                status: 'Created',
                 name: createdPolicy.name,
+                success: true,
               })
             } catch (error) {
-              failureCount++
               let errorMsg = error.message
               if (
                 errorMsg.includes('already exists') ||
@@ -145,38 +148,54 @@ export function registerCreateDefaultDlpRulesTool(server, options, sessionState)
                 errorMsg = 'Already exists'
               }
               logger.error(`${TAGS.MCP} Failed to create rule ${ruleKey}:`, error)
-              results.push(`ℹ️ Skipped: ${rule.displayName} (${errorMsg})`)
+              ruleResults.push({
+                displayName: rule.displayName,
+                status: errorMsg === 'Already exists' ? 'Skipped' : 'Failed',
+                error: errorMsg,
+                success: false,
+              })
             }
           }
 
-          logger.debug(
-            `${TAGS.MCP} Finished creating default Chrome DLP rules. Success: ${successCount}, Failures: ${failureCount}`,
-          )
+          return safeFormatResponse({
+            rawData: { ruleResults, orgUnitId },
+            toolName: 'create_default_dlp_rules',
+            formatFn: raw => {
+              const createdRules = raw.ruleResults
+                .filter(r => r.success)
+                .map(r => ({ displayName: r.displayName, name: r.name }))
+              const failedRules = raw.ruleResults
+                .filter(r => !r.success)
+                .map(r => ({ displayName: r.displayName, error: r.error }))
+              const successCount = createdRules.length
+              const failureCount = failedRules.length
 
-          const summaryText = `Finished creating default Chrome DLP rules for OU: ${orgUnitId}.\n\nResults:\n${results.join('\n')}`
+              const summary = [
+                `## Default DLP Rules Created (${successCount} of ${raw.ruleResults.length} succeeded)`,
+                '',
+                ...raw.ruleResults.map(r => {
+                  const detail = r.success ? `, resource: \`${r.name}\`` : ` (${r.error})`
+                  return `- **${r.displayName}** — ${r.status.toLowerCase()}${detail}`
+                }),
+                '',
+                'Note: Rules in AUDIT mode (like visits to generative AI sites) are silent and log events without notifying or blocking the user.',
+              ].join('\n')
 
-          if (failureCount > 0) {
-            return {
-              content: [{ type: 'text', text: summaryText }],
-              isError: true,
-              structuredContent: {
-                createdRules,
-                failureCount,
-              },
-            }
-          }
+              const sc = { createdRules, failedRules, successCount, failureCount }
 
-          return {
-            content: [
-              {
-                type: 'text',
-                text: summaryText,
-              },
-            ],
-            structuredContent: {
-              createdRules,
+              const response = formatToolResponse({
+                summary,
+                data: sc,
+                structuredContent: sc,
+              })
+
+              if (failureCount > 0) {
+                response.isError = true
+              }
+
+              return response
             },
-          }
+          })
         },
       },
       options,

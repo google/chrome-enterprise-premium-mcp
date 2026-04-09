@@ -6,12 +6,12 @@ tags:
 expected_tools:
   - get_connector_policy
 priority: P0
-stability: 0.0
+stability: 1.0
 ---
 
 ## Prompt
 
-We configured the Reporting Connector to send CEP events to Splunk, but the Splunk dashboard is empty. Can you check what's configured?
+We configured the Reporting Connector to send CEP events to Splunk for our root organizational unit, but the Splunk dashboard is empty. Can you check what's configured?
 
 ## Golden Response
 

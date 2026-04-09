@@ -130,9 +130,9 @@ describe('Cloud Identity API', () => {
       assert.deepStrictEqual(passedConfig.condition, {
         contentCondition: "url.contains('test')",
       })
-      const expectedText = `Successfully created Chrome DLP rule "🤖 Test Rule".`
-      assert.deepStrictEqual(result.content[0].text, expectedText)
-      assert.ok(result.content[1].text.includes('policies/123'))
+      assert.ok(result.content[0].text.includes('Successfully created Chrome DLP rule'))
+      assert.ok(result.content[0].text.includes('policies/123'))
+      assert.ok(result.content[1].text.includes('```json'))
     })
 
     it('should pass dataMasking parameters to createDlpRule', async () => {
@@ -277,11 +277,9 @@ describe('Cloud Identity API', () => {
         description: '',
         regular_expression: { expression: '.*test.*' },
       })
-      assert.deepStrictEqual(
-        result.content[0].text,
-        'Successfully created regular expression detector "Regex Detector".',
-      )
-      assert.ok(result.content[1].text.includes('policies/regex1'))
+      assert.ok(result.content[0].text.includes('Successfully created regular expression detector "Regex Detector"'))
+      assert.ok(result.content[0].text.includes('policies/regex1'))
+      assert.ok(result.content[1].text.includes('```json'))
     })
   })
 
@@ -340,8 +338,9 @@ describe('Cloud Identity API', () => {
         description: '',
         url_list: { urls: ['test.com'] },
       })
-      assert.deepStrictEqual(result.content[0].text, 'Successfully created URL list detector "URL Detector".')
-      assert.ok(result.content[1].text.includes('policies/url1'))
+      assert.ok(result.content[0].text.includes('Successfully created URL list detector "URL Detector"'))
+      assert.ok(result.content[0].text.includes('policies/url1'))
+      assert.ok(result.content[1].text.includes('```json'))
     })
   })
 
@@ -400,8 +399,9 @@ describe('Cloud Identity API', () => {
         description: '',
         word_list: { words: ['secret'] },
       })
-      assert.deepStrictEqual(result.content[0].text, 'Successfully created word list detector "Word Detector".')
-      assert.ok(result.content[1].text.includes('policies/word1'))
+      assert.ok(result.content[0].text.includes('Successfully created word list detector "Word Detector"'))
+      assert.ok(result.content[0].text.includes('policies/word1'))
+      assert.ok(result.content[1].text.includes('```json'))
     })
 
     it('should throw an error if root OU resolution fails', async () => {
@@ -486,7 +486,11 @@ describe('Cloud Identity API', () => {
       const result = await handler({ policyName: 'policies/123' }, { requestInfo: {} })
 
       assert.strictEqual(mockDeleteDlpRule.mock.callCount(), 1)
-      assert.ok(result.content[0].text.includes('Successfully deleted Chrome DLP rule "🤖 Test Rule".'))
+      assert.ok(
+        result.content[0].text.includes(
+          'The agent-created Chrome DLP rule "🤖 Test Rule" (ID: `policies/123`) has been successfully deleted.',
+        ),
+      )
     })
   })
 
@@ -496,6 +500,7 @@ describe('Cloud Identity API', () => {
       const MockCloudIdentityClient = class {
         constructor() {
           this.deleteDetector = mockDeleteDetector
+          this.getDetector = mock.fn(async () => ({}))
         }
       }
 
@@ -518,7 +523,7 @@ describe('Cloud Identity API', () => {
       const result = await handler({ policyName: 'policies/456' }, { requestInfo: {} })
 
       assert.strictEqual(mockDeleteDetector.mock.callCount(), 1)
-      assert.ok(result.content[0].text.includes('Successfully deleted detector "456".'))
+      assert.ok(result.content[0].text.includes('Successfully deleted detector "456" (`policies/456`).'))
     })
   })
 })

@@ -11,7 +11,7 @@ priority: P2
 
 ## Prompt
 
-We configured a custom DLP watermark rule for an OU, but it's not working for user user1@example.com in that OU. Can you investigate?
+We configured a custom DLP watermark rule for our Root organizational unit, but it's not working for user user1@example.com. Can you investigate?
 
 ## Golden Response
 

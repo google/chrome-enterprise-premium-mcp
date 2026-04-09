@@ -19,6 +19,7 @@ limitations under the License.
  */
 
 import { resolveRootOrgUnitId } from './org-unit.js'
+import { formatToolResponse } from './wrapper.js'
 
 /**
  * Helper to create a detector and format the response.
@@ -50,19 +51,9 @@ export async function createDetectorAndFormatResponse(
   const createdPolicy = result.response
   const createdDisplayName = createdPolicy?.setting?.value?.displayName || detectorConfig.displayName
 
-  return {
-    content: [
-      {
-        type: 'text',
-        text: `Successfully created ${detectorTypeString} detector "${createdDisplayName}".`,
-      },
-      {
-        type: 'text',
-        text: `Resource name for API operations: ${createdPolicy.name}. Display name: "${createdDisplayName}".`,
-      },
-    ],
-    structuredContent: {
-      detector: createdPolicy,
-    },
-  }
+  return formatToolResponse({
+    summary: `Successfully created ${detectorTypeString} detector "${createdDisplayName}".\nResource name: \`${createdPolicy.name}\``,
+    data: { detector: createdPolicy },
+    structuredContent: { detector: createdPolicy },
+  })
 }

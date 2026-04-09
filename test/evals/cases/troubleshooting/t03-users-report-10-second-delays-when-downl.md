@@ -11,8 +11,8 @@ priority: P2
 
 ## Prompt
 
-Users report 10-second delays when downloading files because the browser says 'Scanning'. Can you check our download connector configuration?
+Users report 10-second delays when downloading files because the browser says 'Scanning'. Can you check our download connector configuration for our Root organizational unit?
 
 ## Golden Response
 
-The 'Scanning' message indicates content analysis is happening. Delays are often due to the 'Download content analysis' settings. If 'Delay file download until analysis is complete' is enabled, the download waits for the scan verdict. The agent's check found no FILE_DOWNLOAD connector configured, meaning no CEP-level scanning is currently being applied to downloads. To enable scanning, configure the connector and adjust the delay settings as needed.
+The 'Scanning' message indicates content analysis is happening. The agent should check the File Download Analysis connector and find it is **Enabled** with **'Delay Enforcement'** active. This setting causes the browser to wait for a scan verdict before completing the download, explaining the reported 10-second delay. To resolve, the administrator can either disable delay enforcement or adjust the timeout settings.

@@ -4,7 +4,7 @@ category: prompt
 tags:
   - prompt
   - noise
-prompt_name: "cep:noise"
+prompt_name: 'cep:noise'
 expected_tools:
   - list_dlp_rules
   - get_chrome_activity_log

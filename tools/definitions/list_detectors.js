@@ -14,59 +14,87 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { guardedToolCall } from '../utils/wrapper.js'
+import { z } from 'zod'
+import { guardedToolCall, formatToolResponse, safeFormatResponse } from '../utils/wrapper.js'
+import { commonOutputSchemas } from './shared.js'
+import { TAGS } from '../../lib/constants.js'
+import { logger } from '../../lib/util/logger.js'
 
 export function registerListDetectorsTool(server, options, sessionState) {
   const { cloudIdentityClient } = options
+  logger.debug(`${TAGS.MCP} Registering 'list_detectors' tool...`)
 
   server.registerTool(
     'list_detectors',
     {
-      description: `Lists Chrome DLP detectors.`,
+      description: `Lists all custom Chrome DLP detectors (URL lists, word lists, or regular expressions).
+Detectors are used within DLP rules to identify sensitive content. Use this to find the 'policyName' of a detector to include in a rule.`,
       inputSchema: {},
+      outputSchema: z
+        .object({
+          detectors: z.array(commonOutputSchemas.cloudIdentityPolicy),
+        })
+        .passthrough(),
     },
     guardedToolCall(
       {
-        handler: async (_, { _requestInfo, authToken }) => {
+        handler: async (_, { authToken }) => {
+          logger.debug(`${TAGS.MCP} Calling 'list_detectors'`)
           const detectors = await cloudIdentityClient.listDetectors(authToken)
 
-          const format = s =>
-            String(s || 'Unknown')
-              .replace(/_/g, ' ')
-              .toLowerCase()
-              .replace(/\b\w/g, l => l.toUpperCase())
+          return safeFormatResponse({
+            rawData: detectors,
+            toolName: 'list_detectors',
+            formatFn: raw => {
+              if (!raw || raw.length === 0) {
+                return formatToolResponse({
+                  summary: 'No detectors found.',
+                  data: { detectors: [] },
+                  structuredContent: { detectors: [] },
+                })
+              }
 
-          if (!detectors || detectors.length === 0) {
-            return {
-              content: [{ type: 'text', text: 'No detectors found.' }],
-              structuredContent: { detectors: [] },
-            }
-          }
+              const formatType = s =>
+                String(s || 'Unknown')
+                  .replace(/_/g, ' ')
+                  .toLowerCase()
+                  .replace(/\b\w/g, l => l.toUpperCase())
 
-          const entries = detectors.map(p => {
-            const value = p.setting?.value || {}
-            return {
-              displayName: value.displayName || p.name?.split('/').pop() || 'Unnamed Detector',
-              type: format(p.setting?.type?.replace('settings/', '')),
-              resourceName: p.name,
-              details: JSON.stringify(value),
-            }
+              const summaryLines = raw.map(p => {
+                const settingValue = p.setting?.value || {}
+                const displayName =
+                  settingValue.displayName || p.displayName || p.name?.split('/').pop() || 'Unnamed Detector'
+                const type = formatType(p.setting?.type?.split('.').pop())
+
+                let detail = ''
+                if (settingValue.url_list?.urls) {
+                  detail = ` (targeting ${settingValue.url_list.urls.join(', ')})`
+                } else if (settingValue.word_list?.words) {
+                  detail = ` (targeting words: ${settingValue.word_list.words.join(', ')})`
+                } else if (settingValue.regular_expression?.expression) {
+                  detail = ` (pattern: ${settingValue.regular_expression.expression})`
+                }
+
+                return `- **${displayName}** — Type: ${type}, Resource: \`${p.name}\`${detail}`
+              })
+
+              const resourceMap = raw
+                .map(p => {
+                  const displayName =
+                    p.setting?.value?.displayName || p.displayName || p.name?.split('/').pop() || 'Unnamed Detector'
+                  return `- "${displayName}" → \`${p.name}\``
+                })
+                .join('\n')
+
+              const text = `## DLP Detectors (${raw.length})\n\n${summaryLines.join('\n')}\n\nResource names for API operations:\n${resourceMap}`
+
+              return formatToolResponse({
+                summary: text,
+                data: { detectors: raw },
+                structuredContent: { detectors: raw },
+              })
+            },
           })
-
-          const summary = entries.map(e => `- ${e.displayName} [Type: ${e.type}] - Details: ${e.details}`).join('\n')
-
-          const resourceMap = entries.map(e => `- "${e.displayName}" → ${e.resourceName}`).join('\n')
-
-          return {
-            content: [
-              { type: 'text', text: summary },
-              {
-                type: 'text',
-                text: `Resource names for API operations:\n${resourceMap}`,
-              },
-            ],
-            structuredContent: { detectors },
-          }
         },
       },
       options,

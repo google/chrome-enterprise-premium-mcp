@@ -22,9 +22,10 @@ import { z } from 'zod'
 import { guardedToolCall } from '../utils/wrapper.js'
 import { createDetectorAndFormatResponse } from '../utils/detector.js'
 import { logger } from '../../lib/util/logger.js'
+import { TAGS } from '../../lib/constants.js'
 import { WORKSPACE_RULE_LIMITS } from '../../lib/util/chrome_dlp_constants.js'
 
-import { commonInputSchemas } from './shared.js'
+import { commonInputSchemas, commonOutputSchemas } from './shared.js'
 
 /**
  * Registers the 'create_word_list_detector' tool with the MCP server.
@@ -37,12 +38,13 @@ import { commonInputSchemas } from './shared.js'
 export function registerCreateWordListDetectorTool(server, options, sessionState) {
   const { cloudIdentityClient, apiClients } = options
 
-  logger.debug(`Registering 'create_word_list_detector' tool...`)
+  logger.debug(`${TAGS.MCP} Registering 'create_word_list_detector' tool...`)
 
   server.registerTool(
     'create_word_list_detector',
     {
-      description: 'Creates a new DLP word list detector.',
+      description: `Creates a new DLP word list detector.
+Detectors are building blocks for DLP rules. After creating a detector, you must reference its resource name in a 'create_chrome_dlp_rule' condition (e.g., using the 'matches_detector' function).`,
       inputSchema: {
         customerId: commonInputSchemas.customerId,
         displayName: commonInputSchemas.detectorDisplayName,
@@ -55,6 +57,11 @@ export function registerCreateWordListDetectorTool(server, options, sessionState
             `A list of words to match. Total character count across all words must be ${WORKSPACE_RULE_LIMITS.MAX_WORD_LIST_CHARS} or less.`,
           ),
       },
+      outputSchema: z
+        .object({
+          detector: commonOutputSchemas.cloudIdentityPolicy,
+        })
+        .passthrough(),
     },
     guardedToolCall(
       {

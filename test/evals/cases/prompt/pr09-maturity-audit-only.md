@@ -5,7 +5,7 @@ tags:
   - prompt
   - maturity
 scenario: audit-only-rules
-prompt_name: "cep:maturity"
+prompt_name: 'cep:maturity'
 expected_tools:
   - list_dlp_rules
   - list_org_units

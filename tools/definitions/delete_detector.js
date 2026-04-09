@@ -19,8 +19,9 @@ limitations under the License.
  */
 
 import { z } from 'zod'
-import { guardedToolCall } from '../utils/wrapper.js'
+import { guardedToolCall, formatToolResponse, safeFormatResponse } from '../utils/wrapper.js'
 import { logger } from '../../lib/util/logger.js'
+import { TAGS } from '../../lib/constants.js'
 
 /**
  * Registers the 'delete_detector' tool with the MCP server.
@@ -33,22 +34,30 @@ import { logger } from '../../lib/util/logger.js'
 export function registerDeleteDetectorTool(server, options, sessionState) {
   const { cloudIdentityClient } = options
 
-  logger.debug(`Registering 'delete_detector' tool...`)
+  logger.debug(`${TAGS.MCP} Registering 'delete_detector' tool...`)
 
   server.registerTool(
     'delete_detector',
     {
-      description: 'Deletes a DLP detector (URL list, word list, or regex).',
+      description: `Deletes a DLP detector (URL list, word list, or regex).
+Note: This will not automatically remove the detector from any DLP rules that reference it. You should update or delete the affected rules separately.`,
       inputSchema: {
         policyName: z
           .string()
           .startsWith('policies/')
           .describe('The resource name of the detector (e.g. policies/akajj264apk5psphei)'),
       },
+      outputSchema: z
+        .object({
+          success: z.boolean(),
+          policyName: z.string(),
+          displayName: z.string().optional(),
+        })
+        .passthrough(),
     },
     guardedToolCall(
       {
-        handler: async ({ policyName }, { _requestInfo, authToken }) => {
+        handler: async ({ policyName }, { authToken }) => {
           // Fetch display name before deletion for user-friendly confirmation
           let displayName = policyName.split('/').pop()
           try {
@@ -58,20 +67,20 @@ export function registerDeleteDetectorTool(server, options, sessionState) {
             // Use extracted ID as fallback
           }
 
-          await cloudIdentityClient.deleteDetector(policyName, authToken)
+          const result = await cloudIdentityClient.deleteDetector(policyName, authToken)
 
-          return {
-            content: [
-              {
-                type: 'text',
-                text: `Successfully deleted detector "${displayName}".`,
-              },
-            ],
-            structuredContent: {
-              success: true,
-              policyName,
+          return safeFormatResponse({
+            rawData: { success: true, policyName, displayName, result },
+            toolName: 'delete_detector',
+            formatFn: raw => {
+              const sc = { success: raw.success, policyName: raw.policyName, displayName: raw.displayName }
+              return formatToolResponse({
+                summary: `Successfully deleted detector "${raw.displayName}" (\`${raw.policyName}\`).`,
+                data: sc,
+                structuredContent: sc,
+              })
             },
-          }
+          })
         },
       },
       options,

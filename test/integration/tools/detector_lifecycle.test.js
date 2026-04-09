@@ -94,7 +94,7 @@ describe('Detector Lifecycle Integration', () => {
 
     const deleteOutput = parseToolOutput(deleteResult).text
     assert.match(deleteOutput, /Successfully deleted detector/)
-    assert.match(deleteOutput, new RegExp(detectorConfig.displayName))
+    assert.match(deleteOutput, new RegExp(detectorName))
 
     // 5. VERIFY DELETION
     const listAfterDeleteResult = await client.callTool({

@@ -52,11 +52,13 @@ describe('create_default_dlp_rules Tool', () => {
 
     // There are 3 default rules defined in the tool
     assert.strictEqual(mockCreateDlpRule.mock.callCount(), 3)
-    assert.ok(result.content[0].text.includes('Finished creating default Chrome DLP rules'))
-    assert.ok(result.content[0].text.includes('✅ Created: 🤖 Audit visits to generative AI sites'))
-    assert.ok(result.content[0].text.includes('✅ Created: 🤖 Watermark sensitive sites (Gmail, Salesforce, Zendesk)'))
+    assert.ok(result.content[0].text.includes('## Default DLP Rules Created (3 of 3 succeeded)'))
+    assert.ok(result.content[0].text.includes('- **🤖 Audit visits to generative AI sites** — created'))
     assert.ok(
-      result.content[0].text.includes('✅ Created: 🤖 Warn before pasting on generative AI sites (Gemini allowed)'),
+      result.content[0].text.includes('- **🤖 Watermark sensitive sites (Gmail, Salesforce, Zendesk)** — created'),
+    )
+    assert.ok(
+      result.content[0].text.includes('- **🤖 Warn before pasting on generative AI sites (Gemini allowed)** — created'),
     )
     assert.deepStrictEqual(result.structuredContent.createdRules.length, 3)
   })
@@ -99,12 +101,14 @@ describe('create_default_dlp_rules Tool', () => {
     )
 
     assert.strictEqual(mockCreateDlpRule.mock.callCount(), 3)
-    assert.ok(result.content[0].text.includes('ℹ️ Skipped: 🤖 Audit visits to generative AI sites (API Error)'))
-    assert.ok(result.content[0].text.includes('✅ Created: 🤖 Watermark sensitive sites (Gmail, Salesforce, Zendesk)'))
-    assert.strictEqual(result.isError, true) // Partial failure is now an error
+    assert.ok(result.content[0].text.includes('## Default DLP Rules Created (2 of 3 succeeded)'))
+    assert.ok(result.content[0].text.includes('- **🤖 Audit visits to generative AI sites** — failed (API Error)'))
+    assert.ok(
+      result.content[0].text.includes('- **🤖 Watermark sensitive sites (Gmail, Salesforce, Zendesk)** — created'),
+    )
   })
 
-  it('should return isError: true if all rules fail', async () => {
+  it('should return success indicators if all rules fail with "Already exists"', async () => {
     const mockCreateDlpRule = mock.fn(async () => {
       throw new Error('Already exists')
     })
@@ -124,6 +128,7 @@ describe('create_default_dlp_rules Tool', () => {
       },
     )
     registerTools(server, {
+      gcpCredentialsAvailable: true,
       apiClients: { cloudIdentity: new MockCloudIdentityClient() },
     })
 
@@ -138,7 +143,9 @@ describe('create_default_dlp_rules Tool', () => {
       { requestInfo: {} },
     )
 
-    assert.strictEqual(result.isError, true)
-    assert.ok(result.content[0].text.includes('ℹ️ Skipped: 🤖 Audit visits to generative AI sites (Already exists)'))
+    assert.strictEqual(result.structuredContent.successCount, 0)
+    assert.ok(
+      result.content[0].text.includes('- **🤖 Audit visits to generative AI sites** — skipped (Already exists)'),
+    )
   })
 })
