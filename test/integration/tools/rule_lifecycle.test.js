@@ -88,9 +88,10 @@ describe('Rule Lifecycle Integration', () => {
       arguments: {},
     })
 
-    const listOutput = parseToolOutput(listResult).text
-    const shortId = ruleName.split('/').pop()
-    assert.ok(listOutput.includes(shortId), `Created rule short ID (${shortId}) not visible in list output`)
+    const { text: listOutput, details: listData } = parseToolOutput(listResult)
+    const rules = listData?.dlpRules || []
+    const ruleExists = rules.some(r => r.name === ruleName || r.resourceName === ruleName)
+    assert.ok(ruleExists, `Created rule (${ruleName}) not visible in list output. List output: ${listOutput}`)
 
     // 4. DELETE
     const deleteResult = await client.callTool({

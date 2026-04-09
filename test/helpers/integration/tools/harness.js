@@ -22,6 +22,7 @@ import { registerTools } from '../../../../tools/index.js'
 import { registerPrompts } from '../../../../prompts/index.js'
 import { getApiClients } from './client_factory.js'
 import { parseToolOutput } from './tool_utils.js'
+import { fakeServerManager } from './fake_server_manager.js'
 
 /**
  * Sets up the standard IDs needed for integration tests.
@@ -115,6 +116,9 @@ function handleDiscoveryError(errorText) {
  * High-level helper to bootstrap a full MCP integration test harness.
  */
 export async function createIntegrationHarness() {
+  // Ensure the fake backend is running if needed
+  await fakeServerManager.start()
+
   const server = new McpServer(
     { name: 'test-server', version: '1.0.0' },
     { capabilities: { logging: {}, prompts: {} } },
@@ -153,25 +157,34 @@ export async function teardownIntegrationHarness(harness, createdResources) {
         continue
       }
       try {
-        if (name.includes('policies/')) {
-          // Check policy type before deleting
-          const policy = await harness.apiClients.cloudIdentity.getDlpRule(name)
-          const type = policy.setting?.type || ''
-
-          if (type.includes('rule.dlp')) {
-            await harness.apiClients.cloudIdentity.deleteDlpRule(name)
-            console.log(`[CLEANUP] Deleted Rule: ${name}`)
-          } else if (type.includes('detector')) {
-            await harness.apiClients.cloudIdentity.deleteDetector(name)
-            console.log(`[CLEANUP] Deleted Detector: ${name}`)
-          } else {
-            console.log(`[CLEANUP] Unknown policy type for ${name}, attempting generic rule delete...`)
-            await harness.apiClients.cloudIdentity.deleteDlpRule(name)
+        let policy
+        try {
+          policy = await harness.apiClients.cloudIdentity.getDlpRule(name)
+        } catch (e) {
+          if (e.message.includes('404') || e.message.includes('not found')) {
+            console.log(`[CLEANUP] Resource ${name} already deleted.`)
+            continue
           }
+          throw e
+        }
+
+        const type = policy.setting?.type || ''
+        if (type.includes('rule.dlp')) {
+          await harness.apiClients.cloudIdentity.deleteDlpRule(name)
+          console.log(`[CLEANUP] Deleted Rule: ${name}`)
+        } else if (type.includes('detector')) {
+          await harness.apiClients.cloudIdentity.deleteDetector(name)
+          console.log(`[CLEANUP] Deleted Detector: ${name}`)
+        } else {
+          console.log(`[CLEANUP] Unknown policy type for ${name}, attempting generic rule delete...`)
+          await harness.apiClients.cloudIdentity.deleteDlpRule(name)
         }
       } catch (e) {
         console.error(`[CLEANUP] Failed to delete ${name}: ${e.message}`)
       }
     }
   }
+
+  // Ensure the fake backend is stopped
+  await fakeServerManager.stop()
 }
