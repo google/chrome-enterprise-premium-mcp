@@ -86,8 +86,6 @@ export function registerListDlpRulesTool(server, options, sessionState) {
             .map(r => `- ${r.name}\n  * Status: ${r.status}\n  * Action: ${r.action}\n  * Triggers: ${r.triggers}`)
             .join('\n\n')
 
-          const resourceMap = ruleEntries.map(r => `- "${r.name}" → ${r.resourceName}`).join('\n')
-
           return {
             content: [
               { type: 'text', text: summary },

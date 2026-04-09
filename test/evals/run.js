@@ -189,12 +189,9 @@ async function main() {
    * @param {number} _index
    */
   async function runSingleEval(evalCase, _index) {
-    const start = Date.now()
-    let bestResult = null
     const allResults = []
 
     for (let run = 0; run < numRuns; run++) {
-      const start = Date.now()
       if (fakeServer) {
         fakeServer.resetState()
       }
