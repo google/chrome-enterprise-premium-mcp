@@ -40,8 +40,11 @@ export async function resolveRootOrgUnitId(apiClients, customerId, authToken, se
       const orgUnitsResponse = await apiClients.adminSdk.listOrgUnits({ customerId }, authToken)
       const rootOU = orgUnitsResponse.organizationUnits?.find(ou => ou.orgUnitPath === '/')
       if (rootOU && rootOU.orgUnitId) {
-        sessionState.cachedRootOrgUnitId = rootOU.orgUnitId
-        return rootOU.orgUnitId
+        const id = rootOU.orgUnitId
+        if (!sessionState.cachedRootOrgUnitId) {
+          sessionState.cachedRootOrgUnitId = id
+        }
+        return id
       } else {
         console.error(
           `${TAGS.MCP} ⚠️ Failed to auto-resolve root orgUnitId for customer ${customerId}: Root OU not found.`,

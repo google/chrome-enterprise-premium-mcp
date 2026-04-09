@@ -440,7 +440,10 @@ export async function startFakeServer() {
       resolve({
         url,
         resetState,
-        close: () => new Promise((res, rej) => server.close(err => (err ? rej(err) : res()))),
+        close: () =>
+          new Promise((res, rej) => {
+            server.close(err => (err ? rej(err) : res()))
+          }),
       })
     })
     server.on('error', reject)

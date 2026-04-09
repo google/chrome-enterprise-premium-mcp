@@ -42,7 +42,7 @@ export function registerGetCustomerIdTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
-        handler: async (params, { requestInfo, authToken }) => {
+        handler: async (params, { _requestInfo, authToken }) => {
           logger.debug(`${TAGS.MCP} Calling 'get_customer_id'`)
           const customer = await adminSdkClient.getCustomerId(authToken)
 

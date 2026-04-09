@@ -73,7 +73,7 @@ export function registerGetChromeActivityLogTool(server, options, sessionState) 
         },
         handler: async (
           { userKey, eventName, startTime, endTime, maxResults, customerId },
-          { requestInfo, authToken },
+          { _requestInfo, authToken },
         ) => {
           logger.debug(
             `${TAGS.MCP} Calling 'get_chrome_activity_log' with userKey: ${userKey}, eventName: ${eventName}, startTime: ${startTime}, endTime: ${endTime}, maxResults: ${maxResults}, customerId: ${customerId}`,

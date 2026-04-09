@@ -27,7 +27,7 @@ export function registerListDetectorsTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
-        handler: async (_, { requestInfo, authToken }) => {
+        handler: async (_, { _requestInfo, authToken }) => {
           const detectors = await cloudIdentityClient.listDetectors(authToken)
 
           const format = s =>

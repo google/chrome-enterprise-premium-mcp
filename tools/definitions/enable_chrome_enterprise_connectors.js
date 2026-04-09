@@ -224,7 +224,7 @@ export function registerEnableChromeEnterpriseConnectorsTool(server, options, se
     },
     guardedToolCall(
       {
-        handler: async ({ customerId, orgUnitId, connectors }, { requestInfo, authToken }) => {
+        handler: async ({ customerId, orgUnitId, connectors }, { _requestInfo, authToken }) => {
           logger.debug(`${TAGS.MCP} Calling 'enable_chrome_enterprise_connectors' for ${connectors.join(', ')}`)
           const results = []
           const batchRequests = []

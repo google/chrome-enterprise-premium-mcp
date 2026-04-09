@@ -35,7 +35,7 @@ export function registerListDlpRulesTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
-        handler: async (_, { requestInfo, authToken }) => {
+        handler: async (_, { _requestInfo, authToken }) => {
           const policies = await cloudIdentityClient.listDlpRules(authToken)
 
           const filtered = (policies || []).filter(p => p.setting?.value?.triggers?.some(t => TRIGGERS[t]))

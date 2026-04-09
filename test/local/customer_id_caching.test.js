@@ -19,13 +19,7 @@ import { describe, it, mock, beforeEach } from 'node:test'
 import { guardedToolCall } from '../../tools/utils/wrapper.js'
 
 describe('Customer ID Caching and Auto-Resolution', () => {
-  let server
-
-  beforeEach(() => {
-    server = {
-      registerTool: mock.fn(),
-    }
-  })
+  beforeEach(() => {})
 
   it('should fetch customerId on first tool call and cache it for subsequent calls', async () => {
     const mockGetCustomerId = mock.fn(async () => ({ id: 'C_AUTO_RESOLVED' }))
@@ -41,7 +35,7 @@ describe('Customer ID Caching and Auto-Resolution', () => {
     const sessionState = { customerId: null }
     const listOrgUnitsHandler = guardedToolCall(
       {
-        handler: async (params, context) => {
+        handler: async params => {
           return adminSdkClientInstance.listOrgUnits(params)
         },
       },
@@ -50,13 +44,13 @@ describe('Customer ID Caching and Auto-Resolution', () => {
     )
 
     // First call
-    await listOrgUnitsHandler({}, { requestInfo: {} })
+    await listOrgUnitsHandler({}, { _requestInfo: {} })
     assert.strictEqual(mockGetCustomerId.mock.callCount(), 1, 'getCustomerId should be called once')
     const firstCallArgs = mockListOrgUnits.mock.calls[0].arguments
     assert.strictEqual(firstCallArgs[0].customerId, 'C_AUTO_RESOLVED', 'First call should use resolved ID')
 
     // Second call
-    await listOrgUnitsHandler({}, { requestInfo: {} })
+    await listOrgUnitsHandler({}, { _requestInfo: {} })
     assert.strictEqual(mockGetCustomerId.mock.callCount(), 1, 'getCustomerId should NOT be called again')
     const secondCallArgs = mockListOrgUnits.mock.calls[1].arguments
     assert.strictEqual(secondCallArgs[0].customerId, 'C_AUTO_RESOLVED', 'Second call should use cached ID')
@@ -76,7 +70,7 @@ describe('Customer ID Caching and Auto-Resolution', () => {
     const sessionState = { customerId: null }
     const listOrgUnitsHandler = guardedToolCall(
       {
-        handler: async (params, context) => {
+        handler: async params => {
           return adminSdkClientInstance.listOrgUnits(params)
         },
       },
@@ -85,7 +79,7 @@ describe('Customer ID Caching and Auto-Resolution', () => {
     )
 
     // Call with explicit ID
-    await listOrgUnitsHandler({ customerId: 'C_EXPLICIT' }, { requestInfo: {} })
+    await listOrgUnitsHandler({ customerId: 'C_EXPLICIT' }, { _requestInfo: {} })
     assert.strictEqual(mockGetCustomerId.mock.callCount(), 0)
     assert.strictEqual(mockListOrgUnits.mock.calls[0].arguments[0].customerId, 'C_EXPLICIT')
     assert.strictEqual(sessionState.customerId, 'C_EXPLICIT')

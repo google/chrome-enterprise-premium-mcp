@@ -94,6 +94,7 @@ async function main() {
   const dryRun = args['dry-run']
   const noJudge = args['no-judge']
   const verbose = args.verbose
+  let fakeServer = null
 
   const evalsDir = path.resolve(__dirname)
   const category = args.category || process.env.EVAL_CATEGORY
@@ -151,13 +152,15 @@ async function main() {
   }
 
   // Start fake API server if using fake backend
-  let fakeServer = null
   const backend = process.env.CEP_BACKEND || 'fake'
   if (backend === 'fake') {
-    fakeServer = await startFakeServer()
-    process.env.GOOGLE_API_ROOT_URL = fakeServer.url
+    const serverInstance = await startFakeServer()
+    fakeServer = serverInstance
+    // eslint-disable-next-line require-atomic-updates
+    process.env.GOOGLE_API_ROOT_URL = serverInstance.url
+    // eslint-disable-next-line require-atomic-updates
     process.env.CEP_BACKEND = 'fake'
-    console.log(`Fake API server started at ${fakeServer.url}`)
+    console.log(`Fake API server started at ${serverInstance.url}`)
   }
 
   // Initialize MCP harness + agent
@@ -184,9 +187,9 @@ async function main() {
 
   /**
    * @param {import('./lib/loader.js').EvalCase} evalCase
-   * @param {number} index
+   * @param {number} _index
    */
-  async function runSingleEval(evalCase, index) {
+  async function runSingleEval(evalCase, _index) {
     const start = Date.now()
     let bestResult = null
 

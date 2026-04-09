@@ -21,14 +21,10 @@ limitations under the License.
 import { z } from 'zod'
 import fs from 'fs'
 import path from 'path'
-import { fileURLToPath } from 'url'
 
 import { guardedToolCall } from '../utils/wrapper.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
 
 /**
  * Registers the 'cep_feedback' tool with the MCP server.

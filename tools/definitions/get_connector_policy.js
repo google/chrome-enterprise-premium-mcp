@@ -65,7 +65,7 @@ export function registerGetConnectorPolicyTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
-        handler: async ({ customerId, orgUnitId, policy }, { requestInfo, authToken }) => {
+        handler: async ({ customerId, orgUnitId, policy }, { _requestInfo, authToken }) => {
           const policies = await chromePolicyClient.getConnectorPolicy(
             customerId,
             orgUnitId,
@@ -128,7 +128,7 @@ export function registerGetConnectorPolicyTool(server, options, sessionState) {
                     if (typeof v === 'string') {
                       try {
                         v = JSON.parse(v)
-                      } catch (e) {
+                      } catch (_e) {
                         // Fallback to raw string if not JSON
                       }
                     }

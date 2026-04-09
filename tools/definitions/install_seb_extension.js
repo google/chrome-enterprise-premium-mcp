@@ -57,7 +57,7 @@ export function registerInstallSebExtensionTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
-        handler: async ({ customerId, orgUnitId }, { requestInfo, authToken }) => {
+        handler: async ({ customerId, orgUnitId }, { _requestInfo, authToken }) => {
           logger.debug(
             `${TAGS.MCP} Calling 'install_seb_extension' with customerId: ${customerId}, orgUnitId: ${orgUnitId}`,
           )

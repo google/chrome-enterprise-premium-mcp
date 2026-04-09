@@ -48,8 +48,6 @@ const CORE_TOOLS = [
   'list_documents',
 ].sort()
 
-const EXPERIMENTAL_TOOLS = ['delete_agent_dlp_rule', 'delete_detector'].sort()
-
 // Tests for SEB tool registration and individual tool handler logic.
 describe('SEB Tool Registration', () => {
   let server

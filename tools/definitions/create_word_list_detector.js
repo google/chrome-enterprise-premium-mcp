@@ -58,7 +58,7 @@ export function registerCreateWordListDetectorTool(server, options, sessionState
     },
     guardedToolCall(
       {
-        handler: async (params, { requestInfo, authToken }) => {
+        handler: async (params, { _requestInfo, authToken }) => {
           const { customerId, displayName, description, words } = params
 
           const totalChars = words.reduce((acc, word) => acc + word.length, 0)

@@ -40,7 +40,6 @@ import {
   URL_CATEGORY_METADATA,
   POLICY_STATES,
   MASK_TYPES,
-  VALID_WEB_CATEGORIES,
   CHROME_TRIGGERS,
   CHROME_ACTION_TYPES,
   ACTION_PARAMETER_CONSTRAINTS,
@@ -235,7 +234,7 @@ Multi-Trigger Logic:
           const newDisplayName = `${AGENT_DISPLAY_NAME_PREFIX}${params.displayName}`
           return { ...params, displayName: newDisplayName }
         },
-        handler: async (params, { requestInfo, authToken }) => {
+        handler: async (params, { _requestInfo, authToken }) => {
           const {
             customerId,
             orgUnitId,
@@ -340,7 +339,7 @@ Multi-Trigger Logic:
             orgUnitId,
             ruleConfig,
             authToken,
-            requestInfo,
+            _requestInfo,
           )
 
           const createdPolicy = result.response

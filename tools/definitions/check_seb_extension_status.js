@@ -64,7 +64,7 @@ export function registerCheckSebExtensionStatusTool(server, options, sessionStat
     },
     guardedToolCall(
       {
-        handler: async ({ customerId, orgUnitId }, { requestInfo, authToken }) => {
+        handler: async ({ customerId, orgUnitId }, { _requestInfo, authToken }) => {
           logger.debug(
             `${TAGS.MCP} Calling 'check_seb_extension_status' with customerId: ${customerId}, orgUnitId: ${orgUnitId}`,
           )

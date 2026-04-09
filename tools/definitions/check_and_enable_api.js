@@ -55,7 +55,7 @@ export function registerCheckAndEnableApiTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
-        handler: async ({ projectId, apiName, enable = false, checkAll = false }, { requestInfo, authToken }) => {
+        handler: async ({ projectId, apiName, enable = false, checkAll = false }, { _requestInfo, authToken }) => {
           const actualApiName = apiName || SERVICE_NAMES.ADMIN_SDK
           logger.debug(
             `${TAGS.MCP} Calling 'check_and_enable_api' for project ${projectId} (enable: ${enable}, checkAll: ${checkAll}, apiName: ${actualApiName})`,

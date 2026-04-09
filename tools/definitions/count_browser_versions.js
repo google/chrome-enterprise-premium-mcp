@@ -46,7 +46,7 @@ export function registerCountBrowserVersionsTool(server, options, sessionState) 
     },
     guardedToolCall(
       {
-        handler: async ({ customerId, orgUnitId }, { requestInfo, authToken }) => {
+        handler: async ({ customerId, orgUnitId }, { _requestInfo, authToken }) => {
           logger.debug(
             `${TAGS.MCP} Calling 'count_browser_versions' with customerId: ${customerId}, orgUnitId: ${orgUnitId}`,
           )
