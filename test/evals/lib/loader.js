@@ -81,7 +81,7 @@ export function loadEval(filepath, globalConfig) {
   return {
     id: String(frontmatter.id),
     category: frontmatter.category || path.basename(path.dirname(filepath)),
-    priority: frontmatter.priority || 'P2',
+    priority: (frontmatter.priority || 'P2').toUpperCase(),
     tags: frontmatter.tags || [],
     expectedTools: frontmatter.expected_tools || [],
     forbiddenPatterns: mergedForbidden,
@@ -158,6 +158,7 @@ export function loadAllEvals({ dir, category, tags, ids, priority }) {
  * @typedef {object} EvalCase
  * @property {string} id
  * @property {string} category
+ * @property {string} priority
  * @property {string[]} tags
  * @property {string[]} expectedTools
  * @property {string[]} forbiddenPatterns
