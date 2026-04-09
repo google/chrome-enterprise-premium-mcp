@@ -19,7 +19,7 @@ import assert from 'node:assert/strict'
 import { registerGetConnectorPolicyTool } from '../../../tools/definitions/get_connector_policy.js'
 
 describe('get_connector_policy tool handler', () => {
-  const getHandler = () => {
+  const getHandler = mockChromePolicyClient => {
     let registeredHandler
     const mockServer = {
       registerTool(name, config, handler) {
@@ -28,11 +28,11 @@ describe('get_connector_policy tool handler', () => {
         }
       },
     }
-    return { mockServer, getRegisteredHandler: () => registeredHandler }
+    registerGetConnectorPolicyTool(mockServer, { chromePolicyClient: mockChromePolicyClient }, {})
+    return registeredHandler
   }
 
   test('should parse standard camelCase keys', async () => {
-    const { mockServer, getRegisteredHandler } = getHandler()
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -47,8 +47,7 @@ describe('get_connector_policy tool handler', () => {
       ],
     }
 
-    registerGetConnectorPolicyTool(mockServer, { chromePolicyClient: mockChromePolicyClient }, {})
-    const handler = getRegisteredHandler()
+    const handler = getHandler(mockChromePolicyClient)
 
     const result = await handler(
       { customerId: 'C123', orgUnitId: 'OU123', policy: 'ON_FILE_ATTACHED' },
@@ -108,7 +107,6 @@ describe('get_connector_policy tool handler', () => {
   })
 
   test('should format multiple policies in a single response', async () => {
-    const { mockServer, getRegisteredHandler } = getHandler()
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -132,8 +130,7 @@ describe('get_connector_policy tool handler', () => {
       ],
     }
 
-    registerGetConnectorPolicyTool(mockServer, { chromePolicyClient: mockChromePolicyClient }, {})
-    const handler = getRegisteredHandler()
+    const handler = getHandler(mockChromePolicyClient)
 
     const result = await handler(
       { customerId: 'C123', orgUnitId: 'OU123', policy: 'ON_FILE_ATTACHED' },
@@ -149,7 +146,6 @@ describe('get_connector_policy tool handler', () => {
   })
 
   test('should parse snake_case keys (standard API wire format)', async () => {
-    const { mockServer, getRegisteredHandler } = getHandler()
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -164,8 +160,7 @@ describe('get_connector_policy tool handler', () => {
       ],
     }
 
-    registerGetConnectorPolicyTool(mockServer, { chromePolicyClient: mockChromePolicyClient }, {})
-    const handler = getRegisteredHandler()
+    const handler = getHandler(mockChromePolicyClient)
 
     const result = await handler(
       { customerId: 'C123', orgUnitId: 'OU123', policy: 'ON_FILE_ATTACHED' },
@@ -179,7 +174,6 @@ describe('get_connector_policy tool handler', () => {
   })
 
   test('should fall back to block_until_verdict for blockOnFail', async () => {
-    const { mockServer, getRegisteredHandler } = getHandler()
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -193,8 +187,7 @@ describe('get_connector_policy tool handler', () => {
       ],
     }
 
-    registerGetConnectorPolicyTool(mockServer, { chromePolicyClient: mockChromePolicyClient }, {})
-    const handler = getRegisteredHandler()
+    const handler = getHandler(mockChromePolicyClient)
 
     const result = await handler(
       { customerId: 'C123', orgUnitId: 'OU123', policy: 'ON_FILE_ATTACHED' },
@@ -206,7 +199,6 @@ describe('get_connector_policy tool handler', () => {
   })
 
   test('should parse stringified JSON', async () => {
-    const { mockServer, getRegisteredHandler } = getHandler()
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -221,8 +213,7 @@ describe('get_connector_policy tool handler', () => {
       ],
     }
 
-    registerGetConnectorPolicyTool(mockServer, { chromePolicyClient: mockChromePolicyClient }, {})
-    const handler = getRegisteredHandler()
+    const handler = getHandler(mockChromePolicyClient)
 
     const result = await handler(
       { customerId: 'C123', orgUnitId: 'OU123', policy: 'ON_FILE_ATTACHED' },
@@ -234,7 +225,6 @@ describe('get_connector_policy tool handler', () => {
   })
 
   test('should dump raw data for unexpected shapes', async () => {
-    const { mockServer, getRegisteredHandler } = getHandler()
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -245,8 +235,7 @@ describe('get_connector_policy tool handler', () => {
       ],
     }
 
-    registerGetConnectorPolicyTool(mockServer, { chromePolicyClient: mockChromePolicyClient }, {})
-    const handler = getRegisteredHandler()
+    const handler = getHandler(mockChromePolicyClient)
 
     const result = await handler(
       { customerId: 'C123', orgUnitId: 'OU123', policy: 'ON_FILE_ATTACHED' },
@@ -258,7 +247,6 @@ describe('get_connector_policy tool handler', () => {
   })
 
   test('should parse ON_SECURITY_EVENT specific fields with setting structure', async () => {
-    const { mockServer, getRegisteredHandler } = getHandler()
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -277,8 +265,7 @@ describe('get_connector_policy tool handler', () => {
       ],
     }
 
-    registerGetConnectorPolicyTool(mockServer, { chromePolicyClient: mockChromePolicyClient }, {})
-    const handler = getRegisteredHandler()
+    const handler = getHandler(mockChromePolicyClient)
 
     const result = await handler(
       { customerId: 'C123', orgUnitId: 'OU123', policy: 'ON_SECURITY_EVENT' },
@@ -290,7 +277,6 @@ describe('get_connector_policy tool handler', () => {
   })
 
   test('should format multiple ON_SECURITY_EVENT policies in a single response', async () => {
-    const { mockServer, getRegisteredHandler } = getHandler()
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -318,8 +304,7 @@ describe('get_connector_policy tool handler', () => {
       ],
     }
 
-    registerGetConnectorPolicyTool(mockServer, { chromePolicyClient: mockChromePolicyClient }, {})
-    const handler = getRegisteredHandler()
+    const handler = getHandler(mockChromePolicyClient)
 
     const result = await handler(
       { customerId: 'C123', orgUnitId: 'OU123', policy: 'ON_SECURITY_EVENT' },
@@ -332,7 +317,6 @@ describe('get_connector_policy tool handler', () => {
   })
 
   test('should parse ON_SECURITY_EVENT with snake_case internal fields', async () => {
-    const { mockServer, getRegisteredHandler } = getHandler()
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -351,8 +335,7 @@ describe('get_connector_policy tool handler', () => {
       ],
     }
 
-    registerGetConnectorPolicyTool(mockServer, { chromePolicyClient: mockChromePolicyClient }, {})
-    const handler = getRegisteredHandler()
+    const handler = getHandler(mockChromePolicyClient)
 
     const result = await handler(
       { customerId: 'C123', orgUnitId: 'OU123', policy: 'ON_SECURITY_EVENT' },
@@ -364,7 +347,6 @@ describe('get_connector_policy tool handler', () => {
   })
 
   test('should report Disabled for ON_SECURITY_EVENT when eventConfiguration is missing', async () => {
-    const { mockServer, getRegisteredHandler } = getHandler()
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -379,8 +361,7 @@ describe('get_connector_policy tool handler', () => {
       ],
     }
 
-    registerGetConnectorPolicyTool(mockServer, { chromePolicyClient: mockChromePolicyClient }, {})
-    const handler = getRegisteredHandler()
+    const handler = getHandler(mockChromePolicyClient)
 
     const result = await handler(
       { customerId: 'C123', orgUnitId: 'OU123', policy: 'ON_SECURITY_EVENT' },
@@ -392,7 +373,6 @@ describe('get_connector_policy tool handler', () => {
   })
 
   test('should report Disabled for ON_SECURITY_EVENT when reportingConnector is empty', async () => {
-    const { mockServer, getRegisteredHandler } = getHandler()
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -405,8 +385,7 @@ describe('get_connector_policy tool handler', () => {
       ],
     }
 
-    registerGetConnectorPolicyTool(mockServer, { chromePolicyClient: mockChromePolicyClient }, {})
-    const handler = getRegisteredHandler()
+    const handler = getHandler(mockChromePolicyClient)
 
     const result = await handler(
       { customerId: 'C123', orgUnitId: 'OU123', policy: 'ON_SECURITY_EVENT' },
@@ -418,7 +397,6 @@ describe('get_connector_policy tool handler', () => {
   })
 
   test('should report default core events for ON_SECURITY_EVENT when empty and not explicitlyEmptyEventNames', async () => {
-    const { mockServer, getRegisteredHandler } = getHandler()
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -438,8 +416,7 @@ describe('get_connector_policy tool handler', () => {
       ],
     }
 
-    registerGetConnectorPolicyTool(mockServer, { chromePolicyClient: mockChromePolicyClient }, {})
-    const handler = getRegisteredHandler()
+    const handler = getHandler(mockChromePolicyClient)
 
     const result = await handler(
       { customerId: 'C123', orgUnitId: 'OU123', policy: 'ON_SECURITY_EVENT' },
@@ -451,7 +428,6 @@ describe('get_connector_policy tool handler', () => {
   })
 
   test('should report None for ON_SECURITY_EVENT when explicitlyEmptyEventNames is true', async () => {
-    const { mockServer, getRegisteredHandler } = getHandler()
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -471,8 +447,7 @@ describe('get_connector_policy tool handler', () => {
       ],
     }
 
-    registerGetConnectorPolicyTool(mockServer, { chromePolicyClient: mockChromePolicyClient }, {})
-    const handler = getRegisteredHandler()
+    const handler = getHandler(mockChromePolicyClient)
 
     const result = await handler(
       { customerId: 'C123', orgUnitId: 'OU123', policy: 'ON_SECURITY_EVENT' },
@@ -484,7 +459,6 @@ describe('get_connector_policy tool handler', () => {
   })
 
   test('should unpack deeply nested single-key configuration', async () => {
-    const { mockServer, getRegisteredHandler } = getHandler()
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -503,8 +477,7 @@ describe('get_connector_policy tool handler', () => {
       ],
     }
 
-    registerGetConnectorPolicyTool(mockServer, { chromePolicyClient: mockChromePolicyClient }, {})
-    const handler = getRegisteredHandler()
+    const handler = getHandler(mockChromePolicyClient)
 
     const result = await handler(
       { customerId: 'C123', orgUnitId: 'OU123', policy: 'ON_FILE_ATTACHED' },
