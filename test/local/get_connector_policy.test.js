@@ -38,7 +38,7 @@ describe('get_connector_policy Tool', () => {
 
       assert.strictEqual(
         toolDefinition.description,
-        `Retrieves the current configuration for a specific Chrome Enterprise connector.\nUse this to AUDIT or VERIFY settings for features like "printing sensitive data", "real-time URL checks", or "event reporting". \n\nRecommended Flow: Use this tool to retrieve technical settings, then use a knowledge base search to verify the documented meaning and troubleshooting steps for those settings.\n\nTo modify these settings, use 'enable_chrome_enterprise_connectors'.`,
+        `Retrieves the current configuration for a specific Chrome Enterprise connector.\nUse this to AUDIT or VERIFY settings for features like "blocking screenshots", "printing sensitive data", "real-time URL checks", or "event reporting". \n\nTo modify these settings, use 'enable_chrome_enterprise_connectors'.`,
       )
     })
   })
