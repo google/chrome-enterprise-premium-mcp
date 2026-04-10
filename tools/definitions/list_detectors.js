@@ -14,6 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/**
+ * @fileoverview Tool definition for listing DLP detectors.
+ */
+
 import { z } from 'zod'
 import { guardedToolCall, formatToolResponse, safeFormatResponse } from '../utils/wrapper.js'
 import { commonOutputSchemas } from './shared.js'

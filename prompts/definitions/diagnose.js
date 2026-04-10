@@ -20,6 +20,9 @@ limitations under the License.
 
 import { SHARED_DIAGNOSTIC_RULES } from './shared.js'
 
+/**
+ * MCP prompt name for the environment health-check command.
+ */
 export const DIAGNOSE_PROMPT_NAME = 'cep:diagnose'
 
 /**

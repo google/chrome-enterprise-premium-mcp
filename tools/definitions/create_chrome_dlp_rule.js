@@ -262,7 +262,7 @@ Multi-Trigger Logic:
           logger.debug(`${TAGS.MCP} Calling 'create_chrome_dlp_rule' with params: ${JSON.stringify(params)}`)
           const fullTriggers = triggers.map(t => CHROME_TRIGGERS[t].value)
 
-          // Safety constraints validation
+          // Reject BLOCK actions in ACTIVE state to prevent accidental data loss
           const safetyValidation = validateMcpSafetyConstraints(action, state)
           if (!safetyValidation.isValid) {
             throw new Error(`MCP Safety Constraint Violation:\n- ${safetyValidation.errors.join('\n- ')}`)
@@ -275,7 +275,7 @@ Multi-Trigger Logic:
             state: state || POLICY_STATES.ACTIVE.value,
           }
 
-          // Condition validation
+          // Validate the CEL expression against the selected triggers
           if (condition) {
             const validationResult = validateCelCondition(condition, triggers)
             if (!validationResult.isValid) {
@@ -286,7 +286,7 @@ Multi-Trigger Logic:
             }
           }
 
-          // Validate action-parameter compatibility based on rule message constraints
+          // Ensure action-parameter combinations are valid (e.g., watermarks require specific triggers)
           const actionValidation = validateActionParameters(
             action,
             {

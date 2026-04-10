@@ -18,6 +18,9 @@ limitations under the License.
  * @file Prompt definition for the '/cep:noise' command.
  */
 
+/**
+ * MCP prompt name for the DLP rule noise analysis command.
+ */
 export const NOISE_PROMPT_NAME = 'cep:noise'
 
 /**

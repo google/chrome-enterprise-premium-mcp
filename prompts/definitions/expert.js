@@ -22,6 +22,9 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
+/**
+ * MCP prompt name for the Chrome Enterprise Premium expert context command.
+ */
 export const EXPERT_PROMPT_NAME = 'cep:expert'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))

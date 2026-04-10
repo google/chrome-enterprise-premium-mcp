@@ -99,10 +99,8 @@ To modify these settings, use 'enable_chrome_enterprise_connectors'.`,
          * @returns {Promise<object>} The formatted tool response.
          */
         handler: async ({ customerId, orgUnitId, policy }, { _requestInfo, authToken }) => {
-          // Normalize Org Unit ID (Strip 'id:' prefix if present)
           const normalizedOrgUnitId = orgUnitId.startsWith('id:') ? orgUnitId.substring(3) : orgUnitId
 
-          // Note: authToken is now provided directly by guardedToolCall context.
           const policies = await chromePolicyClient.getConnectorPolicy(
             customerId,
             normalizedOrgUnitId,

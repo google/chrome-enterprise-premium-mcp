@@ -66,13 +66,13 @@ Note: This will not automatically remove the detector from any DLP rules that re
          * @returns {Promise<object>} The formatted tool response.
          */
         handler: async ({ policyName }, { authToken }) => {
-          // Fetch display name before deletion for user-friendly confirmation
+          // Retrieve display name before deletion for the confirmation message
           let displayName = policyName.split('/').pop()
           try {
             const detector = await cloudIdentityClient.getDetector(policyName, authToken)
             displayName = detector?.setting?.value?.displayName || displayName
           } catch {
-            // Use extracted ID as fallback
+            // Lookup failed; use the extracted ID segment as the display name
           }
 
           const result = await cloudIdentityClient.deleteDetector(policyName, authToken)

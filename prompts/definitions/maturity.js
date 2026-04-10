@@ -18,6 +18,9 @@ limitations under the License.
  * @file Prompt definition for the '/cep:maturity' command.
  */
 
+/**
+ * MCP prompt name for the DLP maturity assessment command.
+ */
 export const MATURITY_PROMPT_NAME = 'cep:maturity'
 
 /**

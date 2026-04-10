@@ -21,7 +21,6 @@ limitations under the License.
 import { TAGS } from '../lib/constants.js'
 import { logger } from '../lib/util/logger.js'
 
-// Import tool registration functions from definitions directory
 import { registerGetCustomerIdTool } from './definitions/get_customer_id.js'
 import { registerListOrgUnitsTool } from './definitions/list_org_units.js'
 import { registerCheckCepSubscriptionTool } from './definitions/check_cep_subscription.js'

@@ -93,7 +93,6 @@ Use this when the agent is failing, providing incorrect information, or if you e
                 report += `**Error:** ❌ \`${event.error}\`\n`
               } else {
                 report += `**Result Status:** ✅ Success\n`
-                // Snippet of result text if it's too large
                 const resText = event.result?.content?.[0]?.text || 'No text output'
                 const snippet = resText.length > 500 ? resText.substring(0, 500) + '...' : resText
                 report += `**Output Snippet:**\n\`\`\`text\n${snippet}\n\`\`\`\n`

@@ -206,7 +206,7 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
 
           const results = allDocs.filter(doc => {
             const searchableText = `${doc.title || ''} ${doc.content || ''}`.toLowerCase()
-            return queryTerms.some(term => searchableText.includes(term)) // Use some for fuzzy match
+            return queryTerms.some(term => searchableText.includes(term))
           })
 
           const boostedResults = results.map(doc => {
@@ -219,7 +219,7 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
               }
             })
             if (doc.kind === 'curated') {
-              score *= 2.0 // Boost curated content
+              score *= 2.0
             }
             return { ...doc, score, originalId: doc.id }
           })
@@ -228,12 +228,12 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
 
           let sliced = boostedResults.slice(0, limit)
 
-          // Ensure at least one curated result is included if it exists anywhere in the hits
+          // Guarantee at least one curated result appears, since curated docs are authoritative
           const curatedHits = boostedResults.filter(r => r.kind === 'curated')
           if (curatedHits.length > 0) {
             const hasCuratedInSlice = sliced.some(r => r.kind === 'curated')
             if (!hasCuratedInSlice) {
-              sliced.push(curatedHits[0]) // Append the top curated hit even if it pushes us past the limit
+              sliced.push(curatedHits[0])
             }
           }
 
@@ -270,7 +270,7 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
               const rareTerms = queryTerms.filter(t => !commonWords.includes(t))
               const searchTerms = rareTerms.length > 0 ? rareTerms : queryTerms
 
-              // Slide a window of 200 chars to find the most terms
+              // Sliding window to find the best snippet containing the most query terms
               for (let i = 0; i < contentLower.length; i += 100) {
                 const windowText = contentLower.substring(i, i + 200)
                 let score = 0

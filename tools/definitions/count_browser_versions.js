@@ -72,7 +72,7 @@ Use this for auditing and reporting on the distribution of browser versions acro
                 })
               }
 
-              // Coerce counts to numbers for schema compatibility
+              // The Chrome Management API returns counts as strings; coerce to numbers for Zod validation
               const coerced = raw.map(v => ({
                 ...v,
                 count: v.count ? Number(v.count) : 0,

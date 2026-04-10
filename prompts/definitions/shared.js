@@ -18,6 +18,10 @@ limitations under the License.
  * @file Shared constants for prompts.
  */
 
+/**
+ * Markdown-formatted diagnostic output rules appended to health-check prompts.
+ * Defines the status table format, failure handling, severity tiers, and tone.
+ */
 export const SHARED_DIAGNOSTIC_RULES = `3. Summarize your findings using the following structural rules:
 
 **Visual Status Mapping (The Summary Table)**

@@ -18,6 +18,9 @@ limitations under the License.
  * @file Prompt definition for the '/cep:feedback' command.
  */
 
+/**
+ * MCP prompt name for the diagnostic feedback report command.
+ */
 export const FEEDBACK_PROMPT_NAME = 'cep:feedback'
 
 /**

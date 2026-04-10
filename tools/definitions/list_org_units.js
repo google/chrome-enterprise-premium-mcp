@@ -65,7 +65,7 @@ Use this tool to find the 'orgUnitId' required by most other Chrome management a
           logger.debug(`${TAGS.MCP} Calling 'list_org_units' with customerId: ${customerId}`)
           const orgUnitsData = await adminSdkClient.listOrgUnits({ customerId }, authToken)
 
-          const orgUnits = orgUnitsData?.organizationUnits // Extract the array
+          const orgUnits = orgUnitsData?.organizationUnits
 
           if (!orgUnits || orgUnits.length === 0) {
             logger.debug(`${TAGS.MCP} No organizational units found.`)
