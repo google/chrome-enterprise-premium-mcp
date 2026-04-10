@@ -9,10 +9,10 @@
     "chrome-management-mcp": "mcp-server.js"
   },
   "scripts": {
-    "eval": "node test/evals/run.js",
-    "eval:agentic": "node test/evals/run.js --category inspection,troubleshooting,mutation,discovery",
-    "eval:full": "node test/evals/run.js --runs 3 --output results/eval-full.md",
-    "eval:knowledge": "node test/evals/run.js --category knowledge",
+    "eval": "CEP_BACKEND=fake node test/evals/run.js",
+    "eval:agentic": "CEP_BACKEND=fake node test/evals/run.js --category inspection,troubleshooting,mutation,discovery",
+    "eval:full": "CEP_BACKEND=fake node test/evals/run.js --runs 3 --output results/eval-full.md",
+    "eval:knowledge": "CEP_BACKEND=fake node test/evals/run.js --category knowledge",
     "format": "prettier --write .",
     "lint": "eslint .",
     "mcp-inspector": "npx @modelcontextprotocol/inspector node mcp-server.js",

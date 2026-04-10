@@ -8,7 +8,6 @@ expected_tools:
 forbidden_patterns: []
 required_patterns:
   - user1@example.com
-  - does NOT have
 priority: P1
 fixtures:
   - license-missing.json

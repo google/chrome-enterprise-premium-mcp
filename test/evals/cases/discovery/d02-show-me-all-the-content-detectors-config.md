@@ -7,6 +7,7 @@ expected_tools:
   - list_detectors
 priority: P2
 fixtures:
+  - customer-default.json
   - detectors-configured.json
 ---
 

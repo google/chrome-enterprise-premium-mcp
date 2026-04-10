@@ -7,7 +7,8 @@ tags:
 expected_tools:
   - search_content
 required_patterns:
-  - Security Center
+  - Chrome Security Insights
+  - DLP
 priority: P1
 ---
 
