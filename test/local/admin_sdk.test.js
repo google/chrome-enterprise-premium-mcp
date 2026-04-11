@@ -268,9 +268,9 @@ describe('Admin SDK API', () => {
         .arguments[2]
 
       const result = await handler({ userId: 'user@example.com' }, {})
-      // Verify both human-readable text and structured error content are returned
+      // Verify human-readable text is returned and structuredContent is omitted to bypass schema validation
       assert.deepStrictEqual(result.content[0].text, 'Error: API Error')
-      assert.deepStrictEqual(result.structuredContent, { error: true, message: 'API Error' })
+      assert.ok(!result.structuredContent)
     })
 
     it('should return error message when Licensing API is not enabled', async () => {

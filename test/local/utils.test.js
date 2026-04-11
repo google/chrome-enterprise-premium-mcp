@@ -190,32 +190,86 @@ describe('Tool Utils', () => {
       })
     })
 
-    it('should return a 401 error object when handler fails with 401', async () => {
+    it('should return a proactive remediation message when handler fails with 401', async () => {
       const handler = async () => {
-        const error = new Error('Permission denied')
-        error.code = 401
+        const error = new Error('Unauthorized')
+        error.status = 401
         throw error
       }
       const tool = guardedToolCall({ handler })
 
-      await assert.rejects(tool({}, {}), {
-        code: 401,
-        message: 'Authentication required. Please check your credentials.',
-      })
+      const result = await tool({}, {})
+
+      assert.strictEqual(result.isError, true)
+      assert.ok(result.content[0].text.includes('Authentication required'))
+      assert.ok(result.content[0].text.includes('gcloud auth application-default login'))
+      assert.ok(!result.structuredContent)
     })
 
-    it('should return a 403 error object when handler fails with 403', async () => {
+    it('should return a proactive remediation message without structuredContent when handler fails with 403', async () => {
       const handler = async () => {
-        const error = new Error('Permission denied')
-        error.code = 403
+        const error = new Error('Forbidden')
+        error.status = 403
         throw error
       }
       const tool = guardedToolCall({ handler })
 
-      await assert.rejects(tool({}, {}), {
-        code: 403,
-        message: 'Permission denied. Your account lacks the required permissions.',
-      })
+      const result = await tool({}, {})
+
+      assert.strictEqual(result.isError, true)
+      assert.ok(result.content[0].text.includes('Permission denied'))
+      assert.ok(result.content[0].text.includes('gcloud auth application-default login'))
+      assert.ok(result.content[0].text.includes('admin.googleapis.com'))
+      assert.ok(!result.structuredContent)
+    })
+
+    it('should return a proactive remediation message when handler fails with invalid_grant', async () => {
+      const handler = async () => {
+        throw new Error('API Error: invalid_grant - reauth related error (invalid_rapt)')
+      }
+      const tool = guardedToolCall({ handler })
+
+      const result = await tool({}, {})
+
+      assert.strictEqual(result.isError, true)
+      assert.ok(result.content[0].text.includes('Authentication required'))
+      assert.ok(result.content[0].text.includes('gcloud auth application-default login'))
+      assert.ok(!result.structuredContent)
+    })
+
+    it('should return an OAuth remediation message when handler fails with 401 and an auth header is present', async () => {
+      const handler = async () => {
+        const error = new Error('Unauthorized')
+        error.status = 401
+        throw error
+      }
+      const tool = guardedToolCall({ handler })
+
+      const context = { requestInfo: { headers: { authorization: 'Bearer SOME_TOKEN' } } }
+      const result = await tool({}, context)
+
+      assert.strictEqual(result.isError, true)
+      assert.ok(result.content[0].text.includes('Authentication required'))
+      assert.ok(result.content[0].text.includes('/mcp reauth'))
+      assert.ok(!result.content[0].text.includes('gcloud auth application-default login'))
+    })
+
+    it('should return an OAuth remediation message when handler fails with 403 and an auth header is present', async () => {
+      const handler = async () => {
+        const error = new Error('Forbidden')
+        error.status = 403
+        throw error
+      }
+      const tool = guardedToolCall({ handler })
+
+      const context = { requestInfo: { headers: { authorization: 'Bearer SOME_TOKEN' } } }
+      const result = await tool({}, context)
+
+      assert.strictEqual(result.isError, true)
+      assert.ok(result.content[0].text.includes('Permission denied'))
+      assert.ok(result.content[0].text.includes('/mcp reauth'))
+      assert.ok(result.content[0].text.includes('admin.googleapis.com'))
+      assert.ok(!result.content[0].text.includes('gcloud auth application-default login'))
     })
 
     it('should call onError if provided when handler fails', async () => {
