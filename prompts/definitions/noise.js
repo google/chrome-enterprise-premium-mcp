@@ -39,12 +39,16 @@ export const registerNoisePrompt = server => {
             role: 'user',
             content: {
               type: 'text',
-              text: `You are a Chrome Enterprise security expert. To analyze the Data Loss Prevention (DLP) rule noise, follow these steps:
+              text: `Analyze DLP rule noise in the Chrome Enterprise Premium environment.
 
-1. List the DLP rules.
-2. Get the DLP events.
-3. Identify DLP rules with high false positive rates or override rates.
-4. Recommend optimization actions to reduce rule noise.`,
+Call **diagnose_environment** to get DLP rules and the environment snapshot. Then call **get_chrome_activity_log** to see recent DLP events.
+
+Compare event volume per rule to identify noisy rules. Look for:
+- Rules generating disproportionately many events
+- Overly broad conditions (e.g., matching all content types across all triggers)
+- Rules where most events are from a small number of users or destinations
+
+Report per-rule event counts, flag noisy rules, and recommend optimizations (narrower conditions, URL allowlists, switching from block to warn).`,
             },
           },
         ],

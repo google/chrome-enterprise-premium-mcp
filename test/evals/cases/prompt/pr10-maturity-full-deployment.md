@@ -4,10 +4,10 @@ category: prompt
 tags:
   - prompt
   - maturity
+scenario: healthy
 prompt_name: 'cep:maturity'
 expected_tools:
-  - list_dlp_rules
-  - list_org_units
+  - diagnose_environment
   - get_chrome_activity_log
 ---
 

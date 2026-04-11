@@ -67,6 +67,6 @@ describe('MCP Prompts', () => {
     const result = await client.getPrompt({ name: 'cep:diagnose' })
 
     assert.ok(result.messages)
-    assert.ok(result.messages[0].content.text.includes('List the organizational units'))
+    assert.ok(result.messages[0].content.text.includes('diagnose_environment'))
   })
 })

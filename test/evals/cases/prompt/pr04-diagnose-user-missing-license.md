@@ -5,10 +5,11 @@ tags:
   - prompt
   - diagnose
 scenario: user-missing-license
-prompt_name: "cep:diagnose"
+prompt_name: 'cep:diagnose'
 expected_tools:
-  - list_org_units
-  - check_cep_subscription
+  - diagnose_environment
+priority: P2
+stability: 0.0
 ---
 
 ## Prompt

@@ -39,13 +39,17 @@ export const registerMaturityPrompt = server => {
             role: 'user',
             content: {
               type: 'text',
-              text: `You are a Chrome Enterprise security expert. To assess the Data Loss Prevention (DLP) maturity, follow these steps:
+              text: `Assess the DLP maturity of the Chrome Enterprise Premium environment.
 
-1. List the organizational units.
-2. List the DLP rules.
-3. Get the DLP events.
-4. Analyze the DLP rule configuration and telemetry to determine the maturity stage.
-5. Recommend next steps to improve the DLP maturity.`,
+Call **diagnose_environment** to get DLP rules, detectors, connectors, and the overall environment snapshot. Then call **get_chrome_activity_log** to see recent DLP events.
+
+Assess maturity based on:
+- **No rules**: earliest stage, recommend starting with audit-only rules
+- **Audit-only rules**: monitoring stage, recommend adding warn/block enforcement
+- **Mixed actions** (block + warn + audit): intermediate, recommend refining conditions and expanding coverage
+- **Full coverage** with connectors, detectors, and layered enforcement: advanced
+
+Report the maturity stage, justify it from the data, and recommend next steps.`,
             },
           },
         ],

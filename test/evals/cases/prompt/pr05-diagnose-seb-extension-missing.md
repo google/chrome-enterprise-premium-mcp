@@ -5,10 +5,11 @@ tags:
   - prompt
   - diagnose
 scenario: seb-extension-missing
-prompt_name: "cep:diagnose"
+prompt_name: 'cep:diagnose'
 expected_tools:
-  - list_org_units
-  - check_seb_extension_status
+  - diagnose_environment
+priority: P2
+stability: 0.1
 ---
 
 ## Prompt

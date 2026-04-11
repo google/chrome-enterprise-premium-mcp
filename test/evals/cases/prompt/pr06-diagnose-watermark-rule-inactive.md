@@ -5,10 +5,11 @@ tags:
   - prompt
   - diagnose
 scenario: watermark-rule-inactive
-prompt_name: "cep:diagnose"
+prompt_name: 'cep:diagnose'
 expected_tools:
-  - list_org_units
-  - list_dlp_rules
+  - diagnose_environment
+priority: P2
+stability: 0.6
 ---
 
 ## Prompt

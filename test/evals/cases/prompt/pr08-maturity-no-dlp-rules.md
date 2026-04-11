@@ -7,8 +7,10 @@ tags:
 scenario: no-dlp-rules
 prompt_name: 'cep:maturity'
 expected_tools:
-  - list_dlp_rules
-  - list_org_units
+  - diagnose_environment
+  - get_chrome_activity_log
+priority: P2
+stability: 0.6
 ---
 
 ## Prompt

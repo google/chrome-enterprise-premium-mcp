@@ -5,10 +5,11 @@ tags:
   - prompt
   - diagnose
 scenario: download-connector-missing
-prompt_name: "cep:diagnose"
+prompt_name: 'cep:diagnose'
 expected_tools:
-  - list_org_units
-  - get_connector_policy
+  - diagnose_environment
+priority: P2
+stability: 0.2
 ---
 
 ## Prompt

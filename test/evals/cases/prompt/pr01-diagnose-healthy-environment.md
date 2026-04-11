@@ -4,12 +4,12 @@ category: prompt
 tags:
   - prompt
   - diagnose
-prompt_name: "cep:diagnose"
+scenario: healthy
+prompt_name: 'cep:diagnose'
 expected_tools:
-  - list_org_units
-  - list_dlp_rules
-  - get_connector_policy
-  - check_cep_subscription
+  - diagnose_environment
+priority: P2
+stability: 0.0
 ---
 
 ## Prompt

@@ -37,6 +37,9 @@ limitations under the License.
  *   CEP_BACKEND         "fake" (default) or "real".
  */
 
+import { config } from '@dotenvx/dotenvx'
+config({ quiet: true, ignore: ['MISSING_ENV_FILE'] })
+
 import { parseArgs } from 'node:util'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'

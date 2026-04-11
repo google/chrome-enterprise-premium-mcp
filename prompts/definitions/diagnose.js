@@ -41,19 +41,26 @@ export const registerDiagnosePrompt = server => {
             role: 'user',
             content: {
               type: 'text',
-              text: `You are a Chrome Enterprise security expert. To run a health check on the user's environment, follow these steps:
+              text: `Run a health check on the Chrome Enterprise Premium environment.
 
-1. List the organizational units.
-2. For each organizational unit, verify these settings (you can perform these checks in parallel):
-    *   Is Chrome Browser Cloud Management (CBCM) enrollment active?
-    *   Do browsers report to the admin console?
-    *   Is the Chrome browser version current?
-    *   Is an active Chrome Enterprise Premium license assigned?
-    *   Are security connectors set to **Chrome Enterprise Premium**?
-    *   Is **Delay file upload** configured for enforcement?
-    *   Is **Enhanced Safe Browsing** enabled?
-    *   Are Data Loss Prevention (DLP) rules enabled?
-    *   Is reporting enabled for DLP events?
+Call the **diagnose_environment** tool to get a complete environment snapshot in one call. It checks:
+
+- **Subscription**: Whether an active CEP license exists and how many are assigned
+- **Organizational Units**: The OU hierarchy
+- **DLP Rules**: How many rules exist, whether they are active, and what enforcement actions (block/warn/audit) are configured
+- **Content Detectors**: Custom regex, word list, and URL list detectors
+- **Connectors (root OU)**: Whether each content analysis connector is configured — file upload, file download, paste/bulk text, print, real-time URL check, and security event reporting
+- **SEB Extension**: Whether the Secure Enterprise Browser extension is force-installed on the root OU
+- **Browser Versions**: Distribution of Chrome versions across managed devices
+
+The response includes a pre-computed **issues[]** array with severity ratings. Use this as your starting point, but also examine the raw data to provide context. For example:
+- If a connector is missing, explain what content goes unscanned without it
+- If DLP rules are audit-only, explain that users are not blocked or warned
+- If the SEB extension is missing, explain which features (like data masking) depend on it
+- If there are no issues, confirm the environment is healthy and summarize the key metrics
+
+You may call additional tools (like search_content) if you need product documentation to explain a finding.
+
 ${SHARED_DIAGNOSTIC_RULES}
 `,
             },

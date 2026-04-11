@@ -7,7 +7,7 @@ tags:
 scenario: overly-broad-block-rule
 prompt_name: 'cep:noise'
 expected_tools:
-  - list_dlp_rules
+  - diagnose_environment
   - get_chrome_activity_log
 ---
 
