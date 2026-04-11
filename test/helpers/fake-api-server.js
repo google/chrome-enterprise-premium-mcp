@@ -319,7 +319,7 @@ export function createFakeApp() {
         // Return a structure matching the real Google Licensing API single response
         return res.json({
           kind: 'licensing#licenseAssignment',
-          etags: '"mockEtagSingle"',
+          etag: '"mockEtagSingle"',
           productId: license.productId,
           userId: license.userId,
           selfLink: `https://licensing.googleapis.com/apps/licensing/v1/product/${license.productId}/sku/${license.skuId}/user/${license.userId}`,
