@@ -17,6 +17,7 @@ limitations under the License.
 import assert from 'node:assert/strict'
 import { describe, it, mock, beforeEach } from 'node:test'
 import esmock from 'esmock'
+import { RealAdminSdkClient } from '../../lib/api/real_admin_sdk_client.js'
 
 describe('check_cep_subscription Tool', () => {
   let server
@@ -174,5 +175,68 @@ describe('check_cep_subscription Tool', () => {
 
     assert.strictEqual(mockCheckCepSubscription.mock.callCount(), 1)
     assert.match(result.content[0].text, /Error: Access denied to Licensing API/)
+  })
+})
+
+describe('RealAdminSdkClient', () => {
+  describe('checkCepSubscription', () => {
+    it('should resolve CURRENT_CUSTOMER to actual customer ID before querying Licensing API', async () => {
+      const client = new RealAdminSdkClient()
+
+      const mockListForProductAndSku = mock.fn(async () => {
+        return { data: { items: [] } }
+      })
+
+      client.getLicensingService = mock.fn(async () => {
+        return {
+          licenseAssignments: {
+            listForProductAndSku: mockListForProductAndSku,
+          },
+        }
+      })
+
+      client.getCustomerId = mock.fn(async () => {
+        return { id: 'C_REAL_ID' }
+      })
+
+      // We need to bypass the actual callWithRetry logic for the test if it's tricky,
+      // but callWithRetry in lib/util/helpers.js just executes the function.
+
+      await client.checkCepSubscription('my_customer', 'fake_token')
+
+      assert.strictEqual(client.getCustomerId.mock.callCount(), 1)
+      assert.strictEqual(mockListForProductAndSku.mock.callCount(), 1)
+
+      const args = mockListForProductAndSku.mock.calls[0].arguments[0]
+      assert.strictEqual(args.customerId, 'C_REAL_ID')
+    })
+
+    it('should use provided customer ID directly without resolving if it is not my_customer', async () => {
+      const client = new RealAdminSdkClient()
+
+      const mockListForProductAndSku = mock.fn(async () => {
+        return { data: { items: [] } }
+      })
+
+      client.getLicensingService = mock.fn(async () => {
+        return {
+          licenseAssignments: {
+            listForProductAndSku: mockListForProductAndSku,
+          },
+        }
+      })
+
+      client.getCustomerId = mock.fn(async () => {
+        return { id: 'C_REAL_ID' }
+      })
+
+      await client.checkCepSubscription('C012345', 'fake_token')
+
+      assert.strictEqual(client.getCustomerId.mock.callCount(), 0)
+      assert.strictEqual(mockListForProductAndSku.mock.callCount(), 1)
+
+      const args = mockListForProductAndSku.mock.calls[0].arguments[0]
+      assert.strictEqual(args.customerId, 'C012345')
+    })
   })
 })
