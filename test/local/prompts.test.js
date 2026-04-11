@@ -59,7 +59,7 @@ describe('MCP Prompts', () => {
 
     assert.deepStrictEqual(
       promptNames,
-      ['cep:diagnose', 'cep:expert', 'cep:feedback', 'cep:maturity', 'cep:noise'].sort(),
+      ['cep:diagnose', 'cep:expert', 'cep:maturity', 'cep:noise'].sort(),
     )
   })
 
