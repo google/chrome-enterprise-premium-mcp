@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Tool definition for listing customer profiles.
+ * @file Tool definition for listing customer profiles.
  */
 
 import { z } from 'zod'
@@ -26,11 +26,11 @@ import { logger } from '../../lib/util/logger.js'
 
 /**
  * Registers the 'list_customer_profiles' tool with the MCP server.
- *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
  * @param {import('../../lib/api/interfaces/chrome_management_client.js').ChromeManagementClient} options.chromeManagementClient - The Chrome Management client instance.
  * @param {object} sessionState - The session state object for caching.
+ * @returns {void}
  */
 export function registerCustomerProfileTool(server, options, sessionState) {
   const { chromeManagementClient } = options
@@ -53,6 +53,15 @@ These profiles represent managed browser instances and provide details like OS v
     },
     guardedToolCall(
       {
+        /**
+         * Handler for listing customer browser profiles.
+         * @param {object} params - The tool parameters.
+         * @param {string} [params.customerId] - The Chrome customer ID.
+         * @param {object} context - The tool execution context.
+         * @param {object} context._requestInfo - The request info object.
+         * @param {string} context.authToken - The OAuth2 access token.
+         * @returns {Promise<object>} The formatted tool response.
+         */
         handler: async ({ customerId }, { _requestInfo, authToken }) => {
           logger.debug(`${TAGS.MCP} Calling 'list_customer_profiles' with customerId: ${customerId}`)
           try {

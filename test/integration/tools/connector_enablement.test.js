@@ -48,7 +48,7 @@ describe('Connector Enablement Integration', () => {
       connectors: connectors,
     }
 
-    // 1. INITIAL BATCH ENABLE
+    // INITIAL BATCH ENABLE
     const result = await client.callTool({
       name: 'enable_chrome_enterprise_connectors',
       arguments: args,
@@ -60,7 +60,7 @@ describe('Connector Enablement Integration', () => {
       assert.ok(text.includes(c) || text.includes('configured'), `Connector ${c} not mentioned in output: ${text}`)
     })
 
-    // 2. VERIFY SKIP LOGIC (Second Batch Call)
+    // VERIFY SKIP LOGIC (Second Batch Call)
     const secondResult = await client.callTool({
       name: 'enable_chrome_enterprise_connectors',
       arguments: args,

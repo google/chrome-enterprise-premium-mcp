@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Tests for Cloud Identity API tool handlers.
+ * @file Tests for Cloud Identity API tool handlers.
  */
 
 import assert from 'node:assert/strict'
@@ -226,11 +226,17 @@ describe('Cloud Identity API', () => {
     it('should call createDetector and return formatted result', async () => {
       const mockCreateDetector = mock.fn(async () => ({ response: { name: 'policies/regex1' } }))
       const MockCloudIdentityClient = class {
+        /**
+         *
+         */
         constructor() {
           this.createDetector = mockCreateDetector
         }
       }
       const MockAdminSdkClient = class {
+        /**
+         *
+         */
         constructor() {
           this.listOrgUnits = mock.fn(async () => ({
             organizationUnits: [{ orgUnitId: 'root-id', orgUnitPath: '/' }],
@@ -287,11 +293,17 @@ describe('Cloud Identity API', () => {
     it('should call createDetector and return formatted result', async () => {
       const mockCreateDetector = mock.fn(async () => ({ response: { name: 'policies/url1' } }))
       const MockCloudIdentityClient = class {
+        /**
+         *
+         */
         constructor() {
           this.createDetector = mockCreateDetector
         }
       }
       const MockAdminSdkClient = class {
+        /**
+         *
+         */
         constructor() {
           this.listOrgUnits = mock.fn(async () => ({
             organizationUnits: [{ orgUnitId: 'root-id', orgUnitPath: '/' }],
@@ -348,11 +360,17 @@ describe('Cloud Identity API', () => {
     it('should call createDetector and return formatted result', async () => {
       const mockCreateDetector = mock.fn(async () => ({ response: { name: 'policies/word1' } }))
       const MockCloudIdentityClient = class {
+        /**
+         *
+         */
         constructor() {
           this.createDetector = mockCreateDetector
         }
       }
       const MockAdminSdkClient = class {
+        /**
+         *
+         */
         constructor() {
           this.listOrgUnits = mock.fn(async () => ({
             organizationUnits: [{ orgUnitId: 'root-id', orgUnitPath: '/' }],
@@ -406,12 +424,18 @@ describe('Cloud Identity API', () => {
 
     it('should throw an error if root OU resolution fails', async () => {
       const MockCloudIdentityClient = class {
+        /**
+         *
+         */
         constructor() {
           this.createDetector = mock.fn()
         }
       }
       const mockListOrgUnits = mock.fn(async () => ({ organizationUnits: [] }))
       const MockAdminSdkClient = class {
+        /**
+         *
+         */
         constructor() {
           this.listOrgUnits = mockListOrgUnits
           this.getCustomerId = mock.fn(async () => ({ id: 'C0123' }))
@@ -458,6 +482,9 @@ describe('Cloud Identity API', () => {
     it('should call deleteDlpRule and return success message', async () => {
       const mockDeleteDlpRule = mock.fn(async () => ({}))
       const MockCloudIdentityClient = class {
+        /**
+         *
+         */
         constructor() {
           this.deleteDlpRule = mockDeleteDlpRule
           this.getDlpRule = mock.fn(async () => ({
@@ -498,6 +525,9 @@ describe('Cloud Identity API', () => {
     it('should call deleteDetector and return success message', async () => {
       const mockDeleteDetector = mock.fn(async () => ({}))
       const MockCloudIdentityClient = class {
+        /**
+         *
+         */
         constructor() {
           this.deleteDetector = mockDeleteDetector
           this.getDetector = mock.fn(async () => ({}))

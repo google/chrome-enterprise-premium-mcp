@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Shared utilities for DLP detectors.
+ * @file Shared utilities for DLP detectors.
  */
 
 import { resolveRootOrgUnitId } from './org-unit.js'
@@ -23,7 +23,6 @@ import { formatToolResponse } from './wrapper.js'
 
 /**
  * Helper to create a detector and format the response.
- *
  * @param {object} apiClients - The API clients collection.
  * @param {import('../../lib/api/interfaces/cloud_identity_client.js').CloudIdentityClient} cloudIdentityClient - The Cloud Identity client instance.
  * @param {string} customerId - The customer ID.

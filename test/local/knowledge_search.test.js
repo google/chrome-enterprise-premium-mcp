@@ -1,4 +1,18 @@
-import { describe, it } from 'node:test'
+/*
+Copyright 2026 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import { registerKnowledgeTools } from '../../tools/definitions/knowledge.js'
 
@@ -42,14 +56,14 @@ describe('Knowledge Tools Real Database Integration', () => {
     const searchHandler = handlers['search_content']
     const getDocHandler = handlers['get_document']
 
-    // 1. Search to resolve ID
+    // Search to resolve ID
     const searchResult = await searchHandler({ query: 'Licensing' }, { requestInfo: {} })
     const documents = searchResult.structuredContent.documents
     const policy = documents.find(d => d.title === 'Chrome Enterprise Premium Product & Licensing Overview')
     assert.ok(policy, 'Should fetch match to resolve ID')
 
-    // 2. Fetch full body
-    const docResult = await getDocHandler({ filename: policy.filename }, { requestInfo: {} })
+    // Fetch full body
+    const docResult = await getDocHandler({ kind: policy.kind, filename: policy.filename }, { requestInfo: {} })
     const docText = docResult.content[0].text
 
     assert.ok(docText.includes('Chrome Enterprise Premium'), 'Full content should include the policy text')

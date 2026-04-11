@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Tool definition for creating regular expression DLP detectors.
+ * @file Tool definition for creating regular expression DLP detectors.
  */
 
 import { z } from 'zod'
@@ -29,11 +29,12 @@ import { commonInputSchemas, commonOutputSchemas } from './shared.js'
 
 /**
  * Registers the 'create_regex_detector' tool with the MCP server.
- *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
  * @param {import('../../lib/api/interfaces/cloud_identity_client.js').CloudIdentityClient} options.cloudIdentityClient - The Cloud Identity client instance.
+ * @param {object} options.apiClients - The API clients collection.
  * @param {object} sessionState - The session state object for caching.
+ * @returns {void}
  */
 export function registerCreateRegexDetectorTool(server, options, sessionState) {
   const { cloudIdentityClient, apiClients } = options
@@ -59,6 +60,18 @@ Detectors are building blocks for DLP rules. After creating a detector, you must
     },
     guardedToolCall(
       {
+        /**
+         * Handler for creating a regular expression detector.
+         * @param {object} params - The tool parameters.
+         * @param {string} params.customerId - The Chrome customer ID.
+         * @param {string} params.displayName - The display name for the detector.
+         * @param {string} [params.description] - An optional description.
+         * @param {string} params.expression - The regular expression to match.
+         * @param {object} context - The tool execution context.
+         * @param {object} context._requestInfo - The request info object.
+         * @param {string} context.authToken - The OAuth2 access token.
+         * @returns {Promise<object>} The formatted tool response.
+         */
         handler: async (params, { _requestInfo, authToken }) => {
           const { customerId, displayName, description, expression } = params
 

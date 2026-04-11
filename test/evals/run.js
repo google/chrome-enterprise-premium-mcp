@@ -16,7 +16,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview CEP MCP Eval runner. Single CLI entry point.
+ * @file CEP MCP Eval runner. Single CLI entry point.
  *
  * Usage:
  *   node test/evals/run.js [options]
@@ -297,6 +297,9 @@ async function main() {
   const results = []
   const queue = evals.map((e, i) => ({ evalCase: e, index: i + 1 }))
 
+  /**
+   *
+   */
   async function worker() {
     while (queue.length > 0) {
       const item = queue.shift()

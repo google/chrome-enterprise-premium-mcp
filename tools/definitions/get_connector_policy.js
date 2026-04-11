@@ -14,6 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/**
+ * @file Tool definition for retrieving Chrome Enterprise connector policies.
+ */
+
 import { z } from 'zod'
 import { guardedToolCall, formatToolResponse, safeFormatResponse } from '../utils/wrapper.js'
 import { commonOutputSchemas } from './shared.js'
@@ -50,6 +54,14 @@ const EVENT_NAME_MAPPING = {
   suspiciousUrlEvent: 'Suspicious URL',
 }
 
+/**
+ * Registers the 'get_connector_policy' tool with the MCP server.
+ * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
+ * @param {object} options - Configuration options for the tool.
+ * @param {import('../../lib/api/interfaces/chrome_policy_client.js').ChromePolicyClient} options.chromePolicyClient - The Chrome Policy client instance.
+ * @param {object} sessionState - The session state object for caching.
+ * @returns {void}
+ */
 export function registerGetConnectorPolicyTool(server, options, sessionState) {
   const { chromePolicyClient } = options
 
@@ -75,6 +87,17 @@ To modify these settings, use 'enable_chrome_enterprise_connectors'.`,
     },
     guardedToolCall(
       {
+        /**
+         * Handler for retrieving connector policies.
+         * @param {object} params - The tool parameters.
+         * @param {string} [params.customerId] - The Chrome customer ID.
+         * @param {string} params.orgUnitId - The organizational unit ID.
+         * @param {string} params.policy - The connector type to retrieve.
+         * @param {object} context - The tool execution context.
+         * @param {object} context._requestInfo - The request info object.
+         * @param {string} context.authToken - The OAuth2 access token.
+         * @returns {Promise<object>} The formatted tool response.
+         */
         handler: async ({ customerId, orgUnitId, policy }, { _requestInfo, authToken }) => {
           // Normalize Org Unit ID (Strip 'id:' prefix if present)
           const normalizedOrgUnitId = orgUnitId.startsWith('id:') ? orgUnitId.substring(3) : orgUnitId
@@ -94,6 +117,12 @@ To modify these settings, use 'enable_chrome_enterprise_connectors'.`,
               const displayName = POLICY_DISPLAY_NAMES[policy] || policy
               const header = `Connector policy: ${displayName} (OU: \`${orgUnitId}\`)\n\n`
 
+              /**
+               * Retrieves a value from an object using either camelCase or snake_case key.
+               * @param {object} obj - The object to retrieve from.
+               * @param {string} key - The key to retrieve.
+               * @returns {unknown} The retrieved value or undefined.
+               */
               const getVal = (obj, key) => {
                 if (!obj || typeof obj !== 'object') {
                   return undefined
@@ -105,6 +134,11 @@ To modify these settings, use 'enable_chrome_enterprise_connectors'.`,
                 return obj[snakeKey]
               }
 
+              /**
+               * Formats a policy value for user-friendly display.
+               * @param {unknown} val - The value to format.
+               * @returns {string} The formatted string.
+               */
               const format = val => {
                 if (val === undefined || val === null) {
                   return 'Not set'
@@ -168,6 +202,11 @@ To modify these settings, use 'enable_chrome_enterprise_connectors'.`,
                           'suspiciousUrlEvent',
                         ]
 
+                        /**
+                         * Maps internal event names to human-readable names.
+                         * @param {string} e - The internal event name.
+                         * @returns {string} The human-readable event name.
+                         */
                         const mapEvent = e => EVENT_NAME_MAPPING[e] || e
 
                         if (events.length > 0) {

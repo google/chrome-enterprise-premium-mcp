@@ -15,14 +15,13 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Prompt definition for the '/cep:noise' command.
+ * @file Prompt definition for the '/cep:noise' command.
  */
 
 export const NOISE_PROMPT_NAME = 'cep:noise'
 
 /**
  * Registers the '/cep:noise' prompt with the MCP server.
- *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance
  */
 export const registerNoisePrompt = server => {

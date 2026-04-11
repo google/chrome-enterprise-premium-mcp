@@ -25,14 +25,6 @@ import { FakeChromePolicyClient } from '../../../../lib/api/fake_chrome_policy_c
 import { FakeChromeManagementClient } from '../../../../lib/api/fake_chrome_management_client.js'
 import { FakeServiceUsageClient } from '../../../../lib/api/fake_service_usage_client.js'
 
-/**
- * Factory function to retrieve the appropriate API clients.
- *
- * @param {object} [options] - Options to override environment variables.
- * @param {string} [options.backend] - 'real' or 'fake'.
- * @param {string} [options.rootUrl] - URL for fake API server.
- * @returns {object} An object containing instances of the API clients.
- */
 export function getApiClients(options = {}) {
   const backend = options.backend || process.env.CEP_BACKEND || (process.env.GOOGLE_API_ROOT_URL ? 'fake' : 'real')
   const rootUrl = options.rootUrl || process.env.GOOGLE_API_ROOT_URL || 'http://localhost:8008'

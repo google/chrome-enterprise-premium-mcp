@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Prompt definition for the 'cep:expert' command.
+ * @file Prompt definition for the 'cep:expert' command.
  */
 
 import fs from 'fs'
@@ -29,7 +29,6 @@ const systemPromptPath = path.resolve(__dirname, '../system-prompt.md')
 
 /**
  * Registers the 'cep:expert' prompt with the MCP server.
- *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance
  */
 export const registerExpertPrompt = server => {

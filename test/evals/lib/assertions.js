@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Deterministic eval assertions -- no LLM involved.
+ * @file Deterministic eval assertions -- no LLM involved.
  *
  * These checks run before the LLM judge and produce hard pass/fail results.
  * A forbidden pattern match = immediate FAIL regardless of judge verdict.
@@ -24,7 +24,6 @@ limitations under the License.
 /**
  * Checks that no forbidden patterns appear in the response text.
  * Patterns prefixed with "re:" are treated as regex; others as case-insensitive substrings.
- *
  * @param {string} text - Agent response text.
  * @param {string[]} patterns - Forbidden patterns.
  * @returns {{ passed: boolean, failures: string[] }}
@@ -61,7 +60,6 @@ export function checkForbidden(text, patterns) {
 
 /**
  * Checks that all required patterns appear in the response text.
- *
  * @param {string} text - Agent response text.
  * @param {string[]} patterns - Required patterns.
  * @returns {{ passed: boolean, failures: string[] }}
@@ -97,7 +95,6 @@ export function checkRequired(text, patterns) {
 
 /**
  * Checks that every expected tool was called by the agent.
- *
  * @param {string[]} actualToolNames - Tool names actually called.
  * @param {string[]} expectedToolNames - Tool names that should have been called.
  * @returns {{ passed: boolean, failures: string[] }}
@@ -117,7 +114,6 @@ export function checkTools(actualToolNames, expectedToolNames) {
 
 /**
  * Runs all deterministic checks for an eval case.
- *
  * @param {string} responseText - Agent response text.
  * @param {string[]} actualTools - Tool names actually called.
  * @param {import('./loader.js').EvalCase} evalCase - The eval case.

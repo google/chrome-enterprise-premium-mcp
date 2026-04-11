@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Tests for MCP tool registration.
+ * @file Tests for MCP tool registration.
  */
 
 import assert from 'node:assert/strict'

@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Tool definition for checking and enabling APIs.
+ * @file Tool definition for checking and enabling APIs.
  */
 
 import { z } from 'zod'
@@ -25,11 +25,11 @@ import { logger } from '../../lib/util/logger.js'
 
 /**
  * Registers the 'check_and_enable_api' tool with the MCP server.
- *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
  * @param {import('../../lib/api/interfaces/service_usage_client.js').ServiceUsageClient} options.serviceUsageClient - The Service Usage client instance.
  * @param {object} sessionState - The session state object for caching.
+ * @returns {void}
  */
 export function registerCheckAndEnableApiTool(server, options, sessionState) {
   const { serviceUsageClient } = options

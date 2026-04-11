@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Scenario: all DLP rules are audit-only (early monitoring stage).
+ * @file Scenario: all DLP rules are audit-only (early monitoring stage).
  *
  * Replaces block, watermark, and warn actions with audit-only.
  * Represents a customer in the early phases of DLP rollout who is

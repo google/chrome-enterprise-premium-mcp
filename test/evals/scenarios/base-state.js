@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Base state for eval scenarios.
+ * @file Base state for eval scenarios.
  *
  * Returns a fully-configured "healthy" CEP deployment: active DLP rules,
  * all connectors configured, licenses assigned, SEB extension deployed.
@@ -24,7 +24,6 @@ limitations under the License.
 
 /**
  * Returns a fully-configured "healthy" CEP deployment state.
- *
  * @returns {object} Complete fake server state object.
  */
 export function getBaseState() {

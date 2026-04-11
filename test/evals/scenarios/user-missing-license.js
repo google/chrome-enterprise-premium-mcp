@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Scenario: bob@example.com is missing a CEP license.
+ * @file Scenario: bob@example.com is missing a CEP license.
  *
  * Used by: pr04 (prompt diagnose).
  */

@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Shared constants for prompts.
+ * @file Shared constants for prompts.
  */
 
 export const SHARED_DIAGNOSTIC_RULES = `3. Summarize your findings using the following structural rules:

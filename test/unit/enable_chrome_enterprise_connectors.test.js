@@ -18,10 +18,6 @@ import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
 import { registerEnableChromeEnterpriseConnectorsTool } from '../../tools/definitions/enable_chrome_enterprise_connectors.js'
 
-/**
- * Unit Tests for the Enable Chrome Enterprise Connectors Tool.
- * Verifies the logic of safety checks and batching using a mocked client.
- */
 describe('enable_chrome_enterprise_connectors unit tests', () => {
   // Mock MCP Server
   const mockServer = {

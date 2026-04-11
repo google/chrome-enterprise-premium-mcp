@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Runs the full test suite: unit tests + smoke tests.
+ * @file Runs the full test suite: unit tests + smoke tests.
  *
  * Usage: node test/run-all.js
  *

@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Tool definition for gathering diagnostic feedback.
+ * @file Tool definition for gathering diagnostic feedback.
  */
 
 import { z } from 'zod'
@@ -28,7 +28,6 @@ import { logger } from '../../lib/util/logger.js'
 
 /**
  * Registers the 'cep_feedback' tool with the MCP server.
- *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
  * @param {object} sessionState - The session state object for gathering data.
@@ -57,6 +56,13 @@ Use this when the agent is failing, providing incorrect information, or if you e
     },
     guardedToolCall(
       {
+        /**
+         * Handler for gathering diagnostic feedback.
+         * @param {object} params - The tool parameters.
+         * @param {string} params.userMessage - A detailed description of the issue.
+         * @param {string} [params.transcripts] - Optional conversation context.
+         * @returns {Promise<object>} The formatted tool response.
+         */
         handler: async ({ userMessage, transcripts }) => {
           logger.info(`${TAGS.MCP} Generating diagnostic feedback report...`)
 

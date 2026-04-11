@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Tool definition for counting browser versions.
+ * @file Tool definition for counting browser versions.
  */
 
 import { z } from 'zod'
@@ -26,11 +26,11 @@ import { logger } from '../../lib/util/logger.js'
 
 /**
  * Registers the 'count_browser_versions' tool with the MCP server.
- *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
  * @param {import('../../lib/api/interfaces/chrome_management_client.js').ChromeManagementClient} options.chromeManagementClient - The Chrome Management client instance.
  * @param {object} sessionState - The session state object for caching.
+ * @returns {void}
  */
 export function registerCountBrowserVersionsTool(server, options, sessionState) {
   const { chromeManagementClient } = options

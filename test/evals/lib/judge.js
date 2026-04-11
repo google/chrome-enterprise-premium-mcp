@@ -15,10 +15,10 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Gemini-as-judge for semantic eval grading.
+ * @file Gemini-as-judge for semantic eval grading.
  *
  * Replaces the Python nl_check.py + _run_judge pattern. Uses
- * @google/generative-ai (Google's own SDK).
+ * \@google/generative-ai (Google's own SDK).
  */
 
 import { GoogleGenerativeAI } from '@google/generative-ai'
@@ -27,7 +27,6 @@ const MODEL_NAME = 'gemini-2.5-flash'
 
 /**
  * Creates a judge instance backed by Gemini.
- *
  * @param {string} apiKey - Gemini API key.
  * @param {string} [baseUrl] - Optional base URL for the Gemini API.
  * @returns {{ judge: JudgeFn }}

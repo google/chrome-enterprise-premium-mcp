@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Scenario: watermark DLP rule exists but is INACTIVE.
+ * @file Scenario: watermark DLP rule exists but is INACTIVE.
  *
  * Used by: pr06 (prompt diagnose).
  */

@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Scenario: one DLP rule generates high event volume.
+ * @file Scenario: one DLP rule generates high event volume.
  *
  * The "Audit pastes to generative AI sites" rule fires many times,
  * producing a noisy activity log that the agent should flag.

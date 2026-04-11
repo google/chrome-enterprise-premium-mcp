@@ -17,12 +17,6 @@ limitations under the License.
 import { readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
-/**
- * Recursively finds all files ending with `.test.js` under the given directory.
- *
- * @param {string} dir - Absolute path to the directory to search.
- * @returns {string[]} Absolute paths of discovered test files.
- */
 export function findTestFiles(dir) {
   const results = []
   for (const entry of readdirSync(dir, { withFileTypes: true })) {

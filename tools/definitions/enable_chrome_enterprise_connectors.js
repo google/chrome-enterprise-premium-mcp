@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Tool definition for enabling multiple Chrome Enterprise Premium connectors.
+ * @file Tool definition for enabling multiple Chrome Enterprise Premium connectors.
  */
 
 import { z } from 'zod'
@@ -27,10 +27,20 @@ const CONNECTOR_CONFIGS = {
   PRINT: {
     schema: 'chrome.users.OnPrintAnalysisConnectorPolicy',
     displayName: 'Print Analysis',
+    /**
+     * Checks if the print connector is already configured.
+     * @param {object} policy - The resolved policy.
+     * @returns {boolean} True if configured.
+     */
     check: policy => {
       const configs = policy?.value?.value?.onPrintAnalysisConnectorConfiguration?.printConfigurations
       return configs && configs.some(c => c.serviceProvider !== 'SERVICE_PROVIDER_UNSPECIFIED')
     },
+    /**
+     * Returns the batch modify request for the print connector.
+     * @param {string} orgUnitId - The target organizational unit ID.
+     * @returns {object} The policy update request.
+     */
     getRequest: orgUnitId => ({
       policyTargetKey: { targetResource: `orgunits/${orgUnitId}` },
       policyValue: {
@@ -55,10 +65,20 @@ const CONNECTOR_CONFIGS = {
   BULK_TEXT_ENTRY: {
     schema: 'chrome.users.OnBulkTextEntryConnectorPolicy',
     displayName: 'Bulk Text Entry Analysis (paste)',
+    /**
+     * Checks if the bulk text entry connector is already configured.
+     * @param {object} policy - The resolved policy.
+     * @returns {boolean} True if configured.
+     */
     check: policy => {
       const config = policy?.value?.value?.onBulkTextEntryAnalysisConnectorConfiguration?.bulkTextEntryConfiguration
       return config && config.serviceProvider !== 'SERVICE_PROVIDER_UNSPECIFIED'
     },
+    /**
+     * Returns the batch modify request for the bulk text entry connector.
+     * @param {string} orgUnitId - The target organizational unit ID.
+     * @returns {object} The policy update request.
+     */
     getRequest: orgUnitId => ({
       policyTargetKey: { targetResource: `orgunits/${orgUnitId}` },
       policyValue: {
@@ -81,10 +101,20 @@ const CONNECTOR_CONFIGS = {
   FILE_DOWNLOAD: {
     schema: 'chrome.users.OnFileDownloadedConnectorPolicy',
     displayName: 'File Download Analysis',
+    /**
+     * Checks if the file download connector is already configured.
+     * @param {object} policy - The resolved policy.
+     * @returns {boolean} True if configured.
+     */
     check: policy => {
       const config = policy?.value?.value?.onFileDownloadedAnalysisConnectorConfiguration?.fileDownloadedConfiguration
       return config && config.serviceProvider !== 'SERVICE_PROVIDER_UNSPECIFIED'
     },
+    /**
+     * Returns the batch modify request for the file download connector.
+     * @param {string} orgUnitId - The target organizational unit ID.
+     * @returns {object} The policy update request.
+     */
     getRequest: orgUnitId => ({
       policyTargetKey: { targetResource: `orgunits/${orgUnitId}` },
       policyValue: {
@@ -109,10 +139,20 @@ const CONNECTOR_CONFIGS = {
   FILE_UPLOAD: {
     schema: 'chrome.users.OnFileAttachedConnectorPolicy',
     displayName: 'Upload content analysis',
+    /**
+     * Checks if the file upload connector is already configured.
+     * @param {object} policy - The resolved policy.
+     * @returns {boolean} True if configured.
+     */
     check: policy => {
       const config = policy?.value?.value?.onFileAttachedAnalysisConnectorConfiguration?.fileAttachedConfiguration
       return config && config.serviceProvider !== 'SERVICE_PROVIDER_UNSPECIFIED'
     },
+    /**
+     * Returns the batch modify request for the file upload connector.
+     * @param {string} orgUnitId - The target organizational unit ID.
+     * @returns {object} The policy update request.
+     */
     getRequest: orgUnitId => ({
       policyTargetKey: { targetResource: `orgunits/${orgUnitId}` },
       policyValue: {
@@ -137,9 +177,19 @@ const CONNECTOR_CONFIGS = {
   REALTIME_URL_CHECK: {
     schema: 'chrome.users.RealtimeUrlCheck',
     displayName: 'Real-time URL check',
+    /**
+     * Checks if real-time URL check is already enabled.
+     * @param {object} policy - The resolved policy.
+     * @returns {boolean} True if enabled.
+     */
     check: policy => {
       return policy?.value?.value?.realtimeUrlCheckEnabled === 'ENTERPRISE_REAL_TIME_URL_CHECK_MODE_ENUM_ENABLED'
     },
+    /**
+     * Returns the batch modify request for real-time URL check.
+     * @param {string} orgUnitId - The target organizational unit ID.
+     * @returns {object} The policy update request.
+     */
     getRequest: orgUnitId => ({
       policyTargetKey: { targetResource: `orgunits/${orgUnitId}` },
       policyValue: {
@@ -154,10 +204,20 @@ const CONNECTOR_CONFIGS = {
   ON_SECURITY_EVENT: {
     schema: 'chrome.users.OnSecurityEvent',
     displayName: 'Event Reporting',
+    /**
+     * Checks if event reporting is already configured.
+     * @param {object} policy - The resolved policy.
+     * @returns {boolean} True if configured.
+     */
     check: policy => {
       const reportingConnector = policy?.value?.value?.reportingConnector
       return reportingConnector && Object.keys(reportingConnector).length > 0
     },
+    /**
+     * Returns the batch modify request for event reporting.
+     * @param {string} orgUnitId - The target organizational unit ID.
+     * @returns {object} The policy update request.
+     */
     getRequest: orgUnitId => ({
       policyTargetKey: { targetResource: `orgunits/${orgUnitId}` },
       policyValue: {
@@ -177,11 +237,11 @@ const CONNECTOR_CONFIGS = {
 
 /**
  * Registers the 'enable_chrome_enterprise_connectors' tool with the MCP server.
- *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
  * @param {import('../../lib/api/interfaces/chrome_policy_client.js').ChromePolicyClient} options.chromePolicyClient - The Chrome Policy client instance.
  * @param {object} sessionState - The session state object for caching.
+ * @returns {void}
  */
 export function registerEnableChromeEnterpriseConnectorsTool(server, options, sessionState) {
   const { chromePolicyClient } = options
@@ -226,12 +286,23 @@ Use this tool to ACTIVATE security protections. It will ONLY apply changes to co
     },
     guardedToolCall(
       {
+        /**
+         * Handler for enabling Chrome Enterprise connectors.
+         * @param {object} params - The tool parameters.
+         * @param {string} [params.customerId] - The Chrome customer ID.
+         * @param {string} params.orgUnitId - The organizational unit ID.
+         * @param {string[]} params.connectors - The list of connectors to enable.
+         * @param {object} context - The tool execution context.
+         * @param {object} context._requestInfo - The request info object.
+         * @param {string} context.authToken - The OAuth2 access token.
+         * @returns {Promise<object>} The formatted tool response.
+         */
         handler: async ({ customerId, orgUnitId, connectors }, { _requestInfo, authToken }) => {
           logger.debug(`${TAGS.MCP} Calling 'enable_chrome_enterprise_connectors' for ${connectors.join(', ')}`)
           const connectorResults = []
           const batchRequests = []
 
-          // 1. Safety Check: Parallelize policy resolution
+          // Safety Check: Parallelize policy resolution
           const resolvePromises = connectors.map(async connectorType => {
             const config = CONNECTOR_CONFIGS[connectorType]
             const resolvedPolicies = await chromePolicyClient.resolvePolicy(
@@ -256,7 +327,7 @@ Use this tool to ACTIVATE security protections. It will ONLY apply changes to co
               continue
             }
 
-            // 2. Prepare Request
+            // Prepare Request
             batchRequests.push(config.getRequest(orgUnitId))
             connectorResults.push({
               name: connectorType,
@@ -266,7 +337,7 @@ Use this tool to ACTIVATE security protections. It will ONLY apply changes to co
             })
           }
 
-          // 3. Execute Batch
+          // Execute Batch
           if (batchRequests.length > 0) {
             await chromePolicyClient.batchModifyPolicy(customerId, orgUnitId, batchRequests, authToken)
           }

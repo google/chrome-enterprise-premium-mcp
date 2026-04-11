@@ -17,7 +17,7 @@ limitations under the License.
 /* eslint-disable n/no-process-exit */
 
 /**
- * @fileoverview Runs all local unit tests via the Node.js test runner.
+ * @file Runs all local unit tests via the Node.js test runner.
  *
  * Discovers `.test.js` files under `test/local/` using a recursive directory
  * walk so that glob expansion is not required (works on Windows and POSIX).

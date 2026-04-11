@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Wrapper utilities to guard and transform MCP tool calls.
+ * @file Wrapper utilities to guard and transform MCP tool calls.
  */
 
 import fs from 'fs'
@@ -30,7 +30,6 @@ const __dirname = path.dirname(__filename)
 
 /**
  * Extracts the authentication token from the request headers.
- *
  * @param {object} requestInfo - The request context object
  * @returns {string|null} The Bearer token if present, otherwise null
  */
@@ -40,9 +39,8 @@ function getAuthToken(requestInfo) {
 
 /**
  * Performs common transformations on tool parameters.
- *
- * @param {object} params
- * @returns {object} Transformed parameters
+ * @param {object} params - The tool parameters to transform
+ * @returns {object} The transformed parameters
  */
 export function commonTransform(params) {
   const newParams = { ...params }
@@ -54,9 +52,9 @@ export function commonTransform(params) {
 
 /**
  * Injects system prompt and capabilities on the first tool call.
- *
- * @param {object} sessionState
- * @param {object} result
+ * @param {object} sessionState - The current session state
+ * @param {object} result - The tool response result object
+ * @returns {void}
  */
 function injectSystemContext(sessionState, result) {
   if (sessionState && !sessionState.hasInjectedSystemPrompt) {
@@ -92,8 +90,7 @@ function injectSystemContext(sessionState, result) {
 
 /**
  * Formats a tool response with a summary and a fenced JSON block.
- *
- * @param {object} params
+ * @param {object} params - The response parameters
  * @param {string} params.summary - Human-readable summary (markdown)
  * @param {object} [params.data] - Data to be serialized in the JSON block
  * @param {object} [params.structuredContent] - Machine-readable content for SDK
@@ -111,10 +108,9 @@ export function formatToolResponse({ summary, data, structuredContent }) {
 
 /**
  * Wraps a formatting function with graceful degradation if it fails.
- *
- * @param {object} params
- * @param {any} params.rawData - The raw data to format
- * @param {Function} params.formatFn - Function that returns a formatToolResponse-compatible object
+ * @param {object} params - The formatting parameters
+ * @param {unknown} params.rawData - The raw data to format
+ * @param {(...args: unknown[]) => unknown} params.formatFn - Function that returns a formatToolResponse-compatible object
  * @param {string} params.toolName - Name of the tool for logging
  * @returns {object} Formatted tool response
  */
@@ -134,15 +130,17 @@ export function safeFormatResponse({ rawData, formatFn, toolName }) {
 /**
  * Helper to wrap tool handlers with common logic like customerId resolution
  * and error handling.
- *
- * @param {object} toolDef
- * @param {Function} [toolDef.validate] - Optional validation function
- * @param {Function} [toolDef.transform] - Optional parameter transformation function
- * @param {Function} toolDef.handler - The main tool handler function
+ * @param {object} toolDef - The tool definition object
+ * @param {(...args: unknown[]) => unknown} [toolDef.validate] - Optional validation function
+ * @param {(...args: unknown[]) => unknown} [toolDef.transform] - Optional parameter transformation function
+ * @param {(...args: unknown[]) => unknown} toolDef.handler - The main tool handler function
  * @param {boolean} [toolDef.skipAutoResolve] - Whether to skip auto-resolving customerId
- * @param {object} options
+ * @param {object} options - Configuration options for the wrapper
+ * @param {object} [options.apiClients] - Collection of API clients
+ * @param {object} [options.apiOptions] - Additional API options
+ * @param {(...args: unknown[]) => unknown} [options.onError] - Custom error handler
  * @param {object} sessionState - The session state object for caching
- * @returns {Function} Wrapped tool handler
+ * @returns {(...args: unknown[]) => unknown} The wrapped tool handler function
  */
 export function guardedToolCall(
   { validate, transform, handler, skipAutoResolve = false },

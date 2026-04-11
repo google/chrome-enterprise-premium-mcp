@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Scenario: all DLP rules removed (zero enforcement).
+ * @file Scenario: all DLP rules removed (zero enforcement).
  *
  * Used by: pr05 (prompt maturity).
  */

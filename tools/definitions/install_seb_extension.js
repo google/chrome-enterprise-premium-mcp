@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Tool definition for force-installing the SEB extension.
+ * @file Tool definition for force-installing the SEB extension.
  */
 
 import { z } from 'zod'
@@ -28,11 +28,11 @@ const INSTALL_TYPE_SCHEMA = 'chrome.users.apps.InstallType'
 
 /**
  * Registers the 'install_seb_extension' tool with the MCP server.
- *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
  * @param {import('../../lib/api/interfaces/chrome_policy_client.js').ChromePolicyClient} options.chromePolicyClient - The Chrome Policy client instance.
  * @param {object} sessionState - The session state object for caching.
+ * @returns {void}
  */
 export function registerInstallSebExtensionTool(server, options, sessionState) {
   const { chromePolicyClient } = options
@@ -60,12 +60,22 @@ The SEB extension is REQUIRED for advanced Chrome Enterprise Premium features li
     },
     guardedToolCall(
       {
+        /**
+         * Handler for force-installing the SEB extension.
+         * @param {object} params - The tool parameters.
+         * @param {string} [params.customerId] - The Chrome customer ID.
+         * @param {string} params.orgUnitId - The organizational unit ID.
+         * @param {object} context - The tool execution context.
+         * @param {object} context._requestInfo - The request info object.
+         * @param {string} context.authToken - The OAuth2 access token.
+         * @returns {Promise<object>} The formatted tool response.
+         */
         handler: async ({ customerId, orgUnitId }, { _requestInfo, authToken }) => {
           logger.debug(
             `${TAGS.MCP} Calling 'install_seb_extension' with customerId: ${customerId}, orgUnitId: ${orgUnitId}`,
           )
 
-          // 1. Resolve current policy to see if it's already force-installed
+          // Resolve current policy to see if it's already force-installed
           const currentPolicies = await chromePolicyClient.resolvePolicy(
             customerId,
             orgUnitId,
@@ -88,7 +98,7 @@ The SEB extension is REQUIRED for advanced Chrome Enterprise Premium features li
             })
           }
 
-          // 2. Update the policy to set it to FORCED
+          // Update the policy to set it to FORCED
           const requests = [
             {
               policyTargetKey: {

@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Parses eval Markdown files with YAML frontmatter into
+ * @file Parses eval Markdown files with YAML frontmatter into
  * structured EvalCase objects. See test/evals/README.md for format spec.
  */
 
@@ -29,6 +29,8 @@ import yaml from 'js-yaml'
 /**
  * Extracts a named ## section from markdown body text.
  * Returns the content between the heading and the next ## heading (or EOF).
+ * @param body
+ * @param heading
  */
 function extractSection(body, heading) {
   const pattern = new RegExp(`^##\\s+${heading}\\s*$`, 'im')
@@ -64,7 +66,6 @@ export function loadGlobalConfig(evalsDir) {
 /**
  * Loads a single eval from a Markdown file with YAML frontmatter.
  * Merges forbidden patterns with the global config.
- *
  * @param {string} filepath - Absolute path to the .md file.
  * @param {{ forbiddenPatterns: string[], defaultJudgeRubric: string }} globalConfig
  * @returns {EvalCase}
@@ -98,7 +99,6 @@ export function loadEval(filepath, globalConfig) {
 
 /**
  * Loads all evals from the cases/ subdirectories, with optional filtering.
- *
  * @param {object} options
  * @param {string} options.dir - Path to test/evals directory.
  * @param {string} [options.category] - Comma-separated category filter.

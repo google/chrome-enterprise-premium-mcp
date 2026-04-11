@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Prompt definition for the '/cep:diagnose' command.
+ * @file Prompt definition for the '/cep:diagnose' command.
  */
 
 import { SHARED_DIAGNOSTIC_RULES } from './shared.js'
@@ -24,7 +24,6 @@ export const DIAGNOSE_PROMPT_NAME = 'cep:diagnose'
 
 /**
  * Registers the '/cep:diagnose' prompt with the MCP server.
- *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance
  */
 export const registerDiagnosePrompt = server => {

@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Tool definition for retrieving the customer ID.
+ * @file Tool definition for retrieving the customer ID.
  */
 
 import { z } from 'zod'
@@ -25,11 +25,11 @@ import { logger } from '../../lib/util/logger.js'
 
 /**
  * Registers the 'get_customer_id' tool with the MCP server.
- *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
  * @param {import('../../lib/api/interfaces/admin_sdk_client.js').AdminSdkClient} options.adminSdkClient - The Admin SDK client instance.
  * @param {object} sessionState - The session state object for caching.
+ * @returns {void}
  */
 export function registerGetCustomerIdTool(server, options, sessionState) {
   const { adminSdkClient } = options
@@ -49,6 +49,14 @@ This ID (often starting with 'C') is required as a parameter for many other Chro
     },
     guardedToolCall(
       {
+        /**
+         * Handler for retrieving the customer ID.
+         * @param {object} params - The tool parameters.
+         * @param {object} context - The tool execution context.
+         * @param {object} context._requestInfo - The request info object.
+         * @param {string} context.authToken - The OAuth2 access token.
+         * @returns {Promise<object>} The formatted tool response.
+         */
         handler: async (params, { _requestInfo, authToken }) => {
           logger.debug(`${TAGS.MCP} Calling 'get_customer_id'`)
           const customer = await adminSdkClient.getCustomerId(authToken)
