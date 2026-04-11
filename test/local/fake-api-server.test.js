@@ -141,6 +141,26 @@ describe('Fake API Server', () => {
       assert.ok(body.policies.length > 0)
     })
 
+    it('should handle pagination with pageSize and pageToken', async () => {
+      // First page
+      const { status: status1, body: body1 } = await get('/v1beta1/policies?pageSize=2')
+      assert.strictEqual(status1, 200)
+      assert.ok(Array.isArray(body1.policies))
+      assert.strictEqual(body1.policies.length, 2)
+      assert.ok(body1.nextPageToken)
+
+      // Second page
+      const { status: status2, body: body2 } = await get(
+        '/v1beta1/policies?pageSize=2&pageToken=' + body1.nextPageToken,
+      )
+      assert.strictEqual(status2, 200)
+      assert.ok(Array.isArray(body2.policies))
+      assert.strictEqual(body2.policies.length, 2)
+
+      // Verify pages are distinct
+      assert.notStrictEqual(body1.policies[0].name, body2.policies[0].name)
+    })
+
     it('should get policy by name', async () => {
       const { status, body } = await get('/v1beta1/policies/fakeDlpRule1')
       assert.strictEqual(status, 200)
