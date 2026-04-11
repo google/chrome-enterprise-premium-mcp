@@ -364,7 +364,7 @@ export function createFakeApp() {
     const targetResource = policyTargetKey.targetResource || ''
     const orgUnitId = targetResource.split('/').pop() || 'unknown'
 
-    const customerPolicies = state.connectorPolicies[customerId] || {}
+    const customerPolicies = state.connectorPolicies?.[customerId] || {}
     const ouPolicies = customerPolicies[orgUnitId] || {}
 
     if (policySchemaFilter) {

@@ -22,6 +22,6 @@ limitations under the License.
 
 /** @param {object} state - Cloned base state. */
 export function mutate(state) {
-  state.connectorPolicies['chrome.users.OnSecurityEvent'] = []
+  state.globalConnectorPolicies['chrome.users.OnSecurityEvent'] = []
   return state
 }
