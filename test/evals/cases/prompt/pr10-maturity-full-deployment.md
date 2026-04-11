@@ -9,6 +9,8 @@ prompt_name: 'cep:maturity'
 expected_tools:
   - diagnose_environment
   - get_chrome_activity_log
+priority: P2
+stability: 0.8
 ---
 
 ## Prompt
