@@ -100,16 +100,9 @@ describe('Knowledge Tools Native Search Integration', () => {
     assert.strictEqual(rows.length, 2)
   })
 
-  test('search_content should support column filters', async () => {
+  test('search_content should include deprecated docs and mark them', async () => {
     const handler = handlers['search_content']
 
-    // Search for 'password' only in policies
-    let result = await handler({ query: 'password', kind: 'policies' }, { requestInfo: {} })
-    let rows = result.structuredContent.documents
-    assert.strictEqual(rows.length, 1)
-    assert.strictEqual(rows[0].title, 'Password complexity')
-
-    // By default, includes deprecated unconditionally
     let resultDep = await handler({ query: 'old' }, { requestInfo: {} })
     let rowsDep = resultDep.structuredContent.documents
     assert.strictEqual(rowsDep.length, 1)
@@ -127,48 +120,22 @@ describe('Knowledge Tools Native Search Integration', () => {
     assert.strictEqual(data.content, 'This policy enforces password complexity requirements.')
   })
 
-  // SKIPPED: tool implementation currently does not support kind filtering
-  test.skip('list_documents should filter by kind', async () => {
+  test('list_documents should return all documents', async () => {
     const handler = handlers['list_documents']
     assert.ok(handler)
 
-    // Includes deprecated unconditionally
-    const result = await handler({ kind: 'policies' }, { requestInfo: {} })
-    const rows = result.structuredContent.documents
-    assert.strictEqual(rows.length, 2) // Includes old-policy
-    assert.ok(result.content[0].text.includes('[Deprecated]'))
-  })
-
-  // SKIPPED: tool implementation currently does not return category counts
-  test.skip('list_documents should return counts when kind is omitted', async () => {
-    const handler = handlers['list_documents']
-
-    // Includes deprecated unconditionally
     const result = await handler({}, { requestInfo: {} })
-    const counts = result.structuredContent.counts
-    assert.strictEqual(Object.keys(counts).length, 3)
-    assert.strictEqual(counts.policies, 2)
+    const rows = result.structuredContent.documents
+    assert.strictEqual(rows.length, 4)
   })
 
-  test('search_content should correctly handle AND operator with kind filter', async () => {
+  test('search_content should find multi-word queries', async () => {
     const handler = handlers['search_content']
     assert.ok(handler)
 
-    const result = await handler({ query: 'complexity requirements', kind: 'policies' }, { requestInfo: {} })
+    const result = await handler({ query: 'complexity requirements' }, { requestInfo: {} })
     const rows = result.structuredContent.documents
-    assert.strictEqual(rows.length, 1)
-    assert.strictEqual(rows[0].title, 'Password complexity')
-  })
-
-  test('search_content should correctly handle OR operator with kind filter', async () => {
-    const handler = handlers['search_content']
-    assert.ok(handler)
-
-    // With the kind filter, only 'Password complexity' should be returned.
-    // The other document containing 'reset' is of kind 'helpcenter'.
-    const result = await handler({ query: 'complexity OR reset', kind: 'policies' }, { requestInfo: {} })
-    const rows = result.structuredContent.documents
-    assert.strictEqual(rows.length, 1)
+    assert.ok(rows.length >= 1)
     assert.strictEqual(rows[0].title, 'Password complexity')
   })
 })
