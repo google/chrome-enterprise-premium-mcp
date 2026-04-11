@@ -116,6 +116,24 @@ npm run format
 | `cep:maturity` | Assesses the **DLP Maturity** level based on rule configuration and events.       |
 | `cep:noise`    | Analyzes **Rule Noise** (false positives/overrides) and recommends optimizations. |
 
+## Git Hooks (Husky)
+
+This project uses [Husky](https://typicode.github.io/husky/) to enforce code quality before each commit.
+
+**The pre-commit hook automatically runs:**
+1.  `npm run lint -- --fix`: Ensures all code follows the style guide and automatically fixes formatting issues.
+2.  `npm run presubmit`: Runs all unit, integration (fake), and smoke tests.
+
+If any of these steps fail, the commit will be blocked.
+
+### Emergency Bypass
+
+In cases where you must commit despite a failing hook (e.g., documenting a broken state or emergency hotfix), you can bypass the hooks using the `--no-verify` flag:
+
+```bash
+git commit -m "Emergency commit" --no-verify
+```
+
 ## Evaluation Runners
 
 This project includes specialized evaluation suites to measure the factual accuracy, proactive behavior, and tool utilization of the CEP agent against curated datasets.
