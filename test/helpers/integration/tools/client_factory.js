@@ -23,6 +23,7 @@ import { FakeAdminSdkClient } from '../../../../lib/api/fake_admin_sdk_client.js
 import { FakeCloudIdentityClient } from '../../../../lib/api/fake_cloud_identity_client.js'
 import { FakeChromePolicyClient } from '../../../../lib/api/fake_chrome_policy_client.js'
 import { FakeChromeManagementClient } from '../../../../lib/api/fake_chrome_management_client.js'
+import { FakeServiceUsageClient } from '../../../../lib/api/fake_service_usage_client.js'
 
 /**
  * Factory function to retrieve the appropriate API clients.
@@ -51,5 +52,6 @@ export function getApiClients(options = {}) {
     cloudIdentity: new FakeCloudIdentityClient(rootUrl),
     chromePolicy: new FakeChromePolicyClient(rootUrl),
     chromeManagement: new FakeChromeManagementClient(rootUrl),
+    serviceUsage: new FakeServiceUsageClient(rootUrl),
   }
 }

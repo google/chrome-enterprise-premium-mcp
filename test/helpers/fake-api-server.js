@@ -214,6 +214,14 @@ function getInitialState() {
         },
       },
     },
+    serviceUsage: {
+      'admin.googleapis.com': 'ENABLED',
+      'chromemanagement.googleapis.com': 'ENABLED',
+      'chromepolicy.googleapis.com': 'ENABLED',
+      'cloudidentity.googleapis.com': 'ENABLED',
+      'licensing.googleapis.com': 'ENABLED',
+      'serviceusage.googleapis.com': 'ENABLED',
+    },
   }
 }
 
@@ -521,6 +529,26 @@ export function createFakeApp() {
       return res.json({})
     }
     res.status(404).json({ error: { message: `Policy ${name} not found` } })
+  })
+
+  // Service Usage: Get Service
+  app.get('/v1/projects/:projectId/services/:serviceName', (req, res) => {
+    const stateVal = state.serviceUsage[req.params.serviceName] || 'DISABLED'
+    res.json({
+      name: `projects/${req.params.projectId}/services/${req.params.serviceName}`,
+      state: stateVal,
+    })
+  })
+
+  // Service Usage: Enable Service
+  app.post('/v1/projects/:projectId/services/:serviceName\\:enable', (req, res) => {
+    state.serviceUsage[req.params.serviceName] = 'ENABLED'
+    res.json({
+      done: true,
+      response: {
+        state: 'ENABLED',
+      },
+    })
   })
 
   // Test Helper: Reset State
