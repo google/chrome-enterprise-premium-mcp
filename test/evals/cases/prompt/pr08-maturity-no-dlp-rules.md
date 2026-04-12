@@ -10,7 +10,7 @@ expected_tools:
   - diagnose_environment
   - get_chrome_activity_log
 priority: P2
-stability: 0.6
+stability: 0.7
 ---
 
 ## Prompt
