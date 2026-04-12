@@ -43,14 +43,16 @@ import { featureFlags, FLAGS } from '../lib/util/feature_flags.js'
  */
 export function registerTools(server, options = {}, sessionState) {
   const { apiClients = {}, featureFlags: flags = featureFlags } = options
-  const { adminSdk, chromeManagement, chromePolicy, cloudIdentity, serviceUsage } = apiClients
+  const {
+    adminSdk,
+    chromeManagement: chromeManagementClient,
+    chromePolicy: chromePolicyClient,
+    cloudIdentity: cloudIdentityClient,
+    serviceUsage: serviceUsageClient,
+  } = apiClients
 
   const apiOptions = options.apiOptions || {}
   const commonOpts = { adminSdkClient: adminSdk, apiOptions, apiClients }
-  const chromeManagementClient = chromeManagement
-  const chromePolicyClient = chromePolicy
-  const cloudIdentityClient = cloudIdentity
-  const serviceUsageClient = serviceUsage
 
   logger.debug(`${TAGS.MCP} Registering all tools...`)
 
