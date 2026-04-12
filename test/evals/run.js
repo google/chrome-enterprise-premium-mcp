@@ -100,7 +100,6 @@ async function main() {
   const dryRun = args['dry-run']
   const noJudge = args['no-judge']
   const verbose = args.verbose
-  let fakeServer = null
 
   const evalsDir = path.resolve(__dirname)
   const category = args.category || process.env.EVAL_CATEGORY
@@ -183,7 +182,9 @@ async function main() {
       harness = await createIntegrationHarness(localFakeServer ? { rootUrl: localFakeServer.url } : {})
     } catch (err) {
       console.error(`Failed to initialize MCP harness: ${err.message}`)
-      if (localFakeServer) await localFakeServer.close()
+      if (localFakeServer) {
+        await localFakeServer.close()
+      }
       throw err
     }
 

@@ -441,7 +441,32 @@ export function createFakeApp() {
       }
     }
 
-    res.json({ policies })
+    // Pagination
+    let pageSize = parseInt(req.query.pageSize, 10)
+    if (isNaN(pageSize) || pageSize <= 0) {
+      pageSize = 50 // Default pageSize
+    }
+
+    // Sort policies by name to ensure consistent pagination ordering
+    policies.sort((a, b) => a.name.localeCompare(b.name))
+
+    let startIndex = 0
+    if (req.query.pageToken) {
+      startIndex = parseInt(req.query.pageToken, 10)
+      if (isNaN(startIndex) || startIndex < 0) {
+        return res.status(400).json({ error: { message: 'Invalid pageToken' } })
+      }
+    }
+
+    const endIndex = startIndex + pageSize
+    const paginatedPolicies = policies.slice(startIndex, endIndex)
+
+    const response = { policies: paginatedPolicies }
+    if (endIndex < policies.length) {
+      response.nextPageToken = endIndex.toString()
+    }
+
+    res.json(response)
   })
 
   // Cloud Identity: Create Policy
