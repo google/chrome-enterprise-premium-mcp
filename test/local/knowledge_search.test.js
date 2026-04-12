@@ -17,7 +17,7 @@ describe('Knowledge Tools Real Database Integration', () => {
     const handler = handlers['search_content']
     assert.ok(handler, 'search_content handler should be registered')
 
-    const result = await handler({ query: 'Licensing', kind: 'curated' }, { requestInfo: {} })
+    const result = await handler({ query: 'Licensing' }, { requestInfo: {} })
     const documents = result.structuredContent.documents
 
     assert.ok(documents.length > 0, 'Should return at least one document')
@@ -30,7 +30,7 @@ describe('Knowledge Tools Real Database Integration', () => {
 
   it('should find DLP integration articles via search_content', async () => {
     const handler = handlers['search_content']
-    const result = await handler({ query: 'DLP', kind: 'curated' }, { requestInfo: {} })
+    const result = await handler({ query: 'DLP' }, { requestInfo: {} })
     const documents = result.structuredContent.documents
 
     assert.ok(documents.length > 0, 'Should return hits for DLP')
@@ -49,7 +49,7 @@ describe('Knowledge Tools Real Database Integration', () => {
     assert.ok(policy, 'Should fetch match to resolve ID')
 
     // 2. Fetch full body
-    const docResult = await getDocHandler({ kind: policy.kind, filename: policy.filename }, { requestInfo: {} })
+    const docResult = await getDocHandler({ filename: policy.filename }, { requestInfo: {} })
     const docText = docResult.content[0].text
 
     assert.ok(docText.includes('Chrome Enterprise Premium'), 'Full content should include the policy text')

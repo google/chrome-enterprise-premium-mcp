@@ -144,10 +144,6 @@ Note: This tool is for product documentation only. Do not use it to disclose int
 Topics covered: product overview, pricing and licensing, browser deployment and enrollment, endpoint verification troubleshooting, DLP features (rules, triggers, detectors, OCR, cache encryption), DLP troubleshooting, evidence locker and scanning, context-aware access and security gateway, identity and certificate-based access, SIEM/reporting integration, policy management and URL filtering, and agent capabilities/limitations.`,
       inputSchema: z.object({
         query: z.string().min(1).describe('Search query. Use concise keywords.'),
-        kind: z
-          .enum(['policies', 'helpcenter', 'cloud-docs', 'curated'])
-          .optional()
-          .describe('Filter results to a specific content type.'),
         limit: z.number().int().min(1).max(50).optional().describe('Maximum number of results to return (default 10).'),
       }),
       outputSchema: z
@@ -158,12 +154,10 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
                 id: z.string(),
                 title: z.string(),
                 url: z.string().nullable(),
-                kind: z.string(),
                 filename: z.string(),
                 isDeprecated: z.boolean(),
                 relevanceScore: z.number(),
                 get_document_arguments: z.object({
-                  kind: z.string(),
                   filename: z.string(),
                 }),
                 snippet: z.string(),
@@ -194,9 +188,6 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
           const queryTerms = queryLower.split(/\s+/).filter(Boolean)
 
           const results = allDocs.filter(doc => {
-            if (args.kind && doc.kind !== args.kind) {
-              return false
-            }
             const searchableText = `${doc.title || ''} ${doc.content || ''}`.toLowerCase()
             return queryTerms.some(term => searchableText.includes(term)) // Use some for fuzzy match
           })
@@ -289,12 +280,10 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
               id: r.originalId || r.id,
               title: r.title,
               url: r.url || null,
-              kind: r.kind,
               filename: r.filename,
               isDeprecated: r.deprecated === 1,
               relevanceScore: parseFloat(r.score.toFixed(2)),
               get_document_arguments: {
-                kind: r.kind,
                 filename: r.filename,
               },
               snippet: snippet,
@@ -305,16 +294,12 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
             .map((doc, index) => {
               const status = doc.isDeprecated ? ' [Deprecated]' : ''
               const titleLink = doc.url ? `[${doc.title}](${doc.url})` : doc.title
-              const getDocHint = `*(To read full doc, use get_document with kind: "${doc.kind}" and filename: "${doc.filename}")*`
+              const getDocHint = `*(To read full doc, use get_document with filename: "${doc.filename}")*`
               return `### ${index + 1}. ${titleLink}${status}\n${getDocHint}\n**Snippet:** ${doc.snippet}\n`
             })
             .join('\n')
 
-          const hasCurated = documents.some(doc => doc.kind === 'curated')
-          let header = `## Search Results for "${args.query}"\n\nFound ${documents.length} matching documents.\n\n`
-          if (hasCurated) {
-            header += `**Note:** Results marked as 'curated' are officially curated golden paths. If there are conflicts or ambiguities, you MUST bias your response towards the curated instructions. Please read both curated and non-curated documents if you are unsure.\n\n`
-          }
+          const header = `## Search Results for "${args.query}"\n\nFound ${documents.length} matching documents.\n\n`
 
           return formatToolResponse({
             summary: header + markdownList,
@@ -343,7 +328,6 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
             .object({
               id: z.string(),
               filename: z.string(),
-              kind: z.string(),
               title: z.string(),
               content: z.string(),
             })
@@ -382,7 +366,7 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
 
           const sourcesFooter = doc.url ? `\n\n---\n### Sources\n- [Official Documentation](${doc.url})` : ''
 
-          const text = `## ${doc.title}\n\n**Category:** ${doc.kind} | **Source:** ${urlLink}\n\n${factsHeader}--- \n\n${doc.content}${sourcesFooter}`
+          const text = `## ${doc.title}\n\n**Source:** ${urlLink}\n\n${factsHeader}--- \n\n${doc.content}${sourcesFooter}`
 
           return formatToolResponse({
             summary: text,
@@ -400,15 +384,9 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
   server.registerTool(
     'list_documents',
     {
-      description: `
-<what>Lists all available documents within a specific category, or provides aggregated counts across all categories.</what>
-<when>Use this to browse the library structure or when you need to verify the existence of a set of policies without a specific keyword search.</when>
-<returns>A list of document titles or category counts.</returns>`,
+      description:
+        'Lists all available documents in the knowledge base. Use this to browse the library or verify document existence without a keyword search.',
       inputSchema: z.object({
-        kind: z
-          .enum(['policies', 'helpcenter', 'cloud-docs', 'curated'])
-          .optional()
-          .describe('Filter to a specific content type. Omit for counts across all kinds.'),
         limit: z
           .number()
           .int()
@@ -420,22 +398,18 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
       }),
       outputSchema: z
         .object({
-          counts: z.record(z.string(), z.number()).optional(),
-          documents: z
-            .array(
-              z
-                .object({
-                  title: z.string(),
-                  url: z.string().nullable(),
-                  isDeprecated: z.boolean(),
-                  get_document_arguments: z.object({
-                    kind: z.string(),
-                    filename: z.string(),
-                  }),
-                })
-                .passthrough(),
-            )
-            .optional(),
+          documents: z.array(
+            z
+              .object({
+                title: z.string(),
+                url: z.string().nullable(),
+                isDeprecated: z.boolean(),
+                get_document_arguments: z.object({
+                  filename: z.string(),
+                }),
+              })
+              .passthrough(),
+          ),
         })
         .passthrough(),
     },
@@ -447,31 +421,10 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
 
           const allDocs = Array.from(docLookup.values())
 
-          if (!args.kind) {
-            const countsMap = new Map()
-            for (const doc of allDocs) {
-              countsMap.set(doc.kind, (countsMap.get(doc.kind) || 0) + 1)
-            }
-            const counts = Object.fromEntries(countsMap)
-
-            const text =
-              `## Knowledge Base Overview\n\n` +
-              Object.entries(counts)
-                .map(([kind, count]) => `- **${kind}**: ${count} articles`)
-                .join('\n')
-
-            return formatToolResponse({
-              summary: text,
-              data: { counts },
-              structuredContent: { counts },
-            })
-          }
-
           const limit = args.limit ?? 50
           const offset = args.offset ?? 0
 
-          let filtered = allDocs.filter(doc => doc.kind === args.kind)
-          filtered.sort((a, b) => {
+          const sorted = [...allDocs].sort((a, b) => {
             const depA = a.deprecated || 0
             const depB = b.deprecated || 0
             if (depA !== depB) {
@@ -480,20 +433,19 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
             return (a.title || '').localeCompare(b.title || '')
           })
 
-          const sliced = filtered.slice(offset, offset + limit)
+          const sliced = sorted.slice(offset, offset + limit)
 
           const documents = sliced.map(r => ({
             title: r.title,
             url: r.url || null,
             isDeprecated: r.deprecated === 1,
             get_document_arguments: {
-              kind: r.kind,
               filename: r.filename,
             },
           }))
 
           const text =
-            `## Articles in "${args.kind}"\n\n` +
+            `## Knowledge Base (${allDocs.length} articles)\n\n` +
             documents
               .map((doc, idx) => {
                 const titleLink = doc.url ? `[${doc.title}](${doc.url})` : doc.title
