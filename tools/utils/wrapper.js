@@ -214,14 +214,13 @@ export function guardedToolCall(
   sessionState = { customerId: null, cachedRootOrgUnitId: null },
 ) {
   return async (params, context) => {
+    const authToken = getAuthToken(context?.requestInfo)
     try {
       const { apiClients, apiOptions } = options
       let currentParams = { ...params }
       if (sessionState && currentParams.customerId) {
         sessionState.customerId = currentParams.customerId
       }
-
-      const authToken = getAuthToken(context?.requestInfo)
 
       if (!skipAutoResolve && currentParams.customerId === undefined) {
         if (sessionState && sessionState.customerId) {
