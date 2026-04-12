@@ -1,0 +1,34 @@
+/*
+Copyright 2026 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+/**
+ * @fileoverview Scenario: all Chrome Enterprise connectors are disabled.
+ *
+ * DLP rules exist but no content analysis connectors are configured,
+ * meaning no file scanning, paste inspection, or URL checking occurs.
+ *
+ * Used by: pr16 (prompt diagnose).
+ */
+
+/** @param {object} state - Cloned base state. */
+export function mutate(state) {
+  for (const key of Object.keys(state.connectorPolicies)) {
+    if (key !== 'chrome.users.apps.InstallType') {
+      state.connectorPolicies[key] = []
+    }
+  }
+  return state
+}
