@@ -37,12 +37,10 @@ class FakeServerManager {
     process.on('exit', () => this.stopSync())
     process.on('SIGINT', () => {
       this.stopSync()
-
       process.exit()
     })
     process.on('SIGTERM', () => {
       this.stopSync()
-
       process.exit()
     })
   }
