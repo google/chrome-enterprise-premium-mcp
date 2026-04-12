@@ -1,0 +1,87 @@
+{
+  "kind": "admin#reports#activities",
+  "items": [
+    {
+      "kind": "admin#reports#activity",
+      "id": { "time": "2026-04-07T09:15:00Z", "applicationName": "chrome", "customerId": "C01b1e65b" },
+      "actor": { "email": "alice@cep-netnew.cc" },
+      "events": [
+        {
+          "type": "DLP_EVENT",
+          "name": "DLP_BLOCK",
+          "parameters": [
+            { "name": "TRIGGER_TYPE", "value": "FILE_UPLOAD" },
+            { "name": "MATCHED_RULE", "value": "Block sensitive file uploads" },
+            { "name": "CONTENT_NAME", "value": "payroll-Q4.xlsx" },
+            { "name": "URL", "value": "https://mega.nz/upload" }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "admin#reports#activity",
+      "id": { "time": "2026-04-07T11:30:00Z", "applicationName": "chrome", "customerId": "C01b1e65b" },
+      "actor": { "email": "bob@cep-netnew.cc" },
+      "events": [
+        {
+          "type": "DLP_EVENT",
+          "name": "DLP_WARN",
+          "parameters": [
+            { "name": "TRIGGER_TYPE", "value": "FILE_UPLOAD" },
+            { "name": "MATCHED_RULE", "value": "Warn before uploading PII" },
+            { "name": "CONTENT_NAME", "value": "customer-list.csv" },
+            { "name": "URL", "value": "https://drive.google.com/upload" }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "admin#reports#activity",
+      "id": { "time": "2026-04-08T14:20:00Z", "applicationName": "chrome", "customerId": "C01b1e65b" },
+      "actor": { "email": "alice@cep-netnew.cc" },
+      "events": [
+        {
+          "type": "DLP_EVENT",
+          "name": "DLP_BLOCK",
+          "parameters": [
+            { "name": "TRIGGER_TYPE", "value": "FILE_UPLOAD" },
+            { "name": "MATCHED_RULE", "value": "Block sensitive file uploads" },
+            { "name": "CONTENT_NAME", "value": "employee-ssn-backup.zip" },
+            { "name": "URL", "value": "https://wetransfer.com" }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "admin#reports#activity",
+      "id": { "time": "2026-04-09T10:05:00Z", "applicationName": "chrome", "customerId": "C01b1e65b" },
+      "actor": { "email": "carol@cep-netnew.cc" },
+      "events": [
+        {
+          "type": "CONTENT_UNSCANNED_TYPE",
+          "name": "CONTENT_UNSCANNED",
+          "parameters": [
+            { "name": "CONTENT_NAME", "value": "encrypted-archive.7z" },
+            { "name": "TRIGGER_TYPE", "value": "FILE_DOWNLOAD" }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "admin#reports#activity",
+      "id": { "time": "2026-04-09T16:45:00Z", "applicationName": "chrome", "customerId": "C01b1e65b" },
+      "actor": { "email": "bob@cep-netnew.cc" },
+      "events": [
+        {
+          "type": "DLP_EVENT",
+          "name": "DLP_AUDIT",
+          "parameters": [
+            { "name": "TRIGGER_TYPE", "value": "WEB_CONTENT_UPLOAD" },
+            { "name": "MATCHED_RULE", "value": "Audit pastes to generative AI sites" },
+            { "name": "URL", "value": "https://chat.openai.com" }
+          ]
+        }
+      ]
+    }
+  ]
+}
