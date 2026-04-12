@@ -344,6 +344,11 @@ Multi-Trigger Logic:
 
           const result = await cloudIdentityClient.createDlpRule(customerId, orgUnitId, ruleConfig, authToken)
 
+          // TODO: Mismatch between real API and fake API responses.
+          // The real API may return the policy directly or an unwrapped Operation,
+          // while the fake API returns `{ done: true, response: ... }`.
+          // We extract `response` here because it works with the fake, but this
+          // may break with the real API if it doesn't wrap the policy this way.
           const createdPolicy = result.response
 
           return safeFormatResponse({

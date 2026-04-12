@@ -531,6 +531,9 @@ export function createFakeApp() {
     }
 
     state.policies[policyName] = newPolicy
+    // TODO: Mismatch between real API and fake API responses.
+    // We wrap the response in `{ done: true, response: ... }` to mimic a Long-Running Operation.
+    // However, the real API (via googleapis client) may return the policy directly.
     res.json({ done: true, response: newPolicy })
   })
 
