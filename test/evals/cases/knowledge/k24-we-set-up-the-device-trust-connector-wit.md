@@ -11,8 +11,14 @@ priority: P2
 
 ## Prompt
 
-We set up the Device Trust Connector with Okta, but Okta says the device is unmanaged. Where is the signal breaking?
+We set up the Device Trust Connector with Okta, but Okta says the device is
+unmanaged. Where is the signal breaking?
 
 ## Golden Response
 
-To troubleshoot Device Trust Connector issues with Okta, follow these steps: 1) Verify the device is enrolled in Chrome Browser Cloud Management and reporting to the Admin Console. 2) Check chrome://policy to confirm the BeyondCorp connector policies are applied. 3) Inspect chrome://connectors-internals for real-time connector status. 4) In the Okta admin console, verify integration settings, attribute mappings, and trust rules. 5) If using unmanaged (BYOD) devices, confirm the user has consented to device signals collection. 6) Watch for the "Chicken-and-Egg" scenario where Okta requires Device Trust signals before allowing Workspace sign-in — this may require temporarily exempting Workspace from the trust policy.
+Device trust signals flow from Chrome through Chrome Browser Cloud Management to
+the Device Trust Connector and then to Okta. When Okta reports a device as
+unmanaged, check Google's side first (is the device enrolled in CBCM and
+reporting to the Admin Console?) and then Okta's side (are attribute mappings
+and trust rules correctly configured?). On BYOD devices, the user may need to
+consent to device signal collection.
