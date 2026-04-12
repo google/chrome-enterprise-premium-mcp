@@ -13,8 +13,12 @@ priority: P2
 
 ## Prompt
 
-Why can't I complete the purchase of Chrome Enterprise Premium in the Google Cloud Console? I am a Workspace Super Admin.
+Why can't I complete the purchase of Chrome Enterprise Premium in the Google
+Cloud Console? I am a Workspace Super Admin.
 
 ## Golden Response
 
-To purchase or manage CEP via the Cloud Console, your account needs specific Google Cloud IAM roles, as Workspace Super Admin permissions are not sufficient. (under IAM Privileges required for “CEP Admin” within Cloud console), you likely need the 'Cloud BeyondCorp Admin' and 'Cloud BeyondCorp Subscription Admin' roles granted at the Google Cloud _Organization_ level.
+To purchase or manage CEP via the Cloud Console, your account needs the 'Cloud
+BeyondCorp Admin' IAM role granted at the Google Cloud _Organization_ level.
+Workspace Super Admin permissions are not sufficient — this is a GCP IAM role,
+not a Workspace role.
