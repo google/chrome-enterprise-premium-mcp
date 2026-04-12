@@ -25,9 +25,9 @@ limitations under the License.
 /** @param {object} state - Cloned base state. */
 export function mutate(state) {
   // Remove download connector
-  state.connectorPolicies['chrome.users.OnFileDownloadedConnectorPolicy'] = []
+  state.globalConnectorPolicies['chrome.users.OnFileDownloadedConnectorPolicy'] = []
   // Remove SEB extension
-  state.connectorPolicies['chrome.users.apps.InstallType'] = []
+  state.globalConnectorPolicies['chrome.users.apps.InstallType'] = []
   // Remove bob's license
   state.licenses.C04x8k2m9[101040][1010400001] = state.licenses.C04x8k2m9[101040][1010400001].filter(
     l => l.userId !== 'bob@example.com',

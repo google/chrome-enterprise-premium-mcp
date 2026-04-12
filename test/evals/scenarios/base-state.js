@@ -174,7 +174,7 @@ export function getBaseState() {
       },
     },
 
-    connectorPolicies: {
+    globalConnectorPolicies: {
       'chrome.users.OnFileAttachedConnectorPolicy': [
         {
           value: {
@@ -265,6 +265,9 @@ export function getBaseState() {
                     'passwordChangedEvent',
                     'loginEvent',
                     'contentTransferEvent',
+                    'sensitiveDataEvent',
+                    'urlFilteringInterstitialEvent',
+                    'suspiciousUrlEvent',
                   ],
                 },
               },
