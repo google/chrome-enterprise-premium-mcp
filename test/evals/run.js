@@ -44,6 +44,8 @@ import { parseArgs } from 'node:util'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import fs from 'node:fs/promises'
+import { config } from '@dotenvx/dotenvx'
+config({ quiet: true, ignore: ['MISSING_ENV_FILE'] })
 
 import { loadAllEvals, loadGlobalConfig } from './lib/loader.js'
 import { runChecks } from './lib/assertions.js'
