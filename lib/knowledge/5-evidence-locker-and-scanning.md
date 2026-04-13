@@ -1,5 +1,5 @@
 ---
-summary: 'Details the Evidence Locker for forensic file storage (which the agent cannot access directly) and advanced DLP scanning limits and latency settings.'
+summary: 'Details for the Evidence Locker (forensic file storage) and advanced DLP scanning settings. Explains deep scanning limits (50MB), the DelayDeliveryUntilVerdict latency setting, and password-protected file handling.'
 title: 'Evidence Locker and Advanced DLP Scanning'
 articleId: 5
 ---
@@ -31,7 +31,7 @@ If users report 10-second delays when downloading or uploading files because the
 ### OCR (Optical Character Recognition)
 
 ...
-CEP's DLP engine can detect sensitive text like credit card numbers embedded inside images via Optical Character Recognition (OCR).
+CEP's DLP engine can detect sensitive text like credit card numbers embedded inside images via Optical Recognition (OCR).
 
 ### Password-Protected and Encrypted Files
 

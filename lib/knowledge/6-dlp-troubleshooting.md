@@ -1,5 +1,5 @@
 ---
-summary: 'Outlines troubleshooting steps for Data Loss Prevention (DLP) rules, including verifying URL triggers, refining strict rules, and locating client and server-side logs.'
+summary: 'Troubleshooting for DLP rules and watermarks. Guides on refining strict rules (Audit mode, Exclude URLs) and locating diagnostic logs at chrome://safe-browsing and in the Admin Console.'
 title: 'Chrome Data Loss Prevention (DLP) Troubleshooting'
 articleId: 6
 ---

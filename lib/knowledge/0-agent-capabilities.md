@@ -1,5 +1,5 @@
 ---
-summary: 'Details the capabilities (diagnostics, remediation) and limitations (no active block rules, no client-side actions) of the Chrome Enterprise Premium AI Agent.'
+summary: 'Comprehensive guide to agent capabilities and strict security boundaries. Covers diagnostic checks (licenses, logs, versions), remediation actions (enabling APIs/Connectors), and explicit limitations (no active BLOCK rules, no human-rule deletion, no Evidence Locker access).'
 title: 'Chrome Enterprise Premium AI Agent Capabilities and Limitations'
 articleId: 0
 ---

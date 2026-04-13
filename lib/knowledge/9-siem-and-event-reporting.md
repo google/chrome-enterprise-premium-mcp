@@ -1,5 +1,5 @@
 ---
-summary: 'Details the requirements and troubleshooting steps for Chrome Reporting Connector and SIEM integration (like Splunk) to track security insights.'
+summary: 'Requirements and troubleshooting for the Chrome Reporting Connector, Security Insights dashboard, and SIEM integration (Splunk). Explains the global Event Reporting settings and license propagation delays.'
 title: 'Chrome Reporting Connector and SIEM Integration'
 articleId: 9
 ---

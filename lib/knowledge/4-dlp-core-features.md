@@ -1,5 +1,5 @@
 ---
-summary: 'Explains Chrome DLP core features, including predefined content detectors, OCR scanning, file size limits, and protections for screen capture and clipboard actions.'
+summary: 'Covers configuration of DLP triggers (Paste, Print, Upload), screenshot/screenshare protection, file size limits (50MB), and managing file scan latency (DelayDeliveryUntilVerdict). Lists 50+ predefined detectors and supported OCR image types (PNG, JPEG, etc.).'
 title: 'Chrome Data Loss Prevention (DLP) Core Features'
 articleId: 4
 ---
