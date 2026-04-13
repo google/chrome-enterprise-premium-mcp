@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Tool definition for deleting DLP rules.
+ * @file Tool definition for deleting DLP rules.
  */
 
 import { z } from 'zod'
@@ -26,11 +26,11 @@ import { AGENT_DISPLAY_NAME_PREFIX, ADMIN_CONSOLE_DLP_RULE_LINK_TEMPLATE } from 
 
 /**
  * Registers the 'delete_agent_dlp_rule' tool with the MCP server.
- *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
  * @param {import('../../lib/api/interfaces/cloud_identity_client.js').CloudIdentityClient} options.cloudIdentityClient - The Cloud Identity client instance.
  * @param {object} sessionState - The session state object for caching.
+ * @returns {void}
  */
 export function registerDeleteAgentDlpRuleTool(server, options, sessionState) {
   const { cloudIdentityClient } = options
@@ -56,6 +56,14 @@ export function registerDeleteAgentDlpRuleTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
+        /**
+         * Handler for deleting an agent-created DLP rule.
+         * @param {object} params - The tool parameters.
+         * @param {string} params.policyName - The resource name of the DLP rule.
+         * @param {object} context - The tool execution context.
+         * @param {string} context.authToken - The OAuth2 access token.
+         * @returns {Promise<object>} The formatted tool response.
+         */
         handler: async ({ policyName }, { authToken }) => {
           logger.debug(`${TAGS.MCP} Calling 'delete_agent_dlp_rule' with policyName: ${policyName}`)
 

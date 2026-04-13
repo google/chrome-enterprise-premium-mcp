@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Scenario: security event reporting connector is not configured.
+ * @file Scenario: security event reporting connector is not configured.
  *
  * Used by: pr03 (prompt diagnose).
  */

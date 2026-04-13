@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Scenario: block rule has overly broad triggers and condition.
+ * @file Scenario: block rule has overly broad triggers and condition.
  *
  * Used by: pr11 (prompt maturity), pr14 (prompt noise).
  */

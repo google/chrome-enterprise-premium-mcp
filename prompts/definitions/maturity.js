@@ -15,14 +15,13 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Prompt definition for the '/cep:maturity' command.
+ * @file Prompt definition for the '/cep:maturity' command.
  */
 
 export const MATURITY_PROMPT_NAME = 'cep:maturity'
 
 /**
  * Registers the '/cep:maturity' prompt with the MCP server.
- *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance
  */
 export const registerMaturityPrompt = server => {

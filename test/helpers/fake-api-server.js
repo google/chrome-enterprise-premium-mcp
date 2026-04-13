@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview In-process fake Google API server for integration testing.
+ * @file In-process fake Google API server for integration testing.
  *
  * Replaces the Python FastAPI fake_cep_api_server.py. Provides the same
  * endpoints and in-memory state, but runs as an Express app that can be
@@ -27,6 +27,9 @@ import { randomUUID } from 'node:crypto'
 
 /** Initial state factory */
 
+/**
+ *
+ */
 function getInitialState() {
   return {
     defaultCustomerId: 'C0123456',
@@ -227,6 +230,11 @@ function getInitialState() {
 
 /** Helpers */
 
+/**
+ *
+ * @param state
+ * @param customerKey
+ */
 function resolveCustomerId(state, customerKey) {
   if (customerKey === 'my_customer') {
     return state.defaultCustomerId
@@ -237,6 +245,12 @@ function resolveCustomerId(state, customerKey) {
   return null
 }
 
+/**
+ *
+ * @param state
+ * @param customerKey
+ * @param res
+ */
 function requireCustomer(state, customerKey, res) {
   const id = resolveCustomerId(state, customerKey)
   if (!id) {
@@ -248,6 +262,9 @@ function requireCustomer(state, customerKey, res) {
 
 /** Express app factory */
 
+/**
+ *
+ */
 export function createFakeApp() {
   let state = getInitialState()
   let mockErrors = {}
@@ -587,6 +604,10 @@ export function createFakeApp() {
   })
 
   // Helper functions for ingestion
+  /**
+   *
+   * @param data
+   */
   function mergeFixture(data) {
     if (data.kind === 'admin#directory#customer') {
       state.customers[data.id] = data
@@ -636,6 +657,13 @@ export function createFakeApp() {
     }
   }
 
+  /**
+   *
+   * @param path
+   * @param status
+   * @param body
+   * @param method
+   */
   function mockError(path, status, body, method = 'GET') {
     const key = `${method.toUpperCase()}:${path}`
     mockErrors[key] = { status, body }

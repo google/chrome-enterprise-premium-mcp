@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Console and JSON output for eval results.
+ * @file Console and JSON output for eval results.
  */
 
 import fs from 'node:fs'
@@ -30,7 +30,6 @@ const BOLD = '\x1b[1m'
 
 /**
  * Prints a summary table to the console.
- *
  * @param {EvalResult[]} results
  * @param {{ verbose: boolean }} options
  */
@@ -122,7 +121,6 @@ export function printConsole(results, { verbose = false } = {}) {
 /**
  * Writes results to a file. Chooses format based on file extension:
  * .md -> Markdown, .json -> JSON.
- *
  * @param {EvalResult[]} results
  * @param {string} filepath
  */
@@ -151,7 +149,6 @@ function getSummaryStats(results) {
 
 /**
  * Writes a Markdown report.
- *
  * @param {EvalResult[]} results
  * @param {string} filepath
  */
@@ -268,7 +265,6 @@ function writeMarkdown(results, filepath) {
 
 /**
  * Writes structured JSON results to a file.
- *
  * @param {EvalResult[]} results
  * @param {string} filepath
  */

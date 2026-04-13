@@ -24,9 +24,6 @@ import { TAGS } from '../../../../lib/constants.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-/**
- * Manages the lifecycle of the Fake API Server for Node.js tests.
- */
 class FakeServerManager {
   constructor() {
     this.process = null
@@ -45,10 +42,6 @@ class FakeServerManager {
     })
   }
 
-  /**
-   * Starts the fake server if it's not already running.
-   * Returns a promise that resolves when the server is healthy.
-   */
   async start() {
     if (this.startPromise) {
       return this.startPromise
@@ -138,9 +131,6 @@ class FakeServerManager {
     throw new Error('Fake API Server failed to become healthy in time.')
   }
 
-  /**
-   * Stops the fake server process asynchronously.
-   */
   async stop() {
     if (this.process) {
       console.log(`${TAGS.MCP} Stopping Fake API Server at ${this.rootUrl}...`)
@@ -161,9 +151,6 @@ class FakeServerManager {
     }
   }
 
-  /**
-   * Synchronous stop for process exit hooks.
-   */
   stopSync() {
     if (this.process) {
       this.process.kill('SIGKILL')

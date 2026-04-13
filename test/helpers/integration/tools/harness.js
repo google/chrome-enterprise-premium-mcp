@@ -24,9 +24,6 @@ import { getApiClients } from './client_factory.js'
 import { parseToolOutput } from './tool_utils.js'
 import { fakeServerManager } from './fake_server_manager.js'
 
-/**
- * Sets up the standard IDs needed for integration tests.
- */
 export async function setupTestContext(client) {
   const isReal = process.env.CEP_BACKEND === 'real'
 
@@ -76,9 +73,6 @@ export async function setupTestContext(client) {
   }
 }
 
-/**
- * Parses error messages to provide helpful advice for developers.
- */
 function handleDiscoveryError(errorText) {
   const isAuthError =
     errorText.includes('invalid_grant') ||
@@ -112,10 +106,6 @@ function handleDiscoveryError(errorText) {
   throw new Error(`Discovery failed: ${errorText}`)
 }
 
-/**
- * High-level helper to bootstrap a full MCP integration test harness.
- * @param {object} [options] - Options passed to getApiClients.
- */
 export async function createIntegrationHarness(options = {}) {
   // Ensure the fake backend is running if needed
   await fakeServerManager.start()
@@ -143,9 +133,6 @@ export async function createIntegrationHarness(options = {}) {
   return { server, client, apiClients, testContext, sessionState }
 }
 
-/**
- * High-level helper to teardown the integration harness and cleanup resources.
- */
 export async function teardownIntegrationHarness(harness, createdResources) {
   if (harness?.client) {
     await harness.client.close()

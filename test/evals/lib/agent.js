@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Lightweight Gemini function-calling agent loop for evals.
+ * @file Lightweight Gemini function-calling agent loop for evals.
  *
  * Replaces the Python LangChain agent (langchain_agent.py). Loads the
  * server's actual system prompt, converts MCP tool schemas to Gemini
@@ -33,7 +33,6 @@ const MAX_TURNS = 15
 
 /**
  * Recursively strips fields that Gemini doesn't support from a JSON Schema.
- *
  * @param {object} obj - The schema object.
  * @param {object} opts - Configuration options.
  * @param {boolean} opts.useUppercaseTypes - Whether to uppercase 'type' values (required by internal proxy).
@@ -62,7 +61,6 @@ function stripUnsupportedFields(obj, { useUppercaseTypes } = {}) {
 
 /**
  * Converts an MCP tool schema to a Gemini function declaration.
- *
  * @param {object} mcpTool - MCP tool definition.
  * @param {object} opts - Configuration options.
  */
@@ -111,7 +109,6 @@ function loadSystemPrompt() {
 
 /**
  * Creates an eval agent that uses Gemini function calling with MCP tools.
- *
  * @param {object} opts
  * @param {string} opts.apiKey - Gemini API key.
  * @param {string} [opts.baseUrl] - Optional base URL for the Gemini API (e.g. for proxy).
@@ -159,7 +156,6 @@ export async function createEvalAgent({ apiKey, baseUrl, mcpClient }) {
 
   /**
    * Sends a prompt to the agent and runs the tool-call loop until completion.
-   *
    * @param {string} prompt - User prompt.
    * @returns {Promise<AgentResult>}
    */

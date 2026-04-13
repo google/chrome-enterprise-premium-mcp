@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Tests for create_default_dlp_rules tool handler.
+ * @file Tests for create_default_dlp_rules tool handler.
  */
 
 import assert from 'node:assert/strict'
@@ -71,6 +71,9 @@ describe('create_default_dlp_rules Tool', () => {
       return { response: { name: 'policies/success' } }
     })
     const MockCloudIdentityClient = class {
+      /**
+       *
+       */
       constructor() {
         this.createDlpRule = mockCreateDlpRule
       }
@@ -113,6 +116,9 @@ describe('create_default_dlp_rules Tool', () => {
       throw new Error('Already exists')
     })
     const MockCloudIdentityClient = class {
+      /**
+       *
+       */
       constructor() {
         this.createDlpRule = mockCreateDlpRule
       }

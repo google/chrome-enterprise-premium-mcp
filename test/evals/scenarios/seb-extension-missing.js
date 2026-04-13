@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Scenario: Safe Enterprise Browsing extension not force-installed.
+ * @file Scenario: Safe Enterprise Browsing extension not force-installed.
  *
  * Used by: pr05 (prompt diagnose).
  */

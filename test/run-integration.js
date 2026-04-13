@@ -17,7 +17,7 @@ limitations under the License.
 /* eslint-disable n/no-process-exit */
 
 /**
- * @fileoverview Runs integration tests via the Node.js test runner.
+ * @file Runs integration tests via the Node.js test runner.
  *
  * Accepts a positional argument ("fake" or "real") that determines the
  * CEP_BACKEND environment variable. Defaults to "fake" when omitted.

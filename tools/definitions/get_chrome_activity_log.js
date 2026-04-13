@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Tool definition for getting the Chrome activity log.
+ * @file Tool definition for getting the Chrome activity log.
  */
 
 import { z } from 'zod'
@@ -27,11 +27,11 @@ import { logger } from '../../lib/util/logger.js'
 
 /**
  * Registers the 'get_chrome_activity_log' tool with the MCP server.
- *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
  * @param {import('../../lib/api/interfaces/admin_sdk_client.js').AdminSdkClient} options.adminSdkClient - The Admin SDK client instance.
  * @param {object} sessionState - The session state object for caching.
+ * @returns {void}
  */
 export function registerGetChromeActivityLogTool(server, options, sessionState) {
   const { adminSdkClient } = options
@@ -66,6 +66,11 @@ Use this for security investigations and auditing user actions within the manage
     },
     guardedToolCall(
       {
+        /**
+         * Transforms input parameters to provide default time ranges.
+         * @param {object} params - The tool parameters.
+         * @returns {object} The transformed parameters.
+         */
         transform: params => {
           if (!params.startTime) {
             const tenDaysAgo = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000)
@@ -76,6 +81,20 @@ Use this for security investigations and auditing user actions within the manage
           }
           return params
         },
+        /**
+         * Handler for getting the Chrome activity log.
+         * @param {object} params - The tool parameters.
+         * @param {string} [params.userKey] - The user key to filter by.
+         * @param {string} [params.eventName] - The event name to filter by.
+         * @param {string} [params.startTime] - The start time for the log range.
+         * @param {string} [params.endTime] - The end time for the log range.
+         * @param {number} [params.maxResults] - The maximum results to return.
+         * @param {string} [params.customerId] - The Chrome customer ID.
+         * @param {object} context - The tool execution context.
+         * @param {object} context._requestInfo - The request info object.
+         * @param {string} context.authToken - The OAuth2 access token.
+         * @returns {Promise<object>} The formatted tool response.
+         */
         handler: async (
           { userKey, eventName, startTime, endTime, maxResults, customerId },
           { _requestInfo, authToken },

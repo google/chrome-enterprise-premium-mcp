@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Tool definition for creating the default Chrome DLP rules as a starting pack.
+ * @file Tool definition for creating the default Chrome DLP rules as a starting pack.
  */
 
 import { z } from 'zod'
@@ -77,11 +77,11 @@ const DEFAULT_RULES = {
 
 /**
  * Registers the 'create_default_dlp_rules' tool with the MCP server.
- *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
  * @param {import('../../lib/api/interfaces/cloud_identity_client.js').CloudIdentityClient} options.cloudIdentityClient - The Cloud Identity client instance.
  * @param {object} sessionState - The session state object for caching.
+ * @returns {void}
  */
 export function registerCreateDefaultDlpRulesTool(server, options, sessionState) {
   const { cloudIdentityClient } = options

@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Tool definition for checking a specific user's CEP license.
+ * @file Tool definition for checking a specific user's CEP license.
  */
 
 import { z } from 'zod'
@@ -25,11 +25,11 @@ import { logger } from '../../lib/util/logger.js'
 
 /**
  * Registers the 'check_user_cep_license' tool with the MCP server.
- *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
  * @param {import('../../lib/api/interfaces/admin_sdk_client.js').AdminSdkClient} options.adminSdkClient - The Admin SDK client instance.
  * @param {object} sessionState - The session state object for caching.
+ * @returns {void}
  */
 export function registerCheckUserCepLicenseTool(server, options, sessionState) {
   const { adminSdkClient } = options

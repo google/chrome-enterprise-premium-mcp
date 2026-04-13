@@ -20,6 +20,14 @@ import { commonOutputSchemas } from './shared.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
+/**
+ * Registers the 'list_detectors' tool with the MCP server.
+ * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
+ * @param {object} options - Configuration options for the tool.
+ * @param {import('../../lib/api/interfaces/cloud_identity_client.js').CloudIdentityClient} options.cloudIdentityClient - The Cloud Identity client instance.
+ * @param {object} sessionState - The session state object for caching.
+ * @returns {void}
+ */
 export function registerListDetectorsTool(server, options, sessionState) {
   const { cloudIdentityClient } = options
   logger.debug(`${TAGS.MCP} Registering 'list_detectors' tool...`)
@@ -54,6 +62,11 @@ Detectors are used within DLP rules to identify sensitive content. Use this to f
                 })
               }
 
+              /**
+               * Formats the detector type for display.
+               * @param {string} s - The raw type string.
+               * @returns {string} The formatted type string.
+               */
               const formatType = s =>
                 String(s || 'Unknown')
                   .replace(/_/g, ' ')

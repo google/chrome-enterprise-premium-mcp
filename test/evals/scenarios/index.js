@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Eval scenario loader.
+ * @file Eval scenario loader.
  *
  * Auto-discovers scenario files in this directory. Each file (except
  * base-state.js and index.js) exports a `mutate(state)` function that
@@ -45,7 +45,6 @@ for (const file of files) {
 
 /**
  * Returns a clone of the base state with the named scenario mutation applied.
- *
  * @param {string} name - Scenario name (must match a file in scenarios/).
  * @returns {ReturnType<typeof getBaseState>} The mutated state.
  * @throws {Error} If the scenario name is not found.

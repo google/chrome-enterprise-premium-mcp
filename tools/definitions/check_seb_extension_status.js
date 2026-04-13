@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Tool definition for checking the status of the SEB extension.
+ * @file Tool definition for checking the status of the SEB extension.
  */
 
 import { z } from 'zod'
@@ -28,11 +28,11 @@ const INSTALL_TYPE_SCHEMA = 'chrome.users.apps.InstallType'
 
 /**
  * Registers the 'check_seb_extension_status' tool with the MCP server.
- *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
  * @param {import('../../lib/api/interfaces/chrome_policy_client.js').ChromePolicyClient} options.chromePolicyClient - The Chrome Policy client instance.
  * @param {object} sessionState - The session state object for caching.
+ * @returns {void}
  */
 export function registerCheckSebExtensionStatusTool(server, options, sessionState) {
   const { chromePolicyClient } = options

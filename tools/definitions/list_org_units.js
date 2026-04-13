@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Tool definition for listing organizational units.
+ * @file Tool definition for listing organizational units.
  */
 
 import { z } from 'zod'
@@ -26,11 +26,11 @@ import { logger } from '../../lib/util/logger.js'
 
 /**
  * Registers the 'list_org_units' tool with the MCP server.
- *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
  * @param {import('../../lib/api/interfaces/admin_sdk_client.js').AdminSdkClient} options.adminSdkClient - The Admin SDK client instance.
  * @param {object} sessionState - The session state object for caching.
+ * @returns {void}
  */
 export function registerListOrgUnitsTool(server, options, sessionState) {
   const { adminSdkClient } = options
@@ -52,6 +52,15 @@ Use this tool to find the 'orgUnitId' required by most other Chrome management a
     },
     guardedToolCall(
       {
+        /**
+         * Handler for listing organizational units.
+         * @param {object} params - The tool parameters.
+         * @param {string} [params.customerId] - The Chrome customer ID.
+         * @param {object} context - The tool execution context.
+         * @param {object} context._requestInfo - The request info object.
+         * @param {string} context.authToken - The OAuth2 access token.
+         * @returns {Promise<object>} The formatted tool response.
+         */
         handler: async ({ customerId }, { _requestInfo, authToken }) => {
           logger.debug(`${TAGS.MCP} Calling 'list_org_units' with customerId: ${customerId}`)
           const orgUnitsData = await adminSdkClient.listOrgUnits({ customerId }, authToken)

@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Scenario: multiple faults in the environment simultaneously.
+ * @file Scenario: multiple faults in the environment simultaneously.
  *
  * Combines missing download connector, missing SEB extension, and an
  * unlicensed user. Tests whether the agent can identify multiple issues

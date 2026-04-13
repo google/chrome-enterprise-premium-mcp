@@ -16,7 +16,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Chrome Enterprise Premium MCP Server Entry Point.
+ * @file Chrome Enterprise Premium MCP Server Entry Point.
  *
  * Configures and starts the Model Context Protocol (MCP) server.
  * Supports both stdio (local) and SSE (remote/HTTP) transport modes.
@@ -65,7 +65,6 @@ function makeLoggingCompatibleWithStdio() {
 
 /**
  * Determines whether to start the server in Stdio mode.
- *
  * @param {object} gcpInfo - The detected GCP environment metadata
  * @returns {boolean} True if Stdio mode should be used, false otherwise
  */
@@ -78,7 +77,6 @@ function shouldStartStdio(gcpInfo) {
 
 /**
  * Initializes and configures the MCP server instance.
- *
  * @param {object} gcpInfo - The detected GCP environment metadata
  * @param {object} sharedSessionState - The shared session state for cross-request persistence
  * @returns {Promise<McpServer>} The configured MCP server instance

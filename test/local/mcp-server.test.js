@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Integration tests for the MCP server in stdio mode.
+ * @file Integration tests for the MCP server in stdio mode.
  */
 
 import { test, describe, before, after } from 'node:test'

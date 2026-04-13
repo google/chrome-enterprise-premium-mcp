@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Scenario: file download connector is not configured.
+ * @file Scenario: file download connector is not configured.
  *
  * Used by: pr02 (prompt diagnose).
  */

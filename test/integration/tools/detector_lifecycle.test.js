@@ -19,11 +19,6 @@ import assert from 'node:assert/strict'
 import { createIntegrationHarness, teardownIntegrationHarness } from '../../helpers/integration/tools/harness.js'
 import { assertObjectMatches, parseToolOutput } from '../../helpers/integration/tools/tool_utils.js'
 
-/**
- * Detector Lifecycle Integration Tests.
- *
- * Verifies end-to-end tool flows using independent test blocks.
- */
 describe('Detector Lifecycle Integration', () => {
   let harness
   const createdResources = []
@@ -45,7 +40,7 @@ describe('Detector Lifecycle Integration', () => {
       expression: '^4[0-9]{12}(?:[0-9]{3})?$',
     }
 
-    // 1. CREATE
+    // CREATE
     const result = await client.callTool({
       name: 'create_regex_detector',
       arguments: detectorConfig,
@@ -58,7 +53,7 @@ describe('Detector Lifecycle Integration', () => {
     const detectorName = detector.name
     createdResources.push(detectorName)
 
-    // 2. VERIFY
+    // VERIFY
     const settings = detector.setting?.value || detector
     assert.ok(settings.displayName.includes(detectorConfig.displayName))
 
@@ -74,7 +69,7 @@ describe('Detector Lifecycle Integration', () => {
 
     assertObjectMatches(settings, expectedMatch)
 
-    // 3. LIST
+    // LIST
     const listResult = await client.callTool({
       name: 'list_detectors',
       arguments: {},
@@ -85,7 +80,7 @@ describe('Detector Lifecycle Integration', () => {
 
     assert.ok(found, `Created detector (${detectorName}) not visible in structured list output.`)
 
-    // 4. DELETE
+    // DELETE
     const shortId = detectorName.split('/').pop()
     const deleteResult = await client.callTool({
       name: 'delete_detector',
@@ -96,7 +91,7 @@ describe('Detector Lifecycle Integration', () => {
     assert.match(deleteOutput, /Successfully deleted detector/)
     assert.match(deleteOutput, new RegExp(detectorName))
 
-    // 5. VERIFY DELETION
+    // VERIFY DELETION
     const listAfterDeleteResult = await client.callTool({
       name: 'list_detectors',
       arguments: {},
@@ -124,7 +119,7 @@ describe('Detector Lifecycle Integration', () => {
       urls: ['malware-test.com', 'phishing-test.net'],
     }
 
-    // 1. CREATE
+    // CREATE
     const result = await client.callTool({
       name: 'create_url_list_detector',
       arguments: detectorConfig,
@@ -137,7 +132,7 @@ describe('Detector Lifecycle Integration', () => {
     const detectorName = detector.name
     createdResources.push(detectorName)
 
-    // 2. VERIFY
+    // VERIFY
     const settings = detector.setting?.value || detector
 
     const expectedMatch = {
@@ -152,7 +147,7 @@ describe('Detector Lifecycle Integration', () => {
 
     assertObjectMatches(settings, expectedMatch)
 
-    // 3. DELETE
+    // DELETE
     const deleteResult = await client.callTool({
       name: 'delete_detector',
       arguments: { policyName: detectorName },

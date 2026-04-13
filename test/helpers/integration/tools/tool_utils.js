@@ -16,20 +16,11 @@ limitations under the License.
 
 import assert from 'node:assert/strict'
 
-/**
- * Validates that the 'actual' object contains all key-value pairs from 'expected'.
- */
 export function assertObjectMatches(actual, expected) {
   const subset = Object.fromEntries(Object.keys(expected).map(k => [k, actual[k]]))
   assert.deepStrictEqual(subset, expected)
 }
 
-/**
- * Extracts text and structured details from a tool result.
- *
- * @param {object} result - The result object from client.callTool.
- * @returns {object} { text, details }
- */
 export function parseToolOutput(result) {
   assert.ok(result?.content, 'Tool result missing content')
   const text = result.content[0].text

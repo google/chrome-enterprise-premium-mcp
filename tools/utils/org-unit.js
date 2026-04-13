@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Organizational Unit utilities for MCP tools.
+ * @file Organizational Unit utilities for MCP tools.
  */
 
 import { TAGS } from '../../lib/constants.js'
@@ -23,7 +23,6 @@ import { TAGS } from '../../lib/constants.js'
 /**
  * Resolves the root organizational unit ID for the given customer.
  * Uses session caching to avoid redundant API calls.
- *
  * @param {object} apiClients - The API clients object
  * @param {string} customerId - The customer ID
  * @param {string} authToken - The authentication token
@@ -61,9 +60,8 @@ export async function resolveRootOrgUnitId(apiClients, customerId, authToken, se
 
 /**
  * Validates and extracts the raw organizational unit ID.
- *
- * @param {string} orgUnitId
- * @returns {string} The raw ID
+ * @param {string} orgUnitId - The organizational unit ID to validate
+ * @returns {string} The raw organizational unit ID
  */
 export function validateAndGetOrgUnitId(orgUnitId) {
   if (typeof orgUnitId === 'string' && orgUnitId.startsWith('id:')) {

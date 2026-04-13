@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Tool definitions for content search and document retrieval.
+ * @file Tool definitions for content search and document retrieval.
  */
 
 import { guardedToolCall, formatToolResponse } from '../utils/wrapper.js'
@@ -34,6 +34,11 @@ let cachedDb = null
 let isDbLoading = false
 let dbLoadingPromise = null
 
+/**
+ * Parses markdown frontmatter and splits it from the body content.
+ * @param {string} content - The raw markdown file content.
+ * @returns {{metadata: object, content: string}} The parsed metadata and body content.
+ */
 function parseMarkdownFrontmatter(content) {
   const match = content.match(/^---\n([\s\S]*?)\n---/)
   const metadata = {}
@@ -61,14 +66,18 @@ function parseMarkdownFrontmatter(content) {
 
 /**
  * Registers knowledge search tools with the MCP server.
- *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tools.
  * @param {object} sessionState - The session state object for caching.
+ * @returns {void}
  */
 export function registerKnowledgeTools(server, options, sessionState) {
   logger.debug(`${TAGS.MCP} Registering Knowledge tools...`)
 
+  /**
+   * Loads the knowledge database from markdown files.
+   * @returns {Promise<object>} The loaded database object.
+   */
   const loadDb = async () => {
     if (options.allDocs) {
       return {
@@ -169,6 +178,14 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
     },
     guardedToolCall(
       {
+        /**
+         * Handler for searching knowledge base content.
+         * @param {object} args - The tool arguments.
+         * @param {string} args.query - The search query.
+         * @param {string} [args.kind] - The content type to filter by.
+         * @param {number} [args.limit] - The maximum number of results to return.
+         * @returns {Promise<object>} The formatted tool response.
+         */
         handler: async args => {
           logger.info(`${TAGS.MCP} search_content called with query: "${args.query}"`)
           const db = await loadDb()
@@ -415,6 +432,14 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
     },
     guardedToolCall(
       {
+        /**
+         * Handler for listing available knowledge documents.
+         * @param {object} args - The tool arguments.
+         * @param {string} [args.kind] - The category to list.
+         * @param {number} [args.limit] - The maximum number of documents to list.
+         * @param {number} [args.offset] - The pagination offset.
+         * @returns {Promise<object>} The formatted tool response.
+         */
         handler: async args => {
           const db = await loadDb()
           const docLookup = db.docLookup

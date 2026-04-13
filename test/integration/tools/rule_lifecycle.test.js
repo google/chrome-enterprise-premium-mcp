@@ -20,11 +20,6 @@ import { createIntegrationHarness, teardownIntegrationHarness } from '../../help
 import { assertObjectMatches, parseToolOutput } from '../../helpers/integration/tools/tool_utils.js'
 import { validateAndGetOrgUnitId } from '../../../tools/utils/org-unit.js'
 
-/**
- * Rule Lifecycle Integration Tests.
- *
- * Verifies end-to-end tool flows using independent test blocks.
- */
 describe('Rule Lifecycle Integration', () => {
   let harness
   const createdResources = []
@@ -49,7 +44,7 @@ describe('Rule Lifecycle Integration', () => {
       action: 'WARN',
     }
 
-    // 1. CREATE
+    // CREATE
     const result = await client.callTool({
       name: 'create_chrome_dlp_rule',
       arguments: ruleConfig,
@@ -62,7 +57,7 @@ describe('Rule Lifecycle Integration', () => {
     const ruleName = rule.name
     createdResources.push(ruleName)
 
-    // 2. VERIFY
+    // VERIFY
     const settings = rule.setting?.value || rule
 
     assert.ok(settings.displayName.includes(ruleConfig.displayName))
@@ -82,7 +77,7 @@ describe('Rule Lifecycle Integration', () => {
       },
     })
 
-    // 3. LIST
+    // LIST
     const listResult = await client.callTool({
       name: 'list_dlp_rules',
       arguments: {},
@@ -93,7 +88,7 @@ describe('Rule Lifecycle Integration', () => {
 
     assert.ok(found, `Created rule (${ruleName}) not visible in structured list output.`)
 
-    // 4. DELETE
+    // DELETE
     const shortId = ruleName.split('/').pop()
     const deleteResult = await client.callTool({
       name: 'delete_agent_dlp_rule',
@@ -104,7 +99,7 @@ describe('Rule Lifecycle Integration', () => {
     assert.match(deleteOutput, /successfully deleted/)
     assert.match(deleteOutput, new RegExp(ruleName))
 
-    // 5. VERIFY DELETION
+    // VERIFY DELETION
     const listAfterDeleteResult = await client.callTool({
       name: 'list_dlp_rules',
       arguments: {},
@@ -133,7 +128,7 @@ describe('Rule Lifecycle Integration', () => {
       action: { chromeAction: { auditOnly: {} } },
     }
 
-    // 1. Create a "human" rule directly via API client (bypassing agent tool prefixing)
+    // Create a "human" rule directly via API client (bypassing agent tool prefixing)
     const createdRuleResponse = await apiClients.cloudIdentity.createDlpRule(
       testContext.customerId,
       validateAndGetOrgUnitId(testContext.orgUnitId),
@@ -142,7 +137,7 @@ describe('Rule Lifecycle Integration', () => {
     const ruleName = createdRuleResponse.response.name
     createdResources.push(ruleName)
 
-    // 2. Attempt to delete it via the agent tool
+    // Attempt to delete it via the agent tool
     const deleteResult = await client.callTool({
       name: 'delete_agent_dlp_rule',
       arguments: { policyName: ruleName },
@@ -150,12 +145,12 @@ describe('Rule Lifecycle Integration', () => {
 
     const deleteOutput = parseToolOutput(deleteResult).text
 
-    // 3. Verify it refused and provided the link
+    // Verify it refused and provided the link
     assert.match(deleteOutput, /Automated deletion is only permitted for rules created by this agent/)
     assert.match(deleteOutput, /https:\/\/admin\.google\.com\/ac\/dp\/rules\//)
     assert.match(deleteOutput, new RegExp(encodeURIComponent(ruleName)))
 
-    // 4. Verify the rule still exists
+    // Verify the rule still exists
     const listResult = await client.callTool({
       name: 'list_dlp_rules',
       arguments: {},

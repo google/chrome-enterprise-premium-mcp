@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview MCP Prompt Registration Entry Point.
+ * @file MCP Prompt Registration Entry Point.
  *
  * Provides functions to register all available prompts with the MCP server.
  */
@@ -28,7 +28,6 @@ import { registerExpertPrompt } from './definitions/expert.js'
 
 /**
  * Registers all prompts with the MCP server.
- *
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance
  */
 export function registerPrompts(server) {
