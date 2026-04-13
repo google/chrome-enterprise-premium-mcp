@@ -26,6 +26,10 @@
     "test:smoke": "GCP_STDIO=false node test/local/smoke-test.js",
     "test:unit": "node test/run-unit.js"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/google/chrome-enterprise-premium-mcp.git"
+  },
   "dependencies": {
     "@dotenvx/dotenvx": "^1.52.0",
     "@google-cloud/service-usage": "^4.1.0",
