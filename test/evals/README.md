@@ -5,18 +5,16 @@ MCP server. Evals verify that the AI agent -- which wraps our MCP tools and
 presents them to end users -- behaves correctly: calling the right tools,
 producing accurate responses, and never leaking internal implementation details.
 
-## Why evals, not just tests?
+## What evals test
 
-The MCP server has standard unit and integration tests (in `test/local/` and
-`test/integration/tools/`). Those test deterministic behavior: "call
-`create_chrome_dlp_rule` with these args, get this response." Evals test
-something different: **what happens when an LLM agent decides which tools to
-call and how to present the results to a human?**
+Unit and integration tests (in `test/local/` and `test/integration/tools/`)
+cover deterministic behavior: "call `create_chrome_dlp_rule` with these args,
+get this response." Evals cover the layer above: what happens when an LLM agent
+decides which tools to call and how to present results to a user.
 
-An eval sends a natural language prompt to a Gemini-powered agent that has
-access to all 23 MCP tools. The agent autonomously decides which tools to call,
-executes them against a fake API backend, and produces a natural language
-response. We then grade that response on two axes:
+Each eval sends a natural language prompt to a Gemini-powered agent with access
+to all MCP tools. The agent decides which tools to call, executes them against a
+fake API backend, and produces a response. That response is graded on two axes:
 
 1. **Deterministic checks** -- objective, instant, no LLM involved
 2. **LLM-as-judge** -- semantic quality assessment via Gemini
@@ -25,7 +23,7 @@ Both must pass for an eval to pass.
 
 ## Architecture
 
-```
+```text
 test/evals/
   run.js              CLI entry point
   global.yaml         Global forbidden patterns + default judge rubric
@@ -43,11 +41,10 @@ test/evals/
     discovery/         "List my resources" evals
 ```
 
-The agent loop in `agent.js` is intentionally simple (~80 lines). It loads the
-server's actual system prompt from `prompts/system-prompt.md`, gets tool schemas
-from the MCP harness, and runs a standard Gemini function-calling conversation
-loop until the model produces a final text response. No LangChain, no
-orchestration framework -- just the Gemini API and MCP SDK.
+The agent loop in `agent.js` loads the server's system prompt from
+`prompts/system-prompt.md`, gets tool schemas from the MCP harness, and runs a
+Gemini function-calling conversation loop until the model produces a final text
+response.
 
 ## Eval file format
 
@@ -73,16 +70,16 @@ credit card numbers. Apply it to the root organizational unit.
 
 ## Golden Response
 
-Agent should identify the root OU, then create a DLP rule with warn action
-for file upload trigger with a content condition for credit card patterns.
-Should confirm the rule was created successfully. Confirmation must not
-expose internal system identifiers like policy resource names or CEL syntax.
+Agent should identify the root OU, then create a DLP rule with warn action for
+file upload trigger with a content condition for credit card patterns. Should
+confirm the rule was created successfully. Confirmation must not expose internal
+system identifiers like policy resource names or CEL syntax.
 
 ## Judge Instructions
 
-Verify the agent actually created the rule (tool was called), not just
-described how to create one. The response must confirm the action was taken
-and describe what was configured in user-friendly terms.
+Verify the agent actually created the rule (tool was called), not just described
+how to create one. The response must confirm the action was taken and describe
+what was configured in user-friendly terms.
 ```
 
 ### Frontmatter fields
@@ -155,8 +152,8 @@ The default rubric (from `global.yaml`) evaluates:
 2. **Hallucination & contradiction** -- Incorrect diagnostic steps or denying
    that a feature exists = FAIL.
 3. **Tool name leakage** -- Naming internal tools in the user-facing response =
-   FAIL. (This is also caught deterministically, but the judge provides a
-   second layer.)
+   FAIL. (This is also caught deterministically, but the judge provides a second
+   layer.)
 4. **Internal identifier leakage** -- Raw policy resource names, CEL
    expressions, API schema keys, or enum values appearing in the response =
    FAIL.
@@ -167,7 +164,7 @@ not just described how").
 
 ### How the layers combine
 
-```
+```text
 deterministic FAIL + judge PASS = FAIL  (leaked internal data but gave good answer)
 deterministic PASS + judge FAIL = FAIL  (clean output but wrong/incomplete answer)
 deterministic PASS + judge PASS = PASS
@@ -175,46 +172,45 @@ deterministic PASS + judge PASS = PASS
 
 Both verdicts are recorded in the output so you can see _why_ something failed.
 
-## Forbidden evidence: what and why
+## Forbidden patterns
 
-The MCP server wraps Google Cloud Identity, Admin SDK, Chrome Policy, and Chrome
-Management APIs. The agent should present results in user-friendly terms, never
-exposing the internal plumbing. The `global.yaml` file defines forbidden
-patterns across seven categories:
+The agent should present results in user-friendly terms, never exposing internal
+API plumbing. The `global.yaml` file defines forbidden patterns across seven
+categories:
 
-### 1. MCP tool names
+### MCP tool names
 
 The 23 internal tool names (`search_content`, `create_chrome_dlp_rule`, etc.)
 must never appear in user-facing text. The agent should say "I checked your DLP
 rules" not "I called `list_dlp_rules`."
 
-### 2. Chrome trigger API strings
+### Chrome trigger API strings
 
 Internal trigger identifiers like `google.workspace.chrome.file.v1.upload`. The
 agent should say "file uploads", not the API string.
 
-### 3. Chrome policy schema names
+### Chrome policy schema names
 
 Schema keys like `chrome.users.OnFileAttachedConnectorPolicy`. The agent should
 say "Upload content analysis connector", not the schema key.
 
-### 4. Service provider enum values
+### Service provider enum values
 
 API enum values like `SERVICE_PROVIDER_CHROME_ENTERPRISE_PREMIUM` or
 `DEFAULT_ACTION_ALLOW`. The agent should say "Chrome Enterprise Premium" or
 "allow."
 
-### 5. Cloud Identity setting types
+### Cloud Identity setting types
 
 Internal type identifiers like `settings/rule.dlp` or
 `settings/detector.url_list`.
 
-### 6. API field names
+### API field names
 
 Internal action keys like `blockContent`, `warnUser`, `auditOnly`,
 `delayDeliveryUntilVerdict`. The agent should say "block", "warn", "audit."
 
-### 7. CEL expression syntax
+### CEL expression syntax
 
 Common Expression Language patterns like `all_content.contains(...)` or
 `body.matches_word_list(...)`. These are internal condition representations that
@@ -224,7 +220,7 @@ Per-eval forbidden patterns (in frontmatter) add to this global list. For
 mutation evals that touch the fake API, you'll typically add patterns for fake
 resource IDs (`re:policies/fake\\w+`, `re:fakeOUId\\d+`).
 
-## Eval categories explained
+## Eval categories
 
 ### `knowledge/` -- Factual Q&A
 
@@ -326,13 +322,15 @@ response text, and timing. CI systems can parse this for reporting.
 ## Writing new evals
 
 1. Create a `.md` file in the appropriate `cases/<category>/` directory.
-2. Use the naming convention `<id>-<short-slug>.md` (e.g., `m04-delete-url-detector.md`).
+2. Use the naming convention `<id>-<short-slug>.md` (e.g.,
+   `m04-delete-url-detector.md`).
 3. Fill in the frontmatter: `id`, `category`, `tags`, `expected_tools`.
 4. Add `forbidden_patterns` if the eval touches resources with internal IDs.
 5. Add `required_patterns` only for canonical strings (proper nouns, numbers).
 6. Write `## Prompt` -- what the user asks.
 7. Write `## Golden Response` -- what a correct answer covers.
-8. Optionally write `## Judge Instructions` if the default rubric needs overriding.
+8. Optionally write `## Judge Instructions` if the default rubric needs
+   overriding.
 
 ### Tips
 
@@ -346,16 +344,14 @@ response text, and timing. CI systems can parse this for reporting.
 - If the eval tests a tool that modifies state, the fake server resets between
   evals so ordering doesn't matter.
 
-## How it connects to the MCP server
+## Server integration
 
-The eval agent uses the **actual server code**:
+The eval agent runs against the actual server code:
 
-- System prompt loaded from `prompts/system-prompt.md` (same one the production
-  agent uses)
+- System prompt from `prompts/system-prompt.md`
 - Tool schemas from `tools/index.js` via the MCP SDK's `client.listTools()`
-- Tool execution through the in-memory MCP transport (same as integration tests)
+- Tool execution through the in-memory MCP transport
 - Fake API backend in `test/helpers/fake-api-server.js` (Express, in-process)
 
 This means evals catch regressions in the system prompt, tool descriptions, tool
-implementations, and response formatting -- the full stack from prompt to
-user-facing output.
+implementations, and response formatting.
