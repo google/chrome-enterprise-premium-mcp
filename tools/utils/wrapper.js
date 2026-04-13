@@ -21,12 +21,78 @@ limitations under the License.
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { TAGS } from '../../lib/constants.js'
+import { TAGS, SCOPES } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 import { validateAndGetOrgUnitId } from './org-unit.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+
+/**
+ * Generates a proactive remediation message for authentication errors.
+ *
+ * @param {number} status - The HTTP status code
+ * @param {boolean} [isOAuth=false] - Whether the CLI is running in OAuth mode
+ * @returns {string} The remediation message
+ */
+function getAuthRemediationMessage(status, isOAuth = false) {
+  if (isOAuth) {
+    if (status === 401) {
+      return `Authentication required. Your OAuth session has expired or is invalid. Please run \`/mcp reauth\` in your Gemini CLI to re-authenticate.`
+    }
+    return `Permission denied. Your account lacks the required permissions or the necessary Google Cloud APIs are not enabled.
+
+1. **Re-authenticate:** Run \`/mcp reauth\` in your Gemini CLI.
+2. **Verify APIs are enabled:** Ensure \`admin.googleapis.com\`, \`chromemanagement.googleapis.com\`, \`chromepolicy.googleapis.com\`, and \`cloudidentity.googleapis.com\` are enabled in your Google Cloud project.`
+  }
+
+  const scopesList = [
+    SCOPES.CHROME_MANAGEMENT_POLICY,
+    SCOPES.CHROME_MANAGEMENT_REPORTS_READONLY,
+    SCOPES.ADMIN_REPORTS_AUDIT_READONLY,
+    SCOPES.ADMIN_DIRECTORY_ORGUNIT_READONLY,
+    SCOPES.ADMIN_DIRECTORY_CUSTOMER_READONLY,
+    SCOPES.LICENSING,
+    SCOPES.CLOUD_IDENTITY_POLICIES,
+    SCOPES.CLOUD_PLATFORM,
+  ]
+
+  const bashScopes = scopesList.map(s => `  "${s}"`).join('\n')
+  const bashCommand = `SCOPES=(\n${bashScopes}\n)\ngcloud auth application-default login --scopes=$(IFS=,; echo "\${SCOPES[*]}")`
+
+  const pwshScopes = scopesList.map(s => `  "${s}"`).join(',\n')
+  const pwshCommand = `$scopes = @(\n${pwshScopes}\n)\ngcloud auth application-default login --scopes=($scopes -join ',')`
+
+  if (status === 401) {
+    return `Authentication required. Please set up your Application Default Credentials (ADC) by running the following command in your terminal:
+
+**For Mac/Linux (Bash/Zsh):**
+\`\`\`bash
+${bashCommand}
+\`\`\`
+
+**For Windows (PowerShell):**
+\`\`\`powershell
+${pwshCommand}
+\`\`\``
+  }
+
+  return `Permission denied. Your account lacks the required permissions or the necessary Google Cloud APIs are not enabled.
+
+1. **Re-authenticate with all required scopes:**
+
+   **For Mac/Linux (Bash/Zsh):**
+   \`\`\`bash
+   ${bashCommand}
+   \`\`\`
+
+   **For Windows (PowerShell):**
+   \`\`\`powershell
+   ${pwshCommand}
+   \`\`\`
+
+2. **Verify APIs are enabled:** Ensure \`admin.googleapis.com\`, \`chromemanagement.googleapis.com\`, \`chromepolicy.googleapis.com\`, and \`cloudidentity.googleapis.com\` are enabled in your Google Cloud project.`
+}
 
 /**
  * Extracts the authentication token from the request headers.
@@ -214,18 +280,7 @@ export function guardedToolCall(
         }
       }
 
-      const status = error.status || error.code || error.response?.status
-      if (status === 401) {
-        const authErr = new Error('Authentication required. Please check your credentials.')
-        authErr.code = 401
-        throw authErr
-      } else if (status === 403) {
-        const permErr = new Error('Permission denied. Your account lacks the required permissions.')
-        permErr.code = 403
-        throw permErr
-      }
-
-      let errorMessage = error.message
+      let errorMessage = error.message || ''
       if (!errorMessage && error.response?.data) {
         errorMessage = JSON.stringify(error.response.data)
       }
@@ -236,10 +291,42 @@ export function guardedToolCall(
         errorMessage = error.toString()
       }
 
+      const status = error.status || error.code || error.response?.status
+      const isAuthError =
+        status === 401 ||
+        status === 403 ||
+        errorMessage.includes('API Error 401') ||
+        errorMessage.includes('API Error 403') ||
+        errorMessage.includes('UNAUTHENTICATED') ||
+        errorMessage.includes('PERMISSION_DENIED') ||
+        errorMessage.includes('invalid_grant')
+
+      if (isAuthError) {
+        const resolvedStatus =
+          status ||
+          (errorMessage.includes('401') ||
+          errorMessage.includes('UNAUTHENTICATED') ||
+          errorMessage.includes('invalid_grant')
+            ? 401
+            : 403)
+        const isOAuth = !!context?.authToken || !!context?.requestInfo?.headers?.authorization
+        const remediationMessage = getAuthRemediationMessage(resolvedStatus, isOAuth)
+        return {
+          content: [{ type: 'text', text: remediationMessage }],
+          isError: true,
+        }
+      }
+
+      if (errorMessage.includes('quota project')) {
+        return {
+          content: [{ type: 'text', text: `Configuration required. ${errorMessage.replace(/^Error:\s*/i, '')}` }],
+          isError: true,
+        }
+      }
+
       return {
         content: [{ type: 'text', text: `Error: ${errorMessage}` }],
         isError: true,
-        structuredContent: { error: true, message: errorMessage },
       }
     }
   }
