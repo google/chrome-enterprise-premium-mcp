@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Tool definition for listing DLP detectors.
+ * @file Tool definition for listing DLP detectors.
  */
 
 import { z } from 'zod'

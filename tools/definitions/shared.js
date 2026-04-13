@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Shared Zod schemas used across MCP tool definitions.
+ * @file Shared Zod schemas used across MCP tool definitions.
  *
  * Centralizes reusable input and output schemas so individual tool files
  * stay focused on their own logic.
@@ -26,7 +26,6 @@ import { WORKSPACE_RULE_LIMITS } from '../../lib/util/chrome_dlp_constants.js'
 
 /**
  * Shared input schemas for MCP tools.
- *
  * @type {Record<string, import('zod').ZodTypeAny>}
  */
 export const commonInputSchemas = {
@@ -47,7 +46,6 @@ export const commonInputSchemas = {
 /**
  * Shared output schemas for MCP tools.
  * All use z.object().passthrough() to satisfy MCP SDK normalizeObjectSchema().
- *
  * @type {Record<string, import('zod').ZodTypeAny>}
  */
 export const commonOutputSchemas = {

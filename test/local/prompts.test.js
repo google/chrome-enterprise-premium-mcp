@@ -57,10 +57,7 @@ describe('MCP Prompts', () => {
     const result = await client.listPrompts()
     const promptNames = result.prompts.map(p => p.name).sort()
 
-    assert.deepStrictEqual(
-      promptNames,
-      ['cep:diagnose', 'cep:expert', 'cep:maturity', 'cep:noise'].sort(),
-    )
+    assert.deepStrictEqual(promptNames, ['cep:diagnose', 'cep:expert', 'cep:maturity', 'cep:noise'].sort())
   })
 
   it('should retrieve the "cep:diagnose" prompt content', async () => {

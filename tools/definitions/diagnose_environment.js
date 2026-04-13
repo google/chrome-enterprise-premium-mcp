@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @fileoverview Aggregated environment diagnostic tool.
+ * @file Aggregated environment diagnostic tool.
  *
  * Two modes:
  * - Summary (default): counts, issues, top-level stats. No large arrays.
@@ -53,9 +53,10 @@ const DEFAULT_PAGE_SIZE = 50
 
 /**
  * Computes deterministic issues from the environment summary.
- *
- * @param {object} data - The aggregated environment counts
- * @returns {Array<{severity: string, component: string, message: string}>}
+ * Validates subscription status, connector configurations, DLP rule enforcement,
+ * and force-installation of required extensions.
+ * @param {object} data - The aggregated environment counts and status flags
+ * @returns {Array<{severity: string, component: string, message: string}>} A list of health issues with severity levels
  */
 function computeIssues(data) {
   const issues = []
@@ -136,7 +137,6 @@ function computeIssues(data) {
 
 /**
  * Classifies the action type from a DLP rule's chromeAction field.
- *
  * @param {object} action - The chromeAction object
  * @returns {string} One of: block, warn, audit, watermark, unknown
  */
@@ -159,6 +159,13 @@ function classifyAction(action) {
 /**
  * Fetches all environment data and returns raw collections for
  * both summary computation and detail pagination.
+ * @param {import('../../lib/api/interfaces/admin_sdk_client.js').AdminSdkClient} adminSdkClient - Client for customer, org unit, and license data
+ * @param {import('../../lib/api/interfaces/chrome_management_client.js').ChromeManagementClient} chromeManagementClient - Client for browser and device telemetry
+ * @param {import('../../lib/api/interfaces/chrome_policy_client.js').ChromePolicyClient} chromePolicyClient - Client for verifying connector and extension policies
+ * @param {import('../../lib/api/interfaces/cloud_identity_client.js').CloudIdentityClient} cloudIdentityClient - Client for listing DLP rules and detectors
+ * @param {string} customerId - The Chrome customer ID used for scoping requests
+ * @param {string} authToken - The Bearer token for authorized API access
+ * @returns {Promise<object>} A consolidated object containing raw data from all services
  */
 async function fetchEnvironment(
   adminSdkClient,
@@ -254,10 +261,9 @@ async function fetchEnvironment(
 
 /**
  * Registers the 'diagnose_environment' tool with the MCP server.
- *
- * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server
+ * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance
  * @param {object} options - Must include all API clients
- * @param {object} sessionState
+ * @param {object} sessionState - State object for the current session
  */
 export function registerDiagnoseEnvironmentTool(server, options, sessionState) {
   const { adminSdkClient, chromeManagementClient, chromePolicyClient, cloudIdentityClient } = options
@@ -319,7 +325,11 @@ Use 'limit' and 'offset' for pagination on large datasets.`,
 }
 
 /**
- * Builds the summary response with counts and issues only.
+ * Builds the high-level health summary response.
+ * Aggregates counts for DLP rules, detectors, and devices while highlighting
+ * critical issues discovered during the diagnostic run.
+ * @param {object} env - The consolidated environment data
+ * @returns {object} The formatted tool response for the agent to present to the user
  */
 function buildSummaryResponse(env) {
   const { customer, orgUnits, subscription, versions, allDlpRules, allDetectors, connectors, sebExtension } = env
@@ -387,7 +397,14 @@ function buildSummaryResponse(env) {
 }
 
 /**
- * Builds a paginated detail response for a specific section.
+ * Builds a paginated detail response for a specific diagnostic section.
+ * Filters and slices the raw environment data based on the requested section,
+ * limit, and offset to support interactive exploration of large datasets.
+ * @param {object} env - The consolidated environment data
+ * @param {string} section - The specific section to drill into (e.g., 'dlpRules')
+ * @param {number} limit - Maximum number of items to return in this page
+ * @param {number} offset - Starting index for pagination
+ * @returns {object} The formatted tool response containing the requested subset of data
  */
 function buildDetailResponse(env, section, limit, offset) {
   let allItems, items, total, summary

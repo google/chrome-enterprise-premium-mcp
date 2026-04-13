@@ -30,9 +30,8 @@ const __dirname = path.dirname(__filename)
 
 /**
  * Generates a proactive remediation message for authentication errors.
- *
  * @param {number} status - The HTTP status code
- * @param {boolean} [isOAuth=false] - Whether the CLI is running in OAuth mode
+ * @param {boolean} [isOAuth] - Whether the CLI is running in OAuth mode
  * @returns {string} The remediation message
  */
 function getAuthRemediationMessage(status, isOAuth = false) {

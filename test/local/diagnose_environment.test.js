@@ -26,7 +26,11 @@ import assert from 'node:assert/strict'
 import { registerDiagnoseEnvironmentTool } from '../../tools/definitions/diagnose_environment.js'
 
 /**
- * Creates mock API clients that return configurable data.
+ * Creates mock API clients that return configurable test data.
+ * Used to simulate various environment states (e.g., missing licenses,
+ * unconfigured connectors) by merging defaults with case-specific overrides.
+ * @param {object} [overrides] - Configuration overrides to simulate specific test scenarios
+ * @returns {object} A suite of mocked API clients compatible with the tool executor
  */
 function createMockClients(overrides = {}) {
   const defaults = {
