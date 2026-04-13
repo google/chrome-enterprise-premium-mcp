@@ -7,7 +7,6 @@ tags:
 expected_tools:
   - search_content
 required_patterns:
-  - Chrome Security Insights
   - DLP
 priority: P1
 ---
@@ -22,4 +21,9 @@ You should create custom administrator roles in the Google Admin Console and Goo
 
 - **Viewing dashboards:** Roles with 'Chrome Security Insights / View' permissions.
 - **Managing DLP rules:** Roles with 'DLP / Manage DLP rule' permissions.
-- Context-Aware Access policies are often managed in Google Cloud, requiring roles like 'BeyondCorp Admin' or Access Context Manager roles.
+
+## Judge Instructions
+
+The agent must recommend delegated roles for both dashboard viewing and DLP
+management. Exact role names may vary — what matters is that the agent
+identifies the two permission areas and recommends appropriate roles for each.
