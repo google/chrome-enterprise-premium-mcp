@@ -14,13 +14,6 @@ coverage/
 # Eval results
 results/
 eval_results*
-eval-results.json
-
-# Feedback
-cep_feedback*
-
-# Temporary files
-replies.json
 
 # Settings
 .gemini/

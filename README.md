@@ -18,6 +18,26 @@ The codebase also serves as a worked example of wrapping Google Workspace and
 Cloud APIs in an MCP server: client abstraction with test doubles, offline CEL
 validation, retry logic, structured tool output, and an evaluation harness.
 
+## Important security consideration: Indirect Prompt Injection Risk
+
+When exposing any language model to untrusted data, there's a risk of an
+[indirect prompt injection attack](https://en.wikipedia.org/wiki/Prompt_injection).
+Agentic tools like Gemini CLI, connected to MCP servers, have access to a wide
+array of tools and APIs.
+
+This MCP server grants the agent the ability to read, modify, and delete your
+Google Account data, as well as other data shared with you.
+
+- Never use this with untrusted tools
+- Never include untrusted inputs into the model context. This includes asking
+  Gemini CLI to process mail, documents, or other resources from unverified
+  sources.
+- Untrusted inputs may contain hidden instructions that could hijack your CLI
+  session. Attackers can then leverage this to modify, steal, or destroy your
+  data.
+- Always carefully review actions taken by Gemini CLI on your behalf to ensure
+  they are correct and align with your intentions.
+
 ## Quick Start
 
 ```bash
@@ -570,17 +590,12 @@ If something isn't working:
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines, including the Google CLA
-requirement.
+Contributions are welcome! Please read the [CONTRIBUTING.md](CONTRIBUTING.md)
+file for details on how to contribute to this project.
 
-## Disclaimers
+## Legal
 
-This is not an officially supported Google product. This project is intended for
-demonstration purposes only.
-
-This project is not eligible for the
-[Google Open Source Software Vulnerability Rewards Program](https://bughunters.google.com/open-source-security).
-
-## License
-
-Apache-2.0
+- **License**: [Apache License 2.0](LICENSE)
+- **Terms of Service**: [Terms of Service](https://policies.google.com/terms)
+- **Privacy Policy**: [Privacy Policy](https://policies.google.com/privacy)
+- **Security**: [Security Policy](SECURITY.md)
