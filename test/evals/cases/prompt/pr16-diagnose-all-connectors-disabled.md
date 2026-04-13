@@ -5,7 +5,7 @@ tags:
   - prompt
   - diagnose
 scenario: all-connectors-disabled
-prompt_name: "cep:diagnose"
+prompt_name: 'cep:diagnose'
 expected_tools:
   - list_org_units
   - get_connector_policy

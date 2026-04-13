@@ -29,7 +29,10 @@ describe('Eval Loader', () => {
       const config = loadGlobalConfig(evalsDir)
       assert.ok(Array.isArray(config.forbiddenPatterns))
       assert.ok(config.forbiddenPatterns.length > 0, 'should have forbidden patterns')
-      assert.ok(config.forbiddenPatterns.includes('search_content'), 'should include tool names')
+      assert.ok(
+        config.forbiddenPatterns.includes('google.workspace.chrome.file.v1.upload'),
+        'should include trigger API strings',
+      )
     })
 
     it('should load default judge rubric', () => {
@@ -58,8 +61,8 @@ describe('Eval Loader', () => {
       const evalFile = path.join(evalsDir, 'cases', 'knowledge', 'k01-what-is-chrome-enterprise-premium-and-wh.md')
       const evalCase = loadEval(evalFile, config)
 
-      // Should include global patterns (tool names etc.)
-      assert.ok(evalCase.forbiddenPatterns.includes('search_content'))
+      // Should include global patterns
+      assert.ok(evalCase.forbiddenPatterns.includes('google.workspace.chrome.file.v1.upload'))
     })
 
     it('should extract required_patterns from frontmatter', () => {

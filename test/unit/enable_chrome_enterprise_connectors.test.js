@@ -224,6 +224,43 @@ describe('enable_chrome_enterprise_connectors unit tests', () => {
     assert.match(result.content[0].text, /Event Reporting is already configured. Skipping update/)
   })
 
+  test('should skip ON_SECURITY_EVENT when perfectly customized with all 5 core events', async () => {
+    const { client, handler } = setupTool()
+
+    client.resolveResponse = [
+      {
+        value: {
+          value: {
+            reportingConnector: {
+              eventConfiguration: {
+                enabledEventNames: [
+                  'contentTransferEvent',
+                  'dangerousDownloadEvent',
+                  'sensitiveDataEvent',
+                  'urlFilteringInterstitialEvent',
+                  'suspiciousUrlEvent',
+                ],
+                explicitlyEmptyEventNames: false,
+              },
+            },
+          },
+        },
+      },
+    ]
+
+    const params = {
+      customerId: 'C123',
+      orgUnitId: 'OU456',
+      connectors: ['ON_SECURITY_EVENT'],
+    }
+
+    const result = await handler(params, {})
+
+    assert.strictEqual(client.resolvePolicyCalls.length, 1)
+    assert.strictEqual(client.batchModifyPolicyCalls.length, 0)
+    assert.match(result.content[0].text, /Event Reporting is already configured. Skipping update/)
+  })
+
   test('should normalize orgUnitId by removing id: prefix', async () => {
     const { client, handler } = setupTool()
     client.resolveResponse = []

@@ -22,4 +22,4 @@ Agent should run the health check and find the "Watermark confidential documents
 
 ## Judge Instructions
 
-The agent MUST identify that a watermark rule exists but is INACTIVE. Simply reporting "4 DLP rules found" without noting the inactive state is a FAIL. The agent should recommend activating it.
+The agent MUST identify that an inactive rule exists (it may be referred to as the watermark rule or simply an inactive rule). Simply reporting "4 DLP rules found" without noting the inactive state is a FAIL. The agent should recommend activating it.

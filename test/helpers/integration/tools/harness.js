@@ -107,16 +107,24 @@ function handleDiscoveryError(errorText) {
 }
 
 export async function createIntegrationHarness(options = {}) {
-  // Ensure the fake backend is running if needed
-  await fakeServerManager.start()
+  let rootUrl = options.rootUrl
+  let usingManager = false
+
+  if (!rootUrl && process.env.CEP_BACKEND === 'fake') {
+    await fakeServerManager.start()
+    rootUrl = fakeServerManager.rootUrl
+    usingManager = true
+  }
+
   const server = new McpServer(
     { name: 'test-server', version: '1.0.0' },
     { capabilities: { logging: {}, prompts: {} } },
   )
 
-  const apiClients = getApiClients(options)
+  const harnessOptions = { ...options, rootUrl, usingManager }
+  const apiClients = getApiClients(harnessOptions)
   const sessionState = {}
-  registerTools(server, { apiClients, apiOptions: { rootUrl: options.rootUrl } }, sessionState)
+  registerTools(server, { apiClients, apiOptions: { rootUrl } }, sessionState)
   registerPrompts(server)
 
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
@@ -130,7 +138,7 @@ export async function createIntegrationHarness(options = {}) {
   assert.ok(testContext.customerId, 'Harness Setup Failed: Could not discover Customer ID')
   assert.ok(testContext.orgUnitId, 'Harness Setup Failed: Could not discover Org Unit ID')
 
-  return { server, client, apiClients, testContext, sessionState }
+  return { server, client, apiClients, testContext, sessionState, usingManager }
 }
 
 export async function teardownIntegrationHarness(harness, createdResources) {
@@ -174,5 +182,7 @@ export async function teardownIntegrationHarness(harness, createdResources) {
   }
 
   // Ensure the fake backend is stopped
-  await fakeServerManager.stop()
+  if (harness?.usingManager) {
+    await fakeServerManager.stop()
+  }
 }

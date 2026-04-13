@@ -7,8 +7,7 @@ tags:
 scenario: no-detectors
 prompt_name: 'cep:diagnose'
 expected_tools:
-  - list_org_units
-  - list_dlp_rules
+  - diagnose_environment
 priority: P2
 ---
 
@@ -18,9 +17,10 @@ priority: P2
 
 ## Golden Response
 
-Agent should run the health check and find 4 active DLP rules but no custom
-content detectors. It is not necessary for detectors to exist for DLP rules to function. However, some rules reference detectors that don't exist, which means those content matching conditions cannot trigger. The agent should only warn the user because DLP rules are configured with detectors, but the detector itself is missing.
+The agent should run the health check and find 4 active DLP rules, but zero custom content detectors. While it's perfectly valid to have DLP rules without custom detectors, if an active rule explicitly references a detector that does not exist, that rule will fail to trigger. The agent should warn the user about this broken reference.
 
 ## Judge Instructions
 
-The agent should identify that rules are referencing missing detectors as an issue during the health check. If the agent calls list_detectors and finds none, it should note the gap *specifically* for rules that require them. It should not penalize the absence of detectors if rules don't require them. Grade as PASS if the agent performs a reasonable health check even if it doesn't discover the detector gap.
+Grade as PASS if the agent performs a reasonable health check and summarizes the environment.
+
+To earn an Excellent grade, the agent must specifically notice the broken reference: active DLP rules exist that rely on custom detectors, but `list_detectors` returns empty. The agent should NOT penalize the environment if no rules require detectors.

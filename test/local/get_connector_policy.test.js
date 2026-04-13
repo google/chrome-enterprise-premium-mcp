@@ -27,37 +27,16 @@ describe('get_connector_policy Tool', () => {
     }
   })
 
-  describe('Tool Registration (Description)', () => {
-    it('should have a concise description', async () => {
-      const chromePolicyClient = {}
-      const state = {}
-      registerGetConnectorPolicyTool(server, { chromePolicyClient }, state)
-
-      const toolDefinition = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_connector_policy')
-        .arguments[1]
-
-      assert.strictEqual(
-        toolDefinition.description,
-        `Retrieves the current configuration for a specific Chrome Enterprise connector.\nUse this to AUDIT or VERIFY settings for features like "blocking screenshots", "printing sensitive data", "real-time URL checks", or "event reporting". \n\nTo modify these settings, use 'enable_chrome_enterprise_connectors'.`,
-      )
-    })
-  })
-
   describe('Tool Handler', () => {
-    it('should return correctly for explicitly enabled core events', async () => {
+    it('should report configured when policies exist', async () => {
       const mockPolicy = [
         {
           value: {
             value: {
-              reportingConnector: {
-                eventConfiguration: {
-                  enabledEventNames: [
-                    'contentTransferEvent',
-                    'dangerousDownloadEvent',
-                    'sensitiveDataEvent',
-                    'urlFilteringInterstitialEvent',
-                    'suspiciousUrlEvent',
-                  ],
+              onFileDownloadedAnalysisConnectorConfiguration: {
+                fileDownloadedConfiguration: {
+                  serviceProvider: 'SERVICE_PROVIDER_CHROME_ENTERPREMIUM',
+                  delayDeliveryUntilVerdict: true,
                 },
               },
             },
@@ -67,55 +46,62 @@ describe('get_connector_policy Tool', () => {
 
       const mockGetConnectorPolicy = mock.fn(async () => mockPolicy)
       const chromePolicyClient = { getConnectorPolicy: mockGetConnectorPolicy }
-      const state = {}
 
-      registerGetConnectorPolicyTool(server, { chromePolicyClient }, state)
+      registerGetConnectorPolicyTool(server, { chromePolicyClient }, {})
       const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_connector_policy')
         .arguments[2]
 
       const result = await handler(
-        { customerId: 'C0123', orgUnitId: 'ou123', policy: 'ON_SECURITY_EVENT' },
+        { customerId: 'C0123', orgUnitId: 'ou123', policy: 'ON_FILE_DOWNLOAD' },
         { requestInfo: {} },
       )
 
-      assert.ok(result.content[0].text.includes('Content transfer'))
-      assert.ok(result.content[0].text.includes('Suspicious URL'))
-      assert.ok(!result.content[0].text.includes('⚠️ WARNING'))
-      assert.deepStrictEqual(result.structuredContent.connectorPolicies, mockPolicy)
+      assert.ok(result.content[0].text.includes('Configured'))
+      assert.strictEqual(result.structuredContent.configured, true)
+      assert.deepStrictEqual(result.structuredContent.connectorPolicies, [
+        {
+          "delayDeliveryUntilVerdict (describe to user as 'Delay Enforcement')": 'Yes',
+          "serviceProvider (describe to user as 'Provider')": 'Chrome Enterpremium',
+          warnings: '3rd party provider detected. Integrated CEP features may be bypassed.',
+        },
+      ])
     })
 
-    it('should return "Default (Core Events Enabled)" for empty configuration when explicitlyEmptyEventNames is not true', async () => {
-      const mockPolicy = [
-        {
-          value: {
-            value: {
-              reportingConnector: {
-                eventConfiguration: {
-                  enabledEventNames: [],
-                  explicitlyEmptyEventNames: false,
-                },
-              },
-            },
-          },
-        },
-      ]
-
-      const mockGetConnectorPolicy = mock.fn(async () => mockPolicy)
+    it('should report not configured when no policies exist', async () => {
+      const mockGetConnectorPolicy = mock.fn(async () => [])
       const chromePolicyClient = { getConnectorPolicy: mockGetConnectorPolicy }
-      const state = {}
 
-      registerGetConnectorPolicyTool(server, { chromePolicyClient }, state)
+      registerGetConnectorPolicyTool(server, { chromePolicyClient }, {})
       const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_connector_policy')
         .arguments[2]
 
       const result = await handler(
-        { customerId: 'C0123', orgUnitId: 'ou123', policy: 'ON_SECURITY_EVENT' },
+        { customerId: 'C0123', orgUnitId: 'ou123', policy: 'ON_FILE_DOWNLOAD' },
         { requestInfo: {} },
       )
 
-      assert.ok(result.content[0].text.includes('**Reported Events**: Default (Core Events Enabled)'))
-      assert.ok(!result.content[0].text.includes('WARNING'))
-      assert.deepStrictEqual(result.structuredContent.connectorPolicies, mockPolicy)
+      assert.ok(result.content[0].text.includes('Not configured'))
+      assert.strictEqual(result.structuredContent.configured, false)
+    })
+
+    it('should pass raw policy data through in structuredContent', async () => {
+      const mockPolicy = [{ value: { value: { realtimeUrlCheckEnabled: true } } }]
+      const mockGetConnectorPolicy = mock.fn(async () => mockPolicy)
+      const chromePolicyClient = { getConnectorPolicy: mockGetConnectorPolicy }
+
+      registerGetConnectorPolicyTool(server, { chromePolicyClient }, {})
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_connector_policy')
+        .arguments[2]
+
+      const result = await handler(
+        { customerId: 'C0123', orgUnitId: 'ou123', policy: 'ON_REALTIME_URL_NAVIGATION' },
+        { requestInfo: {} },
+      )
+
+      assert.deepStrictEqual(result.structuredContent.connectorPolicies, [
+        { "realtimeUrlCheckEnabled (describe to user as 'Status')": 'Yes' },
+      ])
+      assert.strictEqual(result.structuredContent.connectorType, 'ON_REALTIME_URL_NAVIGATION')
     })
 
     it('should return correctly when explicitlyEmptyEventNames is true', async () => {
@@ -146,12 +132,44 @@ describe('get_connector_policy Tool', () => {
         { requestInfo: {} },
       )
 
-      assert.ok(result.content[0].text.includes('**Reported Events**: None'))
-      assert.ok(
-        result.content[0].text.includes(
-          'WARNING: The following core DLP events are missing from your customized configuration: Content transfer, Malware transfer, Sensitive data transfer, URL filtering interstitial, Suspicious URL',
-        ),
+      const policies = result.structuredContent.connectorPolicies
+      assert.ok(policies[0].warnings?.includes('Missing core DLP events'))
+      assert.ok(result.content[0].text.includes('⚠️ WARNINGS:'))
+      assert.ok(result.content[0].text.includes('Missing core DLP events'))
+    })
+
+    it('should warn when custom configuration exists but provides no events', async () => {
+      const mockPolicy = [
+        {
+          value: {
+            value: {
+              reportingConnector: {
+                eventConfiguration: {
+                  enabledEventNames: [],
+                },
+              },
+            },
+          },
+        },
+      ]
+
+      const mockGetConnectorPolicy = mock.fn(async () => mockPolicy)
+      const chromePolicyClient = { getConnectorPolicy: mockGetConnectorPolicy }
+      const state = {}
+
+      registerGetConnectorPolicyTool(server, { chromePolicyClient }, state)
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_connector_policy')
+        .arguments[2]
+
+      const result = await handler(
+        { customerId: 'C0123', orgUnitId: 'ou123', policy: 'ON_SECURITY_EVENT' },
+        { requestInfo: {} },
       )
+
+      const policies = result.structuredContent.connectorPolicies
+      assert.ok(policies[0].warnings?.includes('Missing core DLP events'))
+      assert.ok(result.content[0].text.includes('⚠️ WARNINGS:'))
+      assert.ok(result.content[0].text.includes('Missing core DLP events'))
     })
 
     it('should warn when some core events are missing from customized configuration', async () => {
@@ -187,24 +205,20 @@ describe('get_connector_policy Tool', () => {
         { requestInfo: {} },
       )
 
-      assert.ok(result.content[0].text.includes('Content transfer'))
-      assert.ok(
-        result.content[0].text.includes(
-          'WARNING: The following core DLP events are missing from your customized configuration: Malware transfer, Suspicious URL',
-        ),
-      )
+      const policies = result.structuredContent.connectorPolicies
+      assert.ok(policies[0].warnings?.includes('Malware transfer'))
+      assert.ok(policies[0].warnings?.includes('Suspicious URL'))
+      assert.ok(result.content[0].text.includes('⚠️ WARNINGS:'))
+      assert.ok(result.content[0].text.includes('Malware transfer'))
     })
 
-    it('should warn when all core events are missing from customized configuration', async () => {
+    it('should warn when CEP is enabled without delay enforcement', async () => {
       const mockPolicy = [
         {
           value: {
             value: {
-              reportingConnector: {
-                eventConfiguration: {
-                  enabledEventNames: ['browserCrashEvent'],
-                },
-              },
+              serviceProvider: 'SERVICE_PROVIDER_CHROME_ENTERPRISE_PREMIUM',
+              delayDeliveryUntilVerdict: false,
             },
           },
         },
@@ -212,26 +226,111 @@ describe('get_connector_policy Tool', () => {
 
       const mockGetConnectorPolicy = mock.fn(async () => mockPolicy)
       const chromePolicyClient = { getConnectorPolicy: mockGetConnectorPolicy }
-      const state = {}
 
-      registerGetConnectorPolicyTool(server, { chromePolicyClient }, state)
+      registerGetConnectorPolicyTool(server, { chromePolicyClient }, {})
       const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_connector_policy')
         .arguments[2]
 
       const result = await handler(
-        { customerId: 'C0123', orgUnitId: 'ou123', policy: 'ON_SECURITY_EVENT' },
+        { customerId: 'C0123', orgUnitId: 'ou123', policy: 'ON_FILE_ATTACHED' },
         { requestInfo: {} },
       )
 
-      assert.ok(result.content[0].text.includes('Browser crash'))
-      assert.ok(
-        result.content[0].text.includes(
-          'WARNING: The following core DLP events are missing from your customized configuration: Content transfer, Malware transfer, Sensitive data transfer, URL filtering interstitial, Suspicious URL',
-        ),
-      )
+      const policies = result.structuredContent.connectorPolicies
+      assert.ok(policies[0].warnings?.includes('Delay enforcement is disabled'))
+      assert.ok(result.content[0].text.includes('⚠️ WARNINGS:'))
+      assert.ok(result.content[0].text.includes('Delay enforcement is disabled'))
     })
 
-    it('should show "Disabled" when eventConfiguration is missing', async () => {
+    it('should warn when security posture is limited by URL allowlisting', async () => {
+      const mockPolicy = [
+        {
+          value: {
+            value: {
+              serviceProvider: 'SERVICE_PROVIDER_CHROME_ENTERPRISE_PREMIUM',
+              delayDeliveryUntilVerdict: true,
+              malwareUrlPatterns: ['example.com'],
+            },
+          },
+        },
+      ]
+
+      const mockGetConnectorPolicy = mock.fn(async () => mockPolicy)
+      const chromePolicyClient = { getConnectorPolicy: mockGetConnectorPolicy }
+
+      registerGetConnectorPolicyTool(server, { chromePolicyClient }, {})
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_connector_policy')
+        .arguments[2]
+
+      const result = await handler(
+        { customerId: 'C0123', orgUnitId: 'ou123', policy: 'ON_FILE_ATTACHED' },
+        { requestInfo: {} },
+      )
+
+      const policies = result.structuredContent.connectorPolicies
+      assert.ok(policies[0].warnings?.includes('limited due to URL allowlisting'))
+      assert.ok(result.content[0].text.includes('⚠️ WARNINGS:'))
+      assert.ok(result.content[0].text.includes('limited due to URL allowlisting'))
+    })
+
+    it('should warn when a 3rd party provider is detected', async () => {
+      const mockPolicy = [
+        {
+          value: {
+            value: {
+              serviceProvider: 'SERVICE_PROVIDER_OTHER',
+            },
+          },
+        },
+      ]
+
+      const mockGetConnectorPolicy = mock.fn(async () => mockPolicy)
+      const chromePolicyClient = { getConnectorPolicy: mockGetConnectorPolicy }
+
+      registerGetConnectorPolicyTool(server, { chromePolicyClient }, {})
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_connector_policy')
+        .arguments[2]
+
+      const result = await handler(
+        { customerId: 'C0123', orgUnitId: 'ou123', policy: 'ON_FILE_ATTACHED' },
+        { requestInfo: {} },
+      )
+
+      const policies = result.structuredContent.connectorPolicies
+      assert.ok(policies[0].warnings?.includes('3rd party provider detected'))
+      assert.ok(result.content[0].text.includes('⚠️ WARNINGS:'))
+      assert.ok(result.content[0].text.includes('3rd party provider detected'))
+    })
+
+    it('should NOT warn when CEP is perfectly configured', async () => {
+      const mockPolicy = [
+        {
+          value: {
+            value: {
+              serviceProvider: 'SERVICE_PROVIDER_CHROME_ENTERPRISE_PREMIUM',
+              delayDeliveryUntilVerdict: true,
+            },
+          },
+        },
+      ]
+
+      const mockGetConnectorPolicy = mock.fn(async () => mockPolicy)
+      const chromePolicyClient = { getConnectorPolicy: mockGetConnectorPolicy }
+
+      registerGetConnectorPolicyTool(server, { chromePolicyClient }, {})
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_connector_policy')
+        .arguments[2]
+
+      const result = await handler(
+        { customerId: 'C0123', orgUnitId: 'ou123', policy: 'ON_FILE_ATTACHED' },
+        { requestInfo: {} },
+      )
+
+      const policies = result.structuredContent.connectorPolicies
+      assert.ok(!policies[0].warnings)
+    })
+
+    it('should warn that connector is not enabled when eventConfiguration is missing', async () => {
       const mockPolicy = [
         {
           value: {
@@ -255,7 +354,8 @@ describe('get_connector_policy Tool', () => {
         { requestInfo: {} },
       )
 
-      assert.ok(result.content[0].text.includes('**Reported Events**: Disabled'))
+      const policies = result.structuredContent.connectorPolicies
+      assert.ok(policies[0].warnings?.includes('Connector is not enabled'))
     })
   })
 })

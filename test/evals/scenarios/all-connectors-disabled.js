@@ -25,9 +25,9 @@ limitations under the License.
 
 /** @param {object} state - Cloned base state. */
 export function mutate(state) {
-  for (const key of Object.keys(state.connectorPolicies)) {
+  for (const key of Object.keys(state.globalConnectorPolicies)) {
     if (key !== 'chrome.users.apps.InstallType') {
-      state.connectorPolicies[key] = []
+      state.globalConnectorPolicies[key] = []
     }
   }
   return state

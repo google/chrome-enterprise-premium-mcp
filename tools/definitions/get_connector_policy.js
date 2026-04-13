@@ -21,38 +21,8 @@ limitations under the License.
 import { z } from 'zod'
 import { guardedToolCall, formatToolResponse, safeFormatResponse } from '../utils/wrapper.js'
 import { commonOutputSchemas } from './shared.js'
-
-const ConnectorPolicyFilter = {
-  ON_FILE_ATTACHED: 'chrome.users.OnFileAttachedConnectorPolicy',
-  ON_FILE_DOWNLOAD: 'chrome.users.OnFileDownloadedConnectorPolicy',
-  ON_BULK_TEXT_ENTRY: 'chrome.users.OnBulkTextEntryConnectorPolicy',
-  ON_PRINT: 'chrome.users.OnPrintAnalysisConnectorPolicy',
-  ON_REALTIME_URL_NAVIGATION: 'chrome.users.RealtimeUrlCheck',
-  ON_SECURITY_EVENT: 'chrome.users.OnSecurityEvent',
-}
-
-const POLICY_DISPLAY_NAMES = {
-  ON_FILE_ATTACHED: 'Upload content analysis',
-  ON_FILE_DOWNLOAD: 'File Download Analysis',
-  ON_BULK_TEXT_ENTRY: 'Bulk Text Entry Analysis (paste)',
-  ON_PRINT: 'Print Analysis',
-  ON_REALTIME_URL_NAVIGATION: 'Real-time URL check',
-  ON_SECURITY_EVENT: 'Event Reporting',
-}
-
-const EVENT_NAME_MAPPING = {
-  browserCrashEvent: 'Browser crash',
-  browserExtensionInstallEvent: 'Browser extension install',
-  contentTransferEvent: 'Content transfer',
-  unscannedFileEvent: 'Content unscanned',
-  dangerousDownloadEvent: 'Malware transfer',
-  passwordChangedEvent: 'Password changed',
-  passwordReuseEvent: 'Password reuse',
-  sensitiveDataEvent: 'Sensitive data transfer',
-  interstitialEvent: 'Unsafe site visit',
-  urlFilteringInterstitialEvent: 'URL filtering interstitial',
-  suspiciousUrlEvent: 'Suspicious URL',
-}
+import { CONNECTOR_KEY_MAPPING, POLICY_DISPLAY_NAMES, EVENT_NAME_MAPPING } from '../../lib/constants.js'
+import { ConnectorPolicyFilter } from '../../lib/api/chromepolicy.js'
 
 /**
  * Registers the 'get_connector_policy' tool with the MCP server.
@@ -99,170 +69,161 @@ To modify these settings, use 'enable_chrome_enterprise_connectors'.`,
          * @returns {Promise<object>} The formatted tool response.
          */
         handler: async ({ customerId, orgUnitId, policy }, { _requestInfo, authToken }) => {
-          const normalizedOrgUnitId = orgUnitId.startsWith('id:') ? orgUnitId.substring(3) : orgUnitId
-
           const policies = await chromePolicyClient.getConnectorPolicy(
             customerId,
-            normalizedOrgUnitId,
+            orgUnitId,
             ConnectorPolicyFilter[policy],
             authToken,
           )
+
+          const displayName = POLICY_DISPLAY_NAMES[policy] || policy
 
           return safeFormatResponse({
             rawData: policies,
             toolName: 'get_connector_policy',
             formatFn: raw => {
-              const displayName = POLICY_DISPLAY_NAMES[policy] || policy
-              const header = `Connector policy: ${displayName} (OU: \`${orgUnitId}\`)\n\n`
-
               /**
-               * Retrieves a value from an object using either camelCase or snake_case key.
-               * @param {object} obj - The object to retrieve from.
-               * @param {string} key - The key to retrieve.
-               * @returns {unknown} The retrieved value or undefined.
+               * Recursively traverses a deeply nested Chrome Policy config object,
+               * flattens it into a single-level dictionary, humanizes raw ENUM
+               * values (e.g., 'SERVICE_PROVIDER_CHROME_ENTERPRISE_PREMIUM' -> 'Chrome Enterprise Premium'),
+               * and maps internal keys to user-friendly labels using CONNECTOR_KEY_MAPPING.
+               * @param {object} obj - The raw, nested policy value object from the API.
+               * @param {string[]} warnings - Array to accumulate warnings about key collisions.
+               * @returns {object} A flattened, human-readable dictionary representing the policy settings.
                */
-              const getVal = (obj, key) => {
-                if (!obj || typeof obj !== 'object') {
-                  return undefined
-                }
-                if (obj[key] !== undefined) {
-                  return obj[key]
-                }
-                const snakeKey = key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`)
-                return obj[snakeKey]
-              }
-
-              /**
-               * Formats a policy value for user-friendly display.
-               * @param {unknown} val - The value to format.
-               * @returns {string} The formatted string.
-               */
-              const format = val => {
-                if (val === undefined || val === null) {
-                  return 'Not set'
-                }
-                if (typeof val === 'boolean') {
-                  return val ? 'Enabled' : 'Disabled'
-                }
-                if (typeof val === 'object') {
-                  if (getVal(val, 'onByDefault') !== undefined) {
-                    return getVal(val, 'onByDefault') ? 'Enabled (Default)' : 'Disabled'
+              function flattenAndMapConfig(obj, warnings = []) {
+                const result = {}
+                const humanize = val => {
+                  if (typeof val === 'boolean') {
+                    return val ? 'Yes' : 'No'
                   }
-                  if (getVal(val, 'customUrlPatterns')) {
-                    return getVal(val, 'customUrlPatterns').join(', ')
+                  if (Array.isArray(val)) {
+                    return val.map(humanize).join(', ')
                   }
-                  return JSON.stringify(val)
-                }
-                const s = String(val)
-                if (s === 'REAL_TIME_CHECK_ENFORCED') {
-                  return 'Enforced'
+                  if (typeof val !== 'string') {
+                    return String(val)
+                  }
+                  if (EVENT_NAME_MAPPING[val]) {
+                    return EVENT_NAME_MAPPING[val]
+                  }
+                  return val
+                    .replace(/^[A-Z_]+_ENUM_/, '')
+                    .replace(/^SERVICE_PROVIDER_/, '')
+                    .replace(/_/g, ' ')
+                    .toLowerCase()
+                    .replace(/\b\w/g, c => c.toUpperCase())
                 }
 
-                return s
-                  .replace(/^[A-Z_]+_ENUM_/, '')
-                  .replace(/^[A-Z_]+_MODE_/, '')
-                  .replace(/_/g, ' ')
-                  .toLowerCase()
-                  .replace(/\b\w/g, c => c.toUpperCase())
+                const walk = o => {
+                  if (!o || typeof o !== 'object') {
+                    return
+                  }
+                  for (const [k, v] of Object.entries(o)) {
+                    if (typeof v === 'object' && !Array.isArray(v) && v !== null) {
+                      walk(v)
+                    } else {
+                      const mappedKey = CONNECTOR_KEY_MAPPING[k]
+                        ? `${k} (describe to user as '${CONNECTOR_KEY_MAPPING[k]}')`
+                        : k
+                      if (result[mappedKey] !== undefined) {
+                        warnings.push(`Key collision detected for '${mappedKey}' during object flattening.`)
+                      }
+                      result[mappedKey] = humanize(v)
+                    }
+                  }
+                }
+                walk(obj)
+                return result
               }
 
-              const summaryLines =
-                raw.length === 0
-                  ? ['No policy configured.']
-                  : raw.map(p => {
-                      const v = p.value?.value || {}
-                      if (policy === 'ON_REALTIME_URL_NAVIGATION') {
-                        const val = getVal(v, 'realtimeUrlCheckEnabled')
-                        const status = format(val)
-                        return `  - **Status**: ${status}`
-                      }
+              const formattedPolicies = raw.map(p => {
+                const v = p.value?.value || {}
+                const warnings = []
+                const flattened = flattenAndMapConfig(v, warnings)
 
-                      if (policy === 'ON_SECURITY_EVENT') {
-                        const reportingConnector = getVal(v, 'reportingConnector') || {}
-                        const setting = getVal(reportingConnector, 'setting') || reportingConnector
-                        const eventCfg = getVal(setting, 'eventConfiguration')
+                if (policy === 'ON_SECURITY_EVENT') {
+                  const eventCfg =
+                    v.reportingConnector?.setting?.eventConfiguration || v.reportingConnector?.eventConfiguration
+                  const events = eventCfg?.enabledEventNames || []
+                  const explicitlyEmpty = eventCfg?.explicitlyEmptyEventNames
+                  const coreEvents = [
+                    'contentTransferEvent',
+                    'dangerousDownloadEvent',
+                    'sensitiveDataEvent',
+                    'urlFilteringInterstitialEvent',
+                    'suspiciousUrlEvent',
+                  ]
 
-                        if (eventCfg === undefined) {
-                          return '  - **Reported Events**: Disabled'
-                        }
+                  if (!eventCfg) {
+                    warnings.push(
+                      'Connector is not enabled. You can enable it using the enable_chrome_enterprise_connectors tool.',
+                    )
+                  } else {
+                    let missingCoreEvents = []
+                    if (events.length > 0) {
+                      missingCoreEvents = coreEvents.filter(e => !events.includes(e))
+                    } else if (explicitlyEmpty || events.length === 0) {
+                      missingCoreEvents = coreEvents
+                    }
 
-                        const events = getVal(eventCfg, 'enabledEventNames') || []
-                        const explicitlyEmpty = getVal(eventCfg, 'explicitlyEmptyEventNames')
+                    if (missingCoreEvents.length > 0) {
+                      const mappedMissing = missingCoreEvents.map(e => EVENT_NAME_MAPPING[e] || e)
+                      warnings.push(`Missing core DLP events: ${mappedMissing.join(', ')}`)
+                    }
+                  }
+                } else if (policy !== 'ON_REALTIME_URL_NAVIGATION') {
+                  // Non-Reporting Connectors (Upload, Download, Paste, Print)
+                  const cfg =
+                    v.onFileAttachedAnalysisConnectorConfiguration?.fileAttachedConfiguration ||
+                    v.onFileDownloadedAnalysisConnectorConfiguration?.fileDownloadedConfiguration ||
+                    v.onBulkTextEntryAnalysisConnectorConfiguration?.bulkTextEntryConfiguration ||
+                    v.onPrintAnalysisConnectorConfiguration?.printConfigurations?.[0] ||
+                    v
 
-                        let eventSummary = 'None'
-                        let warnings = ''
+                  const isCEP = cfg.serviceProvider === 'SERVICE_PROVIDER_CHROME_ENTERPRISE_PREMIUM'
+                  const isNone = !cfg.serviceProvider || cfg.serviceProvider === 'SERVICE_PROVIDER_NONE'
 
-                        const coreEvents = [
-                          'contentTransferEvent',
-                          'dangerousDownloadEvent',
-                          'sensitiveDataEvent',
-                          'urlFilteringInterstitialEvent',
-                          'suspiciousUrlEvent',
-                        ]
+                  if (isCEP) {
+                    if (!cfg.delayDeliveryUntilVerdict && !cfg.delay_delivery_until_verdict) {
+                      warnings.push('Delay enforcement is disabled. Users are unprotected during content analysis.')
+                    }
+                    if (cfg.malwareUrlPatterns?.length > 0 || cfg.sensitiveUrlPatterns?.length > 0) {
+                      warnings.push('Security posture is limited due to URL allowlisting.')
+                    }
+                  } else if (isNone) {
+                    warnings.push(
+                      'Connector is not enabled. You can enable it using the enable_chrome_enterprise_connectors tool.',
+                    )
+                  } else {
+                    warnings.push('3rd party provider detected. Integrated CEP features may be bypassed.')
+                  }
+                }
 
-                        /**
-                         * Maps internal event names to human-readable names.
-                         * @param {string} e - The internal event name.
-                         * @returns {string} The human-readable event name.
-                         */
-                        const mapEvent = e => EVENT_NAME_MAPPING[e] || e
+                if (warnings.length > 0) {
+                  flattened['warnings'] = warnings.join('; ')
+                }
 
-                        if (events.length > 0) {
-                          eventSummary = events.map(mapEvent).join(', ')
-                          const missingCoreEvents = coreEvents.filter(e => !events.includes(e))
-                          if (missingCoreEvents.length > 0) {
-                            warnings = `\n\n  ⚠️ WARNING: The following core DLP events are missing from your customized configuration: ${missingCoreEvents.map(mapEvent).join(', ')}. Without these, your security posture is incomplete.`
-                          }
-                        } else if (explicitlyEmpty) {
-                          eventSummary = 'None'
-                          warnings = `\n\n  ⚠️ WARNING: The following core DLP events are missing from your customized configuration: ${coreEvents.map(mapEvent).join(', ')}. Without these, your security posture is incomplete.`
-                        } else {
-                          eventSummary = 'Default (Core Events Enabled)'
-                        }
+                // The 'flattened' object contains key-value pairs representing the connector policy settings.
+                // Keys are either the original API keys or a user-friendly description.
+                // Values are humanized versions of the policy settings (e.g., booleans as 'Yes'/'No', enums as readable strings).
+                return flattened
+              })
 
-                        return `  - **Reported Events**: ${eventSummary}${warnings}`
-                      }
-
-                      const cfg =
-                        v.onFileAttachedAnalysisConnectorConfiguration?.fileAttachedConfiguration ||
-                        v.onFileDownloadedAnalysisConnectorConfiguration?.fileDownloadedConfiguration ||
-                        v.onBulkTextEntryAnalysisConnectorConfiguration?.bulkTextEntryConfiguration ||
-                        v.onPrintAnalysisConnectorConfiguration?.printConfigurations?.[0] ||
-                        v
-
-                      const patterns = []
-                      if (getVal(cfg, 'sensitiveUrlPatterns')) {
-                        patterns.push(`**Sensitive URLs**: ${format(getVal(cfg, 'sensitiveUrlPatterns'))}`)
-                      }
-                      if (getVal(cfg, 'malwareUrlPatterns')) {
-                        patterns.push(`**Malware URLs**: ${format(getVal(cfg, 'malwareUrlPatterns'))}`)
-                      }
-
-                      return [
-                        `  - **Provider**: ${format(getVal(cfg, 'serviceProvider'))}`,
-                        `  - **Delay Enforcement**: ${format(getVal(cfg, 'delayDeliveryUntilVerdict'))}`,
-                        `  - **Block on Failure**: ${format(getVal(cfg, 'blockFileOnContentAnalysisFailure') || getVal(cfg, 'blockUntilVerdict'))}`,
-                        `  - **Block Password Protected**: ${format(getVal(cfg, 'blockPasswordProtectedFiles'))}`,
-                        `  - **Block Large Files**: ${format(getVal(cfg, 'blockLargeFileTransfer'))}`,
-                        ...patterns.map(pat => `  - ${pat}`),
-                      ].join('\n')
-                    })
-
-              const sc = {
-                connectorPolicies: raw,
-                connectorType: policy,
-                orgUnitId: orgUnitId,
+              const allWarnings = formattedPolicies.flatMap(p => (p.warnings ? [p.warnings] : []))
+              let summaryStr = `Connector policy: ${displayName} (OU: \`${orgUnitId}\`)\nStatus: ${raw.length > 0 ? 'Configured' : 'Not configured'}`
+              if (allWarnings.length > 0) {
+                summaryStr += `\n\n⚠️ WARNINGS:\n- ${allWarnings.join('\n- ')}`
               }
-
-              const text =
-                header +
-                summaryLines.join('\n\n') +
-                '\n\n**Next Step**: Search the knowledge base for documentation to interpret these settings.'
 
               return formatToolResponse({
-                summary: text,
-                data: sc,
-                structuredContent: sc,
+                summary: summaryStr,
+                data: formattedPolicies,
+                structuredContent: {
+                  connectorPolicies: formattedPolicies,
+                  connectorType: policy,
+                  orgUnitId,
+                  configured: raw.length > 0,
+                },
               })
             },
           })

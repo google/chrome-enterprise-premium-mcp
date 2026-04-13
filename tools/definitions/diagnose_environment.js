@@ -26,25 +26,17 @@ limitations under the License.
 
 import { z } from 'zod'
 import { guardedToolCall, formatToolResponse } from '../utils/wrapper.js'
-import { TAGS } from '../../lib/constants.js'
+import { TAGS, CONNECTOR_DISPLAY_NAMES } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
+import { ConnectorPolicyFilter } from '../../lib/api/chromepolicy.js'
 
 const CONNECTOR_TYPES = {
-  uploadAnalysis: 'chrome.users.OnFileAttachedConnectorPolicy',
-  downloadAnalysis: 'chrome.users.OnFileDownloadedConnectorPolicy',
-  pasteAnalysis: 'chrome.users.OnBulkTextEntryConnectorPolicy',
-  printAnalysis: 'chrome.users.OnPrintAnalysisConnectorPolicy',
-  realtimeUrlCheck: 'chrome.users.RealtimeUrlCheck',
-  securityEventReporting: 'chrome.users.OnSecurityEvent',
-}
-
-const CONNECTOR_DISPLAY_NAMES = {
-  uploadAnalysis: 'Upload content analysis',
-  downloadAnalysis: 'File download analysis',
-  pasteAnalysis: 'Paste/bulk text analysis',
-  printAnalysis: 'Print analysis',
-  realtimeUrlCheck: 'Real-time URL check',
-  securityEventReporting: 'Security event reporting',
+  uploadAnalysis: ConnectorPolicyFilter.ON_FILE_ATTACHED,
+  downloadAnalysis: ConnectorPolicyFilter.ON_FILE_DOWNLOAD,
+  pasteAnalysis: ConnectorPolicyFilter.ON_BULK_TEXT_ENTRY,
+  printAnalysis: ConnectorPolicyFilter.ON_PRINT,
+  realtimeUrlCheck: ConnectorPolicyFilter.ON_REALTIME_URL_NAVIGATION,
+  securityEventReporting: ConnectorPolicyFilter.ON_SECURITY_EVENT,
 }
 
 const SEB_EXTENSION_SCHEMA = 'chrome.users.apps.InstallType'
