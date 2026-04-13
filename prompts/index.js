@@ -23,7 +23,6 @@ limitations under the License.
 import { registerDiagnosePrompt } from './definitions/diagnose.js'
 import { registerMaturityPrompt } from './definitions/maturity.js'
 import { registerNoisePrompt } from './definitions/noise.js'
-import { registerFeedbackPrompt } from './definitions/feedback.js'
 import { registerExpertPrompt } from './definitions/expert.js'
 
 /**
@@ -34,6 +33,5 @@ export function registerPrompts(server) {
   registerDiagnosePrompt(server)
   registerMaturityPrompt(server)
   registerNoisePrompt(server)
-  registerFeedbackPrompt(server)
   registerExpertPrompt(server)
 }
