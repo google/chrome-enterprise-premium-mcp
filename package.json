@@ -1,12 +1,12 @@
 {
-  "name": "@google-cloud/chrome-management-mcp",
+  "name": "chrome-enterprise-premium-mcp",
   "version": "0.1.0",
-  "description": "Chrome Management MCP server",
+  "description": "Chrome Enterprise Premium MCP server",
   "license": "Apache-2.0",
   "type": "module",
   "main": "mcp-server.js",
   "bin": {
-    "chrome-management-mcp": "mcp-server.js"
+    "chrome-enterprise-premium-mcp": "mcp-server.js"
   },
   "scripts": {
     "eval": "CEP_BACKEND=fake node test/evals/run.js",
