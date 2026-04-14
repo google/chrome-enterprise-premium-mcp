@@ -30,70 +30,19 @@ import {
   validateMcpSafetyConstraints,
 } from '../../lib/util/cel_validator.js'
 import {
-  CEL_SYNTAX_GUIDE,
-  UNIVERSAL_CONTENT_TYPES,
-  NAVIGATION_CONTENT_TYPES,
-  PASTE_CONTENT_TYPES,
-  FILE_CONTENT_TYPES,
-  CEL_FUNCTIONS,
-  CEL_COMPATIBILITY_RULES,
-  CHROME_CONTEXTS,
-  URL_CATEGORY_METADATA,
-  POLICY_STATES,
-  MASK_TYPES,
   CHROME_TRIGGERS,
   CHROME_ACTION_TYPES,
   ACTION_PARAMETER_CONSTRAINTS,
   WORKSPACE_RULE_LIMITS,
   AGENT_DISPLAY_NAME_PREFIX,
   MCP_SAFETY_CONSTRAINTS,
+  POLICY_STATES,
+  MASK_TYPES,
 } from '../../lib/util/chrome_dlp_constants.js'
 
 const triggerList = Object.entries(CHROME_TRIGGERS)
   .map(([key, obj]) => `- ${key}: ${obj.description}`)
   .join('\n')
-
-const syntaxGuideList = CEL_SYNTAX_GUIDE.map(item => {
-  const exampleLines = item.examples.map(ex => `   Example: "${ex}"`).join('\n')
-  return `${item.rule}\n${exampleLines}`
-}).join('\n')
-
-const universalTypeList = Object.entries(UNIVERSAL_CONTENT_TYPES)
-  .map(([key, desc]) => `- ${key}: ${desc}`)
-  .join('\n')
-
-const navigationTypeList = Object.entries(NAVIGATION_CONTENT_TYPES).map(([key, desc]) => `- ${key}: ${desc}`)
-
-const pasteTypeList = Object.entries(PASTE_CONTENT_TYPES)
-  .map(([key, desc]) => `- ${key}: ${desc}`)
-  .join('\n')
-
-const fileTypeList = Object.entries(FILE_CONTENT_TYPES)
-  .map(([key, desc]) => `- ${key}: ${desc}`)
-  .join('\n')
-
-const functionList = Object.entries(CEL_FUNCTIONS)
-  .map(([key, desc]) => `- ${key}: ${desc}`)
-  .join('\n')
-
-const compatibilityList = Object.entries(CEL_COMPATIBILITY_RULES)
-  .map(([key, desc]) => `- ${key}: ${desc}`)
-  .join('\n')
-
-const enumReferenceMap = {
-  source_chrome_context: CHROME_CONTEXTS,
-}
-
-const referenceValueList = Object.entries(enumReferenceMap)
-  .map(([key, enumObj]) => {
-    const valuesStr = Object.values(enumObj)
-      .map(v => `'${v.value}' (${v.description})`)
-      .join(', ')
-    return `- ${key}: ${valuesStr}`
-  })
-  .join('\n')
-
-const webCategoryList = URL_CATEGORY_METADATA.commonValuesDescription
 
 const maskTypeList = Object.values(MASK_TYPES)
   .map(m => `- ${m.value}: ${m.description}`)
@@ -125,7 +74,9 @@ export function registerCreateChromeDlpRuleTool(server, options, sessionState) {
     {
       description: `Creates a new Chrome DLP rule for a specific Organizational Unit.
 This tool is specialized for browser-level protection (e.g., uploads, downloads, printing).
-${MCP_SAFETY_CONSTRAINTS.ACTIVE_BLOCK_RESTRICTION}`,
+${MCP_SAFETY_CONSTRAINTS.ACTIVE_BLOCK_RESTRICTION}
+
+To ensure technical accuracy and verify trigger compatibility, you should retrieve the full technical reference using 'get_document' for '11-dlp-cel-syntax' before using this tool.`,
       inputSchema: {
         customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
         orgUnitId: z.string().describe('The target Organizational Unit ID'),
@@ -145,38 +96,7 @@ ${MCP_SAFETY_CONSTRAINTS.ACTIVE_BLOCK_RESTRICTION}`,
           .string()
           .optional()
           .describe(
-            `CEL condition string.
-CEL Condition Syntax Guide:
-${syntaxGuideList}
-
-Valid Content Types (Universal):
-${universalTypeList}
-
-Valid Content Types (Trigger Specific):
-*Navigation Only*:
-${navigationTypeList}
-
-*Paste (WEB_CONTENT_UPLOAD) Only*:
-${pasteTypeList}
-
-*File (UPLOAD/DOWNLOAD/PRINT) Only*:
-${fileTypeList}
-
-Valid Functions:
-${functionList}
-
-Value References (for enums/categories):
-${referenceValueList}
-
-Web Categories (for url_category):
-${webCategoryList}
-
-Trigger Compatibility Rules:
-${compatibilityList}
-
-Multi-Trigger Logic:
-- If multiple triggers are selected, a field or function is valid if it is supported by AT LEAST ONE of those triggers.
-- Example: 'all_content' is supported if you select both 'URL_NAVIGATION' (which doesn't support it) and 'WEB_CONTENT_UPLOAD' (which does).`,
+            "CEL condition string. To ensure technical accuracy and verify trigger compatibility, you should retrieve the full technical reference using 'get_document' for '11-dlp-cel-syntax' before formulating a condition.",
           ),
         action: z
           .enum([CHROME_ACTION_TYPES.BLOCK, CHROME_ACTION_TYPES.WARN, CHROME_ACTION_TYPES.AUDIT])

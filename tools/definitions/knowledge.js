@@ -25,6 +25,7 @@ import { logger } from '../../lib/util/logger.js'
 import { TAGS } from '../../lib/constants.js'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { generateDlpCelReference } from '../../lib/util/chrome_dlp_constants.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -133,7 +134,7 @@ ${indexTable}`
       return dbLoadingPromise
     }
     isDbLoading = true
-    dbLoadingPromise = new Promise((resolve, reject) => {
+    dbLoadingPromise = (async () => {
       try {
         const docLookup = new Map()
         const idToDoc = new Map()
@@ -168,22 +169,35 @@ ${indexTable}`
           }
         })
 
+        // Load Dynamic Documents (*.doc.js)
+        const dynamicDocs = await loadDynamicDocs(dirToRead)
+        dynamicDocs.forEach(doc => {
+          const processedDoc = {
+            ...doc,
+            id: doc.articleId || doc.filename,
+            deprecated: doc.isDeprecated ? 1 : 0,
+          }
+          allDocs.push(processedDoc)
+          docLookup.set(doc.filename, processedDoc)
+          idToDoc.set(String(processedDoc.id), processedDoc)
+        })
+
         cachedDb = { allDocs, docLookup, idToDoc }
-        resolve(cachedDb)
+        return cachedDb
       } catch (e) {
         logger.error(`${TAGS.MCP} Failed to load knowledge index:`, e)
-        reject(e)
+        throw e
       } finally {
         isDbLoading = false
       }
-    })
+    })()
     return dbLoadingPromise
   }
 
   server.registerTool(
     'search_content',
     {
-      description: `Searches the Chrome Enterprise Premium (CEP) knowledge base for verified product information. This tool identifies relevant documentation and provides thematic summaries for the purpose of locating knowledge. These summaries are not a source of truth; to ensure technical accuracy and provide exhaustive facts, retrieve the full document content using 'get_document'.
+      description: `Searches the Chrome Enterprise Premium (CEP) knowledge base for verified product information. This tool identifies relevant documentation and provides thematic summaries for the purpose of locating knowledge. These summaries are not a source of truth; to ensure technical accuracy and provide exhaustive facts, retrieve the full document content using 'get_document'. You should only perform a keyword search if the Knowledge Index below is not sufficient to identify the required reference document.
 
 Investigations into a user's specific environment (e.g., checking their actual rules or licenses) are performed directly using diagnostic tools.
 
@@ -534,6 +548,11 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
         skipAutoResolve: true,
       },
       options,
+      sessionState,
+    ),
+  )
+}
+ons,
       sessionState,
     ),
   )
