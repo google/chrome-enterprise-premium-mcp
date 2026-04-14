@@ -61,8 +61,6 @@ The response includes a pre-computed **issues[]** array with severity ratings. U
 - If the SEB extension is missing, explain which features (like data masking) depend on it
 - If there are no issues, confirm the environment is healthy and summarize the key metrics
 
-You may call additional tools (like search_content) if you need product documentation to explain a finding.
-
 ${SHARED_DIAGNOSTIC_RULES}
 `,
             },
