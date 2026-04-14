@@ -39,9 +39,7 @@ export function registerGetConnectorPolicyTool(server, options, sessionState) {
     'get_connector_policy',
     {
       description: `Retrieves the current configuration for a specific Chrome Enterprise connector.
-Use this to AUDIT or VERIFY settings for features like "blocking screenshots", "printing sensitive data", "real-time URL checks", or "event reporting". 
-
-To modify these settings, use 'enable_chrome_enterprise_connectors'.`,
+Use this to AUDIT or VERIFY settings for features like "printing sensitive data", "real-time URL checks", or "event reporting".`,
       inputSchema: {
         customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
         orgUnitId: z.string().describe('The ID of the organizational unit to check.'),
@@ -69,6 +67,17 @@ To modify these settings, use 'enable_chrome_enterprise_connectors'.`,
          * @returns {Promise<object>} The formatted tool response.
          */
         handler: async ({ customerId, orgUnitId, policy }, { _requestInfo, authToken }) => {
+          const POLICY_LINK_MAPPING = {
+            ON_FILE_ATTACHED: 'file_attached',
+            ON_FILE_DOWNLOAD: 'file_downloaded',
+            ON_BULK_TEXT_ENTRY: 'bulk_text_entry',
+            ON_PRINT: 'print_analysis_connector',
+            ON_REALTIME_URL_NAVIGATION: 'realtime_url_check',
+            ON_SECURITY_EVENT: 'on_security_event',
+          }
+
+          const manualUpdateLink = `https://admin.google.com/ac/chrome/settings/user/details/${POLICY_LINK_MAPPING[policy]}`
+
           const policies = await chromePolicyClient.getConnectorPolicy(
             customerId,
             orgUnitId,
@@ -119,7 +128,11 @@ To modify these settings, use 'enable_chrome_enterprise_connectors'.`,
                     return
                   }
                   for (const [k, v] of Object.entries(o)) {
-                    if (typeof v === 'object' && !Array.isArray(v) && v !== null) {
+                    if (Array.isArray(v) && v.length > 0 && typeof v[0] === 'object') {
+                      // Handle arrays of configuration objects (e.g., printConfigurations)
+                      // Take the first element as per requirements.
+                      walk(v[0])
+                    } else if (typeof v === 'object' && !Array.isArray(v) && v !== null) {
                       walk(v)
                     } else {
                       const mappedKey = CONNECTOR_KEY_MAPPING[k]
@@ -162,13 +175,15 @@ To modify these settings, use 'enable_chrome_enterprise_connectors'.`,
                     let missingCoreEvents = []
                     if (events.length > 0) {
                       missingCoreEvents = coreEvents.filter(e => !events.includes(e))
-                    } else if (explicitlyEmpty || events.length === 0) {
+                    } else if (explicitlyEmpty) {
                       missingCoreEvents = coreEvents
                     }
 
                     if (missingCoreEvents.length > 0) {
                       const mappedMissing = missingCoreEvents.map(e => EVENT_NAME_MAPPING[e] || e)
-                      warnings.push(`Missing core DLP events: ${mappedMissing.join(', ')}`)
+                      warnings.push(
+                        `Missing core DLP events: ${mappedMissing.join(', ')}. Update settings manually at ${manualUpdateLink}`,
+                      )
                     }
                   }
                 } else if (policy !== 'ON_REALTIME_URL_NAVIGATION') {
@@ -185,17 +200,23 @@ To modify these settings, use 'enable_chrome_enterprise_connectors'.`,
 
                   if (isCEP) {
                     if (!cfg.delayDeliveryUntilVerdict && !cfg.delay_delivery_until_verdict) {
-                      warnings.push('Delay enforcement is disabled. Users are unprotected during content analysis.')
+                      warnings.push(
+                        `Delay enforcement is disabled. Users are unprotected during content analysis. Update settings manually at ${manualUpdateLink}`,
+                      )
                     }
                     if (cfg.malwareUrlPatterns?.length > 0 || cfg.sensitiveUrlPatterns?.length > 0) {
-                      warnings.push('Security posture is limited due to URL allowlisting.')
+                      warnings.push(
+                        `Security posture is limited due to URL allowlisting. Update settings manually at ${manualUpdateLink}`,
+                      )
                     }
                   } else if (isNone) {
                     warnings.push(
                       'Connector is not enabled. You can enable it using the enable_chrome_enterprise_connectors tool.',
                     )
                   } else {
-                    warnings.push('3rd party provider detected. Integrated CEP features may be bypassed.')
+                    warnings.push(
+                      `3rd party provider detected. Integrated CEP features may be bypassed. Update settings manually at ${manualUpdateLink}`,
+                    )
                   }
                 }
 

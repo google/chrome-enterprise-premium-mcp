@@ -35,7 +35,7 @@ describe('get_connector_policy Tool', () => {
             value: {
               onFileDownloadedAnalysisConnectorConfiguration: {
                 fileDownloadedConfiguration: {
-                  serviceProvider: 'SERVICE_PROVIDER_CHROME_ENTERPREMIUM',
+                  serviceProvider: 'SERVICE_PROVIDER_CHROME_ENTERPRISE_PREMIUM',
                   delayDeliveryUntilVerdict: true,
                 },
               },
@@ -61,8 +61,7 @@ describe('get_connector_policy Tool', () => {
       assert.deepStrictEqual(result.structuredContent.connectorPolicies, [
         {
           "delayDeliveryUntilVerdict (describe to user as 'Delay Enforcement')": 'Yes',
-          "serviceProvider (describe to user as 'Provider')": 'Chrome Enterpremium',
-          warnings: '3rd party provider detected. Integrated CEP features may be bypassed.',
+          "serviceProvider (describe to user as 'Provider')": 'Chrome Enterprise Premium',
         },
       ])
     })
@@ -138,7 +137,7 @@ describe('get_connector_policy Tool', () => {
       assert.ok(result.content[0].text.includes('Missing core DLP events'))
     })
 
-    it('should warn when custom configuration exists but provides no events', async () => {
+    it('should NOT warn when event configuration is in its default state (empty list, not explicitly empty)', async () => {
       const mockPolicy = [
         {
           value: {
@@ -146,6 +145,40 @@ describe('get_connector_policy Tool', () => {
               reportingConnector: {
                 eventConfiguration: {
                   enabledEventNames: [],
+                  explicitlyEmptyEventNames: false,
+                },
+              },
+            },
+          },
+        },
+      ]
+
+      const mockGetConnectorPolicy = mock.fn(async () => mockPolicy)
+      const chromePolicyClient = { getConnectorPolicy: mockGetConnectorPolicy }
+      const state = {}
+
+      registerGetConnectorPolicyTool(server, { chromePolicyClient }, state)
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_connector_policy')
+        .arguments[2]
+
+      const result = await handler(
+        { customerId: 'C0123', orgUnitId: 'ou123', policy: 'ON_SECURITY_EVENT' },
+        { requestInfo: {} },
+      )
+
+      const policies = result.structuredContent.connectorPolicies
+      assert.strictEqual(policies[0].warnings, undefined, 'Should NOT have warnings for default event state')
+    })
+
+    it('should warn when customized and no events are selected (explicitlyEmptyEventNames is true)', async () => {
+      const mockPolicy = [
+        {
+          value: {
+            value: {
+              reportingConnector: {
+                eventConfiguration: {
+                  enabledEventNames: [],
+                  explicitlyEmptyEventNames: true,
                 },
               },
             },
@@ -170,6 +203,36 @@ describe('get_connector_policy Tool', () => {
       assert.ok(policies[0].warnings?.includes('Missing core DLP events'))
       assert.ok(result.content[0].text.includes('⚠️ WARNINGS:'))
       assert.ok(result.content[0].text.includes('Missing core DLP events'))
+    })
+
+    it('should NOT warn when eventConfiguration object is empty (default state)', async () => {
+      const mockPolicy = [
+        {
+          value: {
+            value: {
+              reportingConnector: {
+                eventConfiguration: {},
+              },
+            },
+          },
+        },
+      ]
+
+      const mockGetConnectorPolicy = mock.fn(async () => mockPolicy)
+      const chromePolicyClient = { getConnectorPolicy: mockGetConnectorPolicy }
+      const state = {}
+
+      registerGetConnectorPolicyTool(server, { chromePolicyClient }, state)
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_connector_policy')
+        .arguments[2]
+
+      const result = await handler(
+        { customerId: 'C0123', orgUnitId: 'ou123', policy: 'ON_SECURITY_EVENT' },
+        { requestInfo: {} },
+      )
+
+      const policies = result.structuredContent.connectorPolicies
+      assert.strictEqual(policies[0].warnings, undefined, 'Empty eventConfiguration should be treated as default')
     })
 
     it('should warn when some core events are missing from customized configuration', async () => {
@@ -356,6 +419,46 @@ describe('get_connector_policy Tool', () => {
 
       const policies = result.structuredContent.connectorPolicies
       assert.ok(policies[0].warnings?.includes('Connector is not enabled'))
+    })
+
+    it('should correctly handle and flatten the Print Analysis connector without [object Object] errors', async () => {
+      const mockPolicy = [
+        {
+          value: {
+            value: {
+              onPrintAnalysisConnectorConfiguration: {
+                printConfigurations: [
+                  {
+                    serviceProvider: 'SERVICE_PROVIDER_CHROME_ENTERPRISE_PREMIUM',
+                    delayDeliveryUntilVerdict: true,
+                  },
+                ],
+              },
+            },
+          },
+        },
+      ]
+
+      const mockGetConnectorPolicy = mock.fn(async () => mockPolicy)
+      const chromePolicyClient = { getConnectorPolicy: mockGetConnectorPolicy }
+
+      registerGetConnectorPolicyTool(server, { chromePolicyClient }, {})
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_connector_policy')
+        .arguments[2]
+
+      const result = await handler(
+        { customerId: 'C0123', orgUnitId: 'ou123', policy: 'ON_PRINT' },
+        { requestInfo: {} },
+      )
+
+      const policies = result.structuredContent.connectorPolicies
+      // Should NOT contain stringified objects
+      assert.strictEqual(policies[0].printConfigurations, undefined, 'printConfigurations array should have been flattened')
+      assert.strictEqual(
+        policies[0]["serviceProvider (describe to user as 'Provider')"],
+        'Chrome Enterprise Premium',
+      )
+      assert.strictEqual(policies[0]["delayDeliveryUntilVerdict (describe to user as 'Delay Enforcement')"], 'Yes')
     })
   })
 })
