@@ -98,9 +98,43 @@ describe('get_connector_policy Tool', () => {
       )
 
       assert.deepStrictEqual(result.structuredContent.connectorPolicies, [
-        { "realtimeUrlCheckEnabled (describe to user as 'Status')": 'Yes' },
+        { "realtimeUrlCheckEnabled (describe to user as 'Real-Time URL Check Configuration')": 'Yes' },
       ])
       assert.strictEqual(result.structuredContent.connectorType, 'ON_REALTIME_URL_NAVIGATION')
+    })
+
+    it('should report "All Core Events Enabled (Default)" for ON_SECURITY_EVENT when default', async () => {
+      const mockPolicy = [
+        {
+          value: {
+            value: {
+              reportingConnector: {
+                eventConfiguration: {
+                  enabledEventNames: [],
+                  explicitlyEmptyEventNames: false,
+                },
+              },
+            },
+          },
+        },
+      ]
+
+      const mockGetConnectorPolicy = mock.fn(async () => mockPolicy)
+      const chromePolicyClient = { getConnectorPolicy: mockGetConnectorPolicy }
+      const state = {}
+
+      registerGetConnectorPolicyTool(server, { chromePolicyClient }, state)
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_connector_policy')
+        .arguments[2]
+
+      const result = await handler(
+        { customerId: 'C0123', orgUnitId: 'ou123', policy: 'ON_SECURITY_EVENT' },
+        { requestInfo: {} },
+      )
+
+      const policies = result.structuredContent.connectorPolicies
+      assert.strictEqual(policies[0]['Reporting Status'], 'All Core Events Enabled (Default)')
+      assert.ok(result.content[0].text.includes('Configured'))
     })
 
     it('should return correctly when explicitlyEmptyEventNames is true', async () => {
