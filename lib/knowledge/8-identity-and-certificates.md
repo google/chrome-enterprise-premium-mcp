@@ -1,5 +1,5 @@
 ---
-summary: 'Explains Identity Provider (IdP) integration and Certificate-Based Access (CBA) configuration, emphasizing the need for Root CA policies.'
+summary: 'Covers Identity Provider (IdP) integration and Certificate-Based Access (CBA). Explains requirements for Root CA deployment and configuring AutoSelectCertificateForUrls for seamless authentication.'
 title: 'Identity Provider (IdP) Integration and Certificates'
 articleId: 8
 ---

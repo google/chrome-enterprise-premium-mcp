@@ -1,5 +1,5 @@
 ---
-summary: 'Provides instructions for deploying the Chrome browser and Endpoint Verification extension using MDM, as well as the steps for device unenrollment.'
+summary: 'Instructions for large-scale browser deployment via MDM (MSI/PKG), silent force-installation of Endpoint Verification (extension ID callobklhcbilhphinckomhgkigmfocg), and the two-step process for device unenrollment.'
 title: 'Chrome Browser Deployment and Enrollment'
 articleId: 2
 ---

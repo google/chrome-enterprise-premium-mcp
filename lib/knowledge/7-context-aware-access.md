@@ -1,5 +1,5 @@
 ---
-summary: 'Guides troubleshooting for Context-Aware Access (CAA) and Security Gateway errors, and securing native apps via Certificate-Based Access.'
+summary: 'Guides troubleshooting for Context-Aware Access (CAA), Access Level definitions, Security Gateway errors, and securing native apps via Certificate-Based Access.'
 title: 'Context-Aware Access (CAA) and Security Gateway'
 articleId: 7
 ---
@@ -12,7 +12,7 @@ Chrome Enterprise Premium (CEP) provides advanced access protection for both clo
 
 ### 401 Unauthorized Errors
 
-A **'401 Unauthorized'** error from the BeyondCorp Security Gateway indicates that the user's request was denied by an **Identity-Aware Proxy (IAP)** policy. This is because the user or their device did not meet the conditions in your Context-Aware Access (CAA) rules. To troubleshoot, review the **IAP logs**.
+A **'401 Unauthorized'** error from the BeyondCorp Security Gateway indicates that the user's request was denied by an **Identity-Aware Proxy (IAP)** policy. This is because the user or their device did not meet the conditions in your Context-Aware Access (CAA) rules. To troubleshoot, review the **IAP logs** and verify your **Access Level definitions** in the Google Cloud Console.
 
 ## Extending Access to Native Applications
 

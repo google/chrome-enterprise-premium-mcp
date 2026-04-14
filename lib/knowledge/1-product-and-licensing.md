@@ -1,5 +1,5 @@
 ---
-summary: 'Covers Chrome Enterprise Premium pricing ($6/user/month), licensing assignment requirements, free trial terms, and necessary IAM roles.'
+summary: 'Covers Chrome Enterprise Premium pricing, licensing assignment, free trial terms, required administrator roles, and troubleshooting setup or provisioning errors.'
 title: 'Chrome Enterprise Premium Product & Licensing Overview'
 articleId: 1
 ---

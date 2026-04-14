@@ -1,5 +1,5 @@
 ---
-summary: 'Troubleshooting guide for Endpoint Verification sync errors, data collection privacy boundaries, and considerations for BYOD and Incognito mode.'
+summary: 'Troubleshooting guide for Endpoint Verification sync errors, OS update reporting delays, data collection privacy boundaries, and considerations for BYOD and Incognito mode.'
 title: 'Endpoint Verification Troubleshooting and Data Usage'
 articleId: 3
 ---
