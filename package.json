@@ -1,5 +1,5 @@
 {
-  "name": "chrome-enterprise-premium-mcp",
+  "name": "@google/chrome-enterprise-premium-mcp",
   "version": "0.1.0",
   "description": "Chrome Enterprise Premium MCP server",
   "license": "Apache-2.0",
