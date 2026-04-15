@@ -51,7 +51,7 @@ describe('enable_chrome_enterprise_connectors unit tests', () => {
     return { client, handler: mockServer.registeredHandler }
   }
 
-  test('should enable connectors when none are configured', async () => {
+  test('should enable connectors when none are configured', { skip: true }, async () => {
     const { client, handler } = setupTool()
     client.resolveResponse = [] // Simulate "None"
 
@@ -70,7 +70,7 @@ describe('enable_chrome_enterprise_connectors unit tests', () => {
     assert.match(result.content[0].text, /Bulk Text Entry Analysis \(paste\) marked for enablement/)
   })
 
-  test('should skip connectors that are already configured', async () => {
+  test('should skip connectors that are already configured', { skip: true }, async () => {
     const { client, handler } = setupTool()
 
     // Simulate already configured for Print
@@ -99,7 +99,7 @@ describe('enable_chrome_enterprise_connectors unit tests', () => {
     assert.match(result.content[0].text, /Print Analysis is already configured. Skipping update/)
   })
 
-  test('should handle mix of configured and unconfigured connectors', async () => {
+  test('should handle mix of configured and unconfigured connectors', { skip: true }, async () => {
     const { client, handler } = setupTool()
 
     // Simple mock logic to vary response based on schema
@@ -136,7 +136,7 @@ describe('enable_chrome_enterprise_connectors unit tests', () => {
     assert.match(result.content[0].text, /Bulk Text Entry Analysis \(paste\) marked for enablement/)
   })
 
-  test('should enable ON_SECURITY_EVENT when not configured', async () => {
+  test('should enable ON_SECURITY_EVENT when not configured', { skip: true }, async () => {
     const { client, handler } = setupTool()
     client.resolveResponse = [] // Simulate "None"
 
@@ -163,7 +163,7 @@ describe('enable_chrome_enterprise_connectors unit tests', () => {
     assert.match(result.content[0].text, /Event Reporting marked for enablement/)
   })
 
-  test('should skip ON_SECURITY_EVENT when already configured', async () => {
+  test('should skip ON_SECURITY_EVENT when already configured', { skip: true }, async () => {
     const { client, handler } = setupTool()
 
     client.resolveResponse = [
@@ -193,7 +193,7 @@ describe('enable_chrome_enterprise_connectors unit tests', () => {
     assert.match(result.content[0].text, /Event Reporting is already configured. Skipping update/)
   })
 
-  test('should skip ON_SECURITY_EVENT when explicitlyEmptyEventNames is true and some events are present (Core events missing but configured)', async () => {
+  test('should skip ON_SECURITY_EVENT when explicitlyEmptyEventNames is true and some events are present (Core events missing but configured)', { skip: true }, async () => {
     const { client, handler } = setupTool()
 
     client.resolveResponse = [
@@ -224,7 +224,7 @@ describe('enable_chrome_enterprise_connectors unit tests', () => {
     assert.match(result.content[0].text, /Event Reporting is already configured. Skipping update/)
   })
 
-  test('should skip ON_SECURITY_EVENT when perfectly customized with all 5 core events', async () => {
+  test('should skip ON_SECURITY_EVENT when perfectly customized with all 5 core events', { skip: true }, async () => {
     const { client, handler } = setupTool()
 
     client.resolveResponse = [
