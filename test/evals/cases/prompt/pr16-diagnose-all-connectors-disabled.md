@@ -5,16 +5,15 @@ tags:
   - prompt
   - diagnose
 scenario: all-connectors-disabled
-prompt_name: 'cep:diagnose'
+prompt_name: 'cep:health'
 expected_tools:
-  - list_org_units
-  - get_connector_policy
+  - diagnose_environment
 priority: P1
 ---
 
 ## Prompt
 
-(Fetched from MCP server at runtime via prompt_name: cep:diagnose)
+(Fetched from MCP server at runtime via prompt_name: cep:health)
 
 ## Golden Response
 

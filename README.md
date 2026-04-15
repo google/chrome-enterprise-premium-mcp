@@ -41,8 +41,8 @@ Google Account data, as well as other data shared with you.
 ## Quick Start
 
 ```bash
-git clone <repo-url>
-cd cmcp
+git clone https://github.com/google/chrome-enterprise-premium-mcp.git
+cd chrome-enterprise-premium-mcp
 npm install
 ```
 
@@ -125,9 +125,9 @@ or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
 ```json
 {
   "mcpServers": {
-    "chrome-enterprise": {
-      "command": "node",
-      "args": ["/absolute/path/to/cmcp/mcp-server.js"],
+    "cep": {
+      "command": "npx",
+      "args": ["-y", "@google/chrome-enterprise-premium-mcp@latest"],
       "env": { "GCP_STDIO": "true" }
     }
   }
@@ -144,9 +144,9 @@ Add to `.mcp.json` in your project root:
 ```json
 {
   "mcpServers": {
-    "chrome-enterprise": {
-      "command": "node",
-      "args": ["/absolute/path/to/cmcp/mcp-server.js"],
+    "cep": {
+      "command": "npx",
+      "args": ["-y", "@google/chrome-enterprise-premium-mcp@latest"],
       "env": { "GCP_STDIO": "true" }
     }
   }
@@ -163,9 +163,9 @@ Add to `.vscode/mcp.json`:
 ```json
 {
   "servers": {
-    "chrome-enterprise": {
-      "command": "node",
-      "args": ["/absolute/path/to/cmcp/mcp-server.js"],
+    "cep": {
+      "command": "npx",
+      "args": ["-y", "@google/chrome-enterprise-premium-mcp@latest"],
       "env": { "GCP_STDIO": "true" }
     }
   }
@@ -182,9 +182,9 @@ Add to `~/.gemini/settings.json`:
 ```json
 {
   "mcpServers": {
-    "chrome-enterprise": {
-      "command": "node",
-      "args": ["/absolute/path/to/cmcp/mcp-server.js"],
+    "cep": {
+      "command": "npx",
+      "args": ["-y", "@google/chrome-enterprise-premium-mcp@latest"],
       "env": { "GCP_STDIO": "true" }
     }
   }
@@ -193,8 +193,7 @@ Add to `~/.gemini/settings.json`:
 
 </details>
 
-> Replace `/absolute/path/to/cmcp/` with the actual path where you cloned the
-> repo. Relative paths may not resolve correctly depending on the client.
+> (Optional) If you are running from a local checkout instead of npx, replace the command with `node` and args with the absolute path to `mcp-server.js`. Relative paths may not resolve correctly depending on the client.
 
 ### 4. Verify
 
@@ -205,18 +204,50 @@ Restart your MCP client, then ask:
 You should see the agent discover and list the available tools. If tools don't
 appear, see [Troubleshooting](#troubleshooting).
 
-### Configuration (`.env`)
+### Configuration
 
-The server loads a `.env` file from the project root on startup if one exists.
-Copy the example to get started:
+The server is configured via environment variables.
 
-```bash
-cp .env.example .env
+#### 1. MCP Client (Stdio mode)
+
+Add variables to the `env` block of your client's settings file. The client
+injects these into the server's environment on startup.
+
+```json
+{
+  "mcpServers": {
+    "cep": {
+      "command": "npx",
+      "args": ["-y", "@google/chrome-enterprise-premium-mcp@latest"],
+      "env": {
+        "GCP_STDIO": "true",
+        "GOOGLE_CLOUD_QUOTA_PROJECT": "your-project-id"
+      }
+    }
+  }
+}
 ```
 
-See `.env.example` for all available variables with inline documentation on how
-to obtain each value. At minimum, you'll want to set
-`GOOGLE_CLOUD_QUOTA_PROJECT` to avoid repeated `--set-quota-project` commands.
+#### 2. Standalone (HTTP mode)
+
+Variables can be passed inline or via a `.env` file in your working directory.
+See
+[`.env.example`](https://github.com/google/chrome-enterprise-premium-mcp/blob/main/.env.example)
+for all options.
+
+```bash
+PORT=8080 GCP_STDIO=false npx -y @google/chrome-enterprise-premium-mcp@latest
+```
+
+#### 3. Key Variables
+
+| Variable | Description | Default |
+| :--- | :--- | :--- |
+| `GCP_STDIO` | `true` for Stdio (local); `false` for HTTP (remote). | `true` |
+| `PORT` | Network port when `GCP_STDIO=false`. | `3000` |
+| `GOOGLE_CLOUD_QUOTA_PROJECT` | GCP project ID for API quotas. | - |
+| `OAUTH_ENABLED` | Set `true` to require OAuth (HTTP mode only). | `false` |
+| `LOG_LEVEL` | Verbosity (`error`, `warn`, `info`, `debug`). | `info` |
 
 ## Prerequisites
 
@@ -241,10 +272,9 @@ to obtain each value. At minimum, you'll want to set
 
 | Prompt         | Description                                                                            |
 | :------------- | :------------------------------------------------------------------------------------- |
-| `cep:diagnose` | Health check of the Chrome Enterprise environment (APIs, DLP, connectors, extensions). |
-| `cep:maturity` | DLP maturity assessment based on rule configuration and events.                        |
-| `cep:noise`    | Rule noise analysis (false positives/overrides) with optimization recommendations.     |
-| `cep:expert`   | Loads the Chrome Enterprise Premium expert persona with full product context.          |
+| `cep:health`   | Health check of the Chrome Enterprise environment (APIs, DLP, connectors, extensions). |
+| `cep:optimize` | Rule optimization and maturity assessment.                                             |
+| `cep:expert`   | Manually re-injects the expert persona and rules (useful if the agent loses context).  |
 
 ### Tools
 
@@ -404,7 +434,7 @@ OAuth and passes their access token as a Bearer header. The server validates the
 token and uses it directly for Google API calls — ADC is not involved.
 
 ```bash
-GCP_STDIO=false npm start
+GCP_STDIO=false npx -y @google/chrome-enterprise-premium-mcp@latest
 ```
 
 See `.env.example` for the full set of OAuth variables and how to configure
@@ -523,7 +553,7 @@ shell's `nvm`-managed version.
 3. **Check `node` visibility** — GUI apps (Claude Desktop, VS Code) may not
    inherit your shell PATH. Try the full path to node:
    `"command": "/usr/local/bin/node"` (find yours with `which node`).
-4. **Test manually** — run `node /path/to/cmcp/mcp-server.js` in a terminal. You
+4. **Test manually** — run `npx -y @google/chrome-enterprise-premium-mcp@latest` in a terminal. You
    should see
    `[mcp] Chrome Enterprise Premium MCP server stdio transport connected` on
    stderr. If you see errors instead, fix those first.

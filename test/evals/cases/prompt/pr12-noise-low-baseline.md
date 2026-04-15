@@ -5,7 +5,7 @@ tags:
   - prompt
   - noise
 scenario: healthy
-prompt_name: 'cep:noise'
+prompt_name: 'cep:optimize'
 expected_tools:
   - diagnose_environment
   - get_chrome_activity_log
@@ -15,7 +15,7 @@ stability: 0.9
 
 ## Prompt
 
-(Fetched from MCP server at runtime via prompt_name: cep:noise)
+(Fetched from MCP server at runtime via prompt_name: cep:optimize)
 
 ## Golden Response
 

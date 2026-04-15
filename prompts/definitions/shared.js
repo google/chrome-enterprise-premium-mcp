@@ -26,7 +26,7 @@ export const SHARED_DIAGNOSTIC_RULES = `3. Summarize your findings using the fol
 
 **Visual Status Mapping (The Summary Table)**
 Begin your response with a Markdown table that provides a clear status for every metric.
-*   Columns: \`Security Metric\`, \`Status\`, \`Findings\`
+*   Columns: \`Security Control\`, \`Status\`, \`Findings\`
 *   Use emojis for quick scanning: ✅ (Configured/Active), ❌ (Inactive/Missing), ⚠️ (Unknown/Unverified).
 *   Keep the "Findings" text brief and direct.
 
