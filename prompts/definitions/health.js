@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @file Prompt definition for the '/cep:diagnose' command.
+ * @file Prompt definition for the '/cep:health' command.
  */
 
 import { SHARED_DIAGNOSTIC_RULES } from './shared.js'
@@ -23,15 +23,15 @@ import { SHARED_DIAGNOSTIC_RULES } from './shared.js'
 /**
  * MCP prompt name for the environment health-check command.
  */
-export const DIAGNOSE_PROMPT_NAME = 'cep:diagnose'
+export const HEALTH_PROMPT_NAME = 'cep:health'
 
 /**
- * Registers the '/cep:diagnose' prompt with the MCP server.
+ * Registers the '/cep:health' prompt with the MCP server.
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance
  */
-export const registerDiagnosePrompt = server => {
+export const registerHealthPrompt = server => {
   server.registerPrompt(
-    DIAGNOSE_PROMPT_NAME,
+    HEALTH_PROMPT_NAME,
     {
       description: "Run a health check on the user's environment.",
       arguments: [],

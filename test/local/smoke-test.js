@@ -110,7 +110,7 @@ function runPromptTest() {
 
     res.on('end', () => {
       console.log('responseBody:', responseBody)
-      if (res.statusCode === 200 && responseBody.includes('"name":"cep:diagnose"')) {
+      if (res.statusCode === 200 && responseBody.includes('"name":"cep:health"')) {
         console.log('Prompt smoke test passed!')
         server.kill()
         runOAuthTest()

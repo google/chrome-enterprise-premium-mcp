@@ -14,36 +14,37 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# prompts
+# MCP Prompts
 
-MCP prompt definitions. Prompts are pre-built instruction sequences a user can
-invoke (e.g., `cep:diagnose`) that return structured messages to guide the agent
-through a specific workflow.
+The Chrome Enterprise Premium MCP server provides a set of prompts to guide the
+agent through complex diagnostic and optimization workflows.
 
 ## Structure
 
 - `index.js` — Registers all prompts with the server.
 - `definitions/` — One file per prompt, each exporting a
   `registerXxxPrompt(server)` function.
-- `system-prompt.md` — The agent's behavioral instructions. Not a prompt itself
-  — it is injected into the first tool response by `tools/utils/wrapper.js` to
-  establish the agent's persona and constraints.
+- `system-prompt.md` — The agent's behavioral instructions. It is automatically
+  injected into the first tool response by `tools/utils/wrapper.js` to
+  establish the agent's persona and constraints seamlessly. However, because some
+  MCP clients occasionally drop context or allow the persona to fade during long
+  conversations, the `cep:expert` prompt serves as a manual override. Invoking
+  `cep:expert` forcefully re-injects this entire system prompt directly into the
+  chat context.
 
 ## Current prompts
 
 | Name           | File          | Description                                            |
 | :------------- | :------------ | :----------------------------------------------------- |
-| `cep:diagnose` | `diagnose.js` | Health check of the Chrome Enterprise environment.     |
-| `cep:maturity` | `maturity.js` | DLP maturity assessment based on rule configuration.   |
-| `cep:noise`    | `noise.js`    | Rule noise analysis with optimization recommendations. |
+| `cep:health`   | `health.js`   | Health check of the Chrome Enterprise environment.     |
+| `cep:optimize` | `optimize.js` | Rule optimization and maturity assessment.             |
 | `cep:expert`   | `expert.js`   | Loads the full expert persona from `system-prompt.md`. |
-| `cep:feedback` | `feedback.js` | Generates a diagnostic feedback report.                |
 
 ## Shared diagnostic rules (`definitions/shared.js`)
 
 The `SHARED_DIAGNOSTIC_RULES` constant contains markdown formatting instructions
 (status table format, severity tiers, tone) appended to the diagnostic prompts
-(diagnose, maturity, noise). This keeps the output format consistent across
+(health). This keeps the output format consistent across
 health-check workflows.
 
 ## Adding a new prompt

@@ -57,13 +57,27 @@ describe('MCP Prompts', () => {
     const result = await client.listPrompts()
     const promptNames = result.prompts.map(p => p.name).sort()
 
-    assert.deepStrictEqual(promptNames, ['cep:diagnose', 'cep:expert', 'cep:maturity', 'cep:noise'].sort())
+    assert.deepStrictEqual(promptNames, ['cep:health', 'cep:expert', 'cep:optimize'].sort())
   })
 
-  it('should retrieve the "cep:diagnose" prompt content', async () => {
-    const result = await client.getPrompt({ name: 'cep:diagnose' })
+  it('should retrieve the "cep:health" prompt content', async () => {
+    const result = await client.getPrompt({ name: 'cep:health' })
 
     assert.ok(result.messages)
     assert.ok(result.messages[0].content.text.includes('diagnose_environment'))
+  })
+
+  it('should retrieve the "cep:optimize" prompt content', async () => {
+    const result = await client.getPrompt({ name: 'cep:optimize' })
+
+    assert.ok(result.messages)
+    assert.ok(result.messages[0].content.text.includes('My Assessment of Your Environment'))
+  })
+
+  it('should retrieve the "cep:expert" prompt content', async () => {
+    const result = await client.getPrompt({ name: 'cep:expert' })
+
+    assert.ok(result.messages)
+    assert.ok(result.messages[0].content.text.includes('Chrome Enterprise Premium (CEP) Technical Agent'))
   })
 })

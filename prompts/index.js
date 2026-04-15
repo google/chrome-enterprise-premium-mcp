@@ -20,9 +20,8 @@ limitations under the License.
  * Provides functions to register all available prompts with the MCP server.
  */
 
-import { registerDiagnosePrompt } from './definitions/diagnose.js'
-import { registerMaturityPrompt } from './definitions/maturity.js'
-import { registerNoisePrompt } from './definitions/noise.js'
+import { registerHealthPrompt } from './definitions/health.js'
+import { registerOptimizePrompt } from './definitions/optimize.js'
 import { registerExpertPrompt } from './definitions/expert.js'
 
 /**
@@ -30,8 +29,7 @@ import { registerExpertPrompt } from './definitions/expert.js'
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance
  */
 export function registerPrompts(server) {
-  registerDiagnosePrompt(server)
-  registerMaturityPrompt(server)
-  registerNoisePrompt(server)
+  registerHealthPrompt(server)
+  registerOptimizePrompt(server)
   registerExpertPrompt(server)
 }
