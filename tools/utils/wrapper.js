@@ -23,6 +23,21 @@ import { logger } from '../../lib/util/logger.js'
 import { validateAndGetOrgUnitId } from './org-unit.js'
 
 /**
+ * Formats a raw string (e.g., SNAKE_CASE status) to Title Case with spaces.
+ * @param {string} s - The raw string
+ * @returns {string} The formatted string
+ */
+export function formatStatus(s) {
+  if (!s) {
+    return 'Unknown'
+  }
+  return String(s)
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, l => l.toUpperCase())
+}
+
+/**
  * Generates a proactive remediation message for authentication errors.
  * @param {number} status - The HTTP status code
  * @param {boolean} [isOAuth] - Whether the CLI is running in OAuth mode

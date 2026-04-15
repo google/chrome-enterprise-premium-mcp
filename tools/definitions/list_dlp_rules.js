@@ -19,7 +19,7 @@ limitations under the License.
  */
 
 import { z } from 'zod'
-import { guardedToolCall, formatToolResponse, safeFormatResponse } from '../utils/wrapper.js'
+import { guardedToolCall, formatToolResponse, safeFormatResponse, formatStatus } from '../utils/wrapper.js'
 import { commonOutputSchemas } from './shared.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
@@ -74,27 +74,12 @@ export function registerListDlpRulesTool(server, options, sessionState) {
                 })
               }
 
-              /**
-               * Formats a raw string by replacing underscores with spaces and title-casing.
-               * @param {string} s - The raw string.
-               * @returns {string} The formatted string.
-               */
-              const format = s => {
-                if (!s) {
-                  return 'Unknown'
-                }
-                return String(s)
-                  .replace(/_/g, ' ')
-                  .toLowerCase()
-                  .replace(/\b\w/g, l => l.toUpperCase())
-              }
-
               const ruleEntries = data.map(p => {
                 const setting = p.setting || {}
                 const value = setting.value || {}
 
                 const name = value.displayName || setting.displayName || p.displayName || 'Unnamed Rule'
-                const status = format(value.state || setting.state)
+                const status = formatStatus(value.state || setting.state)
 
                 let action = 'Unknown'
                 const chromeAction = value.action?.chromeAction || {}

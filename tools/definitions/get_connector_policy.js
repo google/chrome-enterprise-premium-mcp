@@ -19,7 +19,7 @@ limitations under the License.
  */
 
 import { z } from 'zod'
-import { guardedToolCall, formatToolResponse, safeFormatResponse } from '../utils/wrapper.js'
+import { guardedToolCall, formatToolResponse, safeFormatResponse, formatStatus } from '../utils/wrapper.js'
 import { commonOutputSchemas } from './shared.js'
 import { CONNECTOR_KEY_MAPPING, POLICY_DISPLAY_NAMES, EVENT_NAME_MAPPING } from '../../lib/constants.js'
 import { ConnectorPolicyFilter } from '../../lib/api/chromepolicy.js'
@@ -120,12 +120,7 @@ To enable or modify a connector that is not yet configured, use the "enable_chro
                   if (EVENT_NAME_MAPPING[val]) {
                     return EVENT_NAME_MAPPING[val]
                   }
-                  return val
-                    .replace(/^[A-Z_]+_ENUM_/, '')
-                    .replace(/^SERVICE_PROVIDER_/, '')
-                    .replace(/_/g, ' ')
-                    .toLowerCase()
-                    .replace(/\b\w/g, c => c.toUpperCase())
+                  return formatStatus(val.replace(/^[A-Z_]+_ENUM_/, '').replace(/^SERVICE_PROVIDER_/, ''))
                 }
 
                 const walk = o => {

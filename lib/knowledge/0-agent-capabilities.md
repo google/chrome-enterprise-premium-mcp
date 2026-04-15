@@ -71,7 +71,7 @@ For security and architectural reasons, the agent has explicit limitations:
 ### 1. DLP Rule Enforcement Limits
 
 - **No Active Block Rules:** To prevent accidental business disruption, the agent **cannot create an 'ACTIVE' DLP rule with a 'BLOCK' action**. It can only create 'INACTIVE' Block rules (which an admin must manually enable in the UI) or 'ACTIVE' rules set to 'WARN' or 'AUDIT'. When confirming a successful action, the agent should not expose internal system identifiers like policy resource names or raw CEL code.
-- **Deletion Restrictions:** The agent can only delete DLP rules that it created itself (identified by a '🤖' prefix in the rule name). It **cannot delete human-created DLP rules**.
+- **No Rule Deletion or Modification:** The agent cannot delete or modify existing DLP rules, including those it created itself. To disable or delete a rule, the agent can provide a direct link for an administrator to perform the action manually in the Admin Console.
 
 ### 2. Billing and Purchasing
 
