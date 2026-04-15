@@ -39,7 +39,8 @@ export function registerGetConnectorPolicyTool(server, options, sessionState) {
     'get_connector_policy',
     {
       description: `Retrieves the current configuration for a specific Chrome Enterprise connector.
-Use this to AUDIT or VERIFY settings for features like "printing sensitive data", "real-time URL checks", or "event reporting".`,
+Use this to AUDIT or VERIFY settings for features like "printing sensitive data", "real-time URL checks", or "event reporting".
+To enable or modify a connector that is not yet configured, use the "enable_chrome_enterprise_connectors" tool.`,
       inputSchema: {
         customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
         orgUnitId: z.string().describe('The ID of the organizational unit to check.'),
@@ -184,6 +185,8 @@ Use this to AUDIT or VERIFY settings for features like "printing sensitive data"
                       warnings.push(
                         `Missing core DLP events: ${mappedMissing.join(', ')}. Update settings manually at ${manualUpdateLink}`,
                       )
+                    } else if (events.length === 0 && !explicitlyEmpty) {
+                      flattened['Reporting Status'] = 'All Core Events Enabled (Default)'
                     }
                   }
                 } else if (policy !== 'ON_REALTIME_URL_NAVIGATION') {

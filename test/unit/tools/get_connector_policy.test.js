@@ -102,8 +102,8 @@ describe('get_connector_policy tool handler', () => {
     )
     const text = result.content[0].text
 
-    assert.match(text, /Status: Chrome Enterprise Premium \(CEP\)/)
-    assert.match(text, /Status: None/)
+    assert.match(text, /Real time URL check Configuration: Chrome Enterprise Premium/)
+    assert.match(text, /Real time URL check Configuration: None/)
   })
 
   test('should format multiple policies in a single response', async () => {
