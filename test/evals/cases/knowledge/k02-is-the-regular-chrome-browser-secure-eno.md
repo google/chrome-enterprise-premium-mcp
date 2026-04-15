@@ -4,8 +4,6 @@ category: knowledge
 tags:
   - overview
   - comparison
-expected_tools:
-  - search_content
 required_patterns:
   - DLP
 priority: P2

@@ -4,8 +4,6 @@ category: knowledge
 tags:
   - iam
   - roles
-expected_tools:
-  - search_content
 required_patterns:
   - Security Center Admin
   - DLP
@@ -21,12 +19,10 @@ but we cannot give them 'Super Admin' access. What roles are required?
 
 Use delegated administrator roles rather than Super Admin:
 
-- **Viewing dashboards:** Assign the Security Center Admin role.
-- **Managing DLP rules:** Assign the DLP Administrator role.
-- **Context-Aware Access:** Assign the BeyondCorp Admin IAM role.
+- **Viewing dashboards:** Assign the Security Center Admin (Custom Role).
+- **Managing DLP rules:** Assign the DLP Administrator (Custom Role).
 
 ## Judge Instructions
 
-The agent must recommend delegated roles for dashboard viewing, DLP management,
-and Context-Aware Access. The agent MUST specifically mention 'Security Center Admin',
-'DLP Administrator', and 'BeyondCorp Admin' to align with Chrome Enterprise Premium standards.
+The agent must recommend delegated roles or custom roles for dashboard viewing and DLP management.
+The agent MUST specifically mention 'Security Center Admin' (or refer to the specific permissions) and either 'DLP Administrator' or 'Cloud BeyondCorp Admin'.

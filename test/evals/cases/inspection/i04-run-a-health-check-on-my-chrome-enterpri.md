@@ -4,10 +4,7 @@ category: inspection
 tags:
   - inspection
 expected_tools:
-  - check_cep_subscription
-  - list_org_units
-  - count_browser_versions
-  - list_dlp_rules
+  - diagnose_environment
 priority: P0
 stability: 0.9
 ---
@@ -18,8 +15,8 @@ Run a health check on my Chrome Enterprise Premium deployment. Check my subscrip
 
 ## Golden Response
 
-Agent should attempt a comprehensive check. It will likely encounter an error checking the subscription status (due to test backend limitations) but should still report on the other areas: 2 OUs configured, Browser versions (15 on v120 stable, 3 on v121 beta), and 1 DLP rule identified as "Active".
+Agent should attempt a comprehensive check. It should report on the areas: Active subscription, 2 OUs configured, Browser versions (either total counts or specific breakdown), and 1 DLP rule identified as "Active".
 
 ## Judge Instructions
 
-This is a comprehensive health check. The agent should call ALL four expected tools and synthesize findings into a summary. It is perfectly acceptable for the agent to report an inability to retrieve the subscription status or to report the DLP rule as "Active", as long as it attempts to gather the data and provides a cohesive summary of the successful findings. Partial tool usage is a FAIL.
+This is a comprehensive health check. The agent should use diagnose_environment and synthesize findings into a summary. It should report the active subscription status, OUs, browser version information, and DLP rule status, providing a cohesive summary of the successful findings.

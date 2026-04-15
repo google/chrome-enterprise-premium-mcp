@@ -6,7 +6,6 @@ tags:
 expected_tools:
   - list_dlp_rules
   - get_connector_policy
-  - search_content
 priority: P2
 ---
 

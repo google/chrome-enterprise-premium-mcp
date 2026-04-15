@@ -4,8 +4,6 @@ category: knowledge
 tags:
   - ev
   - macos
-expected_tools:
-  - search_content
 required_patterns:
   - Sync Now
 priority: P2

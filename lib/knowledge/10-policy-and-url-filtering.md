@@ -6,7 +6,7 @@ articleId: 10
 
 # Policy Management and URL Filtering
 
-Chrome Enterprise provides granular controls for URL access and policies through Cloud and Platform management.
+Chrome Enterprise provides granular controls for URL access and policies through Cloud and Platform management, which can be monitored via [SIEM and Event Reporting](9-siem-and-event-reporting.md).
 
 ## URL Filtering and Wildcards
 

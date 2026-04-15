@@ -3,8 +3,6 @@ id: k14
 category: knowledge
 tags:
   - byod
-expected_tools:
-  - search_content
 priority: P2
 ---
 

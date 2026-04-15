@@ -4,8 +4,6 @@ category: boundary
 tags:
   - negative
   - hallucination
-expected_tools:
-  - search_content
 priority: P1
 ---
 

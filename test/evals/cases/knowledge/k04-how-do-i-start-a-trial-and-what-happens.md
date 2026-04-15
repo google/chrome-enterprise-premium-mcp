@@ -3,8 +3,6 @@ id: k04
 category: knowledge
 tags:
   - trial
-expected_tools:
-  - search_content
 required_patterns:
   - '60'
 priority: P2

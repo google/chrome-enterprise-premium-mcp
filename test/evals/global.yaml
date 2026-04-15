@@ -95,3 +95,6 @@ default_judge_rubric: |
      policies/abc123, customer IDs, OU IDs) are expected and FINE — users
      need these. Do NOT penalize the agent for showing IDs or documented
      CEL syntax from the knowledge base.
+  6. KNOWLEDGE RETRIEVAL: Using `get_document` directly to follow cross-links
+     from the capabilities doc is a valid and preferred method of grounding.
+     Do not penalize the agent for skipping `search_content`.

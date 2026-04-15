@@ -26,6 +26,7 @@ import { logger } from '../../lib/util/logger.js'
 import { TAGS } from '../../lib/constants.js'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import matter from 'gray-matter'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -34,36 +35,6 @@ const DB_DIR = path.resolve(__dirname, '../../lib/knowledge')
 let cachedDb = null
 let isDbLoading = false
 let dbLoadingPromise = null
-
-/**
- * Parses markdown frontmatter and splits it from the body content.
- * @param {string} content - The raw markdown file content.
- * @returns {{metadata: object, content: string}} The parsed metadata and body content.
- */
-function parseMarkdownFrontmatter(content) {
-  const match = content.match(/^---\n([\s\S]*?)\n---/)
-  const metadata = {}
-  let body = content
-
-  if (match) {
-    const frontmatter = match[1]
-    body = content.slice(match[0].length).trim()
-
-    frontmatter.split('\n').forEach(line => {
-      const separatorIndex = line.indexOf(':')
-      if (separatorIndex !== -1) {
-        const key = line.slice(0, separatorIndex).trim()
-        let value = line.slice(separatorIndex + 1).trim()
-        if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
-          value = value.slice(1, -1)
-        }
-        metadata[key] = value
-      }
-    })
-  }
-
-  return { metadata, content: body }
-}
 
 /**
  * Registers knowledge search tools with the MCP server.
@@ -82,7 +53,9 @@ export function registerKnowledgeTools(server, options, sessionState) {
     files.sort((a, b) => {
       const numA = parseInt(a.split('-')[0])
       const numB = parseInt(b.split('-')[0])
-      if (!isNaN(numA) && !isNaN(numB)) return numA - numB
+      if (!isNaN(numA) && !isNaN(numB)) {
+        return numA - numB
+      }
       return a.localeCompare(b)
     })
 
@@ -90,7 +63,7 @@ export function registerKnowledgeTools(server, options, sessionState) {
       if (file.endsWith('.md') && file !== 'README.md') {
         const filePath = path.join(dirToRead, file)
         const fileContent = fs.readFileSync(filePath, 'utf-8')
-        const { metadata } = parseMarkdownFrontmatter(fileContent)
+        const { data: metadata } = matter(fileContent)
         if (metadata.summary) {
           docSummaries.push({
             filename: file.replace('.md', ''),
@@ -103,9 +76,7 @@ export function registerKnowledgeTools(server, options, sessionState) {
     logger.error(`${TAGS.MCP} Failed to pre-scan knowledge for index:`, e)
   }
 
-  const indexTable = docSummaries
-    .map(s => `| **${s.filename}** | ${s.summary} |`)
-    .join('\n')
+  const indexTable = docSummaries.map(s => `| **${s.filename}** | ${s.summary} |`).join('\n')
 
   const knowledgeIndex = `### Knowledge Index
 This index is for locating relevant documentation by topic. Document summaries are not a source of truth; for authoritative technical details, exact roles, or procedures, retrieve the full content via 'get_document'.
@@ -146,21 +117,15 @@ ${indexTable}`
           if (file.endsWith('.md')) {
             const filePath = path.join(dirToRead, file)
             const fileContent = fs.readFileSync(filePath, 'utf-8')
-            const { metadata, content } = parseMarkdownFrontmatter(fileContent)
+            const { data: metadata, content } = matter(fileContent)
 
             const doc = {
               id: metadata.articleId || file,
               filename: file.replace('.md', ''),
-              kind: metadata.kind || 'curated',
               title: metadata.title || file.replace('.md', ''),
               content: content,
-              articleType: metadata.articleType,
               articleId: metadata.articleId,
               summary: metadata.summary,
-              url: metadata.url,
-              deprecated: metadata.isDeprecated === 'true' ? 1 : 0,
-              policyId: metadata.policyId,
-              supportedPlatformsText: metadata.supportedPlatformsText,
             }
 
             allDocs.push(doc)
@@ -175,7 +140,6 @@ ${indexTable}`
           const processedDoc = {
             ...doc,
             id: doc.articleId || doc.filename,
-            deprecated: doc.isDeprecated ? 1 : 0,
           }
           allDocs.push(processedDoc)
           docLookup.set(doc.filename, processedDoc)
@@ -217,9 +181,7 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
               .object({
                 id: z.string(),
                 title: z.string(),
-                url: z.string().nullable(),
                 filename: z.string(),
-                isDeprecated: z.boolean(),
                 relevanceScore: z.number(),
                 get_document_arguments: z.object({
                   filename: z.string(),
@@ -238,7 +200,6 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
          * Handler for searching knowledge base content.
          * @param {object} args - The tool arguments.
          * @param {string} args.query - The search query.
-         * @param {string} [args.kind] - The content type to filter by.
          * @param {number} [args.limit] - The maximum number of results to return.
          * @returns {Promise<object>} The formatted tool response.
          */
@@ -277,24 +238,12 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
                 score += 0.3
               }
             })
-            if (doc.kind === 'curated') {
-              score *= 2.0
-            }
             return { ...doc, score, originalId: doc.id }
           })
 
           boostedResults.sort((a, b) => b.score - a.score)
 
           let sliced = boostedResults.slice(0, limit)
-
-          // Guarantee at least one curated result appears, since curated docs are authoritative
-          const curatedHits = boostedResults.filter(r => r.kind === 'curated')
-          if (curatedHits.length > 0) {
-            const hasCuratedInSlice = sliced.some(r => r.kind === 'curated')
-            if (!hasCuratedInSlice) {
-              sliced.push(curatedHits[0])
-            }
-          }
 
           if (sliced.length === 0) {
             const sc = { documents: [] }
@@ -355,9 +304,7 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
             return {
               id: r.originalId || r.id,
               title: r.title,
-              url: r.url || null,
               filename: r.filename,
-              isDeprecated: r.deprecated === 1,
               relevanceScore: parseFloat(r.score.toFixed(2)),
               get_document_arguments: {
                 filename: r.filename,
@@ -369,11 +316,9 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
 
           const markdownList = documents
             .map((doc, index) => {
-              const status = doc.isDeprecated ? ' [Deprecated]' : ''
-              const titleLink = doc.url ? `[${doc.title}](${doc.url})` : doc.title
               const getDocHint = `*(To read full doc, use get_document with filename: "${doc.filename}")*`
               const summaryText = doc.summary ? `**Summary:** ${doc.summary}\n` : ''
-              return `### ${index + 1}. ${titleLink}${status}\n${getDocHint}\n${summaryText}**Snippet:** ${doc.snippet}\n`
+              return `### ${index + 1}. ${doc.title}\n${getDocHint}\n${summaryText}**Snippet:** ${doc.snippet}\n`
             })
             .join('\n')
 
@@ -396,9 +341,9 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
     'get_document',
     {
       description:
-        'Retrieves the full text content of a specific knowledge base document. Use the "filename" returned by search_content.',
+        'Retrieves the full text content of a specific knowledge base document. You can provide the filename, or the numeric articleId extracted from a Markdown cross-link.',
       inputSchema: z.object({
-        filename: z.string().min(1).describe('The filename (without .md extension) as returned by search_content.'),
+        filename: z.string().describe('The filename, or the numeric articleId from a cross-link.'),
       }),
       outputSchema: z
         .object({
@@ -418,8 +363,23 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
         handler: async args => {
           const db = await loadDb()
           const docLookup = db.docLookup
+          const idToDoc = db.idToDoc
 
-          const doc = docLookup.get(args.filename)
+          let doc = docLookup.get(args.filename)
+
+          if (!doc) {
+            const cleanFilename = String(args.filename)
+              .replace(/\.md$/, '')
+              .replace(/\.doc\.js$/, '')
+            doc = docLookup.get(cleanFilename)
+          }
+
+          if (!doc) {
+            const match = String(args.filename).match(/^\d+/)
+            if (match) {
+              doc = idToDoc.get(match[0])
+            }
+          }
 
           if (!doc) {
             const sc = { document: null }
@@ -430,21 +390,7 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
             })
           }
 
-          const urlLink = doc.url ? `[View Source](${doc.url})` : 'N/A'
-          const facts = []
-          if (doc.kind === 'policies') {
-            if (doc.policyId) {
-              facts.push(`- **Policy ID:** ${doc.policyId}`)
-            }
-            if (doc.supportedPlatformsText) {
-              facts.push(`- **Platforms:** ${doc.supportedPlatformsText}`)
-            }
-          }
-          const factsHeader = facts.length > 0 ? `### Key Facts\n${facts.join('\n')}\n\n` : ''
-
-          const sourcesFooter = doc.url ? `\n\n---\n### Sources\n- [Official Documentation](${doc.url})` : ''
-
-          const text = `## ${doc.title}\n\n**Source:** ${urlLink}\n\n${factsHeader}--- \n\n${doc.content}${sourcesFooter}`
+          const text = `## ${doc.title}\n\n${doc.content}`
 
           return formatToolResponse({
             summary: text,
@@ -480,8 +426,6 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
             z
               .object({
                 title: z.string(),
-                url: z.string().nullable(),
-                isDeprecated: z.boolean(),
                 get_document_arguments: z.object({
                   filename: z.string(),
                 }),
@@ -496,7 +440,6 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
         /**
          * Handler for listing available knowledge documents.
          * @param {object} args - The tool arguments.
-         * @param {string} [args.kind] - The category to list.
          * @param {number} [args.limit] - The maximum number of documents to list.
          * @param {number} [args.offset] - The pagination offset.
          * @returns {Promise<object>} The formatted tool response.
@@ -511,11 +454,6 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
           const offset = args.offset ?? 0
 
           const sorted = [...allDocs].sort((a, b) => {
-            const depA = a.deprecated || 0
-            const depB = b.deprecated || 0
-            if (depA !== depB) {
-              return depA - depB
-            }
             return (a.title || '').localeCompare(b.title || '')
           })
 
@@ -523,8 +461,6 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
 
           const documents = sliced.map(r => ({
             title: r.title,
-            url: r.url || null,
-            isDeprecated: r.deprecated === 1,
             get_document_arguments: {
               filename: r.filename,
             },
@@ -533,10 +469,7 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
           const text =
             `## Knowledge Base (${allDocs.length} articles)\n\n` +
             documents
-              .map((doc, idx) => {
-                const titleLink = doc.url ? `[${doc.title}](${doc.url})` : doc.title
-                return `${idx + 1 + offset}. ${titleLink}${doc.isDeprecated ? ' [Deprecated]' : ''}`
-              })
+              .map((doc, idx) => `${idx + 1 + offset}. ${doc.title}`)
               .join('\n')
 
           return formatToolResponse({

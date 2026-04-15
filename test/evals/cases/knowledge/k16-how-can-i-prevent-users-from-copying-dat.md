@@ -4,8 +4,6 @@ category: knowledge
 tags:
   - dlp
   - copy-paste
-expected_tools:
-  - search_content
 required_patterns:
   - DLP
 priority: P2

@@ -4,8 +4,6 @@ category: knowledge
 tags:
   - ev
   - troubleshooting
-expected_tools:
-  - search_content
 required_patterns: []
 priority: P2
 ---

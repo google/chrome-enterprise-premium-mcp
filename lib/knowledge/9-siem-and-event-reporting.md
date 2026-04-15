@@ -6,7 +6,7 @@ articleId: 9
 
 # SIEM Integration and Event Reporting
 
-Chrome Enterprise Premium allows security events generated in the browser to be sent directly to your SIEM system.
+Chrome Enterprise Premium allows security events generated in the browser, such as [URL filtering](10-policy-and-url-filtering.md) violations, to be sent directly to your SIEM system.
 
 ## Security Insights Requirements and Troubleshooting
 

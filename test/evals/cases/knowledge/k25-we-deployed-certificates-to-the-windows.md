@@ -4,8 +4,6 @@ category: knowledge
 tags:
   - cba
   - certificates
-expected_tools:
-  - search_content
 required_patterns:
   - AutoSelectCertificateForUrls
 priority: P1

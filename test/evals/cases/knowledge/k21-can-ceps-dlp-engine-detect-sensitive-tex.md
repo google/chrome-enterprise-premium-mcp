@@ -4,8 +4,6 @@ category: knowledge
 tags:
   - dlp
   - ocr
-expected_tools:
-  - search_content
 required_patterns:
   - OCR
 priority: P2

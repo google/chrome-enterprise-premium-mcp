@@ -3,8 +3,6 @@ id: k06
 category: knowledge
 tags:
   - provisioning
-expected_tools:
-  - search_content
 priority: P2
 ---
 

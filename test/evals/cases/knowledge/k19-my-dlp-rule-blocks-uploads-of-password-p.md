@@ -4,8 +4,6 @@ category: knowledge
 tags:
   - dlp
   - encrypted-files
-expected_tools:
-  - search_content
 priority: P2
 ---
 

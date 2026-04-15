@@ -38,7 +38,7 @@ export const registerOptimizePrompt = server => {
   server.registerPrompt(
     OPTIMIZE_PROMPT_NAME,
     {
-      description: "Perform a consultative analysis of DLP maturity, rule noise, and quality.",
+      description: 'Perform a consultative analysis of DLP maturity, rule noise, and quality.',
       arguments: [],
     },
     async () => {
@@ -81,7 +81,7 @@ List the specific actions you can take to improve the environment, such as:
 - Be direct. State the point, support it, and move on.
 - Avoid rhetorical flourishes, dramatic one-liners, and throat-clearing transitions.
 - Use headers for structure and bullets for parallel items.
-- NEVER mention internal tool names (e.g., diagnose_environment) in your final response.`
+- NEVER mention internal tool names (e.g., diagnose_environment) in your final response.`,
             },
           },
         ],

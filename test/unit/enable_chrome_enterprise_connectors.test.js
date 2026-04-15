@@ -193,36 +193,40 @@ describe('enable_chrome_enterprise_connectors unit tests', () => {
     assert.match(result.content[0].text, /Event Reporting is already configured. Skipping update/)
   })
 
-  test('should skip ON_SECURITY_EVENT when explicitlyEmptyEventNames is true and some events are present (Core events missing but configured)', { skip: true }, async () => {
-    const { client, handler } = setupTool()
+  test(
+    'should skip ON_SECURITY_EVENT when explicitlyEmptyEventNames is true and some events are present (Core events missing but configured)',
+    { skip: true },
+    async () => {
+      const { client, handler } = setupTool()
 
-    client.resolveResponse = [
-      {
-        value: {
+      client.resolveResponse = [
+        {
           value: {
-            reportingConnector: {
-              eventConfiguration: {
-                enabledEventNames: ['browserCrashEvent', 'extensionInstallEvent'],
-                explicitlyEmptyEventNames: true,
+            value: {
+              reportingConnector: {
+                eventConfiguration: {
+                  enabledEventNames: ['browserCrashEvent', 'extensionInstallEvent'],
+                  explicitlyEmptyEventNames: true,
+                },
               },
             },
           },
         },
-      },
-    ]
+      ]
 
-    const params = {
-      customerId: 'C123',
-      orgUnitId: 'OU456',
-      connectors: ['ON_SECURITY_EVENT'],
-    }
+      const params = {
+        customerId: 'C123',
+        orgUnitId: 'OU456',
+        connectors: ['ON_SECURITY_EVENT'],
+      }
 
-    const result = await handler(params, {})
+      const result = await handler(params, {})
 
-    assert.strictEqual(client.resolvePolicyCalls.length, 1)
-    assert.strictEqual(client.batchModifyPolicyCalls.length, 0)
-    assert.match(result.content[0].text, /Event Reporting is already configured. Skipping update/)
-  })
+      assert.strictEqual(client.resolvePolicyCalls.length, 1)
+      assert.strictEqual(client.batchModifyPolicyCalls.length, 0)
+      assert.match(result.content[0].text, /Event Reporting is already configured. Skipping update/)
+    },
+  )
 
   test('should skip ON_SECURITY_EVENT when perfectly customized with all 5 core events', { skip: true }, async () => {
     const { client, handler } = setupTool()

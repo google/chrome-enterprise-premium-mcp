@@ -4,8 +4,6 @@ category: knowledge
 tags:
   - okta
   - device-trust
-expected_tools:
-  - search_content
 priority: P2
 ---
 

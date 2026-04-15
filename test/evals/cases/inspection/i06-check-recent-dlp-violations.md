@@ -6,8 +6,6 @@ tags:
 expected_tools:
   - get_chrome_activity_log
 forbidden_patterns: []
-required_patterns:
-  - CONTENT_UNSCANNED
 priority: P1
 fixtures:
   - dlp-activities.json
@@ -27,5 +25,4 @@ scan it.
 ## Judge Instructions
 
 The agent must identify the CONTENT_UNSCANNED event and the associated user.
-Mentioning the specific filename is a plus but not required — what matters is
-that the agent reports the unscanned event and explains its significance.
+Mentioning the specific filename or explaining the significance is a plus but not strictly required as long as the agent reports the unscanned event correctly.

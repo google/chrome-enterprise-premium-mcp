@@ -4,8 +4,6 @@ category: knowledge
 tags:
   - dlp
   - actions
-expected_tools:
-  - search_content
 priority: P1
 ---
 

@@ -3,8 +3,6 @@ id: k08
 category: knowledge
 tags:
   - deployment
-expected_tools:
-  - search_content
 priority: P1
 ---
 

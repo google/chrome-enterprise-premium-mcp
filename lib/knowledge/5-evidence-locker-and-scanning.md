@@ -8,7 +8,7 @@ articleId: 5
 
 For more details on configuring these settings, please refer to the [Evidence locker Help Center article](https://support.google.com/a/answer/15720950).
 
-Chrome Enterprise Premium (CEP) offers deep content inspection for files and advanced evidence collection for security investigations.
+Chrome Enterprise Premium (CEP) offers deep content inspection for files across various [DLP rule triggers](4-dlp-core-features.md) and advanced evidence collection for security investigations.
 
 ## Evidence Locker
 
@@ -35,4 +35,4 @@ CEP's DLP engine can detect sensitive text like credit card numbers embedded ins
 
 ### Password-Protected and Encrypted Files
 
-It is expected for DLP to more reliably detect password protection on ZIP archives than on PDF or Office documents due to differences in file structures. While CEP cannot scan the _content_ of any password-protected file, administrators can configure a policy to block all files that are detected as unscannable.
+It is expected for DLP to more reliably detect password protection on ZIP archives than on PDF or Office documents due to differences in file structures. When a file cannot be scanned, a `CONTENT_UNSCANNED` event is generated. This typically means the file was password-protected, too large, or the relevant connector wasn't configured to scan it. While CEP cannot scan the _content_ of any password-protected file, administrators can configure a policy to block all files that are detected as unscannable.

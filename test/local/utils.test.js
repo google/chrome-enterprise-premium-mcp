@@ -120,7 +120,7 @@ describe('Tool Utils', () => {
     })
 
     describe('First-Call Injection', () => {
-      it('should inject system prompt and capabilities on the first tool call', async () => {
+      it('should inject system prompt, capabilities, and the knowledge index on the first tool call', async () => {
         const handler = async () => {
           return { content: [{ type: 'text', text: 'Original content' }] }
         }
@@ -134,6 +134,10 @@ describe('Tool Utils', () => {
         assert.strictEqual(result1.content.length, 2)
         assert.strictEqual(result1.content[0].text, 'Original content')
         assert.ok(result1.content[1].text.includes('Chrome Enterprise Premium'))
+        assert.ok(
+          result1.content[1].text.includes('Knowledge Index'),
+          'Should inject the dynamically generated knowledge index',
+        )
 
         // Second call should not inject again
         const result2 = await tool({}, {})

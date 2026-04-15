@@ -10,7 +10,7 @@ Administrators can use internal Chrome debug pages and Admin Console logs to dia
 
 ## Troubleshooting DLP Watermarks and Rules
 
-When troubleshooting a non-working watermark, verify that the DLP rule is configured on a supported trigger type, specifically the **URL visited** trigger. Watermarks on other triggers are not supported and will fail to apply.
+When troubleshooting a non-working watermark, verify that the [DLP rule](4-dlp-core-features.md) is configured on a supported trigger type with valid [CEL syntax](11-dlp-cel-syntax.doc.js), specifically the **URL visited** trigger. Watermarks on other triggers are not supported and will fail to apply.
 
 ## Refining Strict DLP Rules
 

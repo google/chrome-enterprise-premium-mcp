@@ -4,8 +4,6 @@ category: knowledge
 tags:
   - troubleshooting
   - dashboard
-expected_tools:
-  - search_content
 priority: P2
 ---
 

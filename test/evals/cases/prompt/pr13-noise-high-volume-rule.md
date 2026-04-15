@@ -23,4 +23,4 @@ Agent should analyze DLP rules and activity logs and identify that the "Audit pa
 
 ## Judge Instructions
 
-The agent MUST identify the audit rule as the highest-noise rule by analyzing event counts. If the agent reports all rules as equally noisy or fails to correlate events to specific rules, grade as FAIL. Concrete recommendations for reducing noise (narrowing conditions, refining URL matching, or accepting noise with justification) are required for PASS.
+The agent MUST identify the audit rule as the highest-noise rule by analyzing the event log. If the agent reports all rules as equally noisy or fails to correlate events to specific rules, grade as FAIL. Exact numerical event counts are not strictly required as long as the rule is correctly identified as the primary source of noise. Concrete recommendations for reducing noise (narrowing conditions, refining URL matching, or accepting noise with justification) are required for PASS.

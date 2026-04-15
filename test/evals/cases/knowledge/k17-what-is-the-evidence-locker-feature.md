@@ -3,8 +3,6 @@ id: k17
 category: knowledge
 tags:
   - evidence-locker
-expected_tools:
-  - search_content
 required_patterns:
   - Evidence Locker
 priority: P2

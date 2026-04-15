@@ -3,8 +3,6 @@ id: k33
 category: knowledge
 tags:
   - unenroll
-expected_tools:
-  - search_content
 priority: P1
 ---
 

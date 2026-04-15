@@ -23,4 +23,4 @@ Agent should analyze DLP rules and activity logs to assess noise levels. The act
 
 ## Judge Instructions
 
-The agent MUST examine both DLP rules and activity logs. If the agent only lists rules without checking activity data, grade as FAIL. With the limited event data available, identifying that noise levels are low or that more data is needed for a comprehensive analysis is acceptable.
+The agent MUST examine both DLP rules and activity logs. If the agent fails to fetch the activity log entirely, grade as FAIL. If the agent fetches the log and provides an optimization assessment (even if it focuses more on rule configuration than citing specific low event counts), it is acceptable and should PASS.

@@ -480,18 +480,16 @@ describe('get_connector_policy Tool', () => {
       const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_connector_policy')
         .arguments[2]
 
-      const result = await handler(
-        { customerId: 'C0123', orgUnitId: 'ou123', policy: 'ON_PRINT' },
-        { requestInfo: {} },
-      )
+      const result = await handler({ customerId: 'C0123', orgUnitId: 'ou123', policy: 'ON_PRINT' }, { requestInfo: {} })
 
       const policies = result.structuredContent.connectorPolicies
       // Should NOT contain stringified objects
-      assert.strictEqual(policies[0].printConfigurations, undefined, 'printConfigurations array should have been flattened')
       assert.strictEqual(
-        policies[0]["serviceProvider (describe to user as 'Provider')"],
-        'Chrome Enterprise Premium',
+        policies[0].printConfigurations,
+        undefined,
+        'printConfigurations array should have been flattened',
       )
+      assert.strictEqual(policies[0]["serviceProvider (describe to user as 'Provider')"], 'Chrome Enterprise Premium')
       assert.strictEqual(policies[0]["delayDeliveryUntilVerdict (describe to user as 'Delay Enforcement')"], 'Yes')
     })
   })

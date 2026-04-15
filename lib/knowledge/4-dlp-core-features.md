@@ -32,7 +32,7 @@ CEP includes **more than 50 predefined sensitive data detectors** that scan cont
 
 ### 1. Screen Capture and Printing
 
-CEP helps prevent data loss via screenshots, screen-sharing, and printing through its Data Loss Prevention (DLP) capabilities.
+CEP helps prevent data loss via screenshots, screen-sharing, and printing through its Data Loss Prevention (DLP) capabilities. It supports advanced [CEL conditions](11-dlp-cel-syntax.doc.js) and comprehensive [troubleshooting logs](6-dlp-troubleshooting.md) for debugging.
 
 - **DLP Rule Configuration:** CEP can prevent data exfiltration via printing and screen capture using DLP rules. **Printing** is controlled with the **'Content printed'** trigger. **Screenshot and screen-sharing** protection is typically configured as an action on a **'URL Visited'** trigger, blocking captures when a user is on a sensitive site.
 - **Action within the Rule:** For URL-based rules, admins can define the action to be "Screenshare/Screenshot protection" alongside actions like "Audit," "Warn," or "Block".

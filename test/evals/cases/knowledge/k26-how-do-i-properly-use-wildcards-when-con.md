@@ -3,8 +3,6 @@ id: k26
 category: knowledge
 tags:
   - url-filtering
-expected_tools:
-  - search_content
 priority: P2
 ---
 

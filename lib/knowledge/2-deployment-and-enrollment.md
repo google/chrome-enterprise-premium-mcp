@@ -23,7 +23,7 @@ Browsers become managed when an enrollment token is successfully applied to the 
 
 ## Deployment of Endpoint Verification
 
-Endpoint Verification (EV) is required to report device security posture to Context-Aware Access policies. For a successful silent deployment via MDM (like Intune):
+[Endpoint Verification (EV)](3-endpoint-verification-troubleshooting.md) is required to report device security posture to [Context-Aware Access](7-context-aware-access.md) policies. For a successful silent deployment via MDM (like Intune):
 
 The best practice for deploying Endpoint Verification requires two components:
 

@@ -3,8 +3,6 @@ id: k31
 category: knowledge
 tags:
   - safe-browsing
-expected_tools:
-  - search_content
 required_patterns:
   - SafeBrowsingAllowlistDomains
 priority: P1

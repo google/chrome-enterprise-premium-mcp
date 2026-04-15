@@ -10,7 +10,7 @@ Chrome Enterprise Premium (CEP) supports advanced identity integrations and Cert
 
 ## Identity Provider (IdP) Integration
 
-When troubleshooting the Device Trust Connector with Okta for unmanaged devices, you should check Google's side for management status and Okta's side for attribute mappings. The agent cannot inspect third-party IdP integrations directly.
+When troubleshooting the [Device Trust Connector](7-context-aware-access.md) with Okta for unmanaged devices, you should check Google's side for management status and Okta's side for attribute mappings. The agent cannot inspect third-party IdP integrations directly.
 
 ## Certificate-Based Access (CBA)
 

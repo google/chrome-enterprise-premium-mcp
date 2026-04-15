@@ -4,8 +4,6 @@ category: knowledge
 tags:
   - dlp
   - troubleshooting
-expected_tools:
-  - search_content
 priority: P2
 ---
 

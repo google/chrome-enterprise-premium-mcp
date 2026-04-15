@@ -3,8 +3,6 @@ id: k15
 category: knowledge
 tags:
   - incognito
-expected_tools:
-  - search_content
 priority: P2
 ---
 

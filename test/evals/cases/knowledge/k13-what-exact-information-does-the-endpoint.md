@@ -4,8 +4,6 @@ category: knowledge
 tags:
   - ev
   - privacy
-expected_tools:
-  - search_content
 priority: P2
 ---
 
@@ -16,3 +14,7 @@ What exact information does the Endpoint Verification extension collect from emp
 ## Golden Response
 
 Endpoint Verification collects device posture attributes such as OS type and version, device ID, serial number, screen lock status, disk encryption status, and more. It does _not_ collect personal browsing history or file contents. A comprehensive list of collected attributes is available in the [Device attributes collected by Endpoint Verification](https://cloud.google.com/endpoint-verification/docs/device-information) documentation.
+
+## Judge Instructions
+
+The agent must list the core attributes collected and explicitly state that personal data like browsing history is NOT collected. The agent is NOT required to provide the link to the documentation, as long as the core facts are accurate.

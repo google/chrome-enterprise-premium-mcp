@@ -6,7 +6,7 @@ articleId: 3
 
 # Endpoint Verification Troubleshooting
 
-Endpoint Verification (EV) provides device security posture to Context-Aware Access policies. Issues with sync or communication can lead to access denial.
+Endpoint Verification (EV) provides device security posture to [Context-Aware Access](7-context-aware-access.md) policies. Issues with sync or communication can lead to access denial.
 
 ## Common Sync Issues
 

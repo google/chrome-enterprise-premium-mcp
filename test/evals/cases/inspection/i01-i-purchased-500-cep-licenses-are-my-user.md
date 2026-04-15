@@ -3,8 +3,6 @@ id: i01
 category: inspection
 tags:
   - inspection
-expected_tools:
-  - search_content
 priority: P2
 ---
 

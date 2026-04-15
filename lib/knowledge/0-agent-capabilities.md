@@ -14,18 +14,18 @@ This document outlines what the Chrome Enterprise Premium AI Agent can and canno
 
 The agent can query your environment to help diagnose issues:
 
-- **License & Subscription Checks:** Verify if your organization has an active Chrome Enterprise Premium subscription and check if specific users have been assigned a license.
+- **License & Subscription Checks:** Verify if your organization has an active [Chrome Enterprise Premium subscription](1-product-and-licensing.md) and check if specific users have been assigned a license.
 - **Policy Verification:** Check Chrome Enterprise Connector policies (e.g., `ON_FILE_ATTACHED`, `ON_SECURITY_EVENT`) to ensure DLP rules and event reporting are correctly configured for an Organizational Unit (OU).
-- **Log Analysis:** Retrieve the last 10 days of Chrome activity logs for a user, including device sync events and security flags.
-- **Environment Discovery:** List Organizational Units (OUs), active Data Loss Prevention (DLP) rules, and DLP content detectors (Regex, Word lists, URL lists).
+- **Log Analysis:** Retrieve the last 10 days of [Chrome activity logs](9-siem-and-event-reporting.md) for a user, including device sync events and security flags.
+- **Environment Discovery:** List Organizational Units (OUs), active [Data Loss Prevention (DLP) rules](4-dlp-core-features.md), and DLP content detectors (Regex, Word lists, URL lists).
 - **Health Checks:** The agent can perform a 'health check' of a CEP deployment by combining discovery tools to report on **subscription status**, **OU structure**, **browser version distribution**, and active **DLP rules**, then provide a summary assessment.
 - **License Assignment Status:** The agent can check the specific Chrome Enterprise Premium license assignment status for one or more individual users when provided with their email addresses.
 - **Version Audits:** The agent can audit all deployed Chrome browser versions across an organization, providing a count of devices on each version and channel. It should also be able to **identify and flag versions that are older than the current stable release** as 'outdated'.
 - **Customer & OU Structure:** The agent is capable of discovering environment details on command, such as retrieving the **Customer ID** and listing the full **Organizational Unit (OU) structure**, including parent-child relationships.
 - **Content Detectors:** The agent can discover and list all custom **DLP content detectors** configured in the environment. For each detector, it can provide the name, type, and the specific content it is configured to detect.
-- **Extension Status:** Check if the Secure Enterprise Browser (SEB) extension is force-installed for an OU.
+- **Extension Status:** Check if the [Secure Enterprise Browser (SEB) extension](2-deployment-and-enrollment.md) is force-installed for an OU.
 - **API Status:** Check if required Google Cloud APIs are enabled for a project.
-- **URL Filtering:** Check active URL filtering policies.
+- **URL Filtering:** Check active [URL filtering policies](10-policy-and-url-filtering.md).
 
 ### Configuration & Remediation (Mutations)
 

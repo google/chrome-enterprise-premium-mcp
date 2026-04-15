@@ -6,7 +6,7 @@ articleId: 1
 
 # Chrome Enterprise Premium: Product, Pricing, and Licensing
 
-Chrome Enterprise Premium (CEP) is an advanced security solution enabling Zero Trust access to corporate applications without a traditional VPN. Its core capabilities include **Data Loss Prevention (DLP)**, **real-time malware and phishing scanning**, and **Context-Aware Access (CAA)**.
+Chrome Enterprise Premium (CEP) is an advanced security solution enabling Zero Trust access to corporate applications without a traditional VPN. Its core capabilities include **[Data Loss Prevention (DLP)](4-dlp-core-features.md)**, **[real-time malware and phishing scanning](5-evidence-locker-and-scanning.md)**, and **[Context-Aware Access (CAA)](7-context-aware-access.md)**.
 Standard Chrome offers robust security (e.g., sandboxing). The free Chrome Enterprise Core adds central policy management. Chrome Enterprise Premium provides advanced security layers on top of that, including Data Loss Prevention (DLP) and Context-Aware Access (CAA), for organizations with high security or regulatory needs.
 
 ## Core Capabilities
@@ -37,10 +37,9 @@ The standard Chrome browser has strong built-in security (Safe Browsing, sandbox
 
 To allow management without full Super Admin access, use custom administrative roles within the Google Workspace Admin Console. This follows the security principle of least privilege, ensuring the Helpdesk team has only the access they need to perform their duties. You can create a custom role that includes a specific combination of privileges.
 
-- **Cloud BeyondCorp Admin:** Mandatory at the Google Cloud Organization level to purchase or manage CEP via the Cloud Console. Workspace Super Admins do not automatically inherit this GCP permission.
-- **Security Center Admin:** For Viewing Dashboards: roles with 'Chrome Security Insights / View' permissions.
-- **DLP Administrator:** For Managing DLP Rules: roles with 'DLP / Manage DLP rule' permissions.
+- **Cloud BeyondCorp Admin:** The `Cloud BeyondCorp Admin` and `Cloud BeyondCorp Subscription Admin` IAM roles are mandatory at the Google Cloud Organization level to purchase or manage CEP licensing/subscriptions via the Cloud Console. Workspace Super Admins do not automatically inherit these GCP permissions.
+- **Security Center Admin (Custom Role):** The suggested custom role for viewing dashboards and telemetry. Since this is not a pre-built role, you must create a custom role with 'Chrome Security Insights / View' permissions.
+- **DLP Administrator (Custom Role):** The suggested custom role for managing DLP rules. Since this is not a pre-built role, you must create a custom role with 'DLP / Manage DLP rule' permissions.
 - **BeyondCorp Admin:** If they also need to manage access policies for Context-Aware Access (CAA) web applications, you would add the BeyondCorp Admin privilege.
 - **Mobile Admin:** Recommended for device inventory and viewing dashboards/inventory.
 - **Helpdesk:** To view CEP security dashboards without making changes, Helpdesk team members need the **"Chrome Enterprise Security Services"** Workspace Admin privilege AND the **`roles/beyondcorp.viewer`** Google Cloud IAM role.
-  members need the **"Chrome Enterprise Security Services"** Workspace Admin privilege AND the **`roles/beyondcorp.viewer`** Google Cloud IAM role.

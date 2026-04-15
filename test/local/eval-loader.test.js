@@ -51,7 +51,6 @@ describe('Eval Loader', () => {
       assert.strictEqual(evalCase.id, 'k01')
       assert.strictEqual(evalCase.category, 'knowledge')
       assert.deepStrictEqual(evalCase.tags, ['overview'])
-      assert.deepStrictEqual(evalCase.expectedTools, ['search_content'])
       assert.ok(evalCase.prompt.includes('Chrome Enterprise Premium'))
       assert.ok(evalCase.goldenResponse.includes('Chrome Enterprise Premium'))
     })

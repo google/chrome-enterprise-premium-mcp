@@ -4,8 +4,6 @@ category: knowledge
 tags:
   - dlp
   - scanning
-expected_tools:
-  - search_content
 required_patterns:
   - '50'
 priority: P1

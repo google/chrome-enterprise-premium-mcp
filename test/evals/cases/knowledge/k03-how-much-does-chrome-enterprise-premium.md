@@ -4,8 +4,6 @@ category: knowledge
 tags:
   - pricing
   - billing
-expected_tools:
-  - search_content
 required_patterns:
   - $6
 priority: P0

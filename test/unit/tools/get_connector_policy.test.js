@@ -394,36 +394,40 @@ describe('get_connector_policy tool handler', () => {
     assert.match(text, /Reported Events: Disabled/)
   })
 
-  test('should report default core events for ON_SECURITY_EVENT when empty and not explicitlyEmptyEventNames', { skip: true }, async () => {
-    const mockChromePolicyClient = {
-      getConnectorPolicy: async () => [
-        {
-          value: {
+  test(
+    'should report default core events for ON_SECURITY_EVENT when empty and not explicitlyEmptyEventNames',
+    { skip: true },
+    async () => {
+      const mockChromePolicyClient = {
+        getConnectorPolicy: async () => [
+          {
             value: {
-              reportingConnector: {
-                setting: {
-                  eventConfiguration: {
-                    enabledEventNames: [],
-                    explicitlyEmptyEventNames: false,
+              value: {
+                reportingConnector: {
+                  setting: {
+                    eventConfiguration: {
+                      enabledEventNames: [],
+                      explicitlyEmptyEventNames: false,
+                    },
                   },
                 },
               },
             },
           },
-        },
-      ],
-    }
+        ],
+      }
 
-    const handler = getHandler(mockChromePolicyClient)
+      const handler = getHandler(mockChromePolicyClient)
 
-    const result = await handler(
-      { customerId: 'C123', orgUnitId: 'OU123', policy: 'ON_SECURITY_EVENT' },
-      { requestInfo: {} },
-    )
-    const text = result.content[0].text
+      const result = await handler(
+        { customerId: 'C123', orgUnitId: 'OU123', policy: 'ON_SECURITY_EVENT' },
+        { requestInfo: {} },
+      )
+      const text = result.content[0].text
 
-    assert.match(text, /Reported Events: Default \(Core Events Enabled\)/)
-  })
+      assert.match(text, /Reported Events: Default \(Core Events Enabled\)/)
+    },
+  )
 
   test('should report None for ON_SECURITY_EVENT when explicitlyEmptyEventNames is true', { skip: true }, async () => {
     const mockChromePolicyClient = {

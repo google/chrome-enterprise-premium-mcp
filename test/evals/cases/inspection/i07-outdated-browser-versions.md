@@ -20,14 +20,13 @@ up to date?
 Agent should report three versions across 102 devices: v120 on 87 devices, v130
 on 12 devices, and v134 on 3 devices. The significant version spread (14 major
 versions between oldest and newest) and the concentration on the oldest version
-suggests most of the fleet has not been updated recently. Agent should recommend
-investigating why the majority of devices are on v120 and planning a browser
-update rollout.
+suggests most of the fleet has not been updated recently. The agent should flag
+these older versions as outdated or legacy.
 
 ## Judge Instructions
 
 The agent must note the version distribution and highlight that most devices are
-clustered on the oldest version. It does not need to know the absolute latest
-Chrome release — the version spread itself is the signal. If the agent simply
-lists the versions without commenting on the concentration or recommending
-action, grade as FAIL.
+clustered on the oldest version, explicitly flagging them as outdated or legacy.
+It does not need to know the absolute latest Chrome release — the version spread
+itself is the signal. If the agent simply lists the versions without commenting
+on the concentration or flagging them as outdated, grade as FAIL.

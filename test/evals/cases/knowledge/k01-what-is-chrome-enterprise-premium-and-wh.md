@@ -3,11 +3,9 @@ id: k01
 category: knowledge
 tags:
   - overview
-expected_tools:
-  - search_content
 required_patterns: []
 priority: P0
-stability: 1.0
+stability: 1
 ---
 
 ## Prompt

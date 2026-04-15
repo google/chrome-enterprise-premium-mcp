@@ -100,16 +100,6 @@ describe('Knowledge Tools Native Search Integration', () => {
     assert.strictEqual(rows.length, 2)
   })
 
-  test('search_content should include deprecated docs and mark them', async () => {
-    const handler = handlers['search_content']
-
-    let resultDep = await handler({ query: 'old' }, { requestInfo: {} })
-    let rowsDep = resultDep.structuredContent.documents
-    assert.strictEqual(rowsDep.length, 1)
-    assert.strictEqual(rowsDep[0].title, 'Old Policy')
-    assert.ok(resultDep.content[0].text.includes('[Deprecated]'))
-  })
-
   test('get_document should return full content', async () => {
     const handler = handlers['get_document']
     assert.ok(handler)

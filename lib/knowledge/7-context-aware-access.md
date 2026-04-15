@@ -22,11 +22,12 @@ Integrations like Jamf and BeyondCorp that rely on browser signals will not secu
 
 ## Device Trust Connector (Okta) Troubleshooting
 
-When troubleshooting a failing Device Trust integration with an IdP like Okta, verify the following:
+When troubleshooting a failing Device Trust integration with an [IdP like Okta](8-identity-and-certificates.md), verify the following:
 
 1. **User Consent:** On unmanaged devices, user consent is required for the Device Trust Connector to share information from the Managed Chrome Profile.
 2. **Managed Profile Enrollment:** The user must be signed into a Managed Chrome Profile linked to your organization.
-3. **Admin Console Configuration:** Ensure the URL patterns and service accounts match exactly what the IdP provided. Verify that the **BrowserContextAwareAccessSignalsAllowlist** policy is correctly configured to include the IdP's URL patterns.
-4. **Check Chrome Policy:** Have the user navigate to `chrome://policy` and verify that the allowlist matches the Admin Console configuration.
-5. **Inspect Connectors Internals:** Have the user navigate to `chrome://connectors-internals`. A correctly functioning connector should show `Is Enabled: true` and `Key Sync: Success (200)`.
-6. **"Chicken-and-Egg" Mitigation:** If IdP policies require Device Trust signals before allowing sign-in to Google Workspace, new users on unmanaged devices may be blocked. Temporarily adjust policies to allow initial profile sign-in without requiring Device Trust signals.
+3. **Check Okta's Side:** You must verify that attribute mappings and trust rules are correctly configured on the Okta side. The agent cannot inspect third-party IdP integrations directly.
+4. **Admin Console Configuration:** Ensure the URL patterns and service accounts match exactly what the IdP provided. Verify that the **BrowserContextAwareAccessSignalsAllowlist** policy is correctly configured to include the IdP's URL patterns.
+5. **Check Chrome Policy:** Have the user navigate to `chrome://policy` and verify that the allowlist matches the Admin Console configuration.
+6. **Inspect Connectors Internals:** Have the user navigate to `chrome://connectors-internals`. A correctly functioning connector should show `Is Enabled: true` and `Key Sync: Success (200)`.
+7. **"Chicken-and-Egg" Mitigation:** If IdP policies require Device Trust signals before allowing sign-in to Google Workspace, new users on unmanaged devices may be blocked. Temporarily adjust policies to allow initial profile sign-in without requiring Device Trust signals.

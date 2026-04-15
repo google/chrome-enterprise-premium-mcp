@@ -4,8 +4,6 @@ category: knowledge
 tags:
   - jamf
   - native-apps
-expected_tools:
-  - search_content
 priority: P2
 ---
 

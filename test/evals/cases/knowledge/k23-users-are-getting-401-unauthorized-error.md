@@ -4,8 +4,6 @@ category: knowledge
 tags:
   - caa
   - troubleshooting
-expected_tools:
-  - search_content
 required_patterns:
   - '401'
 priority: P2
