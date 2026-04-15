@@ -19,13 +19,13 @@ limitations under the License.
  */
 
 import { guardedToolCall, formatToolResponse } from '../utils/wrapper.js'
+import { loadDynamicDocs } from '../utils/dynamic_docs.js'
 import { z } from 'zod'
 import fs from 'fs'
 import { logger } from '../../lib/util/logger.js'
 import { TAGS } from '../../lib/constants.js'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { generateDlpCelReference } from '../../lib/util/chrome_dlp_constants.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -82,7 +82,9 @@ export function registerKnowledgeTools(server, options, sessionState) {
     files.sort((a, b) => {
       const numA = parseInt(a.split('-')[0])
       const numB = parseInt(b.split('-')[0])
-      if (!isNaN(numA) && !isNaN(numB)) return numA - numB
+      if (!isNaN(numA) && !isNaN(numB)) {
+        return numA - numB
+      }
       return a.localeCompare(b)
     })
 
@@ -103,9 +105,7 @@ export function registerKnowledgeTools(server, options, sessionState) {
     logger.error(`${TAGS.MCP} Failed to pre-scan knowledge for index:`, e)
   }
 
-  const indexTable = docSummaries
-    .map(s => `| **${s.filename}** | ${s.summary} |`)
-    .join('\n')
+  const indexTable = docSummaries.map(s => `| **${s.filename}** | ${s.summary} |`).join('\n')
 
   const knowledgeIndex = `### Knowledge Index
 This index is for locating relevant documentation by topic. Document summaries are not a source of truth; for authoritative technical details, exact roles, or procedures, retrieve the full content via 'get_document'.
@@ -548,11 +548,6 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
         skipAutoResolve: true,
       },
       options,
-      sessionState,
-    ),
-  )
-}
-ons,
       sessionState,
     ),
   )
