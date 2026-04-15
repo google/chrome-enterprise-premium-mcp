@@ -33,10 +33,11 @@ import { findTestFiles } from './run-utils.js'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const root = resolve(__dirname, '..')
 
-const testFiles = findTestFiles(join(root, 'test', 'local')).sort()
+const testDirs = [join(root, 'test', 'local'), join(root, 'test', 'unit')]
+const testFiles = testDirs.flatMap(dir => findTestFiles(dir)).sort()
 
 if (testFiles.length === 0) {
-  console.error('No test files found under test/local/')
+  console.error('No test files found under test/local/ or test/unit/')
   process.exit(1)
 }
 
