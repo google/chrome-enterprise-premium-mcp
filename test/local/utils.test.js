@@ -119,33 +119,6 @@ describe('Tool Utils', () => {
       })
     })
 
-    describe('First-Call Injection', () => {
-      it('should inject system prompt, capabilities, and the knowledge index on the first tool call', async () => {
-        const handler = async () => {
-          return { content: [{ type: 'text', text: 'Original content' }] }
-        }
-        const sessionState = { hasInjectedSystemPrompt: false, history: [] }
-        const tool = guardedToolCall({ handler }, {}, sessionState)
-
-        // First call
-        const result1 = await tool({}, {})
-
-        assert.strictEqual(sessionState.hasInjectedSystemPrompt, true)
-        assert.strictEqual(result1.content.length, 2)
-        assert.strictEqual(result1.content[0].text, 'Original content')
-        assert.ok(result1.content[1].text.includes('Chrome Enterprise Premium'))
-        assert.ok(
-          result1.content[1].text.includes('Knowledge Index'),
-          'Should inject the dynamically generated knowledge index',
-        )
-
-        // Second call should not inject again
-        const result2 = await tool({}, {})
-        assert.strictEqual(result2.content.length, 1)
-        assert.strictEqual(result2.content[0].text, 'Original content')
-      })
-    })
-
     describe('Root OrgUnit Auto-Resolution (resolveRootOrgUnitId helper)', () => {
       it('should resolve root orgUnitId and cache it', async () => {
         const mockListOrgUnits = mock.fn(async () => ({

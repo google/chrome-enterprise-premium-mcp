@@ -18,65 +18,9 @@ limitations under the License.
  * @file Wrapper utilities to guard and transform MCP tool calls.
  */
 
-import fs from 'fs'
-import path from 'path'
-import { fileURLToPath } from 'url'
-import matter from 'gray-matter'
 import { TAGS, SCOPES } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 import { validateAndGetOrgUnitId } from './org-unit.js'
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-
-let cachedKnowledgeIndex = null
-
-/**
- * Generates and caches a markdown index of knowledge base documents.
- * Extracts the summary from the YAML frontmatter of each file using gray-matter.
- * @returns {string} The formatted knowledge index markdown string.
- */
-function getKnowledgeIndex() {
-  if (cachedKnowledgeIndex !== null) {
-    return cachedKnowledgeIndex
-  }
-
-  try {
-    const knowledgeDir = path.resolve(__dirname, '../../lib/knowledge')
-    const files = fs.readdirSync(knowledgeDir)
-    const summaries = []
-
-    for (const file of files) {
-      if (!file.endsWith('.md') || file === 'README.md') {
-        continue
-      }
-
-      const content = fs.readFileSync(path.join(knowledgeDir, file), 'utf8')
-      try {
-        const parsed = matter(content)
-        if (parsed.data && parsed.data.summary) {
-          summaries.push({ filename: file.replace('.md', ''), summary: parsed.data.summary })
-        }
-      } catch (err) {
-        console.error(`${TAGS.MCP} Failed to parse frontmatter for ${file}:`, err)
-      }
-    }
-
-    // Sort by numeric prefix
-    summaries.sort((a, b) => {
-      const numA = parseInt(a.filename.split('-')[0], 10)
-      const numB = parseInt(b.filename.split('-')[0], 10)
-      return (isNaN(numA) ? 0 : numA) - (isNaN(numB) ? 0 : numB)
-    })
-
-    const indexTable = summaries.map(s => `| **${s.filename}** | ${s.summary} |`).join('\n')
-    cachedKnowledgeIndex = `### Knowledge Index\nThis index is for locating relevant documentation by topic. Document summaries are not a source of truth; for authoritative technical details, exact roles, or procedures, retrieve the full content via 'get_document'.\n\n| Filename | Topics Covered |\n| :--- | :--- |\n${indexTable}`
-  } catch (e) {
-    console.error(`${TAGS.MCP} Failed to generate knowledge index in wrapper:`, e)
-    cachedKnowledgeIndex = `### Knowledge Index Error\nFailed to generate the knowledge index. The documents directory may be missing or corrupted. Error: ${e.message}\nYou can still try to access documents if you know their filenames.`
-  }
-  return cachedKnowledgeIndex
-}
 
 /**
  * Generates a proactive remediation message for authentication errors.
@@ -163,55 +107,6 @@ export function commonTransform(params) {
     newParams.orgUnitId = validateAndGetOrgUnitId(newParams.orgUnitId)
   }
   return newParams
-}
-
-/**
- * Injects system prompt and capabilities on the first tool call.
- * @param {object} sessionState - The current session state
- * @param {object} result - The tool response result object
- * @returns {void}
- */
-function injectSystemContext(sessionState, result) {
-  if (sessionState && !sessionState.hasInjectedSystemPrompt) {
-    sessionState.hasInjectedSystemPrompt = true
-    try {
-      const promptPath = path.resolve(__dirname, '../../prompts/system-prompt.md')
-      const capabilitiesPath = path.resolve(__dirname, '../../lib/knowledge/0-agent-capabilities.md')
-      const parts = []
-
-      if (fs.existsSync(promptPath)) {
-        parts.push(fs.readFileSync(promptPath, 'utf8'))
-      }
-      if (fs.existsSync(capabilitiesPath)) {
-        parts.push(fs.readFileSync(capabilitiesPath, 'utf8'))
-      }
-
-      try {
-        const indexStr = getKnowledgeIndex()
-        if (indexStr) {
-          parts.push(
-            `## Full Knowledge Base Directory\n\nIf the inline links above do not cover your needs, you can retrieve any of these documents directly using \`get_document(filename)\`:\n\n${indexStr}`,
-          )
-        }
-      } catch (e) {
-        console.error(`${TAGS.MCP} Failed to inject knowledge index:`, e)
-      }
-
-      if (parts.length > 0) {
-        if (!result.content) {
-          result.content = []
-        }
-        if (Array.isArray(result.content)) {
-          result.content.push({
-            type: 'text',
-            text: parts.join('\n\n---\n\n'),
-          })
-        }
-      }
-    } catch (e) {
-      console.error(`${TAGS.MCP} Failed to inject system prompt on first call:`, e)
-    }
-  }
 }
 
 /**
@@ -316,8 +211,6 @@ export function guardedToolCall(
 
       const result = await handler(transformedParams, { ...context, authToken })
       logger.debug(`${TAGS.MCP} Handler result for '${context?.name || 'unknown'}':`, JSON.stringify(result, null, 2))
-
-      injectSystemContext(sessionState, result)
 
       if (result && !result.structuredContent && result.content) {
         logger.warn(`${TAGS.MCP} Tool handler returned content without structuredContent`)
