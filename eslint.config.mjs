@@ -37,7 +37,7 @@ limitations under the License.
 
 export default [
   {
-    ignores: ['**/dist', '**/node_modules', 'results/**'],
+    ignores: ['**/dist', '**/node_modules', 'results/**', '.worktrees/**'],
   },
   js.configs.recommended,
   nodePlugin.configs['flat/recommended'],
