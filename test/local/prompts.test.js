@@ -71,7 +71,9 @@ describe('MCP Prompts', () => {
     const result = await client.getPrompt({ name: 'cep:optimize' })
 
     assert.ok(result.messages)
-    assert.ok(result.messages[0].content.text.includes('My Assessment of Your Environment'))
+    assert.ok(result.messages[0].content.text.includes('Maturity Assessment'))
+    assert.ok(result.messages[0].content.text.includes('get_document'))
+    assert.ok(result.messages[0].content.text.includes('filename: 12'))
   })
 
   it('When cep:expert prompt is requested, then it returns its content', async () => {

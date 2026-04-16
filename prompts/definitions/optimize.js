@@ -51,15 +51,22 @@ export const registerOptimizePrompt = server => {
               type: 'text',
               text: `Perform a consultative analysis of the Chrome Enterprise Premium environment's DLP maturity and rule quality.
 
-Call the **diagnose_environment** tool to get a complete environment snapshot. Call the **get_chrome_activity_log** tool to see recent DLP events.
+Call the **diagnose_environment** tool to get a complete environment snapshot. Call the **get_chrome_activity_log** tool to analyze recent activity patterns and DLP events.
 
-**Assessment Framework:**
+**Assessment Protocols:**
+1. **Retrieve Maturity Framework**: Call **get_document** with **filename: 12** to retrieve the "CEP Security Posture & Remediation Guide". Use this to classify the environment into a Maturity Tier (0-3).
+2. **Apply Quality Guidelines**: Use the following "Rule Optimization Framework" to identify logic flaws and noise:
+
 ${guidelinesContent}
 
 **Required Output Format:**
 
-### My Assessment of Your Environment
-Provide a direct, conversational summary of the environment's security posture. Mention the current maturity based on connector coverage and whether enforcement (WARN/BLOCK) is active or if the environment is strictly monitoring (AUDIT).
+### Maturity Assessment
+Identify the current **Maturity Tier (0-3)** based on the environment baseline and current rule status.
+- If in **Tier 0 (Foundation)**, list the specific missing prerequisites (Licenses, Connectors, or SEB extension).
+- If in **Tier 1 (Visibility)**, you MUST analyze activity logs to identify real-world usage patterns before suggesting any new rules.
+- If in **Tier 2 (Monitoring)**, prioritize tuning noisy audit-only rules.
+- If in **Tier 3 (Protection)**, focus on maintaining enforcement and expanding coverage.
 
 ### Identified Rule Optimizations
 For every rule that violates the assessment framework OR generates a disproportionately high volume of events in the activity logs, provide a structured breakdown:
