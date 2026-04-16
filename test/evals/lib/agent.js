@@ -22,12 +22,9 @@ limitations under the License.
  * function declarations, and runs a standard tool-use conversation loop.
  */
 
-import fs from 'node:fs'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { buildServerInstructions } from '../../../lib/knowledge/instructions.js'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const MODEL_NAME = 'gemini-2.5-flash'
 const MAX_TURNS = 15
 
@@ -82,32 +79,6 @@ function mcpToolToGemini(mcpTool, opts) {
 }
 
 /**
- * Loads the system prompt and capabilities from the server's directories.
- */
-function loadSystemPrompt() {
-  const promptPath = path.resolve(__dirname, '../../../prompts/system-prompt.md')
-  const capabilitiesPath = path.resolve(__dirname, '../../../lib/knowledge/0-agent-capabilities.md')
-  const parts = []
-
-  try {
-    if (fs.existsSync(promptPath)) {
-      parts.push(fs.readFileSync(promptPath, 'utf8'))
-    }
-    if (fs.existsSync(capabilitiesPath)) {
-      parts.push(fs.readFileSync(capabilitiesPath, 'utf8'))
-    }
-  } catch (e) {
-    console.error('Failed to load system prompt or capabilities:', e)
-  }
-
-  if (parts.length > 0) {
-    return parts.join('\n\n---\n\n')
-  }
-
-  return 'You are a specialized Chrome Enterprise Premium (CEP) security expert AI agent.'
-}
-
-/**
  * Creates an eval agent that uses Gemini function calling with MCP tools.
  * @param {object} opts
  * @param {string} opts.apiKey - Gemini API key.
@@ -127,18 +98,10 @@ export async function createEvalAgent({ apiKey, baseUrl, mcpClient }) {
   if (process.env.NO_EXPERT_PROMPT === 'true') {
     systemPrompt = 'You are a helpful AI assistant. Use the tools provided to answer the user.'
   } else {
-    try {
-      const expertPromptResult = await mcpClient.getPrompt({ name: 'cep:expert' })
-      systemPrompt = expertPromptResult.messages.map(m => m.content.text).join('\n')
-
-      const capabilitiesPath = path.resolve(__dirname, '../../../lib/knowledge/0-agent-capabilities.md')
-      if (fs.existsSync(capabilitiesPath)) {
-        systemPrompt += '\n\n---\n\n' + fs.readFileSync(capabilitiesPath, 'utf8')
-      }
-    } catch (err) {
-      console.warn('Failed to load cep:expert prompt via MCP, falling back to local load.', err.message)
-      systemPrompt = loadSystemPrompt()
-    }
+    // Use the same assembly the server ships via InitializeResult.instructions,
+    // so the eval agent sees the exact grounding payload a production MCP
+    // client receives (system prompt + capabilities contract + Knowledge Index).
+    systemPrompt = buildServerInstructions()
   }
 
   // Fetch tool definitions from MCP server
