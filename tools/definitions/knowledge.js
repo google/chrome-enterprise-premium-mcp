@@ -341,20 +341,26 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
     'get_document',
     {
       description:
-        'Retrieves the full text content of a specific knowledge base document. You can provide the filename, or the numeric articleId extracted from a Markdown cross-link.',
+        'Retrieves the full text of one or more knowledge base documents. Pass `filename` as a single value or an array (bundle). Each entry may be a filename string (e.g. "4-dlp-core-features") or a numeric articleId from a Markdown cross-link. Use the array form to load related articles in a single call.',
       inputSchema: z.object({
-        filename: z.string().describe('The filename, or the numeric articleId from a cross-link.'),
+        // Coerce to string so the tool accepts numeric articleIds (e.g. `4`)
+        // directly — agents extracting the ID from a Markdown cross-link often
+        // send it as a number. The array is capped at 20 entries to keep the
+        // response under our per-call payload budget.
+        filename: z
+          // Try the array form first; `z.coerce.string()` accepts any input
+          // including arrays (it calls `.toString()`), so ordering matters.
+          .union([z.array(z.coerce.string()).min(1).max(20), z.coerce.string()])
+          .describe(
+            'A single filename/articleId, or an array of them (up to 20). Numeric articleIds are coerced to strings.',
+          ),
       }),
       outputSchema: z
         .object({
-          document: z
-            .object({
-              id: z.string(),
-              filename: z.string(),
-              title: z.string(),
-              content: z.string(),
-            })
-            .passthrough(),
+          documents: z.array(
+            z.object({ id: z.string(), filename: z.string(), title: z.string(), content: z.string() }).passthrough(),
+          ),
+          missing: z.array(z.string()),
         })
         .passthrough(),
     },
@@ -362,40 +368,56 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
       {
         handler: async args => {
           const db = await loadDb()
-          const docLookup = db.docLookup
-          const idToDoc = db.idToDoc
+          const { docLookup, idToDoc } = db
 
-          let doc = docLookup.get(args.filename)
-
-          if (!doc) {
-            const cleanFilename = String(args.filename)
-              .replace(/\.md$/, '')
-              .replace(/\.doc\.js$/, '')
-            doc = docLookup.get(cleanFilename)
+          const resolveOne = name => {
+            let doc = docLookup.get(name)
+            if (!doc) {
+              const clean = String(name)
+                .replace(/\.md$/, '')
+                .replace(/\.doc\.js$/, '')
+              doc = docLookup.get(clean)
+            }
+            if (!doc) {
+              const m = String(name).match(/^\d+/)
+              if (m) {
+                doc = idToDoc.get(m[0])
+              }
+            }
+            return doc
           }
 
-          if (!doc) {
-            const match = String(args.filename).match(/^\d+/)
-            if (match) {
-              doc = idToDoc.get(match[0])
+          const requested = Array.isArray(args.filename) ? args.filename : [args.filename]
+          const found = []
+          const missing = []
+          for (const f of requested) {
+            const doc = resolveOne(f)
+            if (doc) {
+              found.push(doc)
+            } else {
+              missing.push(String(f))
             }
           }
 
-          if (!doc) {
-            const sc = { document: null }
-            return formatToolResponse({
-              summary: `Error: Document not found for \`${args.filename}\`.`,
-              data: sc,
-              structuredContent: sc,
-            })
+          if (found.length === 0) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: `Error: No documents found for: ${missing.join(', ')}. Call \`search_content\` or \`list_documents\` to find valid filenames.`,
+                },
+              ],
+              structuredContent: { documents: [], missing },
+              isError: true,
+            }
           }
 
-          const text = `## ${doc.title}\n\n${doc.content}`
-
+          const summary = found.map(d => `## ${d.title}\n\n${d.content}`).join('\n\n---\n\n')
+          const suffix = missing.length ? `\n\n---\n\n_(Missing: ${missing.join(', ')})_` : ''
           return formatToolResponse({
-            summary: text,
-            data: { document: doc },
-            structuredContent: { document: doc },
+            summary: summary + suffix,
+            data: { documents: found, missing },
+            structuredContent: { documents: found, missing },
           })
         },
         skipAutoResolve: true,

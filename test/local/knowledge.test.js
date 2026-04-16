@@ -105,9 +105,64 @@ describe('Knowledge Tools Native Search Integration', () => {
     assert.ok(handler)
 
     const result = await handler({ filename: 'password-policy' }, { requestInfo: {} })
-    const data = result.structuredContent.document
+    const data = result.structuredContent.documents[0]
     assert.strictEqual(data.title, 'Password complexity')
     assert.strictEqual(data.content, 'This policy enforces password complexity requirements.')
+  })
+
+  test('get_document should return multiple documents when given an array (mixed filename + articleId)', async () => {
+    const handler = handlers['get_document']
+    assert.ok(handler)
+
+    // Exercise BOTH lookup branches: 'password-policy' hits docLookup directly;
+    // '3' falls through to idToDoc.
+    const result = await handler({ filename: ['password-policy', '3'] }, { requestInfo: {} })
+    assert.strictEqual(result.structuredContent.documents.length, 2)
+    assert.deepStrictEqual(result.structuredContent.missing, [])
+    const summaryText = result.content[0].text
+    assert.ok(/Password complexity/i.test(summaryText))
+    assert.ok(/How to reset password/i.test(summaryText))
+    // Multiple docs are concatenated with the `---` separator.
+    assert.ok(/\n---\n/.test(summaryText), 'expected --- separator between concatenated docs')
+  })
+
+  test('get_document should handle partial misses by surfacing them inline', async () => {
+    const handler = handlers['get_document']
+    assert.ok(handler)
+
+    const result = await handler({ filename: ['1', 'does-not-exist'] }, { requestInfo: {} })
+    assert.strictEqual(result.structuredContent.documents.length, 1)
+    assert.strictEqual(result.structuredContent.documents[0].title, 'Password complexity')
+    assert.deepStrictEqual(result.structuredContent.missing, ['does-not-exist'])
+    const summaryText = result.content[0].text
+    assert.ok(/Missing:.*does-not-exist/i.test(summaryText))
+    assert.ok(!result.isError, 'partial-miss must not be an error; the found docs are useful')
+  })
+
+  test('get_document should return an error when nothing resolves', async () => {
+    const handler = handlers['get_document']
+    assert.ok(handler)
+
+    const result = await handler({ filename: ['does-not-exist', 'also-missing'] }, { requestInfo: {} })
+    assert.strictEqual(result.isError, true)
+    assert.strictEqual(result.structuredContent.documents.length, 0)
+    assert.deepStrictEqual(result.structuredContent.missing, ['does-not-exist', 'also-missing'])
+  })
+
+  test('get_document input schema coerces numeric articleIds to strings', () => {
+    // Gemini sometimes extracts an articleId from a Markdown cross-link as a
+    // number (e.g. 5) rather than a string ("5"). The input schema must coerce
+    // so the tool does not reject the call at the validation boundary.
+    const registerTool = server.registerTool
+    // Zod schema is captured when the tool was registered; grab it from the
+    // mock's call args. `mock.fn` stores calls in `.mock.calls[].arguments`.
+    const getDocCall = registerTool.mock.calls.find(c => c.arguments[0] === 'get_document')
+    assert.ok(getDocCall, 'get_document must be registered')
+    const schema = getDocCall.arguments[1].inputSchema
+    const asNumber = schema.parse({ filename: 5 })
+    assert.strictEqual(asNumber.filename, '5')
+    const asArray = schema.parse({ filename: [4, '6-dlp-troubleshooting'] })
+    assert.deepStrictEqual(asArray.filename, ['4', '6-dlp-troubleshooting'])
   })
 
   test('list_documents should return all documents', async () => {

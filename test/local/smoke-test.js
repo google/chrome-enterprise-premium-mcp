@@ -21,62 +21,68 @@ process.env.GCP_STDIO ??= 'false'
 import { spawn } from 'child_process'
 import http from 'http'
 
+// Run the stdio-transport initialize check first (async IIFE), before spinning up
+// the HTTP server for the remaining smoke tests. stdio is cmcp's primary
+// production transport; the Streamable-HTTP transport in @modelcontextprotocol/sdk
+// v1.29 does not propagate the InitializeResult.instructions field over the wire,
+// so the grounding-content check would give a false negative over HTTP.
+await runStdioInitializeTest()
+
 const server = spawn('node', ['mcp-server.js'], {
   env: { ...process.env, GOOGLE_API_ROOT_URL: 'http://localhost:1234' },
 })
 
-function runInitializeTest() {
-  const postData =
-    JSON.stringify({
-      jsonrpc: '2.0',
-      method: 'initialize',
-      params: {
-        protocolVersion: '2025-06-18',
-        capabilities: {},
-        clientInfo: { name: 'smoke', version: '0' },
-      },
-      id: 1,
-    }) + '\n'
-
-  const options = {
-    hostname: 'localhost',
-    port: 3000,
-    path: '/mcp',
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json, text/event-stream',
-      'Content-Length': Buffer.byteLength(postData),
-    },
-  }
-
-  const req = http.request(options, res => {
-    let body = ''
-    res.on('data', chunk => {
-      body += chunk
+async function runStdioInitializeTest() {
+  return new Promise(resolve => {
+    const stdio = spawn('node', ['mcp-server.js'], {
+      env: { ...process.env, GCP_STDIO: 'true', GOOGLE_API_ROOT_URL: 'http://localhost:1234' },
+      stdio: ['pipe', 'pipe', 'inherit'],
     })
-    res.on('end', () => {
-      if (
-        res.statusCode === 200 &&
-        body.includes('Chrome Enterprise Premium (CEP) Technical Agent') &&
-        body.includes('AI Agent Capabilities and Limitations')
-      ) {
-        console.log('Initialize smoke test passed!')
-        runToolTest()
+    let out = ''
+    let settled = false
+    const finish = ok => {
+      if (settled) {
+        return
+      }
+      settled = true
+      stdio.kill()
+      if (ok) {
+        console.log('Stdio initialize smoke test passed!')
+        resolve()
       } else {
-        console.error('Initialize smoke test failed. Body:', body)
-        server.kill()
+        console.error('Stdio initialize smoke test failed. Response body:', out.slice(0, 600))
         process.exit(1)
       }
+    }
+    stdio.stdout.on('data', chunk => {
+      out += chunk
+      if (out.includes('\n')) {
+        const hasInstructions =
+          out.includes('"instructions"') &&
+          out.includes('Chrome Enterprise Premium (CEP) Technical Agent') &&
+          out.includes('AI Agent Capabilities and Limitations')
+        if (hasInstructions) {
+          finish(true)
+        }
+      }
     })
+    stdio.once('spawn', () => {
+      stdio.stdin.write(
+        JSON.stringify({
+          jsonrpc: '2.0',
+          method: 'initialize',
+          params: {
+            protocolVersion: '2025-06-18',
+            capabilities: {},
+            clientInfo: { name: 'smoke-stdio', version: '0' },
+          },
+          id: 1,
+        }) + '\n',
+      )
+    })
+    // Safety net — if no valid response within 5s, fail.
+    setTimeout(() => finish(false), 5000)
   })
-  req.on('error', e => {
-    console.error('Initialize smoke test failed:', e)
-    server.kill()
-    process.exit(1)
-  })
-  req.write(postData)
-  req.end()
 }
 
 function runToolTest() {
@@ -312,7 +318,7 @@ function runOAuthTest() {
 server.stdout.on('data', data => {
   console.log(`server: ${data}`)
   if (data.includes('Chrome Enterprise Premium MCP server listening on port')) {
-    runInitializeTest()
+    runToolTest()
   }
 })
 
