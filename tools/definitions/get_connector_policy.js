@@ -48,7 +48,11 @@ To enable or modify a connector that is not yet configured, use the "enable_chro
       },
       outputSchema: z
         .object({
-          connectorPolicies: z.array(commonOutputSchemas.resolvedChromePolicy),
+          connectorPolicies: z.array(
+            commonOutputSchemas.resolvedChromePolicy.extend({
+              isEnabled: z.boolean().describe('Whether the connector is currently enabled.'),
+            }),
+          ),
           connectorType: z.string(),
           orgUnitId: z.string(),
         })
@@ -154,6 +158,7 @@ To enable or modify a connector that is not yet configured, use the "enable_chro
                 const v = p.value?.value || {}
                 const warnings = []
                 const flattened = flattenAndMapConfig(v, warnings)
+                let isEnabled = true
 
                 if (policy === 'ON_SECURITY_EVENT') {
                   const eventCfg =
@@ -169,6 +174,7 @@ To enable or modify a connector that is not yet configured, use the "enable_chro
                   ]
 
                   if (!eventCfg) {
+                    isEnabled = false
                     warnings.push(
                       'Connector is not enabled. You can enable it using the enable_chrome_enterprise_connectors tool.',
                     )
@@ -189,7 +195,20 @@ To enable or modify a connector that is not yet configured, use the "enable_chro
                       flattened['Reporting Status'] = 'All Core Events Enabled (Default)'
                     }
                   }
-                } else if (policy !== 'ON_REALTIME_URL_NAVIGATION') {
+                } else if (policy === 'ON_REALTIME_URL_NAVIGATION') {
+                  const checkEnabled = v.realtimeUrlCheckEnabled
+                  if (
+                    checkEnabled === false ||
+                    checkEnabled === 'REALTIME_URL_CHECK_MODE_ENUM_DISABLED' ||
+                    checkEnabled === 'ENTERPRISE_REAL_TIME_URL_CHECK_MODE_ENUM_DISABLED' ||
+                    checkEnabled === 'REALTIME_URL_CHECK_MODE_ENUM_UNSPECIFIED' ||
+                    checkEnabled === 'ENTERPRISE_REAL_TIME_URL_CHECK_MODE_ENUM_UNSPECIFIED'
+                  ) {
+                    isEnabled = false
+                  } else {
+                    flattened["serviceProvider (describe to user as 'Provider')"] = 'Chrome Enterprise Premium'
+                  }
+                } else {
                   // Non-Reporting Connectors (Upload, Download, Paste, Print)
                   const cfg =
                     v.onFileAttachedAnalysisConnectorConfiguration?.fileAttachedConfiguration ||
@@ -199,7 +218,10 @@ To enable or modify a connector that is not yet configured, use the "enable_chro
                     v
 
                   const isCEP = cfg.serviceProvider === 'SERVICE_PROVIDER_CHROME_ENTERPRISE_PREMIUM'
-                  const isNone = !cfg.serviceProvider || cfg.serviceProvider === 'SERVICE_PROVIDER_NONE'
+                  const isNone =
+                    !cfg.serviceProvider ||
+                    cfg.serviceProvider === 'SERVICE_PROVIDER_NONE' ||
+                    cfg.serviceProvider === 'SERVICE_PROVIDER_UNSPECIFIED'
 
                   if (isCEP) {
                     if (!cfg.delayDeliveryUntilVerdict && !cfg.delay_delivery_until_verdict) {
@@ -213,13 +235,19 @@ To enable or modify a connector that is not yet configured, use the "enable_chro
                       )
                     }
                   } else if (isNone) {
+                    isEnabled = false
                     warnings.push(
                       'Connector is not enabled. You can enable it using the enable_chrome_enterprise_connectors tool.',
                     )
                   } else {
-                    warnings.push(
-                      `3rd party provider detected. Integrated CEP features may be bypassed. Update settings manually at ${manualUpdateLink}`,
-                    )
+                    const is3p =
+                      cfg.serviceProvider === 'SERVICE_PROVIDER_SYMANTEC_ENDPOINT_DLP' ||
+                      cfg.serviceProvider === 'SERVICE_PROVIDER_TRELLIX'
+                    if (is3p) {
+                      warnings.push(
+                        `3rd party provider detected. Integrated CEP features may be bypassed. Update settings manually at ${manualUpdateLink}`,
+                      )
+                    }
                   }
                 }
 
@@ -227,14 +255,14 @@ To enable or modify a connector that is not yet configured, use the "enable_chro
                   flattened['warnings'] = warnings.join('; ')
                 }
 
-                // The 'flattened' object contains key-value pairs representing the connector policy settings.
-                // Keys are either the original API keys or a user-friendly description.
-                // Values are humanized versions of the policy settings (e.g., booleans as 'Yes'/'No', enums as readable strings).
-                return flattened
+                return { ...flattened, isEnabled }
               })
 
               const allWarnings = formattedPolicies.flatMap(p => (p.warnings ? [p.warnings] : []))
-              let summaryStr = `Connector policy: ${displayName} (OU: \`${orgUnitId}\`)\nStatus: ${raw.length > 0 ? 'Configured' : 'Not configured'}`
+              const anyEnabled = formattedPolicies.some(p => p.isEnabled)
+              const isConfigured = raw.length > 0 && anyEnabled
+
+              let summaryStr = `Connector policy: ${displayName} (OU: \`${orgUnitId}\`)\nStatus: ${isConfigured ? 'Configured' : 'Not configured'}`
               if (allWarnings.length > 0) {
                 summaryStr += `\n\n⚠️ WARNINGS:\n- ${allWarnings.join('\n- ')}`
               }
@@ -246,7 +274,7 @@ To enable or modify a connector that is not yet configured, use the "enable_chro
                   connectorPolicies: formattedPolicies,
                   connectorType: policy,
                   orgUnitId,
-                  configured: raw.length > 0,
+                  configured: isConfigured,
                 },
               })
             },

@@ -62,6 +62,7 @@ describe('get_connector_policy Tool', () => {
         {
           "delayDeliveryUntilVerdict (describe to user as 'Delay Enforcement')": 'Yes',
           "serviceProvider (describe to user as 'Provider')": 'Chrome Enterprise Premium',
+          isEnabled: true,
         },
       ])
     })
@@ -98,7 +99,11 @@ describe('get_connector_policy Tool', () => {
       )
 
       assert.deepStrictEqual(result.structuredContent.connectorPolicies, [
-        { "realtimeUrlCheckEnabled (describe to user as 'Real-Time URL Check Configuration')": 'Yes' },
+        {
+          "realtimeUrlCheckEnabled (describe to user as 'Real-Time URL Check Configuration')": 'Yes',
+          "serviceProvider (describe to user as 'Provider')": 'Chrome Enterprise Premium',
+          isEnabled: true,
+        },
       ])
       assert.strictEqual(result.structuredContent.connectorType, 'ON_REALTIME_URL_NAVIGATION')
     })
@@ -370,12 +375,12 @@ describe('get_connector_policy Tool', () => {
       assert.ok(result.content[0].text.includes('limited due to URL allowlisting'))
     })
 
-    it('should warn when a 3rd party provider is detected', async () => {
+    it('should warn when a recognized 3rd party provider is detected', async () => {
       const mockPolicy = [
         {
           value: {
             value: {
-              serviceProvider: 'SERVICE_PROVIDER_OTHER',
+              serviceProvider: 'SERVICE_PROVIDER_TRELLIX',
             },
           },
         },
