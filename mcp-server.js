@@ -89,7 +89,11 @@ async function getServer(gcpInfo, sharedSessionState) {
       version: '1.0.0',
     },
     {
-      capabilities: { logging: {}, prompts: {} },
+      capabilities: {
+        logging: {},
+        prompts: {},
+        resources: { listChanged: false },
+      },
       instructions: buildServerInstructions(),
     },
   )

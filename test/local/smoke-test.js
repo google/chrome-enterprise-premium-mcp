@@ -172,8 +172,7 @@ function runPromptTest() {
       console.log('responseBody:', responseBody)
       if (res.statusCode === 200 && responseBody.includes('"name":"cep:health"')) {
         console.log('Prompt smoke test passed!')
-        server.kill()
-        runOAuthTest()
+        runResourceTest()
       } else {
         console.error('Prompt smoke test failed')
         server.kill()
@@ -188,6 +187,53 @@ function runPromptTest() {
     process.exit(1)
   })
 
+  req.write(postData)
+  req.end()
+}
+
+function runResourceTest() {
+  const postData =
+    JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'resources/list',
+      params: {},
+      id: 1,
+    }) + '\n'
+
+  const options = {
+    hostname: 'localhost',
+    port: 3000,
+    path: '/mcp',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json, text/event-stream',
+      'Content-Length': Buffer.byteLength(postData),
+    },
+  }
+
+  const req = http.request(options, res => {
+    let body = ''
+    res.on('data', chunk => {
+      body += chunk
+    })
+    res.on('end', () => {
+      if (res.statusCode === 200 && body.includes('cep://knowledge/4-dlp-core-features')) {
+        console.log('Resource smoke test passed!')
+        server.kill()
+        runOAuthTest()
+      } else {
+        console.error('Resource smoke test failed. Body:', body.slice(0, 400))
+        server.kill()
+        process.exit(1)
+      }
+    })
+  })
+  req.on('error', e => {
+    console.error('Resource smoke test failed:', e)
+    server.kill()
+    process.exit(1)
+  })
   req.write(postData)
   req.end()
 }
