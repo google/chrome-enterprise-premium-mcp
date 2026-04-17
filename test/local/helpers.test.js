@@ -14,13 +14,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import { describe, it, before } from 'node:test'
 import assert from 'node:assert/strict'
-import { describe, it } from 'node:test'
-import { callWithRetry } from '../../lib/util/helpers.js'
+import esmock from 'esmock'
+import { logger, LogLevel } from '../../lib/util/logger.js'
+
+const LOG_LEVEL_OFF = 4
 
 describe('Helpers', () => {
   describe('callWithRetry', () => {
-    it('should return result if function succeeds', async () => {
+    let callWithRetry
+
+    before(async () => {
+      const helpersModule = await esmock('../../lib/util/helpers.js', {
+        '../../lib/util/auth.js': {
+          getAuthErrorMessage: () =>
+            'The API requires a quota project. gcloud auth application-default set-quota-project. Your credentials have insufficient scopes',
+        },
+      })
+      callWithRetry = helpersModule.callWithRetry
+    })
+
+    it('When function succeeds, then it returns the result', async () => {
       const result = await callWithRetry(async () => 'success', 'test')
       assert.equal(result, 'success')
     })
@@ -46,39 +61,49 @@ describe('Helpers', () => {
     });
     */
 
-    it('should catch QUOTA_PROJECT_NOT_SET error and throw helpful message', async () => {
-      const quotaError = new Error(
-        'Your application is authenticating by using local Application Default Credentials. The admin.googleapis.com API requires a quota project, which is not set by default.',
-      )
+    it('When QUOTA_PROJECT_NOT_SET error occurs, then it throws a helpful message', async () => {
+      logger.setLevel(LOG_LEVEL_OFF) // Suppress expected error logs
+      try {
+        const quotaError = new Error(
+          'Your application is authenticating by using local Application Default Credentials. The admin.googleapis.com API requires a quota project, which is not set by default.',
+        )
 
-      await assert.rejects(
-        async () => {
-          await callWithRetry(async () => {
-            throw quotaError
-          }, 'test quota error')
-        },
-        err => {
-          return (
-            err.message.includes('The API requires a quota project') &&
-            err.message.includes('gcloud auth application-default set-quota-project')
-          )
-        },
-      )
+        await assert.rejects(
+          async () => {
+            await callWithRetry(async () => {
+              throw quotaError
+            }, 'test quota error')
+          },
+          err => {
+            return (
+              err.message.includes('The API requires a quota project') &&
+              err.message.includes('gcloud auth application-default set-quota-project')
+            )
+          },
+        )
+      } finally {
+        logger.setLevel(LogLevel.ERROR) // Restore level
+      }
     })
 
-    it('should catch INSUFFICIENT_SCOPES error and throw helpful message', async () => {
-      const scopeError = new Error('Request had insufficient authentication scopes.')
+    it('When INSUFFICIENT_SCOPES error occurs, then it throws a helpful message', async () => {
+      logger.setLevel(LOG_LEVEL_OFF) // Suppress expected error logs
+      try {
+        const scopeError = new Error('Request had insufficient authentication scopes.')
 
-      await assert.rejects(
-        async () => {
-          await callWithRetry(async () => {
-            throw scopeError
-          }, 'test scope error')
-        },
-        err => {
-          return err.message.includes('Your credentials have insufficient scopes')
-        },
-      )
+        await assert.rejects(
+          async () => {
+            await callWithRetry(async () => {
+              throw scopeError
+            }, 'test scope error')
+          },
+          err => {
+            return err.message.includes('Your credentials have insufficient scopes')
+          },
+        )
+      } finally {
+        logger.setLevel(LogLevel.ERROR) // Restore level
+      }
     })
   })
 })
