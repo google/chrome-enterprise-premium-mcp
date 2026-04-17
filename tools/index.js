@@ -40,7 +40,7 @@ import { registerCreateWordListDetectorTool } from './definitions/create_word_li
 import { registerCreateDefaultDlpRulesTool } from './definitions/create_default_dlp_rules.js'
 import { registerCheckSebExtensionStatusTool } from './definitions/check_seb_extension_status.js'
 import { registerInstallSebExtensionTool } from './definitions/install_seb_extension.js'
-import { registerCheckAndEnableApiTool } from './definitions/check_and_enable_api.js'
+import { registerCheckAndEnableCepApiTool } from './definitions/check_and_enable_cep_api.js'
 import { registerEnableChromeEnterpriseConnectorsTool } from './definitions/enable_chrome_enterprise_connectors.js'
 import { registerDiagnoseEnvironmentTool } from './definitions/diagnose_environment.js'
 import { registerKnowledgeTools } from './definitions/knowledge.js'
@@ -95,7 +95,7 @@ export function registerTools(server, options = {}, sessionState) {
   registerCreateDefaultDlpRulesTool(server, { ...commonOpts, cloudIdentityClient }, state)
   registerCheckSebExtensionStatusTool(server, { ...commonOpts, chromePolicyClient }, state)
   registerInstallSebExtensionTool(server, { ...commonOpts, chromePolicyClient }, state)
-  registerCheckAndEnableApiTool(server, { ...commonOpts, serviceUsageClient }, state)
+  registerCheckAndEnableCepApiTool(server, { ...commonOpts, serviceUsageClient }, state)
   registerEnableChromeEnterpriseConnectorsTool(server, { ...commonOpts, chromePolicyClient }, state)
   registerDiagnoseEnvironmentTool(
     server,

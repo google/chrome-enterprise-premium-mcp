@@ -24,14 +24,14 @@ The agent can query your environment to help diagnose issues:
 - **Customer & OU Structure:** The agent is capable of discovering environment details on command, such as retrieving the **Customer ID** and listing the full **Organizational Unit (OU) structure**, including parent-child relationships.
 - **Content Detectors:** The agent can discover and list all custom **DLP content detectors** configured in the environment. For each detector, it can provide the name, type, and the specific content it is configured to detect.
 - **Extension Status:** Check if the [Secure Enterprise Browser (SEB) extension](2-deployment-and-enrollment.md) is force-installed for an OU.
-- **API Status:** Check if required Google Cloud APIs are enabled for a project.
+- **API Status:** Check if required Google Cloud APIs (Admin SDK, Chrome Management, Chrome Policy, Cloud Identity, and Licensing) are enabled for a project.
 - **URL Filtering:** Check active [URL filtering policies](10-policy-and-url-filtering.md).
 
 ### Configuration & Remediation (Mutations)
 
 The agent can actively configure settings to remediate issues or set up new protections:
 
-- **Enable APIs:** Check for required Google Cloud APIs (like Admin SDK, Cloud Identity) and enable them if missing.
+- **Enable APIs:** Check for required Google Cloud APIs (Admin SDK, Chrome Management, Chrome Policy, Cloud Identity, and Licensing) and enable them if missing.
 - **Enable Connectors:** Turn on Chrome Enterprise Connectors (Print, Bulk Text Entry, File Download/Upload, Real-time URL Check) for an OU.
 - **Deploy Extensions:** Force-install the Secure Enterprise Browser (SEB) extension for an OU.
 - **Create DLP Rules & Detectors:** The agent can author and deploy new DLP rules, Regex detectors, Word lists, and URL lists. (See limitations below).

@@ -16,11 +16,11 @@ limitations under the License.
 
 import { describe, it, mock, beforeEach } from 'node:test'
 import assert from 'node:assert'
-import { registerCheckAndEnableApiTool } from '../../tools/definitions/check_and_enable_api.js'
+import { registerCheckAndEnableCepApiTool } from '../../tools/definitions/check_and_enable_cep_api.js'
 import { FakeServiceUsageClient } from '../../lib/api/fake_service_usage_client.js'
 import { SERVICE_NAMES } from '../../lib/constants.js'
 
-describe('check_and_enable_api tool', () => {
+describe('check_and_enable_cep_api tool', () => {
   let server
 
   beforeEach(() => {
@@ -32,9 +32,9 @@ describe('check_and_enable_api tool', () => {
   it('should report status of a disabled API by default', async () => {
     const serviceUsageClient = new FakeServiceUsageClient()
     const state = {}
-    registerCheckAndEnableApiTool(server, { serviceUsageClient }, state)
+    registerCheckAndEnableCepApiTool(server, { serviceUsageClient }, state)
 
-    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_api')
+    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_cep_api')
       .arguments[2]
 
     const result = await handler(
@@ -56,9 +56,9 @@ describe('check_and_enable_api tool', () => {
   it('should report status of only one API if checkAll is explicitly false', async () => {
     const serviceUsageClient = new FakeServiceUsageClient()
     const state = {}
-    registerCheckAndEnableApiTool(server, { serviceUsageClient }, state)
+    registerCheckAndEnableCepApiTool(server, { serviceUsageClient }, state)
 
-    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_api')
+    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_cep_api')
       .arguments[2]
 
     const result = await handler(
@@ -78,9 +78,9 @@ describe('check_and_enable_api tool', () => {
   it('should enable only one API if checkAll is false and apiName is provided', async () => {
     const serviceUsageClient = new FakeServiceUsageClient()
     const state = {}
-    registerCheckAndEnableApiTool(server, { serviceUsageClient }, state)
+    registerCheckAndEnableCepApiTool(server, { serviceUsageClient }, state)
 
-    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_api')
+    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_cep_api')
       .arguments[2]
 
     const result = await handler(
@@ -102,9 +102,9 @@ describe('check_and_enable_api tool', () => {
   it('should enable only one API by default if apiName is provided', async () => {
     const serviceUsageClient = new FakeServiceUsageClient()
     const state = {}
-    registerCheckAndEnableApiTool(server, { serviceUsageClient }, state)
+    registerCheckAndEnableCepApiTool(server, { serviceUsageClient }, state)
 
-    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_api')
+    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_cep_api')
       .arguments[2]
 
     const result = await handler(
@@ -127,9 +127,9 @@ describe('check_and_enable_api tool', () => {
     await serviceUsageClient.enableService('test-project', SERVICE_NAMES.ADMIN_SDK, 'token')
 
     const state = {}
-    registerCheckAndEnableApiTool(server, { serviceUsageClient }, state)
+    registerCheckAndEnableCepApiTool(server, { serviceUsageClient }, state)
 
-    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_api')
+    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_cep_api')
       .arguments[2]
 
     const result = await handler(
@@ -146,9 +146,9 @@ describe('check_and_enable_api tool', () => {
   it('should check all required APIs and report missing ones', async () => {
     const serviceUsageClient = new FakeServiceUsageClient()
     const state = {}
-    registerCheckAndEnableApiTool(server, { serviceUsageClient }, state)
+    registerCheckAndEnableCepApiTool(server, { serviceUsageClient }, state)
 
-    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_api')
+    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_cep_api')
       .arguments[2]
 
     const result = await handler(
@@ -168,9 +168,9 @@ describe('check_and_enable_api tool', () => {
   it('should enable all required APIs when checkAll and enable are true', async () => {
     const serviceUsageClient = new FakeServiceUsageClient()
     const state = {}
-    registerCheckAndEnableApiTool(server, { serviceUsageClient }, state)
+    registerCheckAndEnableCepApiTool(server, { serviceUsageClient }, state)
 
-    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_api')
+    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_cep_api')
       .arguments[2]
 
     const result = await handler(
@@ -196,9 +196,9 @@ describe('check_and_enable_api tool', () => {
       }),
     }
     const state = {}
-    registerCheckAndEnableApiTool(server, { serviceUsageClient }, state)
+    registerCheckAndEnableCepApiTool(server, { serviceUsageClient }, state)
 
-    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_api')
+    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_cep_api')
       .arguments[2]
 
     const result = await handler(
@@ -224,9 +224,9 @@ describe('check_and_enable_api tool', () => {
   it('should report status of only the default API when only projectId is provided', async () => {
     const serviceUsageClient = new FakeServiceUsageClient()
     const state = {}
-    registerCheckAndEnableApiTool(server, { serviceUsageClient }, state)
+    registerCheckAndEnableCepApiTool(server, { serviceUsageClient }, state)
 
-    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_api')
+    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_cep_api')
       .arguments[2]
 
     const result = await handler(
