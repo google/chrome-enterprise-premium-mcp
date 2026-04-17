@@ -66,6 +66,11 @@ Chrome Enterprise Premium's DLP engine supports Optical Character Recognition (O
 
 ## DLP Actions and User Experience
 
-The 'Audit' action in a DLP rule is a **silent-but-log** mode. When triggered, the event is logged for administrator review, but the user's action is **not interrupted**, and they receive no warning or block message. This is primarily used for testing new rules to see what they would catch before enforcing them with 'Warn' or 'Block'.
+The **Action** (Audit, Warn, Block) determines the response to the primary trigger event:
 
-To silently monitor user navigation, create a DLP rule using the **'URL Visited'** trigger. Set the action to **'Audit'**, which logs the event for administrators without impacting the user. The rule can target **predefined URL categories**, such as 'Social Media'.
+-   **Audit:** Logs the event silently without user interruption.
+-   **Warn:** Displays a dialog requiring acknowledgement. For **URL Visited** (navigation), this dialog appears immediately upon site entry.
+-   **Block:** Prevents the event entirely.
+
+**Action Scope:** The selected action applies to the primary event defined by the trigger (such as the site visit, file transfer, or print job). Independent restrictions like `blockScreenshot` or `dataMasking` remain active even when the primary action is **Audit**. This allows for an uninterrupted user experience during site navigation while still enforcing specific controls like screenshot blocking.
+
