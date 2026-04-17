@@ -18,7 +18,7 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { loadGlobalConfig, loadEval, loadAllEvals } from '../evals/lib/loader.js'
+import { loadGlobalConfig, loadEvalsFromFile, loadAllEvals } from '../evals/lib/loader.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const evalsDir = path.resolve(__dirname, '..', 'evals')
@@ -42,34 +42,39 @@ describe('Eval Loader', () => {
     })
   })
 
-  describe('loadEval', () => {
-    it('should parse a markdown eval file with YAML frontmatter', () => {
+  describe('loadEvalsFromFile', () => {
+    it('should parse a markdown eval file with multiple --- CASE --- blocks', () => {
       const config = loadGlobalConfig(evalsDir)
-      const evalFile = path.join(evalsDir, 'cases', 'knowledge', 'k01-what-is-chrome-enterprise-premium-and-wh.md')
-      const evalCase = loadEval(evalFile, config)
+      const evalFile = path.join(evalsDir, 'cases', 'docs', '0-agent-capabilities.md')
+      const evals = loadEvalsFromFile(evalFile, config)
 
-      assert.strictEqual(evalCase.id, 'k01')
-      assert.strictEqual(evalCase.category, 'knowledge')
-      assert.deepStrictEqual(evalCase.tags, ['overview'])
-      assert.ok(evalCase.prompt.includes('Chrome Enterprise Premium'))
-      assert.ok(evalCase.goldenResponse.includes('Chrome Enterprise Premium'))
+      assert.ok(evals.length >= 3, 'should find multiple eval cases in consolidated file')
+      const k01 = evals.find(e => e.id === 'k01')
+      assert.ok(k01)
+      assert.strictEqual(k01.id, 'k01')
+      assert.strictEqual(k01.category, 'knowledge')
+      assert.deepStrictEqual(k01.tags, ['overview'])
+      assert.ok(k01.prompt.includes('What is Chrome Enterprise Premium'))
+      assert.ok(k01.goldenResponse.includes('Chrome Enterprise Premium (CEP)'))
     })
 
     it('should merge global forbidden patterns with per-eval patterns', () => {
       const config = loadGlobalConfig(evalsDir)
-      const evalFile = path.join(evalsDir, 'cases', 'knowledge', 'k01-what-is-chrome-enterprise-premium-and-wh.md')
-      const evalCase = loadEval(evalFile, config)
+      const evalFile = path.join(evalsDir, 'cases', 'docs', '0-agent-capabilities.md')
+      const evals = loadEvalsFromFile(evalFile, config)
+      const k01 = evals.find(e => e.id === 'k01')
 
       // Should include global patterns
-      assert.ok(evalCase.forbiddenPatterns.includes('google.workspace.chrome.file.v1.upload'))
+      assert.ok(k01.forbiddenPatterns.includes('google.workspace.chrome.file.v1.upload'))
     })
 
     it('should extract required_patterns from frontmatter', () => {
       const config = loadGlobalConfig(evalsDir)
-      const evalFile = path.join(evalsDir, 'cases', 'knowledge', 'k03-how-much-does-chrome-enterprise-premium.md')
-      const evalCase = loadEval(evalFile, config)
+      const evalFile = path.join(evalsDir, 'cases', 'docs', '1-product-and-licensing.md')
+      const evals = loadEvalsFromFile(evalFile, config)
+      const k03 = evals.find(e => e.id === 'k03')
 
-      assert.ok(evalCase.requiredPatterns.includes('$6'))
+      assert.ok(k03.requiredPatterns.includes('$6'))
     })
   })
 
