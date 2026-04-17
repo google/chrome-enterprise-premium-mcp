@@ -295,26 +295,27 @@ export function createFakeApp() {
   })
 
   // Admin SDK: List Org Units
-  app.get('/admin/directory/v1/customers/:customerKey/orgunits', (req, res) => {
-    const customerId = requireCustomer(state, req.params.customerKey, res)
-    if (!customerId) {
-      return
-    }
+  app.get('/admin/directory/v1/customer/:customerKey/orgunits', (req, res) => {
+      const customerId = requireCustomer(state, req.params.customerKey, res)
+      if (!customerId) {
+        return
+      }
 
-    if (req.query.orgUnitPath) {
-      return res.status(501).json({ error: { message: 'orgUnitPath filtering not implemented' } })
-    }
+      if (req.query.orgUnitPath) {
+        return res.status(501).json({ error: { message: 'orgUnitPath filtering not implemented' } })
+      }
 
-    const units = state.orgUnits[customerId]
-    if (!units) {
-      return res.json({ organizationUnits: [] })
-    }
+      const units = state.orgUnits[customerId]
+      if (!units) {
+        return res.json({ organizationUnits: [] })
+      }
 
-    if (req.query.type === 'ALL_INCLUDING_PARENT') {
-      return res.json({ organizationUnits: Object.values(units) })
-    }
-    res.status(501).json({ error: { message: `Type ${req.query.type} not implemented` } })
-  })
+      if (req.query.type === 'ALL_INCLUDING_PARENT') {
+        return res.json({ organizationUnits: Object.values(units) })
+      }
+      res.status(501).json({ error: { message: `Type ${req.query.type} not implemented` } })
+    },
+  )
 
   // Admin SDK: List Activities
   app.get('/admin/reports/v1/activity/users/:userKey/applications/chrome', (_req, res) => {
@@ -322,18 +323,21 @@ export function createFakeApp() {
   })
 
   // Licensing: List Licenses
-  app.get('/licensing/v1/product/:productId/sku/:skuId/user', (req, res) => {
-    const customerId = resolveCustomerId(state, req.query.customerId) || req.query.customerId
-    const licenses = state.licenses[customerId]?.[req.params.productId]?.[req.params.skuId] || []
+  app.get(
+    ['/licensing/v1/product/:productId/sku/:skuId/user', '/apps/licensing/v1/product/:productId/sku/:skuId/users'],
+    (req, res) => {
+      const customerId = resolveCustomerId(state, req.query.customerId) || req.query.customerId
+      const licenses = state.licenses[customerId]?.[req.params.productId]?.[req.params.skuId] || []
 
-    // Return a structure matching the real Google Licensing API list response
-    res.json({
-      kind: 'licensing#licenseAssignmentList',
-      etag: '"mockEtagList"',
-      items: licenses,
-      nextPageToken: licenses.length > 0 ? 'mockNextPageToken' : undefined,
-    })
-  })
+      // Return a structure matching the real Google Licensing API list response
+      res.json({
+        kind: 'licensing#licenseAssignmentList',
+        etag: '"mockEtagList"',
+        items: licenses,
+        nextPageToken: licenses.length > 0 ? 'mockNextPageToken' : undefined,
+      })
+    },
+  )
 
   // Licensing: Get User License
   app.get('/licensing/v1/product/:productId/sku/:skuId/user/:userId', (req, res) => {
@@ -487,8 +491,14 @@ export function createFakeApp() {
   })
 
   // Cloud Identity: Create Policy
-  app.post('/v1beta1/customers/:customerId/policies', (req, res) => {
-    const customerId = requireCustomer(state, req.params.customerId, res)
+  app.post(['/v1beta1/customers/:customerId/policies', '/v1beta1/policies'], (req, res) => {
+    let customerParam = req.params.customerId
+    if (!customerParam && req.body.customer) {
+      // e.g. "customers/C0123456"
+      customerParam = req.body.customer.split('/')[1]
+    }
+
+    const customerId = requireCustomer(state, customerParam, res)
     if (!customerId) {
       return
     }
@@ -716,6 +726,9 @@ export async function startFakeServer() {
         mockError,
         close: () =>
           new Promise((res, rej) => {
+            if (typeof server.closeAllConnections === 'function') {
+              server.closeAllConnections()
+            }
             server.close(err => (err ? rej(err) : res()))
           }),
       })

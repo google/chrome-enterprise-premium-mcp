@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import assert from 'node:assert/strict'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
@@ -22,7 +21,9 @@ import { registerTools } from '../../../../tools/index.js'
 import { registerPrompts } from '../../../../prompts/index.js'
 import { getApiClients } from './client_factory.js'
 import { parseToolOutput } from './tool_utils.js'
-import { fakeServerManager } from './fake_server_manager.js'
+import { startFakeServer } from '../../fake-api-server.js'
+
+const SEPARATOR_LENGTH = 80
 
 export async function setupTestContext(client) {
   const isReal = process.env.CEP_BACKEND === 'real'
@@ -69,7 +70,7 @@ export async function setupTestContext(client) {
 
   return {
     customerId: 'C0123456',
-    orgUnitId: 'fakeOUId1',
+    orgUnitId: 'id:fakeOUId1',
   }
 }
 
@@ -84,22 +85,22 @@ function handleDiscoveryError(errorText) {
   const isQuotaError = errorText.includes('quota project')
 
   if (isAuthError) {
-    console.error('\n' + '='.repeat(80))
+    console.error('\n' + '='.repeat(SEPARATOR_LENGTH))
     console.error('❌ AUTHENTICATION REQUIRED')
     console.error('The integration tests failed to access the Google APIs.')
     console.error("Please run: 'gcloud auth application-default login' to refresh your credentials.")
-    console.error('='.repeat(80) + '\n')
+    console.error('='.repeat(SEPARATOR_LENGTH) + '\n')
     throw new Error('Integration tests failed: Authentication required.')
   }
 
   if (isQuotaError) {
     const projectMatch = errorText.match(/quota project "([^"]+)"/i)
     const projectName = projectMatch ? projectMatch[1] : 'YOUR_PROJECT_ID'
-    console.error('\n' + '='.repeat(80))
+    console.error('\n' + '='.repeat(SEPARATOR_LENGTH))
     console.error('❌ QUOTA PROJECT REQUIRED')
     console.error('The integration tests failed because a quota project is not set.')
     console.error(`Please run: 'gcloud auth application-default set-quota-project ${projectName}'`)
-    console.error('='.repeat(80) + '\n')
+    console.error('='.repeat(SEPARATOR_LENGTH) + '\n')
     throw new Error('Integration tests failed: Quota project required.')
   }
 
@@ -110,9 +111,10 @@ export async function createIntegrationHarness(options = {}) {
   let rootUrl = options.rootUrl
   let usingManager = false
 
-  if (!rootUrl && process.env.CEP_BACKEND === 'fake') {
-    await fakeServerManager.start()
-    rootUrl = fakeServerManager.rootUrl
+  let serverInstance = null
+  if (!rootUrl && (options.backend === 'fake' || process.env.CEP_BACKEND === 'fake')) {
+    serverInstance = await startFakeServer()
+    rootUrl = serverInstance.url
     usingManager = true
   }
 
@@ -135,10 +137,14 @@ export async function createIntegrationHarness(options = {}) {
   const testContext = await setupTestContext(client)
 
   // FATAL VALIDATION: Ensure the harness is actually usable before letting tests run
-  assert.ok(testContext.customerId, 'Harness Setup Failed: Could not discover Customer ID')
-  assert.ok(testContext.orgUnitId, 'Harness Setup Failed: Could not discover Org Unit ID')
+  if (!testContext.customerId) {
+    throw new Error('Harness Setup Failed: Could not discover Customer ID')
+  }
+  if (!testContext.orgUnitId) {
+    throw new Error('Harness Setup Failed: Could not discover Org Unit ID')
+  }
 
-  return { server, client, apiClients, testContext, sessionState, usingManager }
+  return { server, client, apiClients, testContext, sessionState, usingManager, rootUrl, fakeServer: serverInstance }
 }
 
 export async function teardownIntegrationHarness(harness, createdResources) {
@@ -182,7 +188,7 @@ export async function teardownIntegrationHarness(harness, createdResources) {
   }
 
   // Ensure the fake backend is stopped
-  if (harness?.usingManager) {
-    await fakeServerManager.stop()
+  if (harness?.usingManager && harness.fakeServer) {
+    await harness.fakeServer.close()
   }
 }
