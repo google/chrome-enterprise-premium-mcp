@@ -1,0 +1,77 @@
+{
+  "timestamp": "2026-04-17T22:38:08.058Z",
+  "summary": {
+    "totalRuns": 2,
+    "passedRuns": 2,
+    "failedRuns": 0,
+    "passRate": 100
+  },
+  "byCategory": {
+    "discovery": {
+      "total": 1,
+      "passed": 1
+    },
+    "inspection": {
+      "total": 1,
+      "passed": 1
+    }
+  },
+  "evaluations": [
+    {
+      "id": "ld01",
+      "category": "discovery",
+      "prompt": "Show me all the Data Loss Prevention (DLP) rules currently configured in my organization.",
+      "totalRuns": 1,
+      "passedRuns": 1,
+      "passRate": 100,
+      "isStable": true,
+      "runs": [
+        {
+          "passed": true,
+          "deterministic": {
+            "passed": true,
+            "failures": []
+          },
+          "judge": {
+            "passed": true,
+            "reasoning": "The agent accurately reports all four configured DLP rules and their statuses while maintaining the required formatting, avoiding internal tool names, and correctly explaining the capabilities of each rule."
+          },
+          "toolsCalled": [
+            "list_dlp_rules"
+          ],
+          "responseText": "Here are the Data Loss Prevention (DLP) rules configured in your organization:\n\n*   **Audit pastes to generative AI sites**: This rule is Active and set to \"Audit\" any web content uploads.\n*   **Block sensitive file uploads**: This rule is Active and set to \"Block\" file uploads if the content matches the SSN DLP detector.\n*   **Warn before uploading PII**: This rule is Active and set to \"Warn\" users before uploading files if the content matches the PII DLP detector.\n*   **Watermark confidential documents**: This rule is Active and set to \"Warn\" when a page is printed if the content contains \"CONFIDENTIAL\".",
+          "durationMs": 7766,
+          "runIndex": 1
+        }
+      ]
+    },
+    {
+      "id": "ld02",
+      "category": "inspection",
+      "prompt": "Do I have any active rules that block file uploads?",
+      "totalRuns": 1,
+      "passedRuns": 1,
+      "passRate": 100,
+      "isStable": true,
+      "runs": [
+        {
+          "passed": true,
+          "deterministic": {
+            "passed": true,
+            "failures": []
+          },
+          "judge": {
+            "passed": true,
+            "reasoning": "The agent accurately identifies the active rule and its purpose while providing helpful technical detail without leaking internal tool names or violating the constraints."
+          },
+          "toolsCalled": [
+            "list_dlp_rules"
+          ],
+          "responseText": "Yes, you have an active DLP rule that blocks file uploads:\n\n*   **Block sensitive file uploads**: This rule is `Active`, performs a `Block` action, and is triggered on `file.upload`. The condition for this rule is `all_content.matches_dlp_detector(\"projects/example/detectors/ssn\")`, meaning it blocks uploads if the content matches the SSN detector.",
+          "durationMs": 8073,
+          "runIndex": 1
+        }
+      ]
+    }
+  ]
+}

@@ -88,13 +88,12 @@ default_judge_rubric: |
      "search_content", "list_dlp_rules"). Describing capabilities is fine.
      If it names tools, grade as FAIL.
   5. INTERNAL IDENTIFIER LEAKAGE: The agent MUST NOT output internal API
-     schema keys (chrome.users.*), raw enum values (SERVICE_PROVIDER_*),
-     or unprompted raw CEL expression dumps from API responses. However,
-     documented CEL function names like matches_dlp_detector('RESOURCE_NAME')
-     used in technical explanations are FINE. Resource names and IDs (like
-     policies/abc123, customer IDs, OU IDs) are expected and FINE — users
-     need these. Do NOT penalize the agent for showing IDs or documented
-     CEL syntax from the knowledge base.
+     schema keys (chrome.users.*) or raw enum values (SERVICE_PROVIDER_*).
+     However, CEL expression syntax and documented CEL function names like
+     matches_dlp_detector('RESOURCE_NAME') used in technical explanations are
+     FINE. Resource names and IDs (like policies/abc123, customer IDs, OU IDs)
+     are expected and FINE — users need these. Do NOT penalize the agent for
+     showing IDs or documented CEL syntax.
   6. KNOWLEDGE RETRIEVAL: Using `get_document` directly to follow cross-links
      from the capabilities doc is a valid and preferred method of grounding.
      Do not penalize the agent for skipping `search_content`.
