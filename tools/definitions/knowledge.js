@@ -512,30 +512,25 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
   }
   const knowledgeDir = options.dbPath || DB_DIR
   try {
-    const files = fs.readdirSync(knowledgeDir).filter(
-      f => f.endsWith('.md') && f !== 'README.md' && f !== '0-agent-capabilities.md',
-    )
+    const files = fs
+      .readdirSync(knowledgeDir)
+      .filter(f => f.endsWith('.md') && f !== 'README.md' && f !== '0-agent-capabilities.md')
     for (const file of files) {
       const filename = file.replace('.md', '')
       const uri = `cep://knowledge/${filename}`
       const parsed = matter(fs.readFileSync(path.join(knowledgeDir, file), 'utf8'))
       const summary = parsed.data?.summary || ''
       const title = parsed.data?.title || filename
-      server.registerResource(
-        filename,
-        uri,
-        { title, description: summary, mimeType: 'text/markdown' },
-        async () => {
-          const db = await loadDb()
-          const doc = db.docLookup.get(filename)
-          if (!doc) {
-            return { contents: [] }
-          }
-          return {
-            contents: [{ uri, mimeType: 'text/markdown', text: `## ${doc.title}\n\n${doc.content}` }],
-          }
-        },
-      )
+      server.registerResource(filename, uri, { title, description: summary, mimeType: 'text/markdown' }, async () => {
+        const db = await loadDb()
+        const doc = db.docLookup.get(filename)
+        if (!doc) {
+          return { contents: [] }
+        }
+        return {
+          contents: [{ uri, mimeType: 'text/markdown', text: `## ${doc.title}\n\n${doc.content}` }],
+        }
+      })
     }
   } catch (e) {
     logger.error(`${TAGS.MCP} Failed to register knowledge resources:`, e)

@@ -99,7 +99,10 @@ describe('get_connector_policy tool handler', () => {
 
     // Verify JSON details
     assert.match(dataText, /"isEnabled": false/)
-    assert.match(dataText, /"realtimeUrlCheckEnabled \(describe to user as 'Real-Time URL Check Configuration'\)": "No"/)
+    assert.match(
+      dataText,
+      /"realtimeUrlCheckEnabled \(describe to user as 'Real-Time URL Check Configuration'\)": "No"/,
+    )
     assert.strictEqual(result.structuredContent.configured, false)
   })
 
@@ -327,7 +330,7 @@ describe('get_connector_policy tool handler', () => {
         { customerId: 'C123', orgUnitId: 'OU123', policy: 'ON_REALTIME_URL_NAVIGATION' },
         { requestInfo: {} },
       )
-      
+
       const policy = result.structuredContent.connectorPolicies[0]
       assert.strictEqual(policy.isEnabled, expectedEnabled, `Failed for input: ${input}`)
       if (expectedEnabled) {
