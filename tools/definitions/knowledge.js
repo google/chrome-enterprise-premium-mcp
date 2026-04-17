@@ -490,9 +490,7 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
 
           const text =
             `## Knowledge Base (${allDocs.length} articles)\n\n` +
-            documents
-              .map((doc, idx) => `${idx + 1 + offset}. ${doc.title}`)
-              .join('\n')
+            documents.map((doc, idx) => `${idx + 1 + offset}. ${doc.title}`).join('\n')
 
           return formatToolResponse({
             summary: text,
