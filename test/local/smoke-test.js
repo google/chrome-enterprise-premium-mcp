@@ -25,6 +25,60 @@ const server = spawn('node', ['mcp-server.js'], {
   env: { ...process.env, GOOGLE_API_ROOT_URL: 'http://localhost:1234' },
 })
 
+function runInitializeTest() {
+  const postData =
+    JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'initialize',
+      params: {
+        protocolVersion: '2025-06-18',
+        capabilities: {},
+        clientInfo: { name: 'smoke', version: '0' },
+      },
+      id: 1,
+    }) + '\n'
+
+  const options = {
+    hostname: 'localhost',
+    port: 3000,
+    path: '/mcp',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json, text/event-stream',
+      'Content-Length': Buffer.byteLength(postData),
+    },
+  }
+
+  const req = http.request(options, res => {
+    let body = ''
+    res.on('data', chunk => {
+      body += chunk
+    })
+    res.on('end', () => {
+      if (
+        res.statusCode === 200 &&
+        body.includes('Chrome Enterprise Premium (CEP) Technical Agent') &&
+        body.includes('AI Agent Capabilities and Limitations')
+      ) {
+        console.log('Initialize smoke test passed!')
+        runToolTest()
+      } else {
+        console.error('Initialize smoke test failed. Body:', body)
+        server.kill()
+        process.exit(1)
+      }
+    })
+  })
+  req.on('error', e => {
+    console.error('Initialize smoke test failed:', e)
+    server.kill()
+    process.exit(1)
+  })
+  req.write(postData)
+  req.end()
+}
+
 function runToolTest() {
   const postData =
     JSON.stringify({
@@ -258,7 +312,7 @@ function runOAuthTest() {
 server.stdout.on('data', data => {
   console.log(`server: ${data}`)
   if (data.includes('Chrome Enterprise Premium MCP server listening on port')) {
-    runToolTest()
+    runInitializeTest()
   }
 })
 
