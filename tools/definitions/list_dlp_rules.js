@@ -106,7 +106,9 @@ export function registerListDlpRulesTool(server, options, sessionState) {
                   action = 'Audit'
                 }
 
-                const triggers = (value.triggers || []).map(t => t.replace(/^chrome\.dlp\.(v\d\.)?/, '')).join(', ')
+                const triggers = (value.triggers || [])
+                  .map(t => t.replace(/^(google\.workspace\.)?chrome\.(.*?)\.(v\d\.)?/, '$2.'))
+                  .join(', ')
                 const condition = value.condition?.contentCondition || 'None'
 
                 return { name, status, action, triggers, condition, resourceName: p.name }
