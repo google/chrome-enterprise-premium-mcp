@@ -51,7 +51,7 @@ describe('enable_chrome_enterprise_connectors unit tests', () => {
     return { client, handler: mockServer.registeredHandler }
   }
 
-  test('should enable connectors when none are configured', { skip: true }, async () => {
+  test('When no connectors are configured, then it enables them', async () => {
     const { client, handler } = setupTool()
     client.resolveResponse = [] // Simulate "None"
 
@@ -66,11 +66,11 @@ describe('enable_chrome_enterprise_connectors unit tests', () => {
     assert.strictEqual(client.resolvePolicyCalls.length, 2)
     assert.strictEqual(client.batchModifyPolicyCalls.length, 1)
     assert.strictEqual(client.batchModifyPolicyCalls[0].requests.length, 2)
-    assert.match(result.content[0].text, /Print Analysis marked for enablement/)
-    assert.match(result.content[0].text, /Bulk Text Entry Analysis \(paste\) marked for enablement/)
+    assert.match(result.content[0].text, /Print Analysis\*\* — enabled/)
+    assert.match(result.content[0].text, /Bulk Text Entry Analysis \(paste\)\*\* — enabled/)
   })
 
-  test('should skip connectors that are already configured', { skip: true }, async () => {
+  test('When connectors are already configured, then it skips them', async () => {
     const { client, handler } = setupTool()
 
     // Simulate already configured for Print
@@ -96,10 +96,10 @@ describe('enable_chrome_enterprise_connectors unit tests', () => {
 
     assert.strictEqual(client.resolvePolicyCalls.length, 1)
     assert.strictEqual(client.batchModifyPolicyCalls.length, 0) // No batch call
-    assert.match(result.content[0].text, /Print Analysis is already configured. Skipping update/)
+    assert.match(result.content[0].text, /Print Analysis\*\* — already configured/)
   })
 
-  test('should handle mix of configured and unconfigured connectors', { skip: true }, async () => {
+  test('When some connectors are configured and some are not, then it enables only unconfigured ones', async () => {
     const { client, handler } = setupTool()
 
     // Simple mock logic to vary response based on schema
@@ -132,11 +132,11 @@ describe('enable_chrome_enterprise_connectors unit tests', () => {
     assert.strictEqual(client.resolvePolicyCalls.length, 2)
     assert.strictEqual(client.batchModifyPolicyCalls.length, 1)
     assert.strictEqual(client.batchModifyPolicyCalls[0].requests.length, 1) // Only Bulk
-    assert.match(result.content[0].text, /Print Analysis is already configured/)
-    assert.match(result.content[0].text, /Bulk Text Entry Analysis \(paste\) marked for enablement/)
+    assert.match(result.content[0].text, /Print Analysis\*\* — already configured/)
+    assert.match(result.content[0].text, /Bulk Text Entry Analysis \(paste\)\*\* — enabled/)
   })
 
-  test('should enable ON_SECURITY_EVENT when not configured', { skip: true }, async () => {
+  test('When ON_SECURITY_EVENT is not configured, then it enables it', async () => {
     const { client, handler } = setupTool()
     client.resolveResponse = [] // Simulate "None"
 
@@ -160,10 +160,10 @@ describe('enable_chrome_enterprise_connectors unit tests', () => {
         .explicitlyEmptyEventNames,
       false,
     )
-    assert.match(result.content[0].text, /Event Reporting marked for enablement/)
+    assert.match(result.content[0].text, /Event Reporting\*\* — enabled/)
   })
 
-  test('should skip ON_SECURITY_EVENT when already configured', { skip: true }, async () => {
+  test('When ON_SECURITY_EVENT is already configured, then it skips it', async () => {
     const { client, handler } = setupTool()
 
     client.resolveResponse = [
@@ -190,45 +190,41 @@ describe('enable_chrome_enterprise_connectors unit tests', () => {
 
     assert.strictEqual(client.resolvePolicyCalls.length, 1)
     assert.strictEqual(client.batchModifyPolicyCalls.length, 0)
-    assert.match(result.content[0].text, /Event Reporting is already configured. Skipping update/)
+    assert.match(result.content[0].text, /Event Reporting\*\* — already configured/)
   })
 
-  test(
-    'should skip ON_SECURITY_EVENT when explicitlyEmptyEventNames is true and some events are present (Core events missing but configured)',
-    { skip: true },
-    async () => {
-      const { client, handler } = setupTool()
+  test('When ON_SECURITY_EVENT is customized with missing core events, then it skips it', async () => {
+    const { client, handler } = setupTool()
 
-      client.resolveResponse = [
-        {
+    client.resolveResponse = [
+      {
+        value: {
           value: {
-            value: {
-              reportingConnector: {
-                eventConfiguration: {
-                  enabledEventNames: ['browserCrashEvent', 'extensionInstallEvent'],
-                  explicitlyEmptyEventNames: true,
-                },
+            reportingConnector: {
+              eventConfiguration: {
+                enabledEventNames: ['browserCrashEvent', 'extensionInstallEvent'],
+                explicitlyEmptyEventNames: true,
               },
             },
           },
         },
-      ]
+      },
+    ]
 
-      const params = {
-        customerId: 'C123',
-        orgUnitId: 'OU456',
-        connectors: ['ON_SECURITY_EVENT'],
-      }
+    const params = {
+      customerId: 'C123',
+      orgUnitId: 'OU456',
+      connectors: ['ON_SECURITY_EVENT'],
+    }
 
-      const result = await handler(params, {})
+    const result = await handler(params, {})
 
-      assert.strictEqual(client.resolvePolicyCalls.length, 1)
-      assert.strictEqual(client.batchModifyPolicyCalls.length, 0)
-      assert.match(result.content[0].text, /Event Reporting is already configured. Skipping update/)
-    },
-  )
+    assert.strictEqual(client.resolvePolicyCalls.length, 1)
+    assert.strictEqual(client.batchModifyPolicyCalls.length, 0)
+    assert.match(result.content[0].text, /Event Reporting\*\* — already configured/)
+  })
 
-  test('should skip ON_SECURITY_EVENT when perfectly customized with all 5 core events', { skip: true }, async () => {
+  test('When ON_SECURITY_EVENT is perfectly customized with all core events, then it skips it', async () => {
     const { client, handler } = setupTool()
 
     client.resolveResponse = [
@@ -262,10 +258,10 @@ describe('enable_chrome_enterprise_connectors unit tests', () => {
 
     assert.strictEqual(client.resolvePolicyCalls.length, 1)
     assert.strictEqual(client.batchModifyPolicyCalls.length, 0)
-    assert.match(result.content[0].text, /Event Reporting is already configured. Skipping update/)
+    assert.match(result.content[0].text, /Event Reporting\*\* — already configured/)
   })
 
-  test('should normalize orgUnitId by removing id: prefix', async () => {
+  test('When orgUnitId has id: prefix, then it normalizes it by removing the prefix', async () => {
     const { client, handler } = setupTool()
     client.resolveResponse = []
 
