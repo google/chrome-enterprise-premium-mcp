@@ -16,9 +16,9 @@ limitations under the License.
 
 import { describe, it, mock, beforeEach } from 'node:test'
 import assert from 'node:assert'
-import { registerCheckAndEnableApiTool } from '../../tools/definitions/check_and_enable_api.js'
+import { registerCheckAndEnableCepApiTool } from '../../tools/definitions/check_and_enable_cep_api.js'
 
-describe('check_and_enable_api tool description', () => {
+describe('check_and_enable_cep_api tool description', () => {
   let server
 
   beforeEach(() => {
@@ -30,9 +30,9 @@ describe('check_and_enable_api tool description', () => {
   it('should have the updated description with the "ask first" mandate', async () => {
     const serviceUsageClient = {}
     const state = {}
-    registerCheckAndEnableApiTool(server, { serviceUsageClient }, state)
+    registerCheckAndEnableCepApiTool(server, { serviceUsageClient }, state)
 
-    const toolDefinition = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_api')
+    const toolDefinition = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_cep_api')
       .arguments[1]
 
     assert.ok(

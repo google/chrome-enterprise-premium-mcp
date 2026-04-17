@@ -29,7 +29,7 @@ forbidden_patterns:
   # - enable_chrome_enterprise_connectors
   # - check_seb_extension_status
   # - install_seb_extension
-  # - check_and_enable_api
+  # - check_and_enable_cep_api
   # NOTE: "feedback" tool name omitted — too common in natural language.
 
   # Chrome trigger API strings

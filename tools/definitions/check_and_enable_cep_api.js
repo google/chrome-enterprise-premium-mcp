@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @file Tool definition for checking and enabling APIs.
+ * @file Tool definition for checking and enabling Chrome Enterprise Premium APIs.
  */
 
 import { z } from 'zod'
@@ -24,19 +24,19 @@ import { TAGS, SERVICE_NAMES } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 
 /**
- * Registers the 'check_and_enable_api' tool with the MCP server.
+ * Registers the 'check_and_enable_cep_api' tool with the MCP server.
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
  * @param {import('../../lib/api/interfaces/service_usage_client.js').ServiceUsageClient} options.serviceUsageClient - The Service Usage client instance.
  * @param {object} sessionState - The session state object for caching.
  * @returns {void}
  */
-export function registerCheckAndEnableApiTool(server, options, sessionState) {
+export function registerCheckAndEnableCepApiTool(server, options, sessionState) {
   const { serviceUsageClient } = options
-  logger.debug(`${TAGS.MCP} Registering 'check_and_enable_api' tool...`)
+  logger.debug(`${TAGS.MCP} Registering 'check_and_enable_cep_api' tool...`)
 
   server.registerTool(
-    'check_and_enable_api',
+    'check_and_enable_cep_api',
     {
       description: `Verify or enable Google Cloud APIs required for Chrome Enterprise Premium features.
 This is a PREREQUISITE tool. Many other tools will fail if necessary APIs are disabled. Always ask the user before enabling APIs unless they have explicitly authorized it in this turn.`,
@@ -70,7 +70,7 @@ This is a PREREQUISITE tool. Many other tools will fail if necessary APIs are di
         handler: async ({ projectId, apiName, enable = false, checkAll = true }, { _requestInfo, authToken }) => {
           const actualApiName = apiName || SERVICE_NAMES.ADMIN_SDK
           logger.debug(
-            `${TAGS.MCP} Calling 'check_and_enable_api' for project ${projectId} (enable: ${enable}, checkAll: ${checkAll}, apiName: ${actualApiName})`,
+            `${TAGS.MCP} Calling 'check_and_enable_cep_api' for project ${projectId} (enable: ${enable}, checkAll: ${checkAll}, apiName: ${actualApiName})`,
           )
 
           const apisToCheck = checkAll ? Object.values(SERVICE_NAMES) : [actualApiName]
