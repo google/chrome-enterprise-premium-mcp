@@ -310,6 +310,8 @@ describe('get_connector_policy Tool', () => {
       const policies = result.structuredContent.connectorPolicies
       assert.ok(policies[0].warnings?.includes('Malware transfer'))
       assert.ok(policies[0].warnings?.includes('Suspicious URL'))
+      assert.ok(policies[0].warnings?.includes('Content unscanned'))
+      assert.ok(policies[0].warnings?.includes('Unsafe site visit'))
       assert.ok(result.content[0].text.includes('⚠️ WARNINGS:'))
       assert.ok(result.content[0].text.includes('Malware transfer'))
     })

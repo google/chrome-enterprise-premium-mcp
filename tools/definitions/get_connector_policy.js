@@ -167,8 +167,10 @@ To enable or modify a connector that is not yet configured, use the "enable_chro
                   const explicitlyEmpty = eventCfg?.explicitlyEmptyEventNames
                   const coreEvents = [
                     'contentTransferEvent',
+                    'unscannedFileEvent',
                     'dangerousDownloadEvent',
                     'sensitiveDataEvent',
+                    'interstitialEvent',
                     'urlFilteringInterstitialEvent',
                     'suspiciousUrlEvent',
                   ]
