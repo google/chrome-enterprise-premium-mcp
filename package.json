@@ -1,6 +1,6 @@
 {
   "name": "@google/chrome-enterprise-premium-mcp",
-  "version": "0.1.1",
+  "version": "0.1.4",
   "description": "Chrome Enterprise Premium MCP server",
   "license": "Apache-2.0",
   "type": "module",
@@ -37,6 +37,7 @@
     "axios": "^1.7.2",
     "express": "^5.1.0",
     "google-auth-library": "^10.4.0",
+    "gray-matter": "^4.0.3",
     "googleapis": "^166.0.0",
     "zod": "^3.25.76"
   },
@@ -52,7 +53,6 @@
     "eslint-plugin-notice": "^1.0.0",
     "eslint-plugin-prettier": "^5.0.0",
     "esmock": "^2.7.1",
-    "gray-matter": "^4.0.3",
     "husky": "^9.1.7",
     "js-yaml": "^4.1.0",
     "lint-staged": "^16.4.0",
