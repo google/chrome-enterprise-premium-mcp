@@ -32,6 +32,7 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { SetLevelRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 
+import { buildServerInstructions } from './lib/knowledge/instructions.js'
 import { registerTools } from './tools/index.js'
 import { registerPrompts } from './prompts/index.js'
 import { checkGCP } from './lib/util/gcp.js'
@@ -87,7 +88,10 @@ async function getServer(gcpInfo, sharedSessionState) {
       name: 'chrome-enterprise-premium',
       version: '1.0.0',
     },
-    { capabilities: { logging: {}, prompts: {} } },
+    {
+      capabilities: { logging: {}, prompts: {} },
+      instructions: buildServerInstructions(),
+    },
   )
 
   // No-op handler for setting log level (required for mcp-inspector)
