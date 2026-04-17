@@ -330,7 +330,7 @@ async function main() {
       try {
         const { GoogleGenerativeAI } = await import('@google/generative-ai')
         const genAI = new GoogleGenerativeAI(apiKey)
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' }, baseUrl ? { baseUrl } : {})
+        const model = genAI.getGenerativeModel({ model: 'gemini-3.1-flash-lite-preview' }, baseUrl ? { baseUrl } : {})
 
         const failedResults = results.filter(r => !r.passed)
         const failureDetails = failedResults
