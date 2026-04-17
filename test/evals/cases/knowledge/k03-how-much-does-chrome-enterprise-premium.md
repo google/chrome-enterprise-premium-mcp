@@ -7,7 +7,6 @@ tags:
 required_patterns:
   - $6
 priority: P0
-stability: 0.9
 ---
 
 ## Prompt

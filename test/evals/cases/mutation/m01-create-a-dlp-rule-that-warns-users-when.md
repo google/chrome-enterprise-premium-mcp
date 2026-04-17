@@ -9,7 +9,6 @@ expected_tools:
 forbidden_patterns: []
 required_patterns: []
 priority: P0
-stability: 1.0
 ---
 
 ## Prompt

@@ -5,7 +5,6 @@ tags:
   - overview
 required_patterns: []
 priority: P0
-stability: 1
 ---
 
 ## Prompt

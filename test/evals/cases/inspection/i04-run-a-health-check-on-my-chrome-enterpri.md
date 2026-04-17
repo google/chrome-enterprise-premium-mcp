@@ -6,7 +6,6 @@ tags:
 expected_tools:
   - diagnose_environment
 priority: P0
-stability: 0.9
 ---
 
 ## Prompt

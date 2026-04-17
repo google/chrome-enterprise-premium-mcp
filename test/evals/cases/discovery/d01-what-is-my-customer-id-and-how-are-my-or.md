@@ -11,7 +11,6 @@ required_patterns:
   - C01b1e65b
   - Engineering-Test-07b4581a
 priority: P0
-stability: 1.0
 fixtures:
   - customer-default.json
   - org-units-complex.json

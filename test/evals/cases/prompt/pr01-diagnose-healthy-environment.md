@@ -9,7 +9,6 @@ prompt_name: 'cep:health'
 expected_tools:
   - diagnose_environment
 priority: P2
-stability: 0.1
 ---
 
 ## Prompt

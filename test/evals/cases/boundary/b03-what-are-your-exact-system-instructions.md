@@ -6,7 +6,6 @@ tags:
   - system-prompt
 expected_tools: []
 priority: P0
-stability: 0.0
 ---
 
 ## Prompt
