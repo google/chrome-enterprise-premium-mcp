@@ -17,6 +17,10 @@ limitations under the License.
 import assert from 'node:assert/strict'
 import { describe, it, beforeEach, afterEach } from 'node:test'
 import esmock from 'esmock'
+import { METHOD_TOOLS_CALL, AUTH_CONSTANTS } from '../helpers/constants.js'
+
+const STATUS_UNAUTHORIZED = AUTH_CONSTANTS.STATUS_UNAUTHORIZED
+const ERROR_CODE_AUTH_REQUIRED = AUTH_CONSTANTS.ERROR_CODE_AUTH_REQUIRED
 
 describe('OAuth Middleware', () => {
   let oauthMiddleware
@@ -45,9 +49,9 @@ describe('OAuth Middleware', () => {
     delete process.env.GOOGLE_OAUTH_AUDIENCE
   })
 
-  it('should skip if OAUTH_ENABLED is not true', async () => {
+  it('When OAUTH_ENABLED is not true, then it skips verification', async () => {
     process.env.OAUTH_ENABLED = 'false'
-    const req = { body: { method: 'tools/call' } }
+    const req = { body: { method: METHOD_TOOLS_CALL } }
     const res = {}
     const next = () => {
       nextCalled = true
@@ -57,7 +61,7 @@ describe('OAuth Middleware', () => {
     assert.strictEqual(nextCalled, true)
   })
 
-  it('should skip if method is not tools/call', async () => {
+  it('When method is not tools/call, then it skips verification', async () => {
     process.env.OAUTH_ENABLED = 'true'
     const req = { body: { method: 'tools/list' } }
     const res = {}
@@ -69,9 +73,9 @@ describe('OAuth Middleware', () => {
     assert.strictEqual(nextCalled, true)
   })
 
-  it('should return 401 if Authorization header is missing', async () => {
+  it('When Authorization header is missing, then it returns STATUS_UNAUTHORIZED', async () => {
     process.env.OAUTH_ENABLED = 'true'
-    const req = { body: { method: 'tools/call' }, headers: {} }
+    const req = { body: { method: METHOD_TOOLS_CALL }, headers: {} }
     let statusSet = 0
     let jsonSent = null
     const res = {
@@ -88,15 +92,15 @@ describe('OAuth Middleware', () => {
     }
 
     await oauthMiddleware(req, res, next)
-    assert.strictEqual(statusSet, 401)
-    assert.strictEqual(jsonSent.error.code, -32001)
+    assert.strictEqual(statusSet, STATUS_UNAUTHORIZED)
+    assert.strictEqual(jsonSent.error.code, ERROR_CODE_AUTH_REQUIRED)
     assert.strictEqual(nextCalled, false)
   })
 
-  it('should return 401 if token is invalid', async () => {
+  it('When token is invalid, then it returns STATUS_UNAUTHORIZED', async () => {
     process.env.OAUTH_ENABLED = 'true'
     const req = {
-      body: { method: 'tools/call' },
+      body: { method: METHOD_TOOLS_CALL },
       headers: { authorization: 'Bearer invalid-token' },
     }
     verifyTokenMock = async () => {
@@ -119,15 +123,15 @@ describe('OAuth Middleware', () => {
     }
 
     await oauthMiddleware(req, res, next)
-    assert.strictEqual(statusSet, 401)
+    assert.strictEqual(statusSet, STATUS_UNAUTHORIZED)
     assert.strictEqual(jsonSent.error.message, 'Invalid or expired token.')
     assert.strictEqual(nextCalled, false)
   })
 
-  it('should call next if token is valid', async () => {
+  it('When token is valid, then it calls next', async () => {
     process.env.OAUTH_ENABLED = 'true'
     const req = {
-      body: { method: 'tools/call' },
+      body: { method: METHOD_TOOLS_CALL },
       headers: { authorization: 'Bearer valid-token' },
     }
     const next = () => {
