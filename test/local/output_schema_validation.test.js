@@ -43,7 +43,7 @@ describe('Output Schema Validation', () => {
     })
   })
 
-  it('every tool should have a valid top-level z.object().passthrough() outputSchema', () => {
+  it('When tools are registered, then every tool has a valid top-level z.object().passthrough() outputSchema', () => {
     for (const [name, tool] of registeredTools) {
       const schema = tool.schema.outputSchema
       if (!schema) {
@@ -65,7 +65,7 @@ describe('Output Schema Validation', () => {
     }
   })
 
-  it('structuredContent should conform to outputSchema', async () => {
+  it('When a tool is called, then structuredContent conforms to outputSchema', async () => {
     // This is a representative test for one tool.
     // Full coverage is in individual tool tests, but we verify the pattern here.
     const mockContext = { requestInfo: { headers: { authorization: 'Bearer token' } } }
