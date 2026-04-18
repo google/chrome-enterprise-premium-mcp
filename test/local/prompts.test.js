@@ -53,28 +53,28 @@ describe('MCP Prompts', () => {
     await client.close()
   })
 
-  it('should list all available prompts', async () => {
+  it('When listPrompts is called, then it returns all available prompts', async () => {
     const result = await client.listPrompts()
     const promptNames = result.prompts.map(p => p.name).sort()
 
     assert.deepStrictEqual(promptNames, ['cep:health', 'cep:expert', 'cep:optimize'].sort())
   })
 
-  it('should retrieve the "cep:health" prompt content', async () => {
+  it('When cep:health prompt is requested, then it returns its content', async () => {
     const result = await client.getPrompt({ name: 'cep:health' })
 
     assert.ok(result.messages)
     assert.ok(result.messages[0].content.text.includes('diagnose_environment'))
   })
 
-  it('should retrieve the "cep:optimize" prompt content', async () => {
+  it('When cep:optimize prompt is requested, then it returns its content', async () => {
     const result = await client.getPrompt({ name: 'cep:optimize' })
 
     assert.ok(result.messages)
     assert.ok(result.messages[0].content.text.includes('My Assessment of Your Environment'))
   })
 
-  it('should retrieve the "cep:expert" prompt content', async () => {
+  it('When cep:expert prompt is requested, then it returns its content', async () => {
     const result = await client.getPrompt({ name: 'cep:expert' })
 
     assert.ok(result.messages)
