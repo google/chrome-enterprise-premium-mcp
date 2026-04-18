@@ -22,7 +22,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { z } from 'zod'
 
 describe('SDK Compatibility - Output Schema', () => {
-  it('should successfully advertise and return structuredContent when using z.object().passthrough()', async () => {
+  it('When z.object().passthrough() is used for output schema, then it successfully returns structuredContent', async () => {
     const server = new McpServer({ name: 'test-server', version: '1.0.0' })
     server.registerTool(
       'test_tool',
@@ -53,7 +53,7 @@ describe('SDK Compatibility - Output Schema', () => {
     // but the transport message contains it.
   })
 
-  it('should FAIL if top-level is not an object (simulating SDK crash)', async () => {
+  it('When top-level is not an object for output schema, then it fails', async () => {
     // In SDK 1.29.0, passing anything other than z.object() to registerTool schema
     // often results in it being normalized to undefined, which then causes
     // validateToolOutput to throw when it tries to use it.
