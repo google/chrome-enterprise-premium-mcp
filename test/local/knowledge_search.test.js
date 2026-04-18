@@ -27,7 +27,7 @@ describe('Knowledge Tools Real Database Integration', () => {
   // Register tools using the default construction path (lib/knowledge directory)
   registerKnowledgeTools(server, {}, {})
 
-  it('should find Licensing policy via search_content', async () => {
+  it('When searched for Licensing, then search_content finds the overview document', async () => {
     const handler = handlers['search_content']
     assert.ok(handler, 'search_content handler should be registered')
 
@@ -42,7 +42,7 @@ describe('Knowledge Tools Real Database Integration', () => {
     assert.ok(policy.id, 'Found policy should have an ID')
   })
 
-  it('should find DLP integration articles via search_content', async () => {
+  it('When searched for DLP, then search_content finds the integration guide', async () => {
     const handler = handlers['search_content']
     const result = await handler({ query: 'DLP' }, { requestInfo: {} })
     const documents = result.structuredContent.documents
@@ -52,7 +52,7 @@ describe('Knowledge Tools Real Database Integration', () => {
     assert.ok(article, 'Should find the DLP integration guide')
   })
 
-  it('should dynamically resolve ID and fetch full document via get_document', async () => {
+  it('When ID is resolved via search, then get_document fetches full content', async () => {
     const searchHandler = handlers['search_content']
     const getDocHandler = handlers['get_document']
 
