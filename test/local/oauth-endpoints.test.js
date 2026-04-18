@@ -14,11 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { test, describe, before, after } from 'node:test'
+import { it, describe, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawn } from 'child_process'
 import http from 'http'
 import { SCOPES, BEARER_METHODS_SUPPORTED, RESPONSE_TYPES_SUPPORTED } from '../../lib/constants.js'
+
+const STATUS_OK = 200
 
 describe('OAuth Endpoints', () => {
   let server
@@ -91,10 +93,10 @@ describe('OAuth Endpoints', () => {
     })
   }
 
-  test('should return correct OAuth protected resource configuration', async () => {
+  it('When protected resource config is requested, then it returns correct values', async () => {
     const { statusCode, body } = await makeRequest('/.well-known/oauth-protected-resource')
 
-    assert.strictEqual(statusCode, 200)
+    assert.strictEqual(statusCode, STATUS_OK)
     assert.deepStrictEqual(body, {
       resource: `http://localhost:${PORT}/mcp`,
       authorization_servers: [`http://localhost:${PORT}/auth/google`],
@@ -103,10 +105,10 @@ describe('OAuth Endpoints', () => {
     })
   })
 
-  test('should return correct OAuth authorization server configuration', async () => {
+  it('When authorization server config is requested, then it returns correct values', async () => {
     const { statusCode, body } = await makeRequest('/.well-known/oauth-authorization-server')
 
-    assert.strictEqual(statusCode, 200)
+    assert.strictEqual(statusCode, STATUS_OK)
     assert.deepStrictEqual(body, {
       issuer: 'https://accounts.google.com',
       authorization_endpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
