@@ -14,9 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { test, describe, beforeEach, mock } from 'node:test'
+import { it, describe, beforeEach, mock } from 'node:test'
 import assert from 'node:assert/strict'
 import { registerKnowledgeTools } from '../../tools/definitions/knowledge.js'
+
+const MOCK_DOC_PASSWORD_POLICY = 'password-policy'
+const MOCK_DOC_PASSWORD_COMPLEXITY = 'Password complexity'
+const MOCK_DOC_DOES_NOT_EXIST = 'does-not-exist'
+const EXPECTED_DOC_COUNT = 4
 
 describe('Knowledge Tools Native Search Integration', () => {
   let allDocs
@@ -32,9 +37,9 @@ describe('Knowledge Tools Native Search Integration', () => {
     allDocs = [
       {
         id: 1,
-        filename: 'password-policy',
+        filename: MOCK_DOC_PASSWORD_POLICY,
         kind: 'policies',
-        title: 'Password complexity',
+        title: MOCK_DOC_PASSWORD_COMPLEXITY,
         url: 'https://example/pass',
         content: 'This policy enforces password complexity requirements.',
         deprecated: 0,
@@ -58,7 +63,7 @@ describe('Knowledge Tools Native Search Integration', () => {
         deprecated: 0,
       },
       {
-        id: 4,
+        id: EXPECTED_DOC_COUNT,
         filename: 'curated-guide',
         kind: 'curated',
         title: 'Curated Guide',
@@ -84,7 +89,7 @@ describe('Knowledge Tools Native Search Integration', () => {
     registerKnowledgeTools(server, { allDocs, docLookup, idToDoc }, {})
   })
 
-  test('search_content should find text with keyword search', async () => {
+  it('When searched with a keyword, then search_content finds matching text', async () => {
     const handler = handlers['search_content']
     assert.ok(handler)
 
@@ -92,31 +97,31 @@ describe('Knowledge Tools Native Search Integration', () => {
     let result = await handler({ query: 'enforces' }, { requestInfo: {} })
     let rows = result.structuredContent.documents
     assert.strictEqual(rows.length, 1)
-    assert.strictEqual(rows[0].title, 'Password complexity')
+    assert.strictEqual(rows[0].title, MOCK_DOC_PASSWORD_COMPLEXITY)
 
-    // Search for 'password' -> should match 'Password complexity' and 'How to reset password'
+    // Search for 'password' -> should match MOCK_DOC_PASSWORD_COMPLEXITY and 'How to reset password'
     result = await handler({ query: 'password' }, { requestInfo: {} })
     rows = result.structuredContent.documents
     assert.strictEqual(rows.length, 2)
   })
 
-  test('get_document should return full content', async () => {
+  it('When document is requested by filename, then get_document returns full content', async () => {
     const handler = handlers['get_document']
     assert.ok(handler)
 
-    const result = await handler({ filename: 'password-policy' }, { requestInfo: {} })
+    const result = await handler({ filename: MOCK_DOC_PASSWORD_POLICY }, { requestInfo: {} })
     const data = result.structuredContent.documents[0]
-    assert.strictEqual(data.title, 'Password complexity')
+    assert.strictEqual(data.title, MOCK_DOC_PASSWORD_COMPLEXITY)
     assert.strictEqual(data.content, 'This policy enforces password complexity requirements.')
   })
 
-  test('get_document should return multiple documents when given an array (mixed filename + articleId)', async () => {
+  it('When given an array of mixed identifiers, then get_document returns multiple documents', async () => {
     const handler = handlers['get_document']
     assert.ok(handler)
 
-    // Exercise BOTH lookup branches: 'password-policy' hits docLookup directly;
+    // Exercise BOTH lookup branches: MOCK_DOC_PASSWORD_POLICY hits docLookup directly;
     // '3' falls through to idToDoc.
-    const result = await handler({ filename: ['password-policy', '3'] }, { requestInfo: {} })
+    const result = await handler({ filename: [MOCK_DOC_PASSWORD_POLICY, '3'] }, { requestInfo: {} })
     assert.strictEqual(result.structuredContent.documents.length, 2)
     assert.deepStrictEqual(result.structuredContent.missing, [])
     const summaryText = result.content[0].text
@@ -126,30 +131,30 @@ describe('Knowledge Tools Native Search Integration', () => {
     assert.ok(/\n---\n/.test(summaryText), 'expected --- separator between concatenated docs')
   })
 
-  test('get_document should handle partial misses by surfacing them inline', async () => {
+  it('When some requested documents are missing, then get_document handles partial misses inline', async () => {
     const handler = handlers['get_document']
     assert.ok(handler)
 
-    const result = await handler({ filename: ['1', 'does-not-exist'] }, { requestInfo: {} })
+    const result = await handler({ filename: ['1', MOCK_DOC_DOES_NOT_EXIST] }, { requestInfo: {} })
     assert.strictEqual(result.structuredContent.documents.length, 1)
-    assert.strictEqual(result.structuredContent.documents[0].title, 'Password complexity')
-    assert.deepStrictEqual(result.structuredContent.missing, ['does-not-exist'])
+    assert.strictEqual(result.structuredContent.documents[0].title, MOCK_DOC_PASSWORD_COMPLEXITY)
+    assert.deepStrictEqual(result.structuredContent.missing, [MOCK_DOC_DOES_NOT_EXIST])
     const summaryText = result.content[0].text
     assert.ok(/Missing:.*does-not-exist/i.test(summaryText))
     assert.ok(!result.isError, 'partial-miss must not be an error; the found docs are useful')
   })
 
-  test('get_document should return an error when nothing resolves', async () => {
+  it('When no requested documents are found, then get_document returns an error', async () => {
     const handler = handlers['get_document']
     assert.ok(handler)
 
-    const result = await handler({ filename: ['does-not-exist', 'also-missing'] }, { requestInfo: {} })
+    const result = await handler({ filename: [MOCK_DOC_DOES_NOT_EXIST, 'also-missing'] }, { requestInfo: {} })
     assert.strictEqual(result.isError, true)
     assert.strictEqual(result.structuredContent.documents.length, 0)
-    assert.deepStrictEqual(result.structuredContent.missing, ['does-not-exist', 'also-missing'])
+    assert.deepStrictEqual(result.structuredContent.missing, [MOCK_DOC_DOES_NOT_EXIST, 'also-missing'])
   })
 
-  test('get_document input schema coerces numeric articleIds to strings', () => {
+  it('When numeric articleIds are provided, then input schema coerces them to strings', () => {
     // Gemini sometimes extracts an articleId from a Markdown cross-link as a
     // number (e.g. 5) rather than a string ("5"). The input schema must coerce
     // so the tool does not reject the call at the validation boundary.
@@ -165,22 +170,22 @@ describe('Knowledge Tools Native Search Integration', () => {
     assert.deepStrictEqual(asArray.filename, ['4', '6-dlp-troubleshooting'])
   })
 
-  test('list_documents should return all documents', async () => {
+  it('When list_documents is called, then it returns all documents', async () => {
     const handler = handlers['list_documents']
     assert.ok(handler)
 
     const result = await handler({}, { requestInfo: {} })
     const rows = result.structuredContent.documents
-    assert.strictEqual(rows.length, 4)
+    assert.strictEqual(rows.length, EXPECTED_DOC_COUNT)
   })
 
-  test('search_content should find multi-word queries', async () => {
+  it('When searched with multi-word query, then search_content finds matching text', async () => {
     const handler = handlers['search_content']
     assert.ok(handler)
 
     const result = await handler({ query: 'complexity requirements' }, { requestInfo: {} })
     const rows = result.structuredContent.documents
     assert.ok(rows.length >= 1)
-    assert.strictEqual(rows[0].title, 'Password complexity')
+    assert.strictEqual(rows[0].title, MOCK_DOC_PASSWORD_COMPLEXITY)
   })
 })
