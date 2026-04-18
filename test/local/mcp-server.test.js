@@ -18,7 +18,7 @@ limitations under the License.
  * @file Integration tests for the MCP server in stdio mode.
  */
 
-import { test, describe, before, after } from 'node:test'
+import { it, describe, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
@@ -44,7 +44,7 @@ describe('MCP Server in stdio mode', () => {
     client.close()
   })
 
-  test('should list tools', async () => {
+  it('When listTools is called, then it returns all registered tools', async () => {
     const response = await client.listTools()
 
     const tools = response.tools
