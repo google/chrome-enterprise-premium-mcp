@@ -48,13 +48,6 @@ import { RealChromePolicyClient } from './lib/api/real_chrome_policy_client.js'
 import { RealChromeManagementClient } from './lib/api/real_chrome_management_client.js'
 import { RealServiceUsageClient } from './lib/api/real_service_usage_client.js'
 
-// Import Fake Clients
-import { FakeAdminSdkClient } from './lib/api/fake_admin_sdk_client.js'
-import { FakeCloudIdentityClient } from './lib/api/fake_cloud_identity_client.js'
-import { FakeChromePolicyClient } from './lib/api/fake_chrome_policy_client.js'
-import { FakeChromeManagementClient } from './lib/api/fake_chrome_management_client.js'
-import { FakeServiceUsageClient } from './lib/api/fake_service_usage_client.js'
-
 /**
  * Redirects console.log to console.error for compatibility with Stdio transport.
  * Stdio transport uses stdout for protocol messages, so logging must go to stderr.
@@ -111,11 +104,11 @@ async function getServer(gcpInfo, sharedSessionState) {
     apiOptions.rootUrl = process.env.GOOGLE_API_ROOT_URL
     console.error(`${TAGS.MCP}  TEST MODE: Using FAKE API clients routing to ${apiOptions.rootUrl}`)
     apiClients = {
-      adminSdk: new FakeAdminSdkClient(apiOptions.rootUrl),
-      cloudIdentity: new FakeCloudIdentityClient(apiOptions.rootUrl),
-      chromePolicy: new FakeChromePolicyClient(apiOptions.rootUrl),
-      chromeManagement: new FakeChromeManagementClient(apiOptions.rootUrl),
-      serviceUsage: new FakeServiceUsageClient(apiOptions.rootUrl),
+      adminSdk: new RealAdminSdkClient(apiOptions),
+      cloudIdentity: new RealCloudIdentityClient(apiOptions),
+      chromePolicy: new RealChromePolicyClient(apiOptions),
+      chromeManagement: new RealChromeManagementClient(apiOptions),
+      serviceUsage: new RealServiceUsageClient(apiOptions),
     }
   } else {
     console.error(`${TAGS.MCP} Using REAL API clients.`)
