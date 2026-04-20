@@ -28,7 +28,7 @@ import { fileURLToPath } from 'url'
 export const OPTIMIZE_PROMPT_NAME = 'cep:optimize'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const guidelinesPath = path.resolve(__dirname, '../../lib/knowledge/rule-quality-guidelines.md')
+const guidelinesPath = path.resolve(__dirname, '../../lib/knowledge/15-rule-quality-guidelines.md')
 
 /**
  * Registers the '/cep:optimize' prompt with the MCP server.
