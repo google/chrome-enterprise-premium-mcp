@@ -296,26 +296,25 @@ export function createFakeApp() {
 
   // Admin SDK: List Org Units
   app.get('/admin/directory/v1/customer/:customerKey/orgunits', (req, res) => {
-      const customerId = requireCustomer(state, req.params.customerKey, res)
-      if (!customerId) {
-        return
-      }
+    const customerId = requireCustomer(state, req.params.customerKey, res)
+    if (!customerId) {
+      return
+    }
 
-      if (req.query.orgUnitPath) {
-        return res.status(501).json({ error: { message: 'orgUnitPath filtering not implemented' } })
-      }
+    if (req.query.orgUnitPath) {
+      return res.status(501).json({ error: { message: 'orgUnitPath filtering not implemented' } })
+    }
 
-      const units = state.orgUnits[customerId]
-      if (!units) {
-        return res.json({ organizationUnits: [] })
-      }
+    const units = state.orgUnits[customerId]
+    if (!units) {
+      return res.json({ organizationUnits: [] })
+    }
 
-      if (req.query.type === 'ALL_INCLUDING_PARENT') {
-        return res.json({ organizationUnits: Object.values(units) })
-      }
-      res.status(501).json({ error: { message: `Type ${req.query.type} not implemented` } })
-    },
-  )
+    if (req.query.type === 'ALL_INCLUDING_PARENT') {
+      return res.json({ organizationUnits: Object.values(units) })
+    }
+    res.status(501).json({ error: { message: `Type ${req.query.type} not implemented` } })
+  })
 
   // Admin SDK: List Activities
   app.get('/admin/reports/v1/activity/users/:userKey/applications/chrome', (_req, res) => {
