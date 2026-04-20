@@ -21,7 +21,8 @@
     "presubmit": "(npm run test:unit && npm run test:integration:fake && npm run test:smoke && node -e \"console.log('\\n✅ PRESUBMIT: PASSED\\n')\") || (node -e \"console.error('\\n❌ PRESUBMIT: FAILED\\n')\"; exit 1)",
     "start": "node mcp-server.js",
     "test": "node test/run-all.js",
-    "test:integration:fake": "EXPERIMENT_DELETE_TOOL_ENABLED=true node test/run-integration.js fake",
+    "test:full": "EXPERIMENT_DELETE_TOOL_ENABLED=true node test/run-integration.js fake",
+    "test:integration:fake": "SKIP_SLOW=true EXPERIMENT_DELETE_TOOL_ENABLED=true node test/run-integration.js fake",
     "test:integration:real": "EXPERIMENT_DELETE_TOOL_ENABLED=true node test/run-integration.js real",
     "test:smoke": "GCP_STDIO=false node test/local/smoke-test.js",
     "test:unit": "node test/run-unit.js"
