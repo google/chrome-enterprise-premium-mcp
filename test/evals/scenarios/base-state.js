@@ -90,7 +90,15 @@ export function getBaseState() {
             condition: {
               contentCondition: 'all_content.contains("CONFIDENTIAL")',
             },
-            action: { chromeAction: { watermarkContent: {} } },
+            action: {
+              chromeAction: {
+                warnUser: {
+                  actionParams: {
+                    watermarkMessage: 'CONFIDENTIAL',
+                  },
+                },
+              },
+            },
           },
         },
       },
