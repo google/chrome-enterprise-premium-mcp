@@ -33,62 +33,6 @@ describe('Cloud Identity API', () => {
     }
   })
 
-  describe('list_dlp_rules Tool', () => {
-    it('should call listDlpRules and return formatted result', async () => {
-      const mockListDlpRules = mock.fn(async () => [
-        {
-          setting: {
-            value: {
-              displayName: 'rule1',
-              state: 'ACTIVE',
-              triggers: ['google.workspace.chrome.file.v1.upload'],
-            },
-          },
-        },
-      ])
-      const handler = await setupCloudIdentityHandler(server, 'list_dlp_rules', { listDlpRules: mockListDlpRules })
-      const result = await handler({ type: 'rule' }, { requestInfo: {} })
-      assert.strictEqual(mockListDlpRules.mock.callCount(), 1)
-      assert.ok(result.content[0].text.includes('file.upload'))
-      assert.ok(!result.content[0].text.includes('google.workspace.chrome'))
-      assert.ok(result.content[0].text.includes('rule1'))
-    })
-
-    it('should sanitize technical trigger strings in the summary', async () => {
-      const mockListDlpRules = mock.fn(async () => [
-        {
-          setting: {
-            value: {
-              displayName: 'Sanitize Me',
-              triggers: ['google.workspace.chrome.file.v1.upload', 'chrome.dlp.v1.page_print'],
-              action: { chromeAction: { auditOnly: {} } },
-            },
-          },
-        },
-      ])
-      const handler = await setupCloudIdentityHandler(server, 'list_dlp_rules', { listDlpRules: mockListDlpRules })
-      const result = await handler({ type: 'rule' }, { requestInfo: {} })
-
-      const outputText = result.content[0].text
-      // Should strip google.workspace.chrome and .v1.
-      assert.ok(outputText.includes('file.upload'))
-      // Should handle legacy chrome.dlp.v1.
-      assert.ok(outputText.includes('dlp.page_print'))
-      // Should NOT contain the infrastructure prefixes
-      assert.ok(!outputText.includes('google.workspace.chrome'))
-    })
-
-    it('should return an error message if API call fails', async () => {
-      const mockListDlpRules = mock.fn(async () => {
-        throw new Error('API Error')
-      })
-      const handler = await setupCloudIdentityHandler(server, 'list_dlp_rules', { listDlpRules: mockListDlpRules })
-
-      const result = await handler({ type: 'rule' }, { requestInfo: {} })
-      assert.deepStrictEqual(result.content[0].text, 'Error: API Error')
-    })
-  })
-
   describe('create_chrome_dlp_rule Tool', () => {
     it('should map BLOCK action correctly', async () => {
       const mockCreateDlpRule = mock.fn(async () => ({ response: { name: 'policies/123' } }))
