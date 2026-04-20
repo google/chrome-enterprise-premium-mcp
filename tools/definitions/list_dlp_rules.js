@@ -90,9 +90,14 @@ export function registerListDlpRulesTool(server, options, sessionState) {
                 } else if (chromeAction.auditOnly) {
                   action = 'Audit'
                 }
-
                 const triggers = (value.triggers || [])
-                  .map(t => t.replace(/^(google\.workspace\.)?chrome\.(.*?)\.(v\d\.)?/, '$2.'))
+                  .map(t =>
+                    t
+                      .replace(/^(?:google\.workspace\.)?chrome\./, '')
+                      .split('.')
+                      .filter(part => !/^v\d+$/.test(part))
+                      .join('.'),
+                  )
                   .join(', ')
                 const condition = value.condition?.contentCondition || 'None'
 
