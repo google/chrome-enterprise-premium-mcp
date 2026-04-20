@@ -67,7 +67,7 @@ describe('Fake API Server', () => {
     })
 
     it('should list org units', async () => {
-      const { status, body } = await get('/admin/directory/v1/customers/C0123456/orgunits?type=ALL_INCLUDING_PARENT')
+      const { status, body } = await get('/admin/directory/v1/customer/C0123456/orgunits?type=ALL_INCLUDING_PARENT')
       assert.strictEqual(status, 200)
       assert.ok(Array.isArray(body.organizationUnits))
       assert.strictEqual(body.organizationUnits.length, 2)
