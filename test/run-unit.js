@@ -33,8 +33,21 @@ import { findTestFiles } from './run-utils.js'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const root = resolve(__dirname, '..')
 
+// Set log level to SILENT for clean group output, but allow explicit overrides
+if (!process.env.CEP_LOG_LEVEL) {
+  process.env.CEP_LOG_LEVEL = 'SILENT'
+}
+
 const testDirs = [join(root, 'test', 'local'), join(root, 'test', 'unit')]
-const testFiles = testDirs.flatMap(dir => findTestFiles(dir)).sort()
+let testFiles = []
+
+// Support running specific files passed as arguments
+const args = process.argv.slice(2)
+if (args.length > 0) {
+  testFiles = args.map(arg => resolve(root, arg))
+} else {
+  testFiles = testDirs.flatMap(dir => findTestFiles(dir)).sort()
+}
 
 if (testFiles.length === 0) {
   console.error('No test files found under test/local/ or test/unit/')

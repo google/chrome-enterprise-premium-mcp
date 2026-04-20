@@ -154,7 +154,7 @@ export function safeFormatResponse({ rawData, formatFn, toolName }) {
   try {
     return formatFn(rawData)
   } catch (e) {
-    console.warn(`${TAGS.MCP} ${toolName}: formatting failed, returning raw data`, e)
+    logger.warn(`${TAGS.MCP} ${toolName}: formatting failed, returning raw data`, e)
     return formatToolResponse({
       summary: `${toolName} completed. Raw data attached.`,
       data: rawData,
@@ -205,13 +205,13 @@ export function guardedToolCall(
                 }
                 currentParams.customerId = customer.id
               } else {
-                console.error(`${TAGS.MCP} ⚠️ Failed to auto-resolve customerId: No customer object returned.`)
+                logger.error(`${TAGS.MCP} ⚠️ Failed to auto-resolve customerId: No customer object returned.`)
               }
             } else {
-              console.error(`${TAGS.MCP} ⚠️ adminSdkClient not provided to guardedToolCall`)
+              logger.error(`${TAGS.MCP} ⚠️ adminSdkClient not provided to guardedToolCall`)
             }
           } catch (error) {
-            console.error(`${TAGS.MCP} ⚠️ Failed to auto-resolve customerId:`, error)
+            logger.error(`${TAGS.MCP} ⚠️ Failed to auto-resolve customerId:`, error)
           }
         }
       }
@@ -228,7 +228,7 @@ export function guardedToolCall(
       logger.debug(`${TAGS.MCP} Handler result for '${context?.name || 'unknown'}':`, JSON.stringify(result, null, 2))
 
       if (result && !result.structuredContent && result.content) {
-        logger.warn(`${TAGS.MCP} Tool handler returned content without structuredContent`)
+        logger.debug(`${TAGS.MCP} Tool handler returned content without structuredContent`)
       }
       return result
     } catch (error) {

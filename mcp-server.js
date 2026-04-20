@@ -93,7 +93,7 @@ async function getServer(gcpInfo, sharedSessionState) {
 
   // No-op handler for setting log level (required for mcp-inspector)
   server.server.setRequestHandler(SetLevelRequestSchema, request => {
-    console.debug(`${TAGS.MCP} Log Level set to: ${request.params.level}`)
+    logger.debug(`${TAGS.MCP} Log Level set to: ${request.params.level}`)
     return {}
   })
 
@@ -102,7 +102,7 @@ async function getServer(gcpInfo, sharedSessionState) {
 
   if (process.env.GOOGLE_API_ROOT_URL) {
     apiOptions.rootUrl = process.env.GOOGLE_API_ROOT_URL
-    console.error(`${TAGS.MCP}  TEST MODE: Using FAKE API clients routing to ${apiOptions.rootUrl}`)
+    logger.info(`${TAGS.MCP}  TEST MODE: Using FAKE API clients routing to ${apiOptions.rootUrl}`)
     apiClients = {
       adminSdk: new RealAdminSdkClient(apiOptions),
       cloudIdentity: new RealCloudIdentityClient(apiOptions),
@@ -111,7 +111,7 @@ async function getServer(gcpInfo, sharedSessionState) {
       serviceUsage: new RealServiceUsageClient(apiOptions),
     }
   } else {
-    console.error(`${TAGS.MCP} Using REAL API clients.`)
+    logger.info(`${TAGS.MCP} Using REAL API clients.`)
     apiClients = {
       adminSdk: new RealAdminSdkClient(apiOptions),
       cloudIdentity: new RealCloudIdentityClient(apiOptions),
@@ -129,11 +129,11 @@ async function getServer(gcpInfo, sharedSessionState) {
   }
 
   if (shouldStartStdio(gcpInfo)) {
-    console.error(`${TAGS.MCP} Using tools optimized for local or stdio mode.`)
+    logger.info(`${TAGS.MCP} Using tools optimized for local or stdio mode.`)
     registerTools(server, toolOptions, sharedSessionState)
     registerPrompts(server)
   } else {
-    console.error(`${TAGS.MCP} Running on GCP environment. Using tools optimized for remote use.`)
+    logger.info(`${TAGS.MCP} Running on GCP environment. Using tools optimized for remote use.`)
     registerTools(server, toolOptions, sharedSessionState)
     registerPrompts(server)
   }
@@ -169,9 +169,9 @@ async function main() {
       const stdioTransport = new StdioServerTransport()
       const server = await getServer(gcpInfo, sharedSessionState)
       await server.connect(stdioTransport)
-      console.error(`${TAGS.MCP} Chrome Enterprise Premium MCP server stdio transport connected`)
+      logger.info(`${TAGS.MCP} Chrome Enterprise Premium MCP server stdio transport connected`)
     } else {
-      console.log(`${TAGS.MCP} Stdio transport mode is turned off.`)
+      logger.info(`${TAGS.MCP} Stdio transport mode is turned off.`)
       const app = express()
       app.use(express.json())
 
@@ -182,12 +182,12 @@ async function main() {
           await server.connect(transport)
           await transport.handleRequest(req, res, req.body)
           res.on('close', () => {
-            console.log(`${TAGS.MCP} Request closed`)
+            logger.info(`${TAGS.MCP} Request closed`)
             transport.close()
             server.close()
           })
         } catch (error) {
-          console.error(`${TAGS.MCP} ✗ Error handling MCP request:`, error)
+          logger.error(`${TAGS.MCP} ✗ Error handling MCP request:`, error)
           if (!res.headersSent) {
             const status = error.status || 500
             res.status(status).json({
@@ -203,7 +203,7 @@ async function main() {
       })
 
       app.get('/mcp', async (req, res) => {
-        console.log(`${TAGS.MCP} Received GET MCP request`)
+        logger.info(`${TAGS.MCP} Received GET MCP request`)
         res.writeHead(405).end(
           JSON.stringify({
             jsonrpc: '2.0',
@@ -238,7 +238,7 @@ async function main() {
       app.get('/.well-known/oauth-authorization-server', getOAuthAuthorizationServer)
 
       app.get('/sse', async (req, res) => {
-        console.log(`${TAGS.MCP} /sse Received request`)
+        logger.info(`${TAGS.MCP} /sse Received request`)
         const server = await getServer(gcpInfo, sharedSessionState)
         const transport = new SSEServerTransport('/messages', res)
         sseTransports[transport.sessionId] = transport
@@ -249,7 +249,7 @@ async function main() {
       })
 
       app.post('/messages', async (req, res) => {
-        console.log(`${TAGS.MCP} /messages Received request`)
+        logger.info(`${TAGS.MCP} /messages Received request`)
         const sessionId = req.query.sessionId
         const transport = sseTransports[sessionId]
         if (transport) {
@@ -261,17 +261,19 @@ async function main() {
 
       const PORT = process.env.PORT || 3000
       app.listen(PORT, () => {
+        // Use console.log directly so that tests waiting for this output (e.g. oauth-endpoints.test.js)
+        // are not silenced by CEP_LOG_LEVEL=SILENT.
         console.log(`${TAGS.MCP} Chrome Enterprise Premium MCP server listening on port ${PORT}`)
       })
     }
   } catch (error) {
-    console.error(`${TAGS.MCP} ✗ Fatal error starting server:`, error)
+    logger.error(`${TAGS.MCP} ✗ Fatal error starting server:`, error)
     process.exitCode = 1
   }
 }
 
 process.on('SIGINT', async () => {
-  console.error(`${TAGS.MCP} Shutting down server...`)
+  logger.error(`${TAGS.MCP} Shutting down server...`)
   // eslint-disable-next-line n/no-process-exit
   process.exit(0)
 })

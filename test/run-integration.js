@@ -39,6 +39,11 @@ import { findTestFiles } from './run-utils.js'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const root = resolve(__dirname, '..')
 
+// Set log level to SILENT for clean group output, but allow explicit overrides
+if (!process.env.CEP_LOG_LEVEL) {
+  process.env.CEP_LOG_LEVEL = 'SILENT'
+}
+
 const backend = process.argv[2] || 'fake'
 
 if (backend !== 'fake' && backend !== 'real') {
@@ -58,7 +63,7 @@ if (testFiles.length === 0) {
 console.log(`Running ${testFiles.length} integration test file(s) with CEP_BACKEND=${backend}...\n`)
 
 try {
-  execFileSync(process.execPath, ['--test', ...testFiles], {
+  execFileSync(process.execPath, ['--test', '--test-reporter', 'spec', ...testFiles], {
     cwd: root,
     stdio: 'inherit',
     env: process.env,

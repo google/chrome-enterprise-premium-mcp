@@ -141,6 +141,29 @@ describe('list_dlp_rules tool handler', () => {
     assert.match(text, /status: Inactive/)
   })
 
+  test('When both value.state and setting.state are missing, then status is "Unknown"', async () => {
+    const mockPolicies = [
+      {
+        name: 'policies/no-state',
+        setting: {
+          value: {
+            displayName: 'No State Rule',
+          },
+        },
+      },
+    ]
+
+    const mockCloudIdentityClient = {
+      listDlpRules: async () => mockPolicies,
+    }
+
+    const handler = getHandler(mockCloudIdentityClient)
+    const result = await handler({}, mockContext)
+    const text = result.content[0].text
+
+    assert.match(text, /status: Unknown/)
+  })
+
   test('When displayName is available at different levels, then it prioritizes them correctly', async () => {
     const mockPolicies = [
       {
@@ -206,29 +229,6 @@ describe('list_dlp_rules tool handler', () => {
     const text = result.content[0].text
 
     assert.match(text, /Root Name Only/)
-  })
-
-  test('When both value.state and setting.state are missing, then status is "Unknown"', async () => {
-    const mockPolicies = [
-      {
-        name: 'policies/no-state',
-        setting: {
-          value: {
-            displayName: 'No State Rule',
-          },
-        },
-      },
-    ]
-
-    const mockCloudIdentityClient = {
-      listDlpRules: async () => mockPolicies,
-    }
-
-    const handler = getHandler(mockCloudIdentityClient)
-    const result = await handler({}, mockContext)
-    const text = result.content[0].text
-
-    assert.match(text, /status: Unknown/)
   })
 
   test('When different chromeActions are provided, then it maps them to human-readable actions', async () => {

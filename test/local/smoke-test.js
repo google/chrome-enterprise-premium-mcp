@@ -20,6 +20,7 @@ process.env.GCP_STDIO ??= 'false'
 
 import { spawn } from 'child_process'
 import http from 'http'
+import { logger } from '../../lib/util/logger.js'
 
 // Run the stdio-transport initialize check first (async IIFE), before spinning up
 // the HTTP server for the remaining smoke tests. stdio is cmcp's primary
@@ -47,10 +48,10 @@ async function runStdioInitializeTest() {
       settled = true
       stdio.kill()
       if (ok) {
-        console.log('Stdio initialize smoke test passed!')
+        logger.info('Stdio initialize smoke test passed!')
         resolve()
       } else {
-        console.error('Stdio initialize smoke test failed. Response body:', out.slice(0, 600))
+        logger.error('Stdio initialize smoke test failed. Response body:', out.slice(0, 600))
         process.exit(1)
       }
     }
@@ -107,8 +108,8 @@ function runToolTest() {
   }
 
   const req = http.request(options, res => {
-    console.log(`statusCode: ${res.statusCode}`)
-    console.log('headers:', res.headers)
+    logger.info(`statusCode: ${res.statusCode}`)
+    logger.info('headers:', res.headers)
 
     let responseBody = ''
     res.on('data', chunk => {
@@ -116,12 +117,12 @@ function runToolTest() {
     })
 
     res.on('end', () => {
-      console.log('responseBody:', responseBody)
+      logger.info('responseBody:', responseBody)
       if (res.statusCode === 200 && responseBody.includes('"name":"get_customer_id"')) {
-        console.log('Tool smoke test passed!')
+        logger.info('Tool smoke test passed!')
         runPromptTest()
       } else {
-        console.error('Tool smoke test failed')
+        logger.error('Tool smoke test failed')
         server.kill()
         process.exit(1)
       }
@@ -129,7 +130,7 @@ function runToolTest() {
   })
 
   req.on('error', error => {
-    console.error('Tool smoke test failed:', error)
+    logger.error('Tool smoke test failed:', error)
     server.kill()
     process.exit(1)
   })
@@ -160,8 +161,8 @@ function runPromptTest() {
   }
 
   const req = http.request(options, res => {
-    console.log(`statusCode: ${res.statusCode}`)
-    console.log('headers:', res.headers)
+    logger.info(`statusCode: ${res.statusCode}`)
+    logger.info('headers:', res.headers)
 
     let responseBody = ''
     res.on('data', chunk => {
@@ -169,12 +170,12 @@ function runPromptTest() {
     })
 
     res.on('end', () => {
-      console.log('responseBody:', responseBody)
+      logger.info('responseBody:', responseBody)
       if (res.statusCode === 200 && responseBody.includes('"name":"cep:health"')) {
-        console.log('Prompt smoke test passed!')
+        logger.info('Prompt smoke test passed!')
         runResourceTest()
       } else {
-        console.error('Prompt smoke test failed')
+        logger.error('Prompt smoke test failed')
         server.kill()
         process.exit(1)
       }
@@ -182,7 +183,7 @@ function runPromptTest() {
   })
 
   req.on('error', error => {
-    console.error('Prompt smoke test failed:', error)
+    logger.error('Prompt smoke test failed:', error)
     server.kill()
     process.exit(1)
   })
@@ -219,18 +220,18 @@ function runResourceTest() {
     })
     res.on('end', () => {
       if (res.statusCode === 200 && body.includes('cep://knowledge/4-dlp-core-features')) {
-        console.log('Resource smoke test passed!')
+        logger.info('Resource smoke test passed!')
         server.kill()
         runOAuthTest()
       } else {
-        console.error('Resource smoke test failed. Body:', body.slice(0, 400))
+        logger.error('Resource smoke test failed. Body:', body.slice(0, 400))
         server.kill()
         process.exit(1)
       }
     })
   })
   req.on('error', e => {
-    console.error('Resource smoke test failed:', e)
+    logger.error('Resource smoke test failed:', e)
     server.kill()
     process.exit(1)
   })
@@ -239,7 +240,7 @@ function runResourceTest() {
 }
 
 function runOAuthTest() {
-  console.log('--- Starting OAuth Smoke Test ---')
+  logger.info('--- Starting OAuth Smoke Test ---')
   const oauthServer = spawn('node', ['mcp-server.js'], {
     env: {
       ...process.env,
@@ -250,14 +251,14 @@ function runOAuthTest() {
   })
 
   oauthServer.stdout.on('data', data => {
-    console.log(`oauth-server: ${data}`)
+    logger.info(`oauth-server: ${data}`)
     if (data.includes('Chrome Enterprise Premium MCP server listening on port')) {
       executeUnauthorizedCall()
     }
   })
 
   oauthServer.stderr.on('data', data => {
-    console.error(`oauth-server error: ${data}`)
+    logger.error(`oauth-server error: ${data}`)
   })
 
   function executeUnauthorizedCall() {
@@ -281,18 +282,18 @@ function runOAuthTest() {
     }
 
     const req = http.request(options, res => {
-      console.log(`OAuth test statusCode: ${res.statusCode}`)
+      logger.info(`OAuth test statusCode: ${res.statusCode}`)
       let body = ''
       res.on('data', chunk => {
         body += chunk
       })
       res.on('end', () => {
-        console.log('OAuth test responseBody (no token):', body)
+        logger.info('OAuth test responseBody (no token):', body)
         if (res.statusCode === 401 && body.includes('Authentication required')) {
-          console.log('OAuth unauthorized (no token) test passed!')
+          logger.info('OAuth unauthorized (no token) test passed!')
           executeInvalidTokenCall()
         } else {
-          console.error('OAuth unauthorized (no token) test failed')
+          logger.error('OAuth unauthorized (no token) test failed')
           oauthServer.kill()
           process.exit(1)
         }
@@ -300,7 +301,7 @@ function runOAuthTest() {
     })
 
     req.on('error', e => {
-      console.error('OAuth test request error:', e)
+      logger.error('OAuth test request error:', e)
       oauthServer.kill()
       process.exit(1)
     })
@@ -331,19 +332,19 @@ function runOAuthTest() {
     }
 
     const req = http.request(options, res => {
-      console.log(`OAuth invalid token statusCode: ${res.statusCode}`)
+      logger.info(`OAuth invalid token statusCode: ${res.statusCode}`)
       let body = ''
       res.on('data', chunk => {
         body += chunk
       })
       res.on('end', () => {
-        console.log('OAuth invalid token responseBody:', body)
+        logger.info('OAuth invalid token responseBody:', body)
         if (res.statusCode === 401 && body.includes('Invalid or expired token')) {
-          console.log('OAuth invalid token test passed!')
+          logger.info('OAuth invalid token test passed!')
           oauthServer.kill()
           process.exit(0)
         } else {
-          console.error('OAuth invalid token test failed')
+          logger.error('OAuth invalid token test failed')
           oauthServer.kill()
           process.exit(1)
         }
@@ -351,7 +352,7 @@ function runOAuthTest() {
     })
 
     req.on('error', e => {
-      console.error('OAuth invalid token test request error:', e)
+      logger.error('OAuth invalid token test request error:', e)
       oauthServer.kill()
       process.exit(1)
     })
@@ -362,16 +363,16 @@ function runOAuthTest() {
 }
 
 server.stdout.on('data', data => {
-  console.log(`server: ${data}`)
+  logger.info(`server: ${data}`)
   if (data.includes('Chrome Enterprise Premium MCP server listening on port')) {
     runToolTest()
   }
 })
 
 server.stderr.on('data', data => {
-  console.error(`server error: ${data}`)
+  logger.error(`server error: ${data}`)
 })
 
 server.on('close', code => {
-  console.log(`server process exited with code ${code}`)
+  logger.info(`server process exited with code ${code}`)
 })

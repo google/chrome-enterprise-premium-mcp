@@ -19,6 +19,7 @@ limitations under the License.
  */
 
 import { TAGS } from '../../lib/constants.js'
+import { logger } from '../../lib/util/logger.js'
 
 /**
  * Resolves the root organizational unit ID for the given customer.
@@ -45,15 +46,15 @@ export async function resolveRootOrgUnitId(apiClients, customerId, authToken, se
         }
         return id
       } else {
-        console.error(
+        logger.error(
           `${TAGS.MCP} ⚠️ Failed to auto-resolve root orgUnitId for customer ${customerId}: Root OU not found.`,
         )
       }
     } else {
-      console.error(`${TAGS.MCP} ⚠️ adminSdkClient not provided for OU resolution (customer: ${customerId})`)
+      logger.error(`${TAGS.MCP} ⚠️ adminSdkClient not provided for OU resolution (customer: ${customerId})`)
     }
   } catch (error) {
-    console.error(`${TAGS.MCP} ⚠️ Failed to auto-resolve root orgUnitId for customer ${customerId}:`, error)
+    logger.error(`${TAGS.MCP} ⚠️ Failed to auto-resolve root orgUnitId for customer ${customerId}:`, error)
   }
   return null
 }

@@ -22,10 +22,10 @@
     "start": "node mcp-server.js",
     "test": "node test/run-all.js",
     "test:full": "EXPERIMENT_DELETE_TOOL_ENABLED=true node test/run-integration.js fake",
-    "test:integration:fake": "SKIP_SLOW=true EXPERIMENT_DELETE_TOOL_ENABLED=true node test/run-integration.js fake",
-    "test:integration:real": "EXPERIMENT_DELETE_TOOL_ENABLED=true node test/run-integration.js real",
-    "test:smoke": "GCP_STDIO=false node test/local/smoke-test.js",
-    "test:unit": "node test/run-unit.js"
+    "test:integration:fake": "CEP_LOG_LEVEL=SILENT SKIP_SLOW=true EXPERIMENT_DELETE_TOOL_ENABLED=true node test/run-integration.js fake",
+    "test:integration:real": "CEP_LOG_LEVEL=SILENT EXPERIMENT_DELETE_TOOL_ENABLED=true node test/run-integration.js real",
+    "test:smoke": "CEP_LOG_LEVEL=SILENT GCP_STDIO=false node test/local/smoke-test.js",
+    "test:unit": "CEP_LOG_LEVEL=SILENT node test/run-unit.js"
   },
   "repository": {
     "type": "git",

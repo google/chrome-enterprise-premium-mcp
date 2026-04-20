@@ -40,8 +40,13 @@ describe('MCP Server in stdio mode', () => {
     await client.connect(transport)
   })
 
-  after(() => {
-    client.close()
+  after(async () => {
+    if (client) {
+      await client.close()
+    }
+    if (transport) {
+      await transport.close()
+    }
   })
 
   it('When listTools is called, then it returns all registered tools', async () => {
