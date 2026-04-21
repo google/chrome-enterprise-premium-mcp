@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 import assert from 'node:assert/strict'
-import { describe, it, beforeEach, afterEach } from 'node:test'
+import { describe, test, beforeEach, afterEach } from 'node:test'
 import esmock from 'esmock'
 import { METHOD_TOOLS_CALL, AUTH_CONSTANTS } from '../helpers/constants.js'
 
@@ -49,7 +49,7 @@ describe('OAuth Middleware', () => {
     delete process.env.GOOGLE_OAUTH_AUDIENCE
   })
 
-  it('When OAUTH_ENABLED is not true, then it skips verification', async () => {
+  test('When OAUTH_ENABLED is not true, then it skips verification', async () => {
     process.env.OAUTH_ENABLED = 'false'
     const req = { body: { method: METHOD_TOOLS_CALL } }
     const res = {}
@@ -61,7 +61,7 @@ describe('OAuth Middleware', () => {
     assert.strictEqual(nextCalled, true)
   })
 
-  it('When method is not tools/call, then it skips verification', async () => {
+  test('When method is not tools/call, then it skips verification', async () => {
     process.env.OAUTH_ENABLED = 'true'
     const req = { body: { method: 'tools/list' } }
     const res = {}
@@ -73,7 +73,7 @@ describe('OAuth Middleware', () => {
     assert.strictEqual(nextCalled, true)
   })
 
-  it('When Authorization header is missing, then it returns STATUS_UNAUTHORIZED', async () => {
+  test('When Authorization header is missing, then it returns STATUS_UNAUTHORIZED', async () => {
     process.env.OAUTH_ENABLED = 'true'
     const req = { body: { method: METHOD_TOOLS_CALL }, headers: {} }
     let statusSet = 0
@@ -97,7 +97,7 @@ describe('OAuth Middleware', () => {
     assert.strictEqual(nextCalled, false)
   })
 
-  it('When token is invalid, then it returns STATUS_UNAUTHORIZED', async () => {
+  test('When token is invalid, then it returns STATUS_UNAUTHORIZED', async () => {
     process.env.OAUTH_ENABLED = 'true'
     const req = {
       body: { method: METHOD_TOOLS_CALL },
@@ -128,7 +128,7 @@ describe('OAuth Middleware', () => {
     assert.strictEqual(nextCalled, false)
   })
 
-  it('When token is valid, then it calls next', async () => {
+  test('When token is valid, then it calls next', async () => {
     process.env.OAUTH_ENABLED = 'true'
     const req = {
       body: { method: METHOD_TOOLS_CALL },
