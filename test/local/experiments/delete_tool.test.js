@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 import assert from 'node:assert/strict'
-import { describe, it, mock, beforeEach } from 'node:test'
+import { describe, test, mock, beforeEach } from 'node:test'
 import esmock from 'esmock'
 import { registerTools } from '../../../tools/index.js'
 import { FeatureFlags } from '../../../lib/util/feature_flags.js'
@@ -29,7 +29,7 @@ describe('Experiment: DELETE_TOOL_ENABLED', () => {
     }
   })
 
-  it('should register experimental tools when flag is enabled', async () => {
+  test('When EXPERIMENT_DELETE_TOOL_ENABLED flag is enabled, then it registers experimental tools', async () => {
     const flags = new FeatureFlags({ EXPERIMENT_DELETE_TOOL_ENABLED: 'true' })
 
     registerTools(server, { featureFlags: flags })
@@ -45,7 +45,7 @@ describe('Experiment: DELETE_TOOL_ENABLED', () => {
     }
   })
 
-  it('should NOT register experimental tools when flag is disabled', async () => {
+  test('When EXPERIMENT_DELETE_TOOL_ENABLED flag is disabled, then it does NOT register experimental tools', async () => {
     const flags = new FeatureFlags({ EXPERIMENT_DELETE_TOOL_ENABLED: 'false' })
 
     registerTools(server, { featureFlags: flags })
@@ -62,7 +62,7 @@ describe('Experiment: DELETE_TOOL_ENABLED', () => {
   })
 
   describe('Handler Logic (requires experiment enabled)', () => {
-    it('should call delete_agent_dlp_rule and return success message', async () => {
+    test('When delete_agent_dlp_rule is called, then it deletes the rule and returns success message', async () => {
       const flags = new FeatureFlags({ EXPERIMENT_DELETE_TOOL_ENABLED: 'true' })
       const mockDeleteDlpRule = mock.fn(async () => ({}))
       const MockCloudIdentityClient = class {
@@ -101,7 +101,7 @@ describe('Experiment: DELETE_TOOL_ENABLED', () => {
       )
     })
 
-    it('should call delete_detector and return success message', async () => {
+    test('When delete_detector is called, then it deletes the detector and returns success message', async () => {
       const flags = new FeatureFlags({ EXPERIMENT_DELETE_TOOL_ENABLED: 'true' })
       const mockDeleteDetector = mock.fn(async () => ({}))
       const MockCloudIdentityClient = class {
