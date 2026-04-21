@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 import assert from 'node:assert/strict'
-import { describe, it, mock, beforeEach } from 'node:test'
+import { describe, test, mock, beforeEach } from 'node:test'
 import esmock from 'esmock'
 
 const SEB_EXTENSION_ID = 'ekajlcmdfcigmdbphhifahdfjbkciflj'
@@ -30,7 +30,7 @@ describe('Extension Tools', () => {
     }
   })
 
-  it('check_seb_extension_status should return success if extension is installed', async () => {
+  test('When check_seb_extension_status is called and extension is installed, then it returns success', async () => {
     const mockResolvePolicy = mock.fn(async () => [
       {
         targetKey: {
@@ -74,7 +74,7 @@ describe('Extension Tools', () => {
     assert.ok(result.content[0].text.includes(`SEB extension (\`${SEB_EXTENSION_ID}\`) is force-installed on this OU.`))
   })
 
-  it('check_seb_extension_status should return error indicator if extension is missing', async () => {
+  test('When check_seb_extension_status is called and extension is missing, then it returns an error indicator', async () => {
     const mockResolvePolicy = mock.fn(async () => [])
 
     const MockChromePolicyClient = class {
@@ -107,7 +107,7 @@ describe('Extension Tools', () => {
     )
   })
 
-  it('install_seb_extension should skip if already installed', async () => {
+  test('When install_seb_extension is called and extension is already installed, then it skips modification', async () => {
     const mockResolvePolicy = mock.fn(async () => [
       {
         targetKey: {
@@ -151,7 +151,7 @@ describe('Extension Tools', () => {
     assert.ok(result.content[0].text.includes('SEB extension is already force-installed on this OU.'))
   })
 
-  it('install_seb_extension should install if missing', async () => {
+  test('When install_seb_extension is called and extension is missing, then it force-installs it', async () => {
     const mockResolvePolicy = mock.fn(async () => [])
     const mockBatchModifyPolicy = mock.fn()
 
