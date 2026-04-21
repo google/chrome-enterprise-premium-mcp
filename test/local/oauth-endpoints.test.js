@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { it, describe, before, after } from 'node:test'
+import { test, describe, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawn } from 'child_process'
 import http from 'http'
@@ -93,7 +93,7 @@ describe('OAuth Endpoints', () => {
     })
   }
 
-  it('When protected resource config is requested, then it returns correct values', async () => {
+  test('When protected resource config is requested, then it returns correct values', async () => {
     const { statusCode, body } = await makeRequest('/.well-known/oauth-protected-resource')
 
     assert.strictEqual(statusCode, STATUS_OK)
@@ -105,7 +105,7 @@ describe('OAuth Endpoints', () => {
     })
   })
 
-  it('When authorization server config is requested, then it returns correct values', async () => {
+  test('When authorization server config is requested, then it returns correct values', async () => {
     const { statusCode, body } = await makeRequest('/.well-known/oauth-authorization-server')
 
     assert.strictEqual(statusCode, STATUS_OK)
