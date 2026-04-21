@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { describe, it } from 'node:test'
+import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -25,7 +25,7 @@ const evalsDir = path.resolve(__dirname, '..', 'evals')
 
 describe('Eval Loader', () => {
   describe('loadGlobalConfig', () => {
-    it('should load forbidden patterns from global.yaml', () => {
+    test('When global config is loaded, then it includes forbidden patterns from global.yaml', () => {
       const config = loadGlobalConfig(evalsDir)
       assert.ok(Array.isArray(config.forbiddenPatterns))
       assert.ok(config.forbiddenPatterns.length > 0, 'should have forbidden patterns')
@@ -35,7 +35,7 @@ describe('Eval Loader', () => {
       )
     })
 
-    it('should load default judge rubric', () => {
+    test('When global config is loaded, then it includes a non-empty default judge rubric', () => {
       const config = loadGlobalConfig(evalsDir)
       assert.ok(typeof config.defaultJudgeRubric === 'string')
       assert.ok(config.defaultJudgeRubric.length > 0)
@@ -43,7 +43,7 @@ describe('Eval Loader', () => {
   })
 
   describe('loadEvalsFromFile', () => {
-    it('should parse a markdown eval file with multiple --- CASE --- blocks', () => {
+    test('When a markdown eval file with multiple cases is parsed, then it returns all cases', () => {
       const config = loadGlobalConfig(evalsDir)
       const evalFile = path.join(evalsDir, 'cases', 'docs', '0-agent-capabilities.md')
       const evals = loadEvalsFromFile(evalFile, config)
@@ -58,7 +58,7 @@ describe('Eval Loader', () => {
       assert.ok(k01.goldenResponse.includes('Chrome Enterprise Premium (CEP)'))
     })
 
-    it('should merge global forbidden patterns with per-eval patterns', () => {
+    test('When evals are loaded from file, then they inherit global forbidden patterns', () => {
       const config = loadGlobalConfig(evalsDir)
       const evalFile = path.join(evalsDir, 'cases', 'docs', '0-agent-capabilities.md')
       const evals = loadEvalsFromFile(evalFile, config)
@@ -68,7 +68,7 @@ describe('Eval Loader', () => {
       assert.ok(k01.forbiddenPatterns.includes('google.workspace.chrome.file.v1.upload'))
     })
 
-    it('should extract required_patterns from frontmatter', () => {
+    test('When evals are loaded from file, then it extracts required_patterns from frontmatter', () => {
       const config = loadGlobalConfig(evalsDir)
       const evalFile = path.join(evalsDir, 'cases', 'docs', '1-product-and-licensing.md')
       const evals = loadEvalsFromFile(evalFile, config)
@@ -79,7 +79,7 @@ describe('Eval Loader', () => {
   })
 
   describe('loadAllEvals', () => {
-    it('should load all eval files', () => {
+    test('When all evals are loaded, then it finds cases with all required fields', () => {
       const evals = loadAllEvals({ dir: evalsDir })
       assert.ok(evals.length > 0, 'should find eval cases')
       // Each eval should have required fields
@@ -90,7 +90,7 @@ describe('Eval Loader', () => {
       }
     })
 
-    it('should filter by category', () => {
+    test('When filtered by category, then it returns only matching eval cases', () => {
       const evals = loadAllEvals({ dir: evalsDir, category: 'knowledge' })
       assert.ok(evals.length > 0)
       for (const e of evals) {
@@ -98,7 +98,7 @@ describe('Eval Loader', () => {
       }
     })
 
-    it('should filter by multiple categories', () => {
+    test('When filtered by multiple categories, then it returns cases from any of those categories', () => {
       const evals = loadAllEvals({ dir: evalsDir, category: 'inspection,mutation' })
       assert.ok(evals.length > 0)
       for (const e of evals) {
@@ -106,7 +106,7 @@ describe('Eval Loader', () => {
       }
     })
 
-    it('should filter by tags', () => {
+    test('When filtered by tags, then it returns cases matching those tags', () => {
       const evals = loadAllEvals({ dir: evalsDir, tags: ['overview'] })
       assert.ok(evals.length > 0)
       for (const e of evals) {
@@ -114,13 +114,13 @@ describe('Eval Loader', () => {
       }
     })
 
-    it('should filter by id', () => {
+    test('When filtered by ID, then it returns only the case with that specific ID', () => {
       const evals = loadAllEvals({ dir: evalsDir, ids: ['k01'] })
       assert.strictEqual(evals.length, 1)
       assert.strictEqual(evals[0].id, 'k01')
     })
 
-    it('should sort by ID with numeric ordering', () => {
+    test('When results are returned, then they are sorted by ID using numeric ordering', () => {
       const evals = loadAllEvals({ dir: evalsDir, category: 'knowledge' })
       for (let i = 1; i < evals.length; i++) {
         const cmp = evals[i - 1].id.localeCompare(evals[i].id, undefined, { numeric: true })
