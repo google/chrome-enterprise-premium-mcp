@@ -32,7 +32,7 @@ The agent can query your environment to help diagnose issues:
 The agent can actively configure settings to remediate issues or set up new protections:
 
 - **Enable APIs:** Check for required Google Cloud APIs (Admin SDK, Chrome Management, Chrome Policy, Cloud Identity, and Licensing) and enable them if missing. The **Service Usage API** (`serviceusage.googleapis.com`) cannot be enabled by the tool and requires manual enablement via the [Google Cloud Console](https://console.cloud.google.com/apis/library/serviceusage.googleapis.com). It is only required if any of the other five core APIs are missing and need to be enabled.
-- **Enable Connectors:** Turn on Chrome Enterprise Connectors (Print, Bulk Text Entry, File Download/Upload, Real-time URL Check) for an OU.
+- **Enable Connectors:** Turn on Chrome Enterprise Connectors (Print, Bulk Text Entry, File Download/Upload, Real-time URL Check) for an OU. The agent can ONLY enable connectors that are currently 'Not configured' or 'not enabled'.
 - **Deploy Extensions:** Force-install the Secure Enterprise Browser (SEB) extension for an OU.
 - **Create DLP Rules & Detectors:** The agent can author and deploy new DLP rules, Regex detectors, Word lists, and URL lists. (See limitations below).
 - **Starter Packs:** Deploy a default set of DLP rules as a "starter pack" for organizations new to CEP.
@@ -95,3 +95,7 @@ For security and architectural reasons, the agent has explicit limitations:
 
 - **Evidence Locker Content:** The agent cannot read or download the actual content of files stored in the Evidence Locker. It can only see the metadata logs indicating a file was flagged. An admin must manually download the password-protected ZIP from the Security Investigation Tool.
 - **Unenrollment:** To fully unenroll a device, an admin must delete the enrollment token client-side and then **delete the device from the Admin Console**. The agent cannot perform the client-side deletion.
+
+### 6. Connector Configuration Limits
+
+- **No Configuration Updates:** The agent cannot update or modify existing Chrome Enterprise connector configurations. It is strictly limited to enabling connectors that are not yet configured. If an existing configuration needs adjustment, the agent must provide the relevant manual Admin Console link to the administrator.
