@@ -32,7 +32,7 @@ describe('get_dlp_rule tool handler', () => {
     return registeredHandler
   }
 
-  test('should format rule details and include UI link', async () => {
+  test('When a rule has complete data, then it formats rule details and includes a UI link', async () => {
     const mockRule = {
       name: 'policies/rule123',
       displayName: 'Block Secret Uploads',
@@ -73,7 +73,7 @@ describe('get_dlp_rule tool handler', () => {
     )
   })
 
-  test('should handle missing fields gracefully', async () => {
+  test('When a rule has missing fields, then it handles them gracefully', async () => {
     const mockRule = {
       name: 'policies/empty',
     }
