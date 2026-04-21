@@ -56,7 +56,7 @@ Use this for security investigations and auditing user actions within the manage
           .optional()
           .describe(`The end time of the range to get activities for (RFC3339 timestamp). Defaults to now.`),
         maxResults: z.number().optional().describe(`The maximum number of results to return.`),
-        customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
+        customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345).'),
       },
       outputSchema: z
         .object({

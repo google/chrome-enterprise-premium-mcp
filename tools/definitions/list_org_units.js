@@ -42,7 +42,7 @@ export function registerListOrgUnitsTool(server, options, sessionState) {
       description: `Lists the Organizational Units (OUs) for the customer.
 Use this tool to find the 'orgUnitId' required by most other Chrome management and policy tools. It provides the human-readable path and unique ID for each OU.`,
       inputSchema: {
-        customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
+        customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345).'),
       },
       outputSchema: z
         .object({

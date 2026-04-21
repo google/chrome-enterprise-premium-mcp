@@ -41,7 +41,7 @@ export function registerCheckCepSubscriptionTool(server, options, sessionState) 
       description:
         'Verifies the current Chrome Enterprise Premium (CEP) license assignments for an organization. This is useful for checking the actual protection state of users.',
       inputSchema: {
-        customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
+        customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345).'),
       },
       outputSchema: z
         .object({
