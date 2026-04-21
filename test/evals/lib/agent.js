@@ -145,7 +145,16 @@ export async function createEvalAgent({ apiKey, baseUrl, mcpClient }) {
 
         try {
           const result = await mcpClient.callTool({ name, arguments: args || {} })
-          const text = result.content?.[0]?.text || JSON.stringify(result)
+
+          // MCP tools often return multiple content blocks (e.g., 0: Summary, 1: Raw JSON).
+          // Concatenate all text parts to ensure the agent has full context for both
+          // human-readable reasoning and technical data extraction.
+          const text =
+            (result.content || [])
+              .map(c => c.text)
+              .filter(Boolean)
+              .join('\n\n') || JSON.stringify(result)
+
           fnResponses.push({
             functionResponse: { name, response: { content: text } },
           })
