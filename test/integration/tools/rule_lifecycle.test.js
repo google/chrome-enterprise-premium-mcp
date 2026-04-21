@@ -32,7 +32,7 @@ describe('Rule Lifecycle Integration', () => {
     await teardownIntegrationHarness(harness, createdResources)
   })
 
-  test('DLP Rule Lifecycle: Create -> Verify -> List -> Delete', async () => {
+  test('When a DLP rule is created, then it can be verified, listed, and deleted', async () => {
     const { client, testContext } = harness
     const ruleConfig = {
       customerId: testContext.customerId,
@@ -118,7 +118,7 @@ describe('Rule Lifecycle Integration', () => {
     }
   })
 
-  test('DLP Rule Safety: Refuses to delete non-agent rules', async () => {
+  test('When a non-agent rule deletion is attempted, then it refuses to delete it', async () => {
     const { client, apiClients, testContext } = harness
     const ruleConfig = {
       displayName: `MANUAL_RULE_${Date.now()}`, // NO robot emoji prefix
