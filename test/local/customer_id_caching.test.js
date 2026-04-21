@@ -15,13 +15,13 @@ limitations under the License.
 */
 
 import assert from 'node:assert/strict'
-import { describe, it, mock, beforeEach } from 'node:test'
+import { describe, test, mock, beforeEach } from 'node:test'
 import { guardedToolCall } from '../../tools/utils/wrapper.js'
 
 describe('Customer ID Caching and Auto-Resolution', () => {
   beforeEach(() => {})
 
-  it('should fetch customerId on first tool call and cache it for subsequent calls', async () => {
+  test('When a tool is called without a customer ID, then it fetches and caches the customer ID for subsequent calls', async () => {
     const mockGetCustomerId = mock.fn(async () => ({ id: 'C_AUTO_RESOLVED' }))
     const mockListOrgUnits = mock.fn(async () => [])
     const MockAdminSdkClient = class {
@@ -56,7 +56,7 @@ describe('Customer ID Caching and Auto-Resolution', () => {
     assert.strictEqual(secondCallArgs[0].customerId, 'C_AUTO_RESOLVED', 'Second call should use cached ID')
   })
 
-  it('should respect explicitly provided customerId and not overwrite cache if different', async () => {
+  test('When a tool is called with an explicit customer ID, then it respects it and updates the cache without resolving', async () => {
     const mockGetCustomerId = mock.fn(async () => ({ id: 'C_DEFAULT' }))
     const mockListOrgUnits = mock.fn(async () => [])
     const MockAdminSdkClient = class {
