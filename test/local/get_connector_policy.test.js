@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 import assert from 'node:assert/strict'
-import { describe, it, mock, beforeEach } from 'node:test'
+import { describe, test, mock, beforeEach } from 'node:test'
 import { registerGetConnectorPolicyTool } from '../../tools/definitions/get_connector_policy.js'
 
 describe('get_connector_policy Tool', () => {
@@ -28,7 +28,7 @@ describe('get_connector_policy Tool', () => {
   })
 
   describe('Tool Handler', () => {
-    it('should report configured when policies exist', async () => {
+    test('When policies exist, then it reports configured', async () => {
       const mockPolicy = [
         {
           value: {
@@ -67,7 +67,7 @@ describe('get_connector_policy Tool', () => {
       ])
     })
 
-    it('should report not configured when no policies exist', async () => {
+    test('When no policies exist, then it reports not configured', async () => {
       const mockGetConnectorPolicy = mock.fn(async () => [])
       const chromePolicyClient = { getConnectorPolicy: mockGetConnectorPolicy }
 
@@ -84,7 +84,7 @@ describe('get_connector_policy Tool', () => {
       assert.strictEqual(result.structuredContent.configured, false)
     })
 
-    it('should pass raw policy data through in structuredContent', async () => {
+    test('When standard policy is provided, then it passes raw policy data through in structuredContent', async () => {
       const mockPolicy = [{ value: { value: { realtimeUrlCheckEnabled: true } } }]
       const mockGetConnectorPolicy = mock.fn(async () => mockPolicy)
       const chromePolicyClient = { getConnectorPolicy: mockGetConnectorPolicy }
@@ -94,7 +94,7 @@ describe('get_connector_policy Tool', () => {
         .arguments[2]
 
       const result = await handler(
-        { customerId: 'C0123', orgUnitId: 'ou123', policy: 'ON_REALTIME_URL_NAVIGATION' },
+        { customerId: 'C123', orgUnitId: 'ou123', policy: 'ON_REALTIME_URL_NAVIGATION' },
         { requestInfo: {} },
       )
 
@@ -108,7 +108,7 @@ describe('get_connector_policy Tool', () => {
       assert.strictEqual(result.structuredContent.connectorType, 'ON_REALTIME_URL_NAVIGATION')
     })
 
-    it('should report "All Core Events Enabled (Default)" for ON_SECURITY_EVENT when default', async () => {
+    test('When ON_SECURITY_EVENT has default configuration, then it reports "All Core Events Enabled (Default)"', async () => {
       const mockPolicy = [
         {
           value: {
@@ -142,7 +142,7 @@ describe('get_connector_policy Tool', () => {
       assert.ok(result.content[0].text.includes('Configured'))
     })
 
-    it('should return correctly when explicitlyEmptyEventNames is true', async () => {
+    test('When explicitlyEmptyEventNames is true, then it returns correctly with warnings', async () => {
       const mockPolicy = [
         {
           value: {
@@ -176,7 +176,7 @@ describe('get_connector_policy Tool', () => {
       assert.ok(result.content[0].text.includes('Missing core DLP events'))
     })
 
-    it('should NOT warn when event configuration is in its default state (empty list, not explicitly empty)', async () => {
+    test('When event configuration is in its default state (empty list, not explicitly empty), then it does NOT warn', async () => {
       const mockPolicy = [
         {
           value: {
@@ -209,7 +209,7 @@ describe('get_connector_policy Tool', () => {
       assert.strictEqual(policies[0].warnings, undefined, 'Should NOT have warnings for default event state')
     })
 
-    it('should warn when customized and no events are selected (explicitlyEmptyEventNames is true)', async () => {
+    test('When customized and no events are selected (explicitlyEmptyEventNames is true), then it warns', async () => {
       const mockPolicy = [
         {
           value: {
@@ -244,7 +244,7 @@ describe('get_connector_policy Tool', () => {
       assert.ok(result.content[0].text.includes('Missing core DLP events'))
     })
 
-    it('should NOT warn when eventConfiguration object is empty (default state)', async () => {
+    test('When eventConfiguration object is empty (default state), then it does NOT warn', async () => {
       const mockPolicy = [
         {
           value: {
@@ -274,7 +274,7 @@ describe('get_connector_policy Tool', () => {
       assert.strictEqual(policies[0].warnings, undefined, 'Empty eventConfiguration should be treated as default')
     })
 
-    it('should warn when some core events are missing from customized configuration', async () => {
+    test('When some core events are missing from customized configuration, then it warns', async () => {
       const mockPolicy = [
         {
           value: {
@@ -316,7 +316,7 @@ describe('get_connector_policy Tool', () => {
       assert.ok(result.content[0].text.includes('Malware transfer'))
     })
 
-    it('should warn when CEP is enabled without delay enforcement', async () => {
+    test('When CEP is enabled without delay enforcement, then it warns', async () => {
       const mockPolicy = [
         {
           value: {
@@ -346,7 +346,7 @@ describe('get_connector_policy Tool', () => {
       assert.ok(result.content[0].text.includes('Delay enforcement is disabled'))
     })
 
-    it('should warn when security posture is limited by URL allowlisting', async () => {
+    test('When security posture is limited by URL allowlisting, then it warns', async () => {
       const mockPolicy = [
         {
           value: {
@@ -377,7 +377,7 @@ describe('get_connector_policy Tool', () => {
       assert.ok(result.content[0].text.includes('limited due to URL allowlisting'))
     })
 
-    it('should warn when a recognized 3rd party provider is detected', async () => {
+    test('When a recognized 3rd party provider is detected, then it warns', async () => {
       const mockPolicy = [
         {
           value: {
@@ -406,7 +406,7 @@ describe('get_connector_policy Tool', () => {
       assert.ok(result.content[0].text.includes('3rd party provider detected'))
     })
 
-    it('should NOT warn when CEP is perfectly configured', async () => {
+    test('When CEP is perfectly configured, then it does NOT warn', async () => {
       const mockPolicy = [
         {
           value: {
@@ -434,7 +434,7 @@ describe('get_connector_policy Tool', () => {
       assert.ok(!policies[0].warnings)
     })
 
-    it('should warn that connector is not enabled when eventConfiguration is missing', async () => {
+    test('When eventConfiguration is missing for ON_SECURITY_EVENT, then it warns that connector is not enabled', async () => {
       const mockPolicy = [
         {
           value: {
@@ -462,7 +462,7 @@ describe('get_connector_policy Tool', () => {
       assert.ok(policies[0].warnings?.includes('Connector is not enabled'))
     })
 
-    it('should correctly handle and flatten the Print Analysis connector without [object Object] errors', async () => {
+    test('When Print Analysis connector is used, then it correctly handles and flattens it without [object Object] errors', async () => {
       const mockPolicy = [
         {
           value: {
