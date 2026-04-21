@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 import assert from 'node:assert/strict'
-import { describe, it, mock, beforeEach } from 'node:test'
+import { describe, test, mock, beforeEach } from 'node:test'
 import esmock from 'esmock'
 import { RealAdminSdkClient } from '../../lib/api/real_admin_sdk_client.js'
 
@@ -28,7 +28,7 @@ describe('check_cep_subscription Tool', () => {
     }
   })
 
-  it('should return success message when CEP subscription is found', async () => {
+  test('When CEP subscription is found, then it returns success message', async () => {
     const mockCheckCepSubscription = mock.fn(async () => ({
       items: [{ productId: '101040', skuId: '1010400001' }],
     }))
@@ -65,7 +65,7 @@ describe('check_cep_subscription Tool', () => {
     )
   })
 
-  it('should return info message when no CEP subscription is found', async () => {
+  test('When no CEP subscription is found, then it returns info message', async () => {
     const mockCheckCepSubscription = mock.fn(async () => ({
       items: [],
     }))
@@ -104,7 +104,7 @@ describe('check_cep_subscription Tool', () => {
     assert.strictEqual(result.structuredContent.assignmentCount, 0)
   })
 
-  it('should return error message when Licensing API is not enabled', async () => {
+  test('When Licensing API is not enabled, then it returns error message', async () => {
     const mockCheckCepSubscription = mock.fn(async () => {
       throw new Error(
         'API [licensing.googleapis.com] is not enabled. Please enable it at https://console.cloud.google.com/apis/library/licensing.googleapis.com',
@@ -141,7 +141,7 @@ describe('check_cep_subscription Tool', () => {
     assert.match(result.content[0].text, /https:\/\/console.cloud.google.com\/apis\/library\/licensing.googleapis.com/)
   })
 
-  it('should return error message when access is denied', async () => {
+  test('When access is denied, then it returns error message', async () => {
     const mockCheckCepSubscription = mock.fn(async () => {
       throw new Error(
         'Access denied to Licensing API. The account may not have permission to access licensing information.',
@@ -180,7 +180,7 @@ describe('check_cep_subscription Tool', () => {
 
 describe('RealAdminSdkClient', () => {
   describe('checkCepSubscription', () => {
-    it('should resolve CURRENT_CUSTOMER to actual customer ID before querying Licensing API', async () => {
+    test('When CURRENT_CUSTOMER is used, then it resolves to actual customer ID before querying Licensing API', async () => {
       const client = new RealAdminSdkClient()
 
       const mockListForProductAndSku = mock.fn(async () => {
@@ -211,7 +211,7 @@ describe('RealAdminSdkClient', () => {
       assert.strictEqual(args.customerId, 'C_REAL_ID')
     })
 
-    it('should use provided customer ID directly without resolving if it is not my_customer', async () => {
+    test('When provided customer ID is not my_customer, then it uses it directly without resolving', async () => {
       const client = new RealAdminSdkClient()
 
       const mockListForProductAndSku = mock.fn(async () => {
