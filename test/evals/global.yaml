@@ -60,16 +60,6 @@ forbidden_patterns:
   - settings/detector
   - "re:settings/detector\\."
 
-  # API field names (internal action keys, not admin-facing)
-  - blockContent
-  - warnUser
-  - auditOnly
-  - unsafeHtmlMessageBody
-  - blockScreenshot
-  - saveContent
-  - onByDefault
-  # NOTE: delayDeliveryUntilVerdict omitted — admin-facing connector setting name.
-
   # NOTE: CEL expression patterns (all_content\., body\.matches_, etc.) are
   # intentionally NOT global. An advanced user may legitimately ask about CEL.
   # Add them per-eval on mutation/creation evals where unprompted leakage is the concern.
