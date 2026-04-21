@@ -36,9 +36,6 @@ export const mcpClient = new McpClientWrapper()
 
 // --- Agent Factory Logic ---
 
-/**
- * Creates the Metadata Agent.
- */
 function createMetadataAgent(): BaseAgent {
   return new BaseAgent(
     projectId || 'unknown-project',
@@ -49,9 +46,6 @@ function createMetadataAgent(): BaseAgent {
   )
 }
 
-/**
- * Creates the Troubleshooting Agent.
- */
 function createTroubleshootingAgent(): BaseAgent {
   return new BaseAgent(
     projectId || 'unknown-project',
@@ -62,9 +56,6 @@ function createTroubleshootingAgent(): BaseAgent {
   )
 }
 
-/**
- * Creates the Onboarding Agent.
- */
 function createOnboardingAgent(): BaseAgent {
   return new BaseAgent(
     projectId || 'unknown-project',
@@ -75,9 +66,6 @@ function createOnboardingAgent(): BaseAgent {
   )
 }
 
-/**
- * Creates the Orchestrator Agent.
- */
 function createOrchestratorAgent(): BaseAgent {
   const metadataAgent = createMetadataAgent()
   const troubleshootingAgent = createTroubleshootingAgent()
