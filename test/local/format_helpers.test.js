@@ -12,12 +12,12 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-*/ import { describe, it } from 'node:test'
+*/ import { describe, test } from 'node:test'
 import assert from 'node:assert'
 import { formatToolResponse, safeFormatResponse } from '../../tools/utils/wrapper.js'
 
 describe('formatToolResponse', () => {
-  it('returns two content blocks: summary and fenced JSON', () => {
+  test('When data is provided, then it returns two content blocks: summary and fenced JSON', () => {
     const result = formatToolResponse({
       summary: 'Test summary.',
       data: { key: 'value' },
@@ -32,7 +32,7 @@ describe('formatToolResponse', () => {
 })
 
 describe('safeFormatResponse', () => {
-  it('returns formatted response when formatFn succeeds', () => {
+  test('When formatFn succeeds, then it returns the formatted response', () => {
     const result = safeFormatResponse({
       rawData: { items: [1, 2] },
       formatFn: data =>
@@ -46,7 +46,7 @@ describe('safeFormatResponse', () => {
     assert.strictEqual(result.content[0].text, 'Found 2 items.')
   })
 
-  it('returns raw data when formatFn throws', () => {
+  test('When formatFn throws, then it falls back to returning raw data', () => {
     const result = safeFormatResponse({
       rawData: { fallback: true },
       formatFn: () => {
