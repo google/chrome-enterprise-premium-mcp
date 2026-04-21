@@ -15,36 +15,36 @@ limitations under the License.
 */
 
 import assert from 'node:assert/strict'
-import { describe, it } from 'node:test'
+import { describe, test } from 'node:test'
 import { FeatureFlags, FLAGS } from '../../lib/util/feature_flags.js'
 
 describe('FeatureFlags', () => {
-  it('should return false by default when flag is not set', () => {
+  test('When flag is not set, then it returns false by default', () => {
     const featureFlags = new FeatureFlags({})
     assert.strictEqual(featureFlags.isEnabled(FLAGS.DELETE_TOOL_ENABLED), false)
   })
 
-  it('should return true when flag is set to "true"', () => {
+  test('When flag is set to "true", then it returns true', () => {
     const featureFlags = new FeatureFlags({ [`EXPERIMENT_${FLAGS.DELETE_TOOL_ENABLED}`]: 'true' })
     assert.strictEqual(featureFlags.isEnabled(FLAGS.DELETE_TOOL_ENABLED), true)
   })
 
-  it('should return true when flag is set to "1"', () => {
+  test('When flag is set to "1", then it returns true', () => {
     const featureFlags = new FeatureFlags({ [`EXPERIMENT_${FLAGS.DELETE_TOOL_ENABLED}`]: '1' })
     assert.strictEqual(featureFlags.isEnabled(FLAGS.DELETE_TOOL_ENABLED), true)
   })
 
-  it('should return false when flag is set to "false"', () => {
+  test('When flag is set to "false", then it returns false', () => {
     const featureFlags = new FeatureFlags({ [`EXPERIMENT_${FLAGS.DELETE_TOOL_ENABLED}`]: 'false' })
     assert.strictEqual(featureFlags.isEnabled(FLAGS.DELETE_TOOL_ENABLED), false)
   })
 
-  it('should be case-insensitive', () => {
+  test('When flag value is evaluated, then it is case-insensitive', () => {
     const featureFlags = new FeatureFlags({ [`EXPERIMENT_${FLAGS.DELETE_TOOL_ENABLED}`]: 'TRUE' })
     assert.strictEqual(featureFlags.isEnabled(FLAGS.DELETE_TOOL_ENABLED), true)
   })
 
-  it('should throw an error when checking an unregistered flag (Always Strict)', () => {
+  test('When checking an unregistered flag, then it throws an error (Always Strict)', () => {
     const featureFlags = new FeatureFlags({})
     assert.throws(() => featureFlags.isEnabled('UNKNOWN_FLAG'), /checking unknown flag "UNKNOWN_FLAG"/)
   })
