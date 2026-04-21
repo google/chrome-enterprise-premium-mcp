@@ -42,7 +42,7 @@ export function registerCountBrowserVersionsTool(server, options, sessionState) 
       description: `Counts Chrome browser versions reported by managed devices.
 Use this for auditing and reporting on the distribution of browser versions across your organization or a specific Organizational Unit.`,
       inputSchema: {
-        customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
+        customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345).'),
         orgUnitId: z.string().optional().describe('The ID of the organizational unit to filter results.'),
       },
       outputSchema: z

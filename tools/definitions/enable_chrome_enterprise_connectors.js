@@ -253,7 +253,7 @@ export function registerEnableChromeEnterpriseConnectorsTool(server, options, se
       description: `Enables and configures selected Chrome Enterprise connectors (e.g., Print, Paste, File Upload/Download).
 Use this tool to ACTIVATE security protections. It will ONLY apply changes to connectors that are not already configured. To check current status without modifying, use 'get_connector_policy'.`,
       inputSchema: {
-        customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
+        customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345).'),
         orgUnitId: z.string().describe('The ID of the organizational unit where connectors will be enabled.'),
         connectors: z
           .array(

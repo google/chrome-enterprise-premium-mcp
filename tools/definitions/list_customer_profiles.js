@@ -42,7 +42,7 @@ export function registerCustomerProfileTool(server, options, sessionState) {
       description: `Lists Chrome browser profiles for the customer.
 These profiles represent managed browser instances and provide details like OS version, platform, and associated user email.`,
       inputSchema: {
-        customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
+        customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345).'),
       },
       outputSchema: z
         .object({

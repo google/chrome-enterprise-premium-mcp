@@ -96,7 +96,7 @@ Rules included:
 2. Apply watermarks to sensitive sites (Gmail, Salesforce, Zendesk).
 3. Warn users before pasting content on Generative AI sites (Gemini is excluded from warning).`,
       inputSchema: {
-        customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
+        customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345).'),
         orgUnitId: z.string().describe('The target Organizational Unit ID'),
       },
       outputSchema: z

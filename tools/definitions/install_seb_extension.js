@@ -44,7 +44,7 @@ export function registerInstallSebExtensionTool(server, options, sessionState) {
       description: `Force-installs the Secure Enterprise Browser (SEB) extension for a given Organizational Unit.
 The SEB extension is REQUIRED for advanced Chrome Enterprise Premium features like data masking.`,
       inputSchema: {
-        customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
+        customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345).'),
         orgUnitId: z
           .string()
           .describe('The ID of the organizational unit.')

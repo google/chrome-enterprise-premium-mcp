@@ -78,7 +78,7 @@ ${MCP_SAFETY_CONSTRAINTS.ACTIVE_BLOCK_RESTRICTION}
 
 To ensure technical accuracy and verify trigger compatibility, you should retrieve the full technical reference using 'get_document' for '11-dlp-cel-syntax' before using this tool.`,
       inputSchema: {
-        customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
+        customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345).'),
         orgUnitId: z.string().describe('The target Organizational Unit ID'),
         displayName: z
           .string()

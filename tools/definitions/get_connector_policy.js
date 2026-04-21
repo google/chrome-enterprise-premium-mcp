@@ -42,7 +42,7 @@ export function registerGetConnectorPolicyTool(server, options, sessionState) {
 Use this to AUDIT or VERIFY settings for features like "printing sensitive data", "real-time URL checks", or "event reporting".
 To enable or modify a connector that is not yet configured, use the "enable_chrome_enterprise_connectors" tool.`,
       inputSchema: {
-        customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
+        customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345).'),
         orgUnitId: z.string().describe('The ID of the organizational unit to check.'),
         policy: z.enum(Object.keys(ConnectorPolicyFilter)).describe('The connector type to retrieve.'),
       },
