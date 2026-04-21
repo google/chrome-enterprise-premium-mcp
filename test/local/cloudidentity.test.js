@@ -19,7 +19,7 @@ limitations under the License.
  */
 
 import assert from 'node:assert/strict'
-import { describe, it, mock, beforeEach } from 'node:test'
+import { describe, test, mock, beforeEach } from 'node:test'
 import esmock from 'esmock'
 import { setupCloudIdentityHandler } from './mock-utils.js'
 import { FeatureFlags } from '../../lib/util/feature_flags.js'
@@ -34,7 +34,7 @@ describe('Cloud Identity API', () => {
   })
 
   describe('create_chrome_dlp_rule Tool', () => {
-    it('should map BLOCK action correctly', async () => {
+    test('When action is BLOCK, then it maps correctly in the API request', async () => {
       const mockCreateDlpRule = mock.fn(async () => ({ response: { name: 'policies/123' } }))
       const handler = await setupCloudIdentityHandler(server, 'create_chrome_dlp_rule', {
         createDlpRule: mockCreateDlpRule,
@@ -55,7 +55,7 @@ describe('Cloud Identity API', () => {
       assert.deepStrictEqual(passedConfig.action, { chromeAction: { blockContent: {} } })
     })
 
-    it('should prefix the displayName', async () => {
+    test('When displayName is provided, then it is automatically prefixed with a robot emoji', async () => {
       const mockCreateDlpRule = mock.fn(async () => ({ response: { name: 'policies/123' } }))
       const handler = await setupCloudIdentityHandler(server, 'create_chrome_dlp_rule', {
         createDlpRule: mockCreateDlpRule,
@@ -77,7 +77,7 @@ describe('Cloud Identity API', () => {
       assert.strictEqual(passedConfig.displayName, '🤖 Test Rule')
     })
 
-    it('should call createDlpRule and return formatted result', async () => {
+    test('When creation succeeds, then it returns a formatted success message and policy name', async () => {
       const mockCreateDlpRule = mock.fn(async () => ({ response: { name: 'policies/123' } }))
       const handler = await setupCloudIdentityHandler(server, 'create_chrome_dlp_rule', {
         createDlpRule: mockCreateDlpRule,
@@ -105,7 +105,7 @@ describe('Cloud Identity API', () => {
       assert.ok(result.content[1].text.includes('```json'))
     })
 
-    it('should pass dataMasking parameters to createDlpRule', async () => {
+    test('When dataMasking is provided, then it passes masking parameters to createDlpRule', async () => {
       const mockCreateDlpRule = mock.fn(async () => ({ response: { name: 'policies/123' } }))
       const handler = await setupCloudIdentityHandler(server, 'create_chrome_dlp_rule', {
         createDlpRule: mockCreateDlpRule,
@@ -145,7 +145,7 @@ describe('Cloud Identity API', () => {
       })
     })
 
-    it('should not include condition in ruleConfig if not provided', async () => {
+    test('When condition is not provided, then it is omitted from the rule configuration', async () => {
       const mockCreateDlpRule = mock.fn(async () => ({ response: { name: 'policies/123' } }))
       const handler = await setupCloudIdentityHandler(server, 'create_chrome_dlp_rule', {
         createDlpRule: mockCreateDlpRule,
@@ -169,7 +169,7 @@ describe('Cloud Identity API', () => {
       assert.ok(!Object.hasOwn(passedConfig, 'condition'))
     })
 
-    it('should return an error message if API call fails', async () => {
+    test('When API call fails, then it returns a formatted error message', async () => {
       const mockCreateDlpRule = mock.fn(async () => {
         throw new Error('API Error')
       })
@@ -193,7 +193,7 @@ describe('Cloud Identity API', () => {
   })
 
   describe('create_regex_detector Tool', () => {
-    it('should call createDetector and return formatted result', async () => {
+    test('When creation succeeds, then it returns formatted result with detector name', async () => {
       const mockCreateDetector = mock.fn(async () => ({ response: { name: 'policies/regex1' } }))
       const MockCloudIdentityClient = class {
         /**
@@ -260,7 +260,7 @@ describe('Cloud Identity API', () => {
   })
 
   describe('create_url_list_detector Tool', () => {
-    it('should call createDetector and return formatted result', async () => {
+    test('When creation succeeds, then it returns formatted result with detector name', async () => {
       const mockCreateDetector = mock.fn(async () => ({ response: { name: 'policies/url1' } }))
       const MockCloudIdentityClient = class {
         /**
@@ -327,7 +327,7 @@ describe('Cloud Identity API', () => {
   })
 
   describe('create_word_list_detector Tool', () => {
-    it('should call createDetector and return formatted result', async () => {
+    test('When creation succeeds, then it returns formatted result with detector name', async () => {
       const mockCreateDetector = mock.fn(async () => ({ response: { name: 'policies/word1' } }))
       const MockCloudIdentityClient = class {
         /**
@@ -392,7 +392,7 @@ describe('Cloud Identity API', () => {
       assert.ok(result.content[1].text.includes('```json'))
     })
 
-    it('should throw an error if root OU resolution fails', async () => {
+    test('When root OU resolution fails, then it returns a descriptive error message', async () => {
       const MockCloudIdentityClient = class {
         /**
          *
@@ -449,7 +449,7 @@ describe('Cloud Identity API', () => {
   })
 
   describe('delete_agent_dlp_rule Tool', () => {
-    it('should call deleteDlpRule and return success message', async () => {
+    test('When deletion succeeds, then it returns a confirmation message with the rule name and ID', async () => {
       const mockDeleteDlpRule = mock.fn(async () => ({}))
       const MockCloudIdentityClient = class {
         /**
@@ -492,7 +492,7 @@ describe('Cloud Identity API', () => {
   })
 
   describe('delete_detector Tool', () => {
-    it('should call deleteDetector and return success message', async () => {
+    test('When deletion succeeds, then it returns a confirmation message with the detector name and ID', async () => {
       const mockDeleteDetector = mock.fn(async () => ({}))
       const MockCloudIdentityClient = class {
         /**
