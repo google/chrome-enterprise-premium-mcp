@@ -15,20 +15,20 @@ limitations under the License.
 */
 
 import assert from 'node:assert/strict'
-import { describe, it, mock, beforeEach } from 'node:test'
+import { describe, test, mock, beforeEach } from 'node:test'
 import { validateAndGetOrgUnitId, resolveRootOrgUnitId } from '../../tools/utils/org-unit.js'
 import { commonTransform, guardedToolCall } from '../../tools/utils/wrapper.js'
 import { registerTools } from '../../tools/index.js'
 
 describe('Tool Utils', () => {
   describe('commonTransform', () => {
-    it('should strip "id:" prefix from orgUnitId', () => {
+    test('When orgUnitId has id: prefix, then it strips it', () => {
       const params = { orgUnitId: 'id:12345' }
       const transformed = commonTransform(params)
       assert.strictEqual(transformed.orgUnitId, '12345')
     })
 
-    it('should not modify other parameters', () => {
+    test('When other parameters are provided, then it does not modify them', () => {
       const params = { customerId: 'C123', orgUnitId: '12345', other: 'value' }
       const transformed = commonTransform(params)
       assert.deepStrictEqual(transformed, { customerId: 'C123', orgUnitId: '12345', other: 'value' })
@@ -36,11 +36,11 @@ describe('Tool Utils', () => {
   })
 
   describe('validateAndGetOrgUnitId', () => {
-    it('should return the same ID if it does not start with "id:"', () => {
+    test('When ID does not start with "id:", then it returns the same ID', () => {
       assert.strictEqual(validateAndGetOrgUnitId('12345'), '12345')
     })
 
-    it('should strip "id:" prefix', () => {
+    test('When ID starts with "id:", then it strips the prefix', () => {
       assert.strictEqual(validateAndGetOrgUnitId('id:12345'), '12345')
     })
   })
@@ -55,7 +55,7 @@ describe('Tool Utils', () => {
     })
 
     describe('Registration and Auto-Resolution', () => {
-      it('should auto-resolve customerId using provided adminSdk client and apiOptions during tool registration', async () => {
+      test('When tools are registered, then it auto-resolves customerId using provided adminSdk client and apiOptions', async () => {
         const mockGetCustomerId = mock.fn(async (authToken, apiOptions) => {
           if (apiOptions?.rootUrl === 'http://fake-api') {
             return { id: 'C_AUTO' }
@@ -100,7 +100,7 @@ describe('Tool Utils', () => {
     })
 
     describe('Caching logic integration', () => {
-      it('should update sessionState.customerId when params.customerId is provided', async () => {
+      test('When params.customerId is provided, then it updates sessionState.customerId', async () => {
         const handler = async params => {
           return { params }
         }
@@ -120,7 +120,7 @@ describe('Tool Utils', () => {
     })
 
     describe('Root OrgUnit Auto-Resolution (resolveRootOrgUnitId helper)', () => {
-      it('should resolve root orgUnitId and cache it', async () => {
+      test('When resolveRootOrgUnitId is called, then it resolves root orgUnitId and caches it', async () => {
         const mockListOrgUnits = mock.fn(async () => ({
           organizationUnits: [
             { orgUnitId: 'root-id', orgUnitPath: '/' },
@@ -140,7 +140,7 @@ describe('Tool Utils', () => {
         assert.strictEqual(sessionState.cachedRootOrgUnitId, 'root-id')
       })
 
-      it('should use cached root orgUnitId if available', async () => {
+      test('When cached root orgUnitId is available, then it uses it without calling API', async () => {
         const mockListOrgUnits = mock.fn()
 
         const apiClients = {
@@ -154,7 +154,7 @@ describe('Tool Utils', () => {
         assert.strictEqual(result, 'cached-root-id')
       })
 
-      it('should return null if root OU is not found', async () => {
+      test('When root OU is not found, then it returns null', async () => {
         const mockListOrgUnits = mock.fn(async () => ({
           organizationUnits: [{ orgUnitId: 'child-id', orgUnitPath: '/child' }],
         }))
@@ -167,7 +167,7 @@ describe('Tool Utils', () => {
       })
     })
 
-    it('should return a proactive remediation message when handler fails with 401', async () => {
+    test('When handler fails with 401, then it returns a proactive remediation message', async () => {
       const handler = async () => {
         const error = new Error('Unauthorized')
         error.status = 401
@@ -183,7 +183,7 @@ describe('Tool Utils', () => {
       assert.ok(!result.structuredContent)
     })
 
-    it('should return a proactive remediation message without structuredContent when handler fails with 403', async () => {
+    test('When handler fails with 403, then it returns a proactive remediation message without structuredContent', async () => {
       const handler = async () => {
         const error = new Error('Forbidden')
         error.status = 403
@@ -200,7 +200,7 @@ describe('Tool Utils', () => {
       assert.ok(!result.structuredContent)
     })
 
-    it('should return a proactive remediation message when handler fails with invalid_grant', async () => {
+    test('When handler fails with invalid_grant, then it returns a proactive remediation message', async () => {
       const handler = async () => {
         throw new Error('API Error: invalid_grant - reauth related error (invalid_rapt)')
       }
@@ -214,7 +214,7 @@ describe('Tool Utils', () => {
       assert.ok(!result.structuredContent)
     })
 
-    it('should return an OAuth remediation message when handler fails with 401 and an auth header is present', async () => {
+    test('When handler fails with 401 and an auth header is present, then it returns an OAuth remediation message', async () => {
       const handler = async () => {
         const error = new Error('Unauthorized')
         error.status = 401
@@ -231,7 +231,7 @@ describe('Tool Utils', () => {
       assert.ok(!result.content[0].text.includes('gcloud auth application-default login'))
     })
 
-    it('should return an OAuth remediation message when handler fails with 403 and an auth header is present', async () => {
+    test('When handler fails with 403 and an auth header is present, then it returns an OAuth remediation message', async () => {
       const handler = async () => {
         const error = new Error('Forbidden')
         error.status = 403
@@ -249,7 +249,7 @@ describe('Tool Utils', () => {
       assert.ok(!result.content[0].text.includes('gcloud auth application-default login'))
     })
 
-    it('should call onError if provided when handler fails', async () => {
+    test('When onError is provided and handler fails, then it calls onError', async () => {
       const handler = async () => {
         throw new Error('Test error')
       }
