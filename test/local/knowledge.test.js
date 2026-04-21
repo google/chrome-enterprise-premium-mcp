@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { it, describe, beforeEach, mock } from 'node:test'
+import { describe, test, beforeEach, mock } from 'node:test'
 import assert from 'node:assert/strict'
 import { registerKnowledgeTools } from '../../tools/definitions/knowledge.js'
 
@@ -89,7 +89,7 @@ describe('Knowledge Tools Native Search Integration', () => {
     registerKnowledgeTools(server, { allDocs, docLookup, idToDoc }, {})
   })
 
-  it('When searched with a keyword, then search_content finds matching text', async () => {
+  test('When searched with a keyword, then search_content finds matching text', async () => {
     const handler = handlers['search_content']
     assert.ok(handler)
 
@@ -105,7 +105,7 @@ describe('Knowledge Tools Native Search Integration', () => {
     assert.strictEqual(rows.length, 2)
   })
 
-  it('When document is requested by filename, then get_document returns full content', async () => {
+  test('When document is requested by filename, then get_document returns full content', async () => {
     const handler = handlers['get_document']
     assert.ok(handler)
 
@@ -115,7 +115,7 @@ describe('Knowledge Tools Native Search Integration', () => {
     assert.strictEqual(data.content, 'This policy enforces password complexity requirements.')
   })
 
-  it('When given an array of mixed identifiers, then get_document returns multiple documents', async () => {
+  test('When given an array of mixed identifiers, then get_document returns multiple documents', async () => {
     const handler = handlers['get_document']
     assert.ok(handler)
 
@@ -131,7 +131,7 @@ describe('Knowledge Tools Native Search Integration', () => {
     assert.ok(/\n---\n/.test(summaryText), 'expected --- separator between concatenated docs')
   })
 
-  it('When some requested documents are missing, then get_document handles partial misses inline', async () => {
+  test('When some requested documents are missing, then get_document handles partial misses inline', async () => {
     const handler = handlers['get_document']
     assert.ok(handler)
 
@@ -144,7 +144,7 @@ describe('Knowledge Tools Native Search Integration', () => {
     assert.ok(!result.isError, 'partial-miss must not be an error; the found docs are useful')
   })
 
-  it('When no requested documents are found, then get_document returns an error', async () => {
+  test('When no requested documents are found, then get_document returns an error', async () => {
     const handler = handlers['get_document']
     assert.ok(handler)
 
@@ -154,7 +154,7 @@ describe('Knowledge Tools Native Search Integration', () => {
     assert.deepStrictEqual(result.structuredContent.missing, [MOCK_DOC_DOES_NOT_EXIST, 'also-missing'])
   })
 
-  it('When numeric articleIds are provided, then input schema coerces them to strings', () => {
+  test('When numeric articleIds are provided, then input schema coerces them to strings', () => {
     // Gemini sometimes extracts an articleId from a Markdown cross-link as a
     // number (e.g. 5) rather than a string ("5"). The input schema must coerce
     // so the tool does not reject the call at the validation boundary.
@@ -170,7 +170,7 @@ describe('Knowledge Tools Native Search Integration', () => {
     assert.deepStrictEqual(asArray.filename, ['4', '6-dlp-troubleshooting'])
   })
 
-  it('When list_documents is called, then it returns all documents', async () => {
+  test('When list_documents is called, then it returns all documents', async () => {
     const handler = handlers['list_documents']
     assert.ok(handler)
 
@@ -179,7 +179,7 @@ describe('Knowledge Tools Native Search Integration', () => {
     assert.strictEqual(rows.length, EXPECTED_DOC_COUNT)
   })
 
-  it('When searched with multi-word query, then search_content finds matching text', async () => {
+  test('When searched with multi-word query, then search_content finds matching text', async () => {
     const handler = handlers['search_content']
     assert.ok(handler)
 
