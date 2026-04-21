@@ -107,6 +107,7 @@ To enable or modify a connector that is not yet configured, use the "enable_chro
                */
               function flattenAndMapConfig(obj, warnings = []) {
                 const result = {}
+                const rawValues = {}
                 const humanize = val => {
                   if (typeof val === 'boolean') {
                     return val ? 'Yes' : 'No'
@@ -123,36 +124,52 @@ To enable or modify a connector that is not yet configured, use the "enable_chro
                   return formatStatus(val.replace(/^[A-Z_]+_ENUM_/, '').replace(/^SERVICE_PROVIDER_/, ''))
                 }
 
-                const walk = o => {
+                const walk = (o, prefix = '') => {
                   if (!o || typeof o !== 'object') {
                     return
                   }
                   for (const [k, v] of Object.entries(o)) {
+                    let targetKey = k
+                    if (prefix) {
+                      if (k.toLowerCase().startsWith(prefix.toLowerCase())) {
+                        targetKey = k
+                      } else {
+                        targetKey = prefix + k.charAt(0).toUpperCase() + k.slice(1)
+                      }
+                    }
+
                     if (Array.isArray(v) && v.length > 0 && typeof v[0] === 'object') {
-                      // Handle arrays of configuration objects (e.g., printConfigurations)
-                      // Take the first element as per requirements.
-                      walk(v[0])
+                      walk(v[0], prefix)
                     } else if (typeof v === 'object' && !Array.isArray(v) && v !== null) {
-                      walk(v)
+                      let nextPrefix = prefix
+                      if (k.toLowerCase().includes('malware')) {
+                        nextPrefix = 'malware'
+                      } else if (k.toLowerCase().includes('sensitive')) {
+                        nextPrefix = 'sensitive'
+                      }
+                      walk(v, nextPrefix)
                     } else {
-                      const mappedKey = CONNECTOR_KEY_MAPPING[k]
-                        ? `${k} (describe to user as '${CONNECTOR_KEY_MAPPING[k]}')`
-                        : k
-                      if (result[mappedKey] !== undefined) {
+                      const humanizedValue = humanize(v)
+                      rawValues[targetKey] = humanizedValue
+                      const mappedKey = CONNECTOR_KEY_MAPPING[targetKey]
+                        ? `${targetKey} (describe to user as '${CONNECTOR_KEY_MAPPING[targetKey]}')`
+                        : targetKey
+
+                      if (result[mappedKey] !== undefined && result[mappedKey] !== humanizedValue) {
                         warnings.push(`Key collision detected for '${mappedKey}' during object flattening.`)
                       }
-                      result[mappedKey] = humanize(v)
+                      result[mappedKey] = humanizedValue
                     }
                   }
                 }
                 walk(obj)
-                return result
+                return { flattened: result, rawValues }
               }
 
               const formattedPolicies = raw.map(p => {
                 const v = p.value?.value || {}
                 const warnings = []
-                const flattened = flattenAndMapConfig(v, warnings)
+                const { flattened, rawValues } = flattenAndMapConfig(v, warnings)
                 let isEnabled = true
 
                 if (policy === 'ON_SECURITY_EVENT') {
@@ -226,10 +243,43 @@ To enable or modify a connector that is not yet configured, use the "enable_chro
                         `Delay enforcement is disabled. Users are unprotected during content analysis. Update settings manually at ${manualUpdateLink}`,
                       )
                     }
-                    if (cfg.malwareUrlPatterns?.length > 0 || cfg.sensitiveUrlPatterns?.length > 0) {
-                      warnings.push(
-                        `Security posture is limited due to URL allowlisting. Update settings manually at ${manualUpdateLink}`,
-                      )
+
+                    // Gapped Protection Warnings
+                    const checkGaps = (type, onByDefault, patterns) => {
+                      if (onByDefault === 'No') {
+                        if (patterns && patterns.length > 0) {
+                          warnings.push(
+                            `⚠️ ${type} Analysis is restricted. Scanning is ONLY enabled for specific URL patterns, which may leave your organization vulnerable. Update settings manually at ${manualUpdateLink}`,
+                          )
+                        } else {
+                          warnings.push(
+                            `⚠️ ${type} Analysis is restricted. Scanning is NOT enabled for all files, which may leave your organization vulnerable. Update settings manually at ${manualUpdateLink}`,
+                          )
+                        }
+                      } else if (patterns && patterns.length > 0) {
+                        warnings.push(
+                          `⚠️ ${type} Analysis is restricted. Scanning is DISABLED for specific URL patterns, which may leave your organization vulnerable. Update settings manually at ${manualUpdateLink}`,
+                        )
+                      }
+                    }
+
+                    // Audit Malware settings (typically found in Upload/Download).
+                    // Note: Malware settings are not present in Bulk Text (Paste) or Print connectors.
+                    if (rawValues.malwareOnByDefault !== undefined) {
+                      checkGaps('Malware', rawValues.malwareOnByDefault, rawValues.malwareUrlPatterns)
+                    }
+                    // Audit Sensitive Data settings (found in Upload/Download/Print/Paste).
+                    if (rawValues.sensitiveOnByDefault !== undefined) {
+                      checkGaps('Sensitive', rawValues.sensitiveOnByDefault, rawValues.sensitiveUrlPatterns)
+                    }
+
+                    // Fallback for connectors that don't use the new prefixed fields yet
+                    if (rawValues.malwareOnByDefault === undefined && rawValues.sensitiveOnByDefault === undefined) {
+                      if (cfg.malwareUrlPatterns?.length > 0 || cfg.sensitiveUrlPatterns?.length > 0) {
+                        warnings.push(
+                          `Security posture is limited due to URL allowlisting. Update settings manually at ${manualUpdateLink}`,
+                        )
+                      }
                     }
                   } else if (isNone) {
                     isEnabled = false
