@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { describe, it, mock, beforeEach } from 'node:test'
+import { describe, test, mock, beforeEach } from 'node:test'
 import assert from 'node:assert'
 import { registerCheckAndEnableCepApiTool } from '../../tools/definitions/check_and_enable_cep_api.js'
 
@@ -27,7 +27,7 @@ describe('check_and_enable_cep_api tool description', () => {
     }
   })
 
-  it('should have the updated description with the "ask first" mandate', async () => {
+  test('When tool is registered, then it has the updated description with the "ask first" mandate', async () => {
     const serviceUsageClient = {}
     const state = {}
     registerCheckAndEnableCepApiTool(server, { serviceUsageClient }, state)
