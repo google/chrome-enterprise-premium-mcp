@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 import assert from 'node:assert/strict'
-import { describe, it, mock, beforeEach } from 'node:test'
+import { describe, test, mock, beforeEach } from 'node:test'
 import esmock from 'esmock'
 
 describe('Chrome Management API', () => {
@@ -28,7 +28,7 @@ describe('Chrome Management API', () => {
   })
 
   describe('count_browser_versions Tool', () => {
-    it('should call countBrowserVersions and return formatted result', async () => {
+    test('When tool is executed, then it calls countBrowserVersions and returns formatted result', async () => {
       const mockCountBrowserVersions = mock.fn(async () => [
         { version: '120.0.6099.71', count: 10, channel: 'Stable' },
         { version: '119.0.0.0', count: 5, channel: 'Beta' },
@@ -67,7 +67,7 @@ describe('Chrome Management API', () => {
     })
 
     // Test error handling when the API call fails.
-    it('should return an error message if API call fails', async () => {
+    test('When API call fails, then it returns an error message', async () => {
       const mockCountBrowserVersions = mock.fn(async () => {
         throw new Error('API Error')
       })
@@ -102,7 +102,7 @@ describe('Chrome Management API', () => {
   })
 
   describe('list_customer_profiles Tool', () => {
-    it('should call listCustomerProfiles and return formatted result', async () => {
+    test('When tool is executed, then it calls listCustomerProfiles and returns formatted result', async () => {
       const mockListCustomerProfiles = mock.fn(async () => [
         { name: 'profile1', value: 'value1' },
         { name: 'profile2', value: 'value2' },
@@ -137,7 +137,7 @@ describe('Chrome Management API', () => {
       assert.ok(result.content[1].text.includes('```json'))
     })
 
-    it('should return an error message if API call fails', async () => {
+    test('When API call fails, then it returns an error message', async () => {
       const mockListCustomerProfiles = mock.fn(async () => {
         throw new Error('API Error')
       })
