@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { describe, it, before, after } from 'node:test'
+import { describe, test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
@@ -53,21 +53,21 @@ describe('MCP Prompts', () => {
     await client.close()
   })
 
-  it('When listPrompts is called, then it returns all available prompts', async () => {
+  test('When listPrompts is called, then it returns all available prompts', async () => {
     const result = await client.listPrompts()
     const promptNames = result.prompts.map(p => p.name).sort()
 
     assert.deepStrictEqual(promptNames, ['cep:health', 'cep:expert', 'cep:optimize'].sort())
   })
 
-  it('When cep:health prompt is requested, then it returns its content', async () => {
+  test('When cep:health prompt is requested, then it returns its content', async () => {
     const result = await client.getPrompt({ name: 'cep:health' })
 
     assert.ok(result.messages)
     assert.ok(result.messages[0].content.text.includes('diagnose_environment'))
   })
 
-  it('When cep:optimize prompt is requested, then it returns its content', async () => {
+  test('When cep:optimize prompt is requested, then it returns its content', async () => {
     const result = await client.getPrompt({ name: 'cep:optimize' })
 
     assert.ok(result.messages)
@@ -76,7 +76,7 @@ describe('MCP Prompts', () => {
     assert.ok(result.messages[0].content.text.includes('filename: 12'))
   })
 
-  it('When cep:expert prompt is requested, then it returns its content', async () => {
+  test('When cep:expert prompt is requested, then it returns its content', async () => {
     const result = await client.getPrompt({ name: 'cep:expert' })
 
     assert.ok(result.messages)
