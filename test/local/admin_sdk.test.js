@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 import assert from 'node:assert/strict'
-import { describe, it, mock, beforeEach } from 'node:test'
+import { describe, test, mock, beforeEach } from 'node:test'
 import esmock from 'esmock'
 
 describe('Admin SDK API', () => {
@@ -28,7 +28,7 @@ describe('Admin SDK API', () => {
   })
 
   describe('get_customer_id Tool', () => {
-    it('should call getCustomerId and return formatted result', async () => {
+    test('When getCustomerId is called, then it returns the formatted result', async () => {
       const mockGetCustomerId = mock.fn(async () => ({ id: 'C0123' }))
       const MockAdminSdkClient = class {
         constructor() {
@@ -62,7 +62,7 @@ describe('Admin SDK API', () => {
       assert.ok(result.content[1].text.includes('"id": "C0123"'))
     })
 
-    it('should return an error message if API call fails', async () => {
+    test('When getCustomerId API call fails, then it returns an error message', async () => {
       const mockGetCustomerId = mock.fn(async () => {
         throw new Error('API Error')
       })
@@ -96,7 +96,7 @@ describe('Admin SDK API', () => {
   })
 
   describe('list_org_units Tool', () => {
-    it('should call listOrgUnits and return formatted result', async () => {
+    test('When listOrgUnits is called, then it returns the formatted list of organizational units', async () => {
       const mockListOrgUnits = mock.fn(async () => ({
         organizationUnits: [
           { name: 'ou1', orgUnitId: 'ou1' },
@@ -136,7 +136,7 @@ describe('Admin SDK API', () => {
       assert.ok(result.content[1].text.includes('```json'))
     })
 
-    it('should return an error message if API call fails', async () => {
+    test('When listOrgUnits API call fails, then it returns an error message', async () => {
       const mockListOrgUnits = mock.fn(async () => {
         throw new Error('API Error')
       })
@@ -167,7 +167,7 @@ describe('Admin SDK API', () => {
   })
 
   describe('check_user_cep_license Tool', () => {
-    it('should call checkUserCepLicense and return success if license found', async () => {
+    test('When user has a license, then it returns a success message and structured data', async () => {
       const userId = 'user@example.com'
       const mockCheckUserCepLicense = mock.fn(async () => ({ productId: '101040', skuId: '1010400001' }))
       const MockAdminSdkClient = class {
@@ -204,7 +204,7 @@ describe('Admin SDK API', () => {
       })
     })
 
-    it('should call checkUserCepLicense and return info if license not found', async () => {
+    test('When user does not have a license, then it returns an info message and structured data', async () => {
       const userId = 'user@example.com'
       const mockCheckUserCepLicense = mock.fn(async () => null)
       const MockAdminSdkClient = class {
@@ -241,7 +241,7 @@ describe('Admin SDK API', () => {
       })
     })
 
-    it('should return an error message if API call fails', async () => {
+    test('When checkUserCepLicense API call fails, then it returns an error message', async () => {
       const mockCheckUserCepLicense = mock.fn(async () => {
         throw new Error('API Error')
       })
@@ -273,7 +273,7 @@ describe('Admin SDK API', () => {
       assert.ok(!result.structuredContent)
     })
 
-    it('should return error message when Licensing API is not enabled', async () => {
+    test('When Licensing API is not enabled, then it returns a helpful error message with console link', async () => {
       const mockCheckUserCepLicense = mock.fn(async () => {
         throw new Error(
           'API [licensing.googleapis.com] is not enabled. Please enable it at https://console.cloud.google.com/apis/library/licensing.googleapis.com',
@@ -313,7 +313,7 @@ describe('Admin SDK API', () => {
       )
     })
 
-    it('should return error message when access is denied', async () => {
+    test('When access is denied to Licensing API, then it returns a descriptive error message', async () => {
       const mockCheckUserCepLicense = mock.fn(async () => {
         throw new Error(
           'Access denied to Licensing API. The account may not have permission to access licensing information.',
