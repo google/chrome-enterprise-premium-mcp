@@ -83,7 +83,7 @@ function registerAndGetHandler(clientOverrides = {}) {
 
 describe('diagnose_environment', () => {
   describe('Summary Mode', () => {
-    test('healthy environment produces zero issues', async () => {
+    test('When environment is healthy, then it produces zero issues', async () => {
       const { handler } = registerAndGetHandler({
         connectorPolicy: [{ value: { value: {} } }],
         resolvePolicy: [
@@ -112,21 +112,21 @@ describe('diagnose_environment', () => {
       assert.deepStrictEqual(result.structuredContent.issues, [])
     })
 
-    test('no subscription produces critical issue', async () => {
+    test('When no subscription exists, then it produces a critical issue', async () => {
       const { handler } = registerAndGetHandler({ subscription: { items: [] } })
       const result = await handler({ customerId: 'C0123' }, { requestInfo: {} })
       const critical = result.structuredContent.issues.filter(i => i.severity === 'critical')
       assert.ok(critical.some(i => i.component === 'subscription'))
     })
 
-    test('single license produces medium issue', async () => {
+    test('When only a single license is found, then it produces a medium issue', async () => {
       const { handler } = registerAndGetHandler({ subscription: { items: [{ userId: 'a@b.com' }] } })
       const result = await handler({ customerId: 'C0123' }, { requestInfo: {} })
       const medium = result.structuredContent.issues.filter(i => i.severity === 'medium')
       assert.ok(medium.some(i => i.component === 'subscription'))
     })
 
-    test('missing connectors produce critical issues', async () => {
+    test('When connectors are missing, then it produces critical issues for each type', async () => {
       const { handler } = registerAndGetHandler({ connectorPolicy: [] })
       const result = await handler({ customerId: 'C0123' }, { requestInfo: {} })
       const connectorIssues = result.structuredContent.issues.filter(i => i.component.startsWith('connector.'))
@@ -134,14 +134,14 @@ describe('diagnose_environment', () => {
       assert.ok(connectorIssues.every(i => i.severity === 'critical'))
     })
 
-    test('no DLP rules produces high issue', async () => {
+    test('When no DLP rules are configured, then it produces a high issue', async () => {
       const { handler } = registerAndGetHandler({ connectorPolicy: [{ value: {} }] })
       const result = await handler({ customerId: 'C0123' }, { requestInfo: {} })
       const high = result.structuredContent.issues.filter(i => i.severity === 'high')
       assert.ok(high.some(i => i.component === 'dlpRules'))
     })
 
-    test('audit-only rules produce medium issue', async () => {
+    test('When rules are audit-only, then it produces a medium issue', async () => {
       const { handler } = registerAndGetHandler({
         connectorPolicy: [{ value: {} }],
         dlpRules: [
@@ -158,7 +158,7 @@ describe('diagnose_environment', () => {
       assert.ok(medium.length > 0)
     })
 
-    test('SEB not installed produces high issue', async () => {
+    test('When SEB is not installed, then it produces a high issue', async () => {
       const { handler } = registerAndGetHandler({ resolvePolicy: [] })
       const result = await handler({ customerId: 'C0123' }, { requestInfo: {} })
       const seb = result.structuredContent.issues.filter(i => i.component === 'sebExtension')
@@ -166,7 +166,7 @@ describe('diagnose_environment', () => {
       assert.ok(seb[0].severity === 'high')
     })
 
-    test('returns counts not arrays', async () => {
+    test('When diagnosis is run, then it returns summary counts rather than raw arrays', async () => {
       const { handler } = registerAndGetHandler()
       const result = await handler({ customerId: 'C0123' }, { requestInfo: {} })
       const sc = result.structuredContent
@@ -176,7 +176,7 @@ describe('diagnose_environment', () => {
       assert.ok(typeof sc.browserVersions.total === 'number')
     })
 
-    test('DLP rule action breakdown includes watermark', async () => {
+    test('When DLP rules are analyzed, then the action breakdown includes watermark actions', async () => {
       const rules = ['blockContent', 'warnUser', 'auditOnly', 'watermarkContent'].map((action, i) => ({
         setting: {
           type: 'settings/rule.dlp',
@@ -197,7 +197,7 @@ describe('diagnose_environment', () => {
       assert.strictEqual(byAction.watermark, 1)
     })
 
-    test('auto-resolves customerId when omitted', async () => {
+    test('When customerId is omitted, then it is automatically resolved', async () => {
       const { handler } = registerAndGetHandler({ connectorPolicy: [{ value: {} }] })
       const result = await handler({}, { requestInfo: {} })
       assert.ok(result.structuredContent.customer.customerId, 'Customer ID resolved')
@@ -205,7 +205,7 @@ describe('diagnose_environment', () => {
   })
 
   describe('Detail/Pagination Mode', () => {
-    test('paginates orgUnits', async () => {
+    test('When orgUnits section is requested, then results are correctly paginated', async () => {
       const ous = Array.from({ length: 100 }, (_, i) => ({
         name: `OU ${i}`,
         orgUnitId: `id:ou${i}`,
@@ -229,7 +229,7 @@ describe('diagnose_environment', () => {
       assert.strictEqual(page2.structuredContent.hasMore, false)
     })
 
-    test('paginates dlpRules', async () => {
+    test('When dlpRules section is requested, then results are correctly paginated with formatted actions', async () => {
       const rules = Array.from({ length: 30 }, (_, i) => ({
         name: `policies/rule${i}`,
         setting: {
@@ -252,7 +252,7 @@ describe('diagnose_environment', () => {
       assert.ok(page.structuredContent.items[0].actionType)
     })
 
-    test('returns all browserVersions without pagination', async () => {
+    test('When browserVersions section is requested, then it returns all versions without pagination', async () => {
       const { handler } = registerAndGetHandler({
         browserVersions: [
           { version: '134.0', count: '500', channel: 'STABLE' },
@@ -263,7 +263,7 @@ describe('diagnose_environment', () => {
       assert.strictEqual(result.structuredContent.items.length, 2)
     })
 
-    test('default page size is 50', async () => {
+    test('When no limit is provided for pagination, then it defaults to 50', async () => {
       const ous = Array.from({ length: 100 }, (_, i) => ({
         name: `OU ${i}`,
         orgUnitId: `id:ou${i}`,
@@ -276,7 +276,7 @@ describe('diagnose_environment', () => {
   })
 
   describe('Error Resilience', () => {
-    test('handles API errors gracefully', async () => {
+    test('When API errors occur, then they are handled gracefully and issues are still reported', async () => {
       const clients = createMockClients()
       clients.cloudIdentityClient.listDlpRules = mock.fn(async () => {
         throw new Error('API down')
@@ -298,7 +298,7 @@ describe('diagnose_environment', () => {
       assert.ok(result.structuredContent.dlpRules.total === 0, 'DLP rules should be 0 on error')
     })
 
-    test('handles empty org units', async () => {
+    test('When org units list is empty, then it is handled gracefully', async () => {
       const { handler } = registerAndGetHandler({ orgUnits: { organizationUnits: [] } })
       const result = await handler({ customerId: 'C0123' }, { requestInfo: {} })
       assert.strictEqual(result.structuredContent.orgUnitCount, 0)
