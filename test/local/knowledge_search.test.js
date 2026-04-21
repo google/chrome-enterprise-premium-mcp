@@ -12,7 +12,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-*/ import { describe, it } from 'node:test'
+*/ import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { registerKnowledgeTools } from '../../tools/definitions/knowledge.js'
 
@@ -27,7 +27,7 @@ describe('Knowledge Tools Real Database Integration', () => {
   // Register tools using the default construction path (lib/knowledge directory)
   registerKnowledgeTools(server, {}, {})
 
-  it('When searched for Licensing, then search_content finds the overview document', async () => {
+  test('When searched for Licensing, then search_content finds the overview document', async () => {
     const handler = handlers['search_content']
     assert.ok(handler, 'search_content handler should be registered')
 
@@ -42,7 +42,7 @@ describe('Knowledge Tools Real Database Integration', () => {
     assert.ok(policy.id, 'Found policy should have an ID')
   })
 
-  it('When searched for DLP, then search_content finds the integration guide', async () => {
+  test('When searched for DLP, then search_content finds the integration guide', async () => {
     const handler = handlers['search_content']
     const result = await handler({ query: 'DLP' }, { requestInfo: {} })
     const documents = result.structuredContent.documents
@@ -52,7 +52,7 @@ describe('Knowledge Tools Real Database Integration', () => {
     assert.ok(article, 'Should find the DLP integration guide')
   })
 
-  it('When ID is resolved via search, then get_document fetches full content', async () => {
+  test('When ID is resolved via search, then get_document fetches full content', async () => {
     const searchHandler = handlers['search_content']
     const getDocHandler = handlers['get_document']
 
