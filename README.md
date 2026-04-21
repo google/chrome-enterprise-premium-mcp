@@ -245,10 +245,13 @@ PORT=8080 GCP_STDIO=false npx -y @google/chrome-enterprise-premium-mcp@latest
 | Variable                     | Description                                          | Default |
 | :--------------------------- | :--------------------------------------------------- | :------ |
 | `GCP_STDIO`                  | `true` for Stdio (local); `false` for HTTP (remote). | `true`  |
-| `PORT`                       | Network port when `GCP_STDIO=false`.                 | `3000`  |
+| `PORT`                       | Network port when `GCP_STDIO=false`.                 | `0`     |
 | `GOOGLE_CLOUD_QUOTA_PROJECT` | GCP project ID for API quotas.                       | -       |
 | `OAUTH_ENABLED`              | Set `true` to require OAuth (HTTP mode only).        | `false` |
 | `LOG_LEVEL`                  | Verbosity (`error`, `warn`, `info`, `debug`).        | `info`  |
+
+> [!NOTE]
+> When `GCP_STDIO=false` and `PORT` is not specified or is set to `0`, the server binds to a random available port. The actual assigned port will be logged at startup, for example: `Chrome Enterprise Premium MCP server listening on port X`.
 
 ## Prerequisites
 

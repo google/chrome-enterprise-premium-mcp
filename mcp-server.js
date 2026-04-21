@@ -31,6 +31,7 @@ import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { SetLevelRequestSchema } from '@modelcontextprotocol/sdk/types.js'
+import fs from 'node:fs/promises'
 
 import { buildServerInstructions } from './lib/knowledge/instructions.js'
 import { registerTools } from './tools/index.js'
@@ -154,6 +155,40 @@ async function main() {
       }
     })
 
+    // Calculate Knowledge DB articles
+    const knowledgeDir = process.env.KNOWLEDGE_DB_PATH || './lib/knowledge'
+    let articleCount = 0
+    try {
+      const files = await fs.readdir(knowledgeDir)
+      articleCount = files.filter(f => /^\d+.*\.md$/.test(f)).length
+    } catch (_e) {
+      // Ignore or log
+    }
+
+    const envStr = gcpInfo && gcpInfo.project ? 'GCP' : 'Local'
+    const transportStr = isStdio ? 'Stdio' : 'SSE/HTTP'
+    const portStr = process.env.PORT || '0'
+    const authStr = isStdio ? 'None' : 'OAuth'
+    const dataAccessStr = process.env.GOOGLE_API_ROOT_URL ? 'Fake Data' : 'Live Production Data'
+    const dbStr = `Default: lib/knowledge (${articleCount} articles)`
+
+    const activeExps =
+      Object.values(FLAGS)
+        .filter(flag => featureFlags.isEnabled(flag))
+        .join(', ') || 'None'
+
+    console.log(`------------------------------------------------------------`)
+    console.log(`Chrome Enterprise Premium MCP Server Starting`)
+    console.log(`------------------------------------------------------------`)
+    console.log(`Environment:        ${envStr}`)
+    console.log(`Transport Mode:     ${transportStr}`)
+    console.log(`Port:               ${portStr}`)
+    console.log(`Auth Strategy:      ${authStr}`)
+    console.log(`Data Access:        ${dataAccessStr}`)
+    console.log(`Knowledge DB:       ${dbStr}`)
+    console.log(`Active Experiments: ${activeExps}`)
+    console.log(`------------------------------------------------------------`)
+
     // Maintain session state globally for all server connections
     const sharedSessionState = {
       customerId: null,
@@ -257,15 +292,27 @@ async function main() {
         }
       })
 
-      const PORT = process.env.PORT || 3000
-      app.listen(PORT, () => {
-        // Use console.log directly so that tests waiting for this output (e.g. oauth-endpoints.test.js)
-        // are not silenced by CEP_LOG_LEVEL=SILENT.
-        console.log(`${TAGS.MCP} Chrome Enterprise Premium MCP server listening on port ${PORT}`)
+      const PORT = process.env.PORT || 0
+      const server = app.listen(PORT, () => {
+        const address = server.address()
+        if (address) {
+          const assignedPort = address.port
+          // Use console.log directly so that tests waiting for this output (e.g. oauth-endpoints.test.js)
+          // are not silenced by CEP_LOG_LEVEL=SILENT.
+          console.log(`${TAGS.MCP} Chrome Enterprise Premium MCP server listening on port ${assignedPort}`)
+        }
+      })
+      server.on('error', e => {
+        if (e.code === 'EADDRINUSE') {
+          logger.error(`${TAGS.MCP} Fatal error: Port ${PORT} is already in use.`)
+          // eslint-disable-next-line n/no-process-exit
+          process.exit(1)
+        }
       })
     }
   } catch (error) {
     logger.error(`${TAGS.MCP} Fatal error starting server:`, error)
+    // eslint-disable-next-line require-atomic-updates
     process.exitCode = 1
   }
 }

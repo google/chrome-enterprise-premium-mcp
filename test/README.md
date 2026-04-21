@@ -21,7 +21,7 @@ workflow.
 
 ## Test tiers
 
-**`local/`** — The primary test suite (31 files). These run without network
+**`local/`** — The primary test suite. These run without network
 access, using in-process fakes or pure unit logic. Covers API client wrappers,
 tool behavior, CEL validation, auth, prompts, server lifecycle, and the eval
 infrastructure itself. Most new tests go here.

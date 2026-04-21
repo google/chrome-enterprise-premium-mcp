@@ -179,7 +179,7 @@ categories:
 
 ### MCP tool names
 
-The 23 internal tool names (`search_content`, `create_chrome_dlp_rule`, etc.)
+The internal tool names, such as `search_content` and `create_chrome_dlp_rule`,
 must never appear in user-facing text. The agent should say "I checked your DLP
 rules" not "I called `list_dlp_rules`."
 

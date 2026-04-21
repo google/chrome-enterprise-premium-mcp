@@ -56,7 +56,7 @@ Tools return `formatToolResponse({ summary, data, structuredContent })`:
 | Connectors | get_connector_policy, enable_chrome_enterprise_connectors                                                   | Chrome Policy                  |
 | Extensions | check_seb_extension_status, install_seb_extension                                                           | Chrome Policy                  |
 | Security   | get_chrome_activity_log, check_and_enable_cep_api                                                           | Admin SDK, Service Usage       |
-| Knowledge  | search_content, get_document                                                                                | Local knowledge base           |
+| Knowledge  | search_content, get_document, list_documents                                                                | Local knowledge base           |
 | Feedback   | cep_feedback                                                                                                | Local (writes diagnostic file) |
 
 ## Feature-gated tools
