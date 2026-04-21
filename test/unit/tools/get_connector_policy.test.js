@@ -32,7 +32,7 @@ describe('get_connector_policy tool handler', () => {
     return registeredHandler
   }
 
-  test('should parse standard camelCase keys', async () => {
+  test('When standard camelCase keys are provided, then it parses them correctly', async () => {
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -67,7 +67,7 @@ describe('get_connector_policy tool handler', () => {
     assert.strictEqual(result.structuredContent.configured, true)
   })
 
-  test('should report "Not configured" when Real-time URL check is disabled', async () => {
+  test('When Real-time URL check is disabled, then it reports "Not configured"', async () => {
     const mockChromePolicyClient = {
       getConnectorPolicy: async (customerId, orgUnitId, policy) => {
         if (policy === 'chrome.users.RealtimeUrlCheck') {
@@ -106,7 +106,7 @@ describe('get_connector_policy tool handler', () => {
     assert.strictEqual(result.structuredContent.configured, false)
   })
 
-  test('should report "Configured" with warnings for sub-optimal CEP settings', async () => {
+  test('When sub-optimal CEP settings are found, then it reports "Configured" with warnings', async () => {
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -142,7 +142,7 @@ describe('get_connector_policy tool handler', () => {
     assert.match(dataText, /"warnings": ".*Delay enforcement is disabled.*"/)
   })
 
-  test('should report "Configured" without 3rd party warnings for generic unknown providers', async () => {
+  test('When generic unknown providers are used, then it reports "Configured" without 3rd party warnings', async () => {
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -170,7 +170,7 @@ describe('get_connector_policy tool handler', () => {
     assert.doesNotMatch(dataText, /Integrated CEP features may be bypassed/)
   })
 
-  test('should report "Configured" with warnings for Symantec/Trellix 3rd party providers', async () => {
+  test('When Symantec/Trellix 3rd party providers are detected, then it reports "Configured" with warnings', async () => {
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -198,7 +198,7 @@ describe('get_connector_policy tool handler', () => {
     assert.match(dataText, /Integrated CEP features may be bypassed/)
   })
 
-  test('should report "Not configured" when Analysis Provider is UNSPECIFIED', async () => {
+  test('When Analysis Provider is UNSPECIFIED, then it reports "Not configured"', async () => {
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -225,7 +225,7 @@ describe('get_connector_policy tool handler', () => {
     assert.strictEqual(result.structuredContent.configured, false)
   })
 
-  test('should report "Not configured" when Analysis Provider is NONE', async () => {
+  test('When Analysis Provider is NONE, then it reports "Not configured"', async () => {
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -252,7 +252,7 @@ describe('get_connector_policy tool handler', () => {
     assert.strictEqual(result.structuredContent.configured, false)
   })
 
-  test('should report "Not configured" when Event Reporting has no configuration', async () => {
+  test('When Event Reporting has no configuration, then it reports "Not configured"', async () => {
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -278,7 +278,7 @@ describe('get_connector_policy tool handler', () => {
     assert.match(dataText, /Connector is not enabled/)
   })
 
-  test('should report CEP or None for ON_REALTIME_URL_NAVIGATION', async () => {
+  test('When ON_REALTIME_URL_NAVIGATION is requested, then it reports CEP status correctly', async () => {
     const mockChromePolicyClient = {
       getConnectorPolicy: async (customerId, orgUnitId, policy) => {
         if (policy === 'chrome.users.RealtimeUrlCheck') {
@@ -312,7 +312,7 @@ describe('get_connector_policy tool handler', () => {
     assert.match(dataText, /Chrome Enterprise Premium/)
   })
 
-  test('should correctly handle all ON_REALTIME_URL_NAVIGATION enum variations', async () => {
+  test('When ON_REALTIME_URL_NAVIGATION enum variations are tested, then it maps them correctly to boolean enabled state', async () => {
     const variations = [
       { input: 'ENTERPRISE_REAL_TIME_URL_CHECK_MODE_ENUM_DISABLED', expectedEnabled: false },
       { input: 'REALTIME_URL_CHECK_MODE_ENUM_DISABLED', expectedEnabled: false },
@@ -341,7 +341,7 @@ describe('get_connector_policy tool handler', () => {
     }
   })
 
-  test('should format multiple policies in a single response', async () => {
+  test('When multiple policies are found, then it formats all of them in a single response', async () => {
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -379,7 +379,7 @@ describe('get_connector_policy tool handler', () => {
     assert.match(dataText, /Other/) // humanize maps SERVICE_PROVIDER_OTHER to "Other"
   })
 
-  test('should parse snake_case keys (standard API wire format)', async () => {
+  test('When API returns snake_case keys, then it parses them correctly and preserves field names', async () => {
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -410,7 +410,7 @@ describe('get_connector_policy tool handler', () => {
     assert.match(dataText, /Yes/)
   })
 
-  test('should fall back to block_until_verdict for blockOnFail', async () => {
+  test('When block_until_verdict is used, then it falls back correctly for blockOnFail', async () => {
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -436,7 +436,7 @@ describe('get_connector_policy tool handler', () => {
     assert.match(dataText, /Yes/)
   })
 
-  test('should handle standard policy objects', async () => {
+  test('When standard policy objects are provided, then it handles them correctly', async () => {
     // getConnectorPolicy currently expects value.value to be an object
     const mockChromePolicyClientObj = {
       getConnectorPolicy: async () => [
@@ -463,7 +463,7 @@ describe('get_connector_policy tool handler', () => {
     assert.match(dataText, /Chrome Enterprise Premium/)
   })
 
-  test('should dump raw data for unexpected shapes', async () => {
+  test('When unexpected data shapes are encountered, then it dumps raw data gracefully', async () => {
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -485,7 +485,7 @@ describe('get_connector_policy tool handler', () => {
     assert.match(dataText, /"isEnabled": false/)
   })
 
-  test('should parse ON_SECURITY_EVENT specific fields with setting structure', async () => {
+  test('When ON_SECURITY_EVENT specific fields are provided, then it parses them correctly', async () => {
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -517,7 +517,7 @@ describe('get_connector_policy tool handler', () => {
     assert.match(dataText, /Malware transfer/)
   })
 
-  test('should format multiple ON_SECURITY_EVENT policies in a single response', async () => {
+  test('When multiple ON_SECURITY_EVENT policies are present, then it formats all in a single response', async () => {
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -557,7 +557,7 @@ describe('get_connector_policy tool handler', () => {
     assert.match(dataText, /Connector is not enabled/)
   })
 
-  test('should parse ON_SECURITY_EVENT with snake_case internal fields', async () => {
+  test('When ON_SECURITY_EVENT uses snake_case internal fields, then it parses them correctly', async () => {
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -588,7 +588,7 @@ describe('get_connector_policy tool handler', () => {
     assert.match(dataText, /Content transfer/)
   })
 
-  test('should report default core events for ON_SECURITY_EVENT when empty and not explicitlyEmptyEventNames', async () => {
+  test('When ON_SECURITY_EVENT has empty event list without explicitlyEmptyEventNames, then it reports default core events', async () => {
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -620,7 +620,7 @@ describe('get_connector_policy tool handler', () => {
     assert.match(dataText, /All Core Events Enabled/)
   })
 
-  test('should report None for ON_SECURITY_EVENT when explicitlyEmptyEventNames is true', async () => {
+  test('When explicitlyEmptyEventNames is true for ON_SECURITY_EVENT, then it reports None', async () => {
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -652,7 +652,7 @@ describe('get_connector_policy tool handler', () => {
     assert.match(dataText, /Yes/)
   })
 
-  test('should unpack deeply nested single-key configuration', async () => {
+  test('When deeply nested single-key configuration is used, then it unpacks correctly', async () => {
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -684,7 +684,7 @@ describe('get_connector_policy tool handler', () => {
     assert.match(dataText, /Yes/)
   })
 
-  test('should parse ON_PRINT specific fields with printConfigurations array', async () => {
+  test('When ON_PRINT specific fields with printConfigurations array are provided, then it parses them correctly', async () => {
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -715,7 +715,7 @@ describe('get_connector_policy tool handler', () => {
     assert.match(dataText, /Yes/)
   })
 
-  test('should report "Not configured" for ON_PRINT when serviceProvider is NONE in first config', async () => {
+  test('When serviceProvider is NONE in first print config, then it reports "Not configured" for ON_PRINT', async () => {
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -744,7 +744,7 @@ describe('get_connector_policy tool handler', () => {
     assert.match(dataText, /Connector is not enabled/)
   })
 
-  test('should report "Configured" with warnings for ON_PRINT when serviceProvider is a recognized 3rd party', async () => {
+  test('When a recognized 3rd party provider is used in ON_PRINT, then it reports "Configured" with warnings', async () => {
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -774,7 +774,7 @@ describe('get_connector_policy tool handler', () => {
     assert.match(dataText, /Integrated CEP features may be bypassed/)
   })
 
-  test('should handle ON_PRINT with empty printConfigurations array', async () => {
+  test('When printConfigurations array is empty, then it handles ON_PRINT correctly', async () => {
     const mockChromePolicyClient = {
       getConnectorPolicy: async () => [
         {
@@ -799,7 +799,7 @@ describe('get_connector_policy tool handler', () => {
     assert.match(dataText, /"isEnabled": false/)
   })
 
-  test('should normalize orgUnitId by removing id: prefix', async () => {
+  test('When orgUnitId has id: prefix, then it normalizes it by removing the prefix', async () => {
     let capturedOrgUnitId
     const mockChromePolicyClient = {
       getConnectorPolicy: async (customerId, orgUnitId) => {
