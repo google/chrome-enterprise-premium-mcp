@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { describe, it, mock, beforeEach } from 'node:test'
+import { describe, test, mock, beforeEach } from 'node:test'
 import assert from 'node:assert'
 import esmock from 'esmock'
 import { SERVICE_NAMES } from '../../lib/constants.js'
@@ -46,7 +46,7 @@ describe('check_and_enable_cep_api tool', () => {
     return server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_and_enable_cep_api').arguments[2]
   }
 
-  it('should report status of a disabled API by default', async () => {
+  test('When an API is disabled, then it reports its status and offers remediation', async () => {
     const mockServiceUsageClient = {
       getServiceStatus: mock.fn(async (projectId, api) => ({
         name: `projects/${projectId}/services/${api}`,
@@ -72,7 +72,7 @@ describe('check_and_enable_cep_api tool', () => {
     )
   })
 
-  it('should report status of only one API if checkAll is explicitly false', async () => {
+  test('When checkAll is false, then it reports status of only one specific API', async () => {
     const mockServiceUsageClient = {
       getServiceStatus: mock.fn(async (projectId, api) => ({
         name: `projects/${projectId}/services/${api}`,
@@ -96,7 +96,7 @@ describe('check_and_enable_cep_api tool', () => {
     assert.ok(!result.content[0].text.includes(`API:** \`${SERVICE_NAMES.CHROME_POLICY}\``))
   })
 
-  it('should enable only one API if checkAll is false and apiName is provided', async () => {
+  test('When enable is true and checkAll is false, then it enables only one specific API', async () => {
     const mockServiceUsageClient = {
       getServiceStatus: mock.fn(async (projectId, api) => ({
         name: `projects/${projectId}/services/${api}`,
@@ -123,7 +123,7 @@ describe('check_and_enable_cep_api tool', () => {
     assert.ok(!result.content[0].text.includes(`API:** \`${SERVICE_NAMES.CHROME_POLICY}\``))
   })
 
-  it('should enable only one API by default if apiName is provided', async () => {
+  test('When apiName is provided and enable is true, then it enables the specific API', async () => {
     const mockServiceUsageClient = {
       getServiceStatus: mock.fn(async (projectId, api) => ({
         name: `projects/${projectId}/services/${api}`,
@@ -144,16 +144,9 @@ describe('check_and_enable_cep_api tool', () => {
     )
 
     assert.ok(result.content[0].text.includes(`- **${SERVICE_NAMES.ADMIN_SDK}** — NEWLY_ENABLED`))
-    // Should NOT include other APIs (because checkAll defaults to true in code, but wait...
-    // the original test expected it to NOT include other APIs.
-    // Let's re-verify the tool logic: if checkAll is true (default), it checks ALL.
-    // If the original test expected only one, then maybe the tool logic changed or the test was based on different defaults.
-    // Actually, in the tool: const apisToCheck = checkAll ? Object.values(SERVICE_NAMES) : [actualApiName]
-    // If checkAll is true (default), it WILL include other APIs.
-    // I will adjust this test to match ACTUAL tool behavior if it differs from the stale test.
   })
 
-  it('should report status of an already enabled API', async () => {
+  test('When an API is already enabled, then it reports its status as ENABLED', async () => {
     const mockServiceUsageClient = {
       getServiceStatus: mock.fn(async (projectId, api) => ({
         name: `projects/${projectId}/services/${api}`,
@@ -174,7 +167,7 @@ describe('check_and_enable_cep_api tool', () => {
     assert.ok(result.content[0].text.includes('— ENABLED'))
   })
 
-  it('should check all required APIs and report missing ones', async () => {
+  test('When checkAll is true, then it checks and reports status of all required APIs', async () => {
     const mockServiceUsageClient = {
       getServiceStatus: mock.fn(async (projectId, api) => ({
         name: `projects/${projectId}/services/${api}`,
@@ -198,7 +191,7 @@ describe('check_and_enable_cep_api tool', () => {
     assert.ok(result.content[0].text.includes('Would you like to enable the missing APIs found during the check?'))
   })
 
-  it('should enable all required APIs when checkAll and enable are true', async () => {
+  test('When checkAll and enable are true, then it enables all required APIs', async () => {
     const mockServiceUsageClient = {
       getServiceStatus: mock.fn(async (projectId, api) => ({
         name: `projects/${projectId}/services/${api}`,
@@ -223,7 +216,7 @@ describe('check_and_enable_cep_api tool', () => {
     }
   })
 
-  it('should handle cases where Service Usage API itself is disabled', async () => {
+  test('When Service Usage API itself is disabled, then it returns a dedicated remediation message', async () => {
     const mockServiceUsageClient = {
       getServiceStatus: mock.fn(() => {
         throw new Error(
@@ -254,7 +247,7 @@ describe('check_and_enable_cep_api tool', () => {
     )
   })
 
-  it('should report status of only the default API when only projectId is provided and checkAll is false', async () => {
+  test('When checkAll is false and only projectId is provided, then it reports status of only the default API', async () => {
     const mockServiceUsageClient = {
       getServiceStatus: mock.fn(async (projectId, api) => ({
         name: `projects/${projectId}/services/${api}`,
