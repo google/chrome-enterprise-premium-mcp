@@ -14,37 +14,37 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { describe, it } from 'node:test'
+import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { checkForbidden, checkRequired, checkTools, runChecks } from '../evals/lib/assertions.js'
 
 describe('Eval Assertions', () => {
   describe('checkForbidden', () => {
-    it('should pass when no forbidden patterns match', () => {
+    test('When no forbidden patterns match, then it passes', () => {
       const result = checkForbidden('Chrome Enterprise Premium is great', ['bad_word', 'secret'])
       assert.ok(result.passed)
       assert.deepStrictEqual(result.failures, [])
     })
 
-    it('should fail on case-insensitive substring match', () => {
+    test('When a forbidden pattern is found, then it fails with a case-insensitive match', () => {
       const result = checkForbidden('You should use search_content to find it', ['search_content'])
       assert.ok(!result.passed)
       assert.strictEqual(result.failures.length, 1)
       assert.ok(result.failures[0].includes('search_content'))
     })
 
-    it('should fail on regex pattern (re: prefix)', () => {
+    test('When a forbidden regex pattern is matched, then it fails', () => {
       const result = checkForbidden('Use policies/abc123 for that', ['re:policies/\\w+'])
       assert.ok(!result.passed)
       assert.strictEqual(result.failures.length, 1)
     })
 
-    it('should pass when regex pattern does not match', () => {
+    test('When a forbidden regex pattern does not match, then it passes', () => {
       const result = checkForbidden('No policy references here', ['re:policies/\\w+'])
       assert.ok(result.passed)
     })
 
-    it('should report multiple failures', () => {
+    test('When multiple forbidden patterns are found, then it reports all failures', () => {
       const result = checkForbidden('Call search_content then list_dlp_rules', [
         'search_content',
         'list_dlp_rules',
@@ -54,12 +54,12 @@ describe('Eval Assertions', () => {
       assert.strictEqual(result.failures.length, 2)
     })
 
-    it('should handle empty patterns list', () => {
+    test('When the forbidden patterns list is empty, then it passes', () => {
       const result = checkForbidden('anything goes', [])
       assert.ok(result.passed)
     })
 
-    it('should fail gracefully on invalid regex instead of crashing', () => {
+    test('When an invalid regex is provided, then it fails gracefully instead of crashing', () => {
       const result = checkForbidden('some text', ['re:[invalid(regex'])
       assert.ok(!result.passed)
       assert.ok(result.failures[0].includes('invalid forbidden regex'))
@@ -67,40 +67,40 @@ describe('Eval Assertions', () => {
   })
 
   describe('checkRequired', () => {
-    it('should pass when all required patterns found', () => {
+    test('When all required patterns are found, then it passes', () => {
       const result = checkRequired('CEP offers Zero Trust access and DLP protection', ['Zero Trust', 'DLP'])
       assert.ok(result.passed)
       assert.deepStrictEqual(result.failures, [])
     })
 
-    it('should fail when a required pattern is missing', () => {
+    test('When a required pattern is missing, then it fails', () => {
       const result = checkRequired('CEP offers DLP protection', ['Zero Trust', 'DLP'])
       assert.ok(!result.passed)
       assert.strictEqual(result.failures.length, 1)
       assert.ok(result.failures[0].includes('Zero Trust'))
     })
 
-    it('should support regex patterns (re: prefix)', () => {
+    test('When a required regex pattern is found, then it passes', () => {
       const result = checkRequired('Price is $6/user/month', ['re:\\$\\d+'])
       assert.ok(result.passed)
     })
 
-    it('should fail when regex required pattern not found', () => {
+    test('When a required regex pattern is missing, then it fails', () => {
       const result = checkRequired('No prices mentioned', ['re:\\$\\d+'])
       assert.ok(!result.passed)
     })
 
-    it('should be case-insensitive for substring matching', () => {
+    test('When checking required patterns, then it uses case-insensitive matching', () => {
       const result = checkRequired('chrome enterprise premium', ['Chrome Enterprise Premium'])
       assert.ok(result.passed)
     })
 
-    it('should handle empty patterns list', () => {
+    test('When the required patterns list is empty, then it passes', () => {
       const result = checkRequired('anything', [])
       assert.ok(result.passed)
     })
 
-    it('should fail gracefully on invalid regex instead of crashing', () => {
+    test('When an invalid regex is provided, then it fails gracefully instead of crashing', () => {
       const result = checkRequired('some text', ['re:[invalid(regex'])
       assert.ok(!result.passed)
       assert.ok(result.failures[0].includes('invalid required regex'))
@@ -108,31 +108,31 @@ describe('Eval Assertions', () => {
   })
 
   describe('checkTools', () => {
-    it('should pass when all expected tools were called', () => {
+    test('When all expected tools are called, then it passes', () => {
       const result = checkTools(['search_content', 'list_dlp_rules'], ['search_content'])
       assert.ok(result.passed)
     })
 
-    it('should fail when an expected tool was not called', () => {
+    test('When an expected tool is missing from actual calls, then it fails', () => {
       const result = checkTools(['search_content'], ['search_content', 'list_dlp_rules'])
       assert.ok(!result.passed)
       assert.strictEqual(result.failures.length, 1)
       assert.ok(result.failures[0].includes('list_dlp_rules'))
     })
 
-    it('should pass with empty expected list', () => {
+    test('When there are no expected tools, then it passes regardless of actual calls', () => {
       const result = checkTools(['search_content'], [])
       assert.ok(result.passed)
     })
 
-    it('should pass when actual and expected are the same', () => {
+    test('When actual calls and expected tools are identical, then it passes', () => {
       const result = checkTools(['a', 'b', 'c'], ['a', 'b', 'c'])
       assert.ok(result.passed)
     })
   })
 
   describe('runChecks', () => {
-    it('should aggregate failures from all check types', () => {
+    test('When multiple checks fail, then it aggregates all failures', () => {
       const evalCase = {
         forbiddenPatterns: ['search_content'],
         requiredPatterns: ['missing_thing'],
@@ -143,7 +143,7 @@ describe('Eval Assertions', () => {
       assert.strictEqual(result.failures.length, 3)
     })
 
-    it('should pass when everything is clean', () => {
+    test('When all checks pass, then it returns a passing result', () => {
       const evalCase = {
         forbiddenPatterns: ['bad_word'],
         requiredPatterns: ['good_word'],
