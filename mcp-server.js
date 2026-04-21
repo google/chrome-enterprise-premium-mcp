@@ -102,7 +102,7 @@ async function getServer(gcpInfo, sharedSessionState) {
 
   if (process.env.GOOGLE_API_ROOT_URL) {
     apiOptions.rootUrl = process.env.GOOGLE_API_ROOT_URL
-    logger.info(`${TAGS.MCP}  TEST MODE: Using FAKE API clients routing to ${apiOptions.rootUrl}`)
+    logger.info(`${TAGS.MCP} TEST MODE: Real API clients redirected to ${apiOptions.rootUrl}`)
     apiClients = {
       adminSdk: new RealAdminSdkClient(apiOptions),
       cloudIdentity: new RealCloudIdentityClient(apiOptions),
@@ -128,14 +128,12 @@ async function getServer(gcpInfo, sharedSessionState) {
     featureFlags,
   }
 
+  registerTools(server, toolOptions, sharedSessionState)
+  registerPrompts(server)
   if (shouldStartStdio(gcpInfo)) {
-    logger.info(`${TAGS.MCP} Using tools optimized for local or stdio mode.`)
-    registerTools(server, toolOptions, sharedSessionState)
-    registerPrompts(server)
+    logger.info(`${TAGS.MCP} Stdio mode.`)
   } else {
-    logger.info(`${TAGS.MCP} Running on GCP environment. Using tools optimized for remote use.`)
-    registerTools(server, toolOptions, sharedSessionState)
-    registerPrompts(server)
+    logger.info(`${TAGS.MCP} Running on GCP environment.`)
   }
 
   return server
@@ -187,7 +185,7 @@ async function main() {
             server.close()
           })
         } catch (error) {
-          logger.error(`${TAGS.MCP} ✗ Error handling MCP request:`, error)
+          logger.error(`${TAGS.MCP} Error handling MCP request:`, error)
           if (!res.headersSent) {
             const status = error.status || 500
             res.status(status).json({
@@ -267,7 +265,7 @@ async function main() {
       })
     }
   } catch (error) {
-    logger.error(`${TAGS.MCP} ✗ Fatal error starting server:`, error)
+    logger.error(`${TAGS.MCP} Fatal error starting server:`, error)
     process.exitCode = 1
   }
 }

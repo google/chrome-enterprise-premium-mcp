@@ -1,9 +1,10 @@
 # Chrome Enterprise Premium MCP Server
 
-> [!NOTE] This is an officially supported Google product, but it is currently
-> in an early stage of development. It is intended as a working example of how
-> to build an MCP server that wraps Google Cloud and Workspace APIs and does
-> not yet support the full range of features.
+> [!NOTE]
+> This is an officially supported Google product, but it is currently in an
+> early stage of development. It is intended as a working example of how to
+> build an MCP server that wraps Google Cloud and Workspace APIs and does not
+> yet support the full range of features.
 
 A [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) server for
 [Chrome Enterprise Premium](https://docs.cloud.google.com/chrome-enterprise-premium/docs/overview)
@@ -33,7 +34,7 @@ Google Account data, as well as other data shared with you.
   Gemini CLI to process mail, documents, or other resources from unverified
   sources.
 - Untrusted inputs may contain hidden instructions that could hijack your CLI
-  session. Attackers can then leverage this to modify, steal, or destroy your
+  session. Attackers can then use this to modify, steal, or destroy your
   data.
 - Always carefully review actions taken by Gemini CLI on your behalf to ensure
   they are correct and align with your intentions.
@@ -345,7 +346,7 @@ scripts accept `fake` or `real` as a positional argument.
 
 ### Running tests
 
-> 🚦 **Run `npm run presubmit` before every PR.** It runs unit tests, fake
+> **Run `npm run presubmit` before every PR.** It runs unit tests, fake
 > integration tests, and a smoke test. If presubmit passes, your change is safe
 > to submit.
 

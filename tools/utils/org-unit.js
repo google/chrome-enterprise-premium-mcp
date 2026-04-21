@@ -46,15 +46,13 @@ export async function resolveRootOrgUnitId(apiClients, customerId, authToken, se
         }
         return id
       } else {
-        logger.error(
-          `${TAGS.MCP} ⚠️ Failed to auto-resolve root orgUnitId for customer ${customerId}: Root OU not found.`,
-        )
+        logger.error(`${TAGS.MCP} Failed to auto-resolve root orgUnitId for customer ${customerId}: Root OU not found.`)
       }
     } else {
-      logger.error(`${TAGS.MCP} ⚠️ adminSdkClient not provided for OU resolution (customer: ${customerId})`)
+      logger.error(`${TAGS.MCP} adminSdkClient not provided for OU resolution (customer: ${customerId})`)
     }
   } catch (error) {
-    logger.error(`${TAGS.MCP} ⚠️ Failed to auto-resolve root orgUnitId for customer ${customerId}:`, error)
+    logger.error(`${TAGS.MCP} Failed to auto-resolve root orgUnitId for customer ${customerId}:`, error)
   }
   return null
 }

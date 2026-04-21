@@ -73,7 +73,7 @@ export function registerCreateChromeDlpRuleTool(server, options, sessionState) {
     'create_chrome_dlp_rule',
     {
       description: `Creates a new Chrome DLP rule for a specific Organizational Unit.
-This tool is specialized for browser-level protection (e.g., uploads, downloads, printing).
+Applies browser-level protection (uploads, downloads, printing).
 ${MCP_SAFETY_CONSTRAINTS.ACTIVE_BLOCK_RESTRICTION}
 
 To ensure technical accuracy and verify trigger compatibility, you should retrieve the full technical reference using 'get_document' for '11-dlp-cel-syntax' before using this tool.`,

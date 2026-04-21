@@ -205,13 +205,13 @@ export function guardedToolCall(
                 }
                 currentParams.customerId = customer.id
               } else {
-                logger.error(`${TAGS.MCP} ⚠️ Failed to auto-resolve customerId: No customer object returned.`)
+                logger.error(`${TAGS.MCP} Failed to auto-resolve customerId: No customer object returned.`)
               }
             } else {
-              logger.error(`${TAGS.MCP} ⚠️ adminSdkClient not provided to guardedToolCall`)
+              logger.error(`${TAGS.MCP} adminSdkClient not provided to guardedToolCall`)
             }
           } catch (error) {
-            logger.error(`${TAGS.MCP} ⚠️ Failed to auto-resolve customerId:`, error)
+            logger.error(`${TAGS.MCP} Failed to auto-resolve customerId:`, error)
           }
         }
       }

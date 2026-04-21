@@ -63,7 +63,7 @@ This ID (often starting with 'C') is required as a parameter for many other Chro
           logger.debug(`${TAGS.MCP} Raw customer data:`, JSON.stringify(customer, null, 2))
 
           if (!customer) {
-            logger.error(`${TAGS.MCP} ✗ get_customer_id tool: Could not retrieve customer ID.`)
+            logger.error(`${TAGS.MCP} get_customer_id tool: Could not retrieve customer ID.`)
             const sc = { customerId: null }
             return formatToolResponse({
               summary: 'Could not retrieve customer ID.',

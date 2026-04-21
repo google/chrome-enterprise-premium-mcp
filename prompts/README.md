@@ -24,13 +24,10 @@ agent through complex diagnostic and optimization workflows.
 - `index.js` — Registers all prompts with the server.
 - `definitions/` — One file per prompt, each exporting a
   `registerXxxPrompt(server)` function.
-- `system-prompt.md` — The agent's behavioral instructions. It is automatically
-  injected into the first tool response by `tools/utils/wrapper.js` to
-  establish the agent's persona and constraints seamlessly. However, because some
-  MCP clients occasionally drop context or allow the persona to fade during long
-  conversations, the `cep:expert` prompt serves as a manual override. Invoking
-  `cep:expert` forcefully re-injects this entire system prompt directly into the
-  chat context.
+- `system-prompt.md` — The agent's behavioral instructions, injected into the
+  first tool response by `tools/utils/wrapper.js`. The `cep:expert` prompt
+  re-injects the same content and serves as a manual override when a client
+  drops context mid-conversation.
 
 ## Current prompts
 
@@ -43,9 +40,8 @@ agent through complex diagnostic and optimization workflows.
 ## Shared diagnostic rules (`definitions/shared.js`)
 
 The `SHARED_DIAGNOSTIC_RULES` constant contains markdown formatting instructions
-(status table format, severity tiers, tone) appended to the diagnostic prompts
-(health). This keeps the output format consistent across
-health-check workflows.
+(status table format, severity tiers, tone) appended to the `cep:health`
+prompt so diagnostic output stays consistent.
 
 ## Adding a new prompt
 
