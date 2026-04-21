@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { describe, it, before } from 'node:test'
+import { describe, test, before } from 'node:test'
 import assert from 'node:assert/strict'
 import esmock from 'esmock'
 import { logger, LogLevel } from '../../lib/util/logger.js'
@@ -31,39 +31,67 @@ describe('Helpers', () => {
           getAuthErrorMessage: () =>
             'The API requires a quota project. gcloud auth application-default set-quota-project. Your credentials have insufficient scopes',
         },
+        '../../lib/constants.js': {
+          DEFAULT_CONFIG: {
+            MAX_RETRIES: 3,
+            INITIAL_BACKOFF_MS: 1,
+            FIRST_RETRY_BACKOFF_MS: 1,
+          },
+          TAGS: { API: '[api]' },
+          ERROR_MESSAGES: {
+            INSUFFICIENT_SCOPES: 'Request had insufficient authentication scopes.',
+            QUOTA_PROJECT_NOT_SET: 'API requires a quota project, which is not set by default',
+          },
+        },
       })
       callWithRetry = helpersModule.callWithRetry
     })
 
-    it('When function succeeds, then it returns the result', async () => {
+    test('When function succeeds, then it returns the result immediately', async () => {
       const result = await callWithRetry(async () => 'success', 'test')
-      assert.equal(result, 'success')
+      assert.strictEqual(result, 'success')
     })
 
-    /*
-    it('should retry on PERMISSION_DENIED (code 7)', async () => {
-      let attempts = 0;
+    test('When PERMISSION_DENIED (code 7) occurs, then it retries and eventually succeeds', async () => {
+      let attempts = 0
       const fn = async () => {
-        attempts++;
+        attempts++
         if (attempts === 1) {
-          const error = new Error('Permission denied');
-          error.code = 7;
-          throw error;
+          const error = new Error('Permission denied')
+          error.code = 7
+          throw error
         }
-        return 'success';
-      };
+        return 'success'
+      }
 
-      // We need to speed up the backoff for testing or it will take too long
-      // Since we can't easily change the constants in the module, we might accept a small delay
-      // or we just trust the logic. The first retry is 15s which is too long for a unit test.
-      // So we will skip the actual retry test or mock the constants/timers if possible.
-      // For now, let's focus on the Quota Project error which doesn't retry.
-    });
-    */
+      const result = await callWithRetry(fn, 'test retry')
+      assert.strictEqual(result, 'success')
+      assert.strictEqual(attempts, 2)
+    })
 
-    it('When QUOTA_PROJECT_NOT_SET error occurs, then it throws a helpful message', async () => {
+    test('When PERMISSION_DENIED (code 7) occurs repeatedly, then it fails after max retries', async () => {
+      let attempts = 0
+      const fn = async () => {
+        attempts++
+        const error = new Error('Permission denied')
+        error.code = 7
+        throw error
+      }
+
+      await assert.rejects(
+        async () => {
+          await callWithRetry(fn, 'test max retries')
+        },
+        { code: 7 },
+      )
+      // Max retries is 3, so 1 initial + 3 retries = 4 attempts total
+      assert.strictEqual(attempts, 4)
+    })
+
+    test('When QUOTA_PROJECT_NOT_SET error occurs, then it throws a helpful message and does not retry', async () => {
       logger.setLevel(LOG_LEVEL_OFF) // Suppress expected error logs
       try {
+        let attempts = 0
         const quotaError = new Error(
           'Your application is authenticating by using local Application Default Credentials. The admin.googleapis.com API requires a quota project, which is not set by default.',
         )
@@ -71,6 +99,7 @@ describe('Helpers', () => {
         await assert.rejects(
           async () => {
             await callWithRetry(async () => {
+              attempts++
               throw quotaError
             }, 'test quota error')
           },
@@ -81,19 +110,22 @@ describe('Helpers', () => {
             )
           },
         )
+        assert.strictEqual(attempts, 1)
       } finally {
         logger.setLevel(LogLevel.ERROR) // Restore level
       }
     })
 
-    it('When INSUFFICIENT_SCOPES error occurs, then it throws a helpful message', async () => {
+    test('When INSUFFICIENT_SCOPES error occurs, then it throws a helpful message and does not retry', async () => {
       logger.setLevel(LOG_LEVEL_OFF) // Suppress expected error logs
       try {
+        let attempts = 0
         const scopeError = new Error('Request had insufficient authentication scopes.')
 
         await assert.rejects(
           async () => {
             await callWithRetry(async () => {
+              attempts++
               throw scopeError
             }, 'test scope error')
           },
@@ -101,6 +133,7 @@ describe('Helpers', () => {
             return err.message.includes('Your credentials have insufficient scopes')
           },
         )
+        assert.strictEqual(attempts, 1)
       } finally {
         logger.setLevel(LogLevel.ERROR) // Restore level
       }
