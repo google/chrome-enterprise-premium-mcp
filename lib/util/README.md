@@ -33,7 +33,7 @@ Chrome-specific business logic — these are cross-cutting concerns.
 - `google-auth-provider.js` — Production auth provider class. Wraps
   `getAuthClient` for use by real API clients.
 - `fake-auth-provider.js` — Test auth provider. Redirects requests to a local
-  mock server via `GAPI_ROOT_URL`.
+  mock server via `GOOGLE_API_ROOT_URL`.
 
 **API plumbing**
 

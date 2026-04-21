@@ -30,7 +30,7 @@ import { logger } from '../../lib/util/logger.js'
 await runStdioInitializeTest()
 
 const server = spawn('node', ['mcp-server.js'], {
-  env: { ...process.env, GOOGLE_API_ROOT_URL: 'http://localhost:1234' },
+  env: { ...process.env, GOOGLE_API_ROOT_URL: 'http://localhost:1234', PORT: '3000' },
 })
 
 async function runStdioInitializeTest() {
