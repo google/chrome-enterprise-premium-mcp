@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 import assert from 'node:assert/strict'
-import { describe, it, mock } from 'node:test'
+import { describe, test, mock } from 'node:test'
 import esmock from 'esmock'
 import { WORKSPACE_RULE_LIMITS, AGENT_DISPLAY_NAME_PREFIX } from '../../lib/util/chrome_dlp_constants.js'
 
@@ -45,7 +45,7 @@ describe('Tool Input Validation', () => {
       },
     )
 
-    it('should have Zod validation for displayName length', async () => {
+    test('When displayName is too long, then Zod validation fails', async () => {
       mockServer.registerTool.mock.resetCalls()
       registerCreateWordListDetectorTool(mockServer, mockOptions, {})
       const toolDef = mockServer.registerTool.mock.calls.find(c => c.arguments[0] === 'create_word_list_detector')
@@ -56,7 +56,7 @@ describe('Tool Input Validation', () => {
       assert.strictEqual(result.success, false)
     })
 
-    it('should throw error in handler if word list has too many total characters', async () => {
+    test('When word list exceeds character limit, then it throws an error in the handler', async () => {
       mockServer.registerTool.mock.resetCalls()
       registerCreateWordListDetectorTool(mockServer, mockOptions, {})
       const toolDef = mockServer.registerTool.mock.calls.find(c => c.arguments[0] === 'create_word_list_detector')
@@ -81,7 +81,7 @@ describe('Tool Input Validation', () => {
       },
     })
 
-    it('should have prefix-aware Zod validation for displayName', async () => {
+    test('When displayName is provided, then it has prefix-aware Zod validation', async () => {
       mockServer.registerTool.mock.resetCalls()
       registerCreateChromeDlpRuleTool(mockServer, mockOptions, {})
       const toolDef = mockServer.registerTool.mock.calls.find(c => c.arguments[0] === 'create_chrome_dlp_rule')
