@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { describe, it, before, after } from 'node:test'
+import { describe, test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { startFakeServer } from '../helpers/fake-api-server.js'
 
@@ -49,31 +49,31 @@ describe('Fake API Server', () => {
   }
 
   describe('Admin SDK', () => {
-    it('should get customer by ID', async () => {
+    test('When customer is requested by ID, then it returns the customer data', async () => {
       const { status, body } = await get('/admin/directory/v1/customers/C0123456')
       assert.strictEqual(status, 200)
       assert.strictEqual(body.id, 'C0123456')
     })
 
-    it('should resolve my_customer alias', async () => {
+    test('When my_customer alias is used, then it resolves to the default customer ID', async () => {
       const { status, body } = await get('/admin/directory/v1/customers/my_customer')
       assert.strictEqual(status, 200)
       assert.strictEqual(body.id, 'C0123456')
     })
 
-    it('should return 404 for unknown customer', async () => {
+    test('When an unknown customer ID is requested, then it returns a 404 error', async () => {
       const { status } = await get('/admin/directory/v1/customers/UNKNOWN')
       assert.strictEqual(status, 404)
     })
 
-    it('should list org units', async () => {
+    test('When org units are listed, then it returns an array of organization units', async () => {
       const { status, body } = await get('/admin/directory/v1/customer/C0123456/orgunits?type=ALL_INCLUDING_PARENT')
       assert.strictEqual(status, 200)
       assert.ok(Array.isArray(body.organizationUnits))
       assert.strictEqual(body.organizationUnits.length, 2)
     })
 
-    it('should return activity items', async () => {
+    test('When activity reports are requested, then it returns a list of items', async () => {
       const { status, body } = await get('/admin/reports/v1/activity/users/user1@example.com/applications/chrome')
       assert.strictEqual(status, 200)
       assert.ok(Array.isArray(body.items))
@@ -81,34 +81,34 @@ describe('Fake API Server', () => {
   })
 
   describe('Licensing', () => {
-    it('should list licenses', async () => {
+    test('When licenses are listed for a product and SKU, then it returns matching items', async () => {
       const { status, body } = await get('/licensing/v1/product/101040/sku/1010400001/user?customerId=C0123456')
       assert.strictEqual(status, 200)
       assert.ok(Array.isArray(body.items))
       assert.strictEqual(body.items.length, 1)
     })
 
-    it('should get user license by userId', async () => {
+    test('When a specific user license is requested, then it returns the license data', async () => {
       const { status, body } = await get('/licensing/v1/product/101040/sku/1010400001/user/user1@example.com')
       assert.strictEqual(status, 200)
       assert.strictEqual(body.userId, 'user1@example.com')
     })
 
-    it('should return 404 for unknown user license', async () => {
+    test('When an unknown user license is requested, then it returns a 404 error', async () => {
       const { status } = await get('/licensing/v1/product/101040/sku/1010400001/user/unknown@example.com')
       assert.strictEqual(status, 404)
     })
   })
 
   describe('Chrome Management', () => {
-    it('should count browser versions', async () => {
+    test('When chrome version report is requested, then it returns browser version counts', async () => {
       const { status, body } = await get('/v1/customers/C0123456/reports:countChromeVersions')
       assert.strictEqual(status, 200)
       assert.ok(Array.isArray(body.browserVersions))
       assert.strictEqual(body.browserVersions.length, 2)
     })
 
-    it('should list profiles', async () => {
+    test('When customer profiles are listed, then it returns an array of profiles', async () => {
       const { status, body } = await get('/v1/customers/C0123456/profiles')
       assert.strictEqual(status, 200)
       assert.ok(Array.isArray(body.chromeBrowserProfiles))
@@ -116,7 +116,7 @@ describe('Fake API Server', () => {
   })
 
   describe('Chrome Policy', () => {
-    it('should resolve policies', async () => {
+    test('When policies are resolved for a target, then it returns an array of resolved policies', async () => {
       const { status, body } = await post('/v1/customers/C0123456/policies:resolve', {
         policySchemaFilter: 'chrome.users.OnFileAttachedConnectorPolicy',
         policyTargetKey: { targetResource: 'orgunits/fakeOUId1' },
@@ -127,21 +127,21 @@ describe('Fake API Server', () => {
   })
 
   describe('Cloud Identity Policies', () => {
-    it('should list DLP rules', async () => {
+    test('When DLP rules are filtered, then it returns only policies matching the rule type', async () => {
       const { status, body } = await get('/v1beta1/policies?filter=setting.type.matches("rule.dlp")')
       assert.strictEqual(status, 200)
       assert.ok(Array.isArray(body.policies))
       assert.ok(body.policies.length > 0)
     })
 
-    it('should list detectors', async () => {
+    test('When detectors are filtered, then it returns only policies matching the detector type', async () => {
       const { status, body } = await get('/v1beta1/policies?filter=setting.type.matches("detector")')
       assert.strictEqual(status, 200)
       assert.ok(Array.isArray(body.policies))
       assert.ok(body.policies.length > 0)
     })
 
-    it('should handle pagination with pageSize and pageToken', async () => {
+    test('When pagination is used with pageSize, then it returns limited results and a next page token', async () => {
       // First page
       const { status: status1, body: body1 } = await get('/v1beta1/policies?pageSize=2')
       assert.strictEqual(status1, 200)
@@ -161,18 +161,18 @@ describe('Fake API Server', () => {
       assert.notStrictEqual(body1.policies[0].name, body2.policies[0].name)
     })
 
-    it('should get policy by name', async () => {
+    test('When a specific policy is requested by name, then it returns the policy data', async () => {
       const { status, body } = await get('/v1beta1/policies/fakeDlpRule1')
       assert.strictEqual(status, 200)
       assert.strictEqual(body.name, 'policies/fakeDlpRule1')
     })
 
-    it('should return 404 for unknown policy', async () => {
+    test('When a nonexistent policy is requested, then it returns a 404 error', async () => {
       const { status } = await get('/v1beta1/policies/nonexistent')
       assert.strictEqual(status, 404)
     })
 
-    it('should create a DLP rule', async () => {
+    test('When a valid DLP rule is posted, then it creates the policy successfully', async () => {
       const { status, body } = await post('/v1beta1/customers/C0123456/policies', {
         setting: {
           type: 'settings/rule.dlp',
@@ -189,7 +189,7 @@ describe('Fake API Server', () => {
       assert.ok(body.response.name.startsWith('policies/'))
     })
 
-    it('should reject DLP rule without display name', async () => {
+    test('When a DLP rule without a display name is posted, then it returns a 400 error', async () => {
       const { status } = await post('/v1beta1/customers/C0123456/policies', {
         setting: {
           type: 'settings/rule.dlp',
@@ -203,7 +203,7 @@ describe('Fake API Server', () => {
       assert.strictEqual(status, 400)
     })
 
-    it('should create and delete a detector', async () => {
+    test('When a detector is created, then it can be retrieved and subsequently deleted', async () => {
       const createRes = await post('/v1beta1/customers/C0123456/policies', {
         setting: {
           type: 'settings/detector.url_list',
@@ -231,18 +231,18 @@ describe('Fake API Server', () => {
   })
 
   describe('State Reset', () => {
-    it('should reset state to initial values', async () => {
+    test('When state reset is triggered, then deleted policies are restored to initial values', async () => {
       // Delete a policy
       await del('/v1beta1/policies/fakeDlpRule1')
-      const { status: before } = await get('/v1beta1/policies/fakeDlpRule1')
-      assert.strictEqual(before, 404)
+      const { status: beforeReset } = await get('/v1beta1/policies/fakeDlpRule1')
+      assert.strictEqual(beforeReset, 404)
 
       // Reset
       await post('/test/reset', {})
 
       // Should exist again
-      const { status: after } = await get('/v1beta1/policies/fakeDlpRule1')
-      assert.strictEqual(after, 200)
+      const { status: afterReset } = await get('/v1beta1/policies/fakeDlpRule1')
+      assert.strictEqual(afterReset, 200)
     })
   })
 })
