@@ -19,7 +19,7 @@ limitations under the License.
  */
 
 import assert from 'node:assert/strict'
-import { describe, it, mock, beforeEach } from 'node:test'
+import { describe, test, mock, beforeEach } from 'node:test'
 import esmock from 'esmock'
 import { setupCloudIdentityHandler } from './mock-utils.js'
 
@@ -32,7 +32,7 @@ describe('create_default_dlp_rules Tool', () => {
     }
   })
 
-  it('should create all default rules correctly', async () => {
+  test('When all default rules are created correctly, then it returns success message', async () => {
     const mockCreateDlpRule = mock.fn(async (customerId, orgUnitId, config) => ({
       response: {
         name: `policies/${config.displayName.replace(/[^a-zA-Z0-9]/g, '')}`,
@@ -63,7 +63,7 @@ describe('create_default_dlp_rules Tool', () => {
     assert.deepStrictEqual(result.structuredContent.createdRules.length, 3)
   })
 
-  it('should handle partial failures when creating rules', async () => {
+  test('When partial failures occur during rule creation, then it reports them', async () => {
     const mockCreateDlpRule = mock.fn(async (customerId, orgUnitId, config) => {
       if (config.displayName.includes('Audit')) {
         throw new Error('API Error')
@@ -111,7 +111,7 @@ describe('create_default_dlp_rules Tool', () => {
     )
   })
 
-  it('should return success indicators if all rules fail with "Already exists"', async () => {
+  test('When all rules fail with "Already exists", then it returns success indicators', async () => {
     const mockCreateDlpRule = mock.fn(async () => {
       throw new Error('Already exists')
     })
