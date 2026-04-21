@@ -15,11 +15,11 @@ limitations under the License.
 */
 
 import assert from 'node:assert/strict'
-import { describe, it, mock } from 'node:test'
+import { describe, test, mock } from 'node:test'
 import esmock from 'esmock'
 
 describe('Auth', () => {
-  it('should return an auth client when an auth token is provided', async () => {
+  test('When an auth token is provided, then it returns an OAuth2 client', async () => {
     const { getAuthClient } = await esmock('../../lib/util/auth.js', {
       'google-auth-library': {
         OAuth2Client: class {
@@ -31,7 +31,7 @@ describe('Auth', () => {
     assert.ok(client)
   })
 
-  it('should return an auth client when no auth token is provided', async () => {
+  test('When no auth token is provided, then it returns a GoogleAuth client', async () => {
     const { getAuthClient } = await esmock('../../lib/util/auth.js', {
       'google-auth-library': {
         GoogleAuth: class {
@@ -45,7 +45,7 @@ describe('Auth', () => {
     assert.ok(client)
   })
 
-  it('should return true when ADC credentials are valid', async () => {
+  test('When ADC credentials are valid, then ensureADCCredentials returns true', async () => {
     // Mock console.log/error to suppress output during test
     const consoleLogMock = mock.method(console, 'log', () => {})
     const consoleErrorMock = mock.method(console, 'error', () => {})
@@ -63,14 +63,14 @@ describe('Auth', () => {
     })
 
     const result = await ensureADCCredentials()
-    assert.equal(result, true)
+    assert.strictEqual(result, true)
 
     // Restore console mocks
     consoleLogMock.mock.restore()
     consoleErrorMock.mock.restore()
   })
 
-  it('should return false when ADC credentials are missing or invalid', async () => {
+  test('When ADC credentials are missing or invalid, then ensureADCCredentials returns false', async () => {
     // Mock console.log/error to suppress output during test
     const consoleLogMock = mock.method(console, 'log', () => {})
     const consoleErrorMock = mock.method(console, 'error', () => {})
@@ -86,7 +86,7 @@ describe('Auth', () => {
     })
 
     const result = await ensureADCCredentials()
-    assert.equal(result, false)
+    assert.strictEqual(result, false)
 
     // Restore console mocks
     consoleLogMock.mock.restore()
@@ -94,7 +94,7 @@ describe('Auth', () => {
   })
 
   describe('getAuthErrorMessage', () => {
-    it('should suggest project with enabled API if found', async () => {
+    test('When a project with the required API enabled is found, then it is suggested', async () => {
       const mockExecFileSync = mock.fn((cmd, args) => {
         if (cmd === 'gcloud' && args.includes('--version')) {
           return 'Google Cloud SDK'
@@ -138,7 +138,7 @@ describe('Auth', () => {
       assert.match(message, /gcloud auth application-default set-quota-project proj-2/)
     })
 
-    it('should fallback to most recent project if API check fails or not found', async () => {
+    test('When no project has the API enabled, then it falls back to the most recent project', async () => {
       const mockExecFileSync = mock.fn((cmd, args) => {
         if (cmd === 'gcloud' && args.includes('--version')) {
           return 'Google Cloud SDK'
@@ -170,7 +170,7 @@ describe('Auth', () => {
       assert.match(message, /We found a potential quota project "proj-1"/) // Fallback to first (most recent)
     })
 
-    it('should fall back to generic message with console URL if no project is found', async () => {
+    test('When no projects are found at all, then it falls back to a generic console URL message', async () => {
       const mockExecFileSync = mock.fn((cmd, args) => {
         if (cmd === 'gcloud' && args.includes('--version')) {
           return 'Google Cloud SDK'
@@ -198,7 +198,7 @@ describe('Auth', () => {
       assert.doesNotMatch(message, /gcloud projects list/)
     })
 
-    it('should use configured project if available', async () => {
+    test('When a project is already configured in gcloud, then it uses that project directly', async () => {
       const mockExecFileSync = mock.fn((cmd, args) => {
         if (cmd === 'gcloud' && args.includes('--version')) {
           return 'Google Cloud SDK'
