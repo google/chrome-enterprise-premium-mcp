@@ -15,118 +15,118 @@ limitations under the License.
 */
 
 import assert from 'node:assert/strict'
-import { describe, it } from 'node:test'
+import { describe, test } from 'node:test'
 import { validateCelCondition, validateActionParameters } from '../../lib/util/cel_validator.js'
 import { CHROME_ACTION_TYPES } from '../../lib/util/chrome_dlp_constants.js'
 
 describe('CEL Validator', () => {
-  it('should validate a simple valid condition', () => {
+  test('When a simple valid condition is provided, then it validates correctly', () => {
     const result = validateCelCondition("url.contains('google.com')")
     assert.strictEqual(result.isValid, true)
     assert.strictEqual(result.errors.length, 0)
   })
 
-  it('should fail on empty condition', () => {
+  test('When an empty condition is provided, then it fails validation', () => {
     const result = validateCelCondition('')
     assert.strictEqual(result.isValid, false)
     assert.ok(result.errors.length > 0)
   })
 
-  it('should fail on unbalanced parentheses', () => {
+  test('When unbalanced parentheses are provided, then it fails validation', () => {
     const result = validateCelCondition("url.contains('test'")
     assert.strictEqual(result.isValid, false)
     assert.ok(result.errors.some(e => /parentheses/i.test(e)))
   })
 
-  it('should fail on invalid method', () => {
+  test('When an invalid method is used, then it fails validation', () => {
     const result = validateCelCondition("url.invalid_method('test')")
     assert.strictEqual(result.isValid, false)
     assert.ok(result.errors.some(e => e.includes('invalid_method') || e.includes('function')))
   })
 
-  it('should fail on invalid content type', () => {
+  test('When an invalid content type is used, then it fails validation', () => {
     const result = validateCelCondition("invalid_type.contains('test')")
     assert.strictEqual(result.isValid, false)
     assert.ok(result.errors.some(e => /content type/i.test(e)))
   })
 
-  it('should fail on invalid web category', () => {
+  test('When an invalid web category is used, then it fails validation', () => {
     const result = validateCelCondition("url_category.matches_web_category('INVALID_CAT')")
     assert.strictEqual(result.isValid, false)
     assert.ok(result.errors.some(e => e.includes('INVALID_CAT')))
   })
 
-  it('should pass on valid web category', () => {
+  test('When a valid web category is provided with URL_NAVIGATION trigger, then it passes validation', () => {
     const result = validateCelCondition("url_category.matches_web_category('ADULT')", ['URL_NAVIGATION'])
     assert.strictEqual(result.isValid, true)
   })
 
-  it('should fail if matches_web_category is used on url instead of url_category', () => {
+  test('When matches_web_category is used on url instead of url_category, then it fails validation', () => {
     const result = validateCelCondition("url.matches_web_category('ADULT')")
     assert.strictEqual(result.isValid, false)
     assert.ok(result.errors.some(e => e.includes('url_category')))
   })
 
-  it('should fail if matches_web_category is used without URL_NAVIGATION trigger', () => {
+  test('When matches_web_category is used without URL_NAVIGATION trigger, then it fails validation', () => {
     const result = validateCelCondition("url_category.matches_web_category('ADULT')", ['FILE_UPLOAD'])
     assert.strictEqual(result.isValid, false)
     assert.ok(result.errors.some(e => e.includes('URL_NAVIGATION')))
   })
 
-  it('should fail if source_url is used with URL_NAVIGATION trigger', () => {
+  test('When source_url is used with URL_NAVIGATION trigger, then it fails validation', () => {
     const result = validateCelCondition("source_url.contains('test')", ['URL_NAVIGATION'])
     assert.strictEqual(result.isValid, false)
     assert.ok(result.errors.some(e => e.includes('source_url')))
   })
 
-  it('should pass for valid source_chrome_context', () => {
+  test('When a valid source_chrome_context is used, then it passes validation', () => {
     const result = validateCelCondition("source_chrome_context == 'INCOGNITO'", ['WEB_CONTENT_UPLOAD'])
     assert.strictEqual(result.isValid, true)
   })
 
-  it('should fail for invalid source_chrome_context', () => {
+  test('When an invalid source_chrome_context is used, then it fails validation', () => {
     const result = validateCelCondition("source_chrome_context == 'PRIVATE'", ['WEB_CONTENT_UPLOAD'])
     assert.strictEqual(result.isValid, false)
     assert.ok(result.errors.some(e => e.includes('source_chrome_context')))
   })
 
-  it('should fail if matches_mime_types is not given a list', () => {
+  test('When matches_mime_types is not given a list, then it fails validation', () => {
     const result = validateCelCondition("file_type.matches_mime_types('application/pdf')", ['FILE_UPLOAD'])
     assert.strictEqual(result.isValid, false)
     assert.ok(result.errors.some(e => e.includes('matches_mime_types')))
   })
 
-  it('should pass if matches_mime_types is given a list', () => {
+  test('When matches_mime_types is given a list, then it passes validation', () => {
     const result = validateCelCondition("file_type.matches_mime_types(['application/pdf'])", ['FILE_UPLOAD'])
     assert.strictEqual(result.isValid, true)
   })
 
-  it('should fail if destination_url is used', () => {
+  test('When destination_url is used, then it fails validation', () => {
     const result = validateCelCondition("destination_url.contains('test')", ['URL_NAVIGATION'])
     assert.strictEqual(result.isValid, false)
     assert.ok(result.errors.some(e => e.includes('destination_url')))
   })
 
-  it('should fail if file attribute is used with WEB_CONTENT_UPLOAD', () => {
+  test('When file attribute is used with WEB_CONTENT_UPLOAD trigger, then it fails validation', () => {
     const result = validateCelCondition('file_size_in_bytes > 1024', ['WEB_CONTENT_UPLOAD'])
     assert.strictEqual(result.isValid, false)
     assert.ok(result.errors.some(e => e.includes('file_size_in_bytes')))
   })
 
-  it('should pass for valid predefined detector', () => {
+  test('When a valid predefined detector is used, then it passes validation', () => {
     const result = validateCelCondition("all_content.matches_dlp_detector('US_SOCIAL_SECURITY_NUMBER')", [
       'FILE_UPLOAD',
     ])
     assert.strictEqual(result.isValid, true)
   })
 
-  it('should fail for invalid predefined detector', () => {
+  test('When an invalid predefined detector is used, then it fails validation', () => {
     const result = validateCelCondition("all_content.matches_dlp_detector('INVALID_DETECTOR')", ['FILE_UPLOAD'])
     assert.strictEqual(result.isValid, false)
     assert.ok(result.errors.some(e => e.includes('INVALID_DETECTOR') && e.includes('predefined DLP detector')))
   })
 
-  it('should fail for predefined detector with params', () => {
+  test('When a predefined detector is used with parameters, then it fails validation', () => {
     const result = validateCelCondition(
       "all_content.matches_dlp_detector('US_SOCIAL_SECURITY_NUMBER', {minimum_match_count: 2})",
       ['FILE_UPLOAD'],
@@ -136,12 +136,12 @@ describe('CEL Validator', () => {
   })
 
   describe('validateActionParameters', () => {
-    it('should pass for valid parameters', () => {
+    test('When valid parameters are provided, then it passes validation', () => {
       const result = validateActionParameters(CHROME_ACTION_TYPES.BLOCK, { customMessage: 'Blocked' }, ['FILE_UPLOAD'])
       assert.strictEqual(result.isValid, true)
     })
 
-    it('should fail if customMessage is too long', () => {
+    test('When customMessage is too long, then it fails validation', () => {
       const longMessage = 'A'.repeat(301)
       const result = validateActionParameters(CHROME_ACTION_TYPES.BLOCK, { customMessage: longMessage }, [
         'FILE_UPLOAD',
@@ -150,19 +150,19 @@ describe('CEL Validator', () => {
       assert.ok(result.errors.some(e => e.includes('300 characters')))
     })
 
-    it('should fail if watermarkMessage is used without URL_NAVIGATION', () => {
+    test('When watermarkMessage is used without URL_NAVIGATION trigger, then it fails validation', () => {
       const result = validateActionParameters(CHROME_ACTION_TYPES.WARN, { watermarkMessage: 'Test' }, ['FILE_UPLOAD'])
       assert.strictEqual(result.isValid, false)
       assert.ok(result.errors.some(e => e.includes('watermarkMessage') && e.includes('URL_NAVIGATION')))
     })
 
-    it('should fail if blockScreenshot is used without URL_NAVIGATION', () => {
+    test('When blockScreenshot is used without URL_NAVIGATION trigger, then it fails validation', () => {
       const result = validateActionParameters(CHROME_ACTION_TYPES.WARN, { blockScreenshot: true }, ['FILE_UPLOAD'])
       assert.strictEqual(result.isValid, false)
       assert.ok(result.errors.some(e => e.includes('blockScreenshot') && e.includes('URL_NAVIGATION')))
     })
 
-    it('should fail if dataMasking is used without URL_NAVIGATION', () => {
+    test('When dataMasking is used without URL_NAVIGATION trigger, then it fails validation', () => {
       const result = validateActionParameters(CHROME_ACTION_TYPES.WARN, { dataMasking: { regexDetectors: [] } }, [
         'FILE_UPLOAD',
       ])
@@ -170,12 +170,12 @@ describe('CEL Validator', () => {
       assert.ok(result.errors.some(e => e.includes('dataMasking') && e.includes('URL_NAVIGATION')))
     })
 
-    it('should pass for AUDIT action with any trigger', () => {
+    test('When AUDIT action is used with any trigger, then it passes validation', () => {
       const result = validateActionParameters(CHROME_ACTION_TYPES.AUDIT, {}, ['FILE_UPLOAD'])
       assert.strictEqual(result.isValid, true)
     })
 
-    it('should pass for advanced features with URL_NAVIGATION', () => {
+    test('When advanced features are used with URL_NAVIGATION trigger, then it passes validation', () => {
       const result = validateActionParameters(
         CHROME_ACTION_TYPES.WARN,
         {
@@ -188,7 +188,7 @@ describe('CEL Validator', () => {
       assert.strictEqual(result.isValid, true)
     })
 
-    it('should fail if dataMasking contains unsupported detectors', () => {
+    test('When dataMasking contains unsupported detectors, then it fails validation', () => {
       const result = validateActionParameters(
         CHROME_ACTION_TYPES.WARN,
         {
@@ -200,14 +200,14 @@ describe('CEL Validator', () => {
       assert.ok(result.errors.some(e => e.includes('ONLY regex detectors are supported for data masking')))
     })
 
-    it('should fail if customMessage contains unauthorized HTML tags', () => {
+    test('When customMessage contains unauthorized HTML tags, then it fails validation', () => {
       const result = validateActionParameters(CHROME_ACTION_TYPES.BLOCK, { customMessage: '<b>Bold</b> not allowed' }, [
         'FILE_UPLOAD',
       ])
       assert.strictEqual(result.isValid, false)
     })
 
-    it('should fail if <a> tag contains unauthorized attributes', () => {
+    test('When <a> tag contains unauthorized attributes, then it fails validation', () => {
       const result = validateActionParameters(
         CHROME_ACTION_TYPES.BLOCK,
         { customMessage: '<a href="http://google.com" onclick="alert(1)">Link</a>' },
@@ -216,7 +216,7 @@ describe('CEL Validator', () => {
       assert.strictEqual(result.isValid, false)
     })
 
-    it('should pass if customMessage contains only allowed <a> tags', () => {
+    test('When watermarkMessage is too long, then it fails validation', () => {
       const longWatermark = 'A'.repeat(61)
       const result = validateActionParameters(CHROME_ACTION_TYPES.WARN, { watermarkMessage: longWatermark }, [
         'URL_NAVIGATION',
@@ -225,7 +225,7 @@ describe('CEL Validator', () => {
       assert.ok(result.errors.some(e => e.includes('watermarkMessage') && e.includes('characters')))
     })
 
-    it('should pass if customMessage contains only allowed <a> tags', () => {
+    test('When customMessage contains only allowed <a> tags, then it passes validation', () => {
       const result = validateActionParameters(
         CHROME_ACTION_TYPES.BLOCK,
         { customMessage: 'Click <a href="http://google.com">here</a>' },
@@ -234,7 +234,7 @@ describe('CEL Validator', () => {
       assert.strictEqual(result.isValid, true)
     })
 
-    it('should fail if watermarkMessage is used with BLOCK action', () => {
+    test('When watermarkMessage is used with BLOCK action, then it fails validation', () => {
       const result = validateActionParameters(CHROME_ACTION_TYPES.BLOCK, { watermarkMessage: 'Test' }, [
         'URL_NAVIGATION',
       ])
