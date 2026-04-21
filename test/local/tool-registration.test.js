@@ -19,7 +19,7 @@ limitations under the License.
  */
 
 import assert from 'node:assert/strict'
-import { describe, it, mock, beforeEach } from 'node:test'
+import { describe, test, mock, beforeEach } from 'node:test'
 import { registerTools } from '../../tools/index.js'
 
 const CORE_TOOLS = [
@@ -60,7 +60,7 @@ describe('SEB Tool Registration', () => {
   })
 
   // Test if all tools are registered with the server.
-  it('should register all expected tools', () => {
+  test('When registerTools is called, then it registers all expected tools', () => {
     registerTools(server)
 
     const registeredToolNames = server.registerTool.mock.calls.map(call => call.arguments[0])
@@ -71,7 +71,7 @@ describe('SEB Tool Registration', () => {
     )
   })
 
-  it('should accept and use a shared session state object across tool registrations', async () => {
+  test('When a shared session state is provided, then it is used across tool registrations', async () => {
     const mockAdminSdkClient = {
       listOrgUnits: mock.fn(async () => [{ orgUnitPath: '/Test' }]),
     }
