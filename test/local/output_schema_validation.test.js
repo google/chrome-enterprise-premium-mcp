@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { describe, it, before } from 'node:test'
+import { describe, test, before } from 'node:test'
 import assert from 'node:assert/strict'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { registerTools } from '../../tools/index.js'
@@ -43,7 +43,7 @@ describe('Output Schema Validation', () => {
     })
   })
 
-  it('When tools are registered, then every tool has a valid top-level z.object().passthrough() outputSchema', () => {
+  test('When tools are registered, then every tool has a valid top-level z.object().passthrough() outputSchema', () => {
     for (const [name, tool] of registeredTools) {
       const schema = tool.schema.outputSchema
       if (!schema) {
@@ -65,7 +65,7 @@ describe('Output Schema Validation', () => {
     }
   })
 
-  it('When a tool is called, then structuredContent conforms to outputSchema', async () => {
+  test('When a tool is called, then structuredContent conforms to outputSchema', async () => {
     // This is a representative test for one tool.
     // Full coverage is in individual tool tests, but we verify the pattern here.
     const mockContext = { requestInfo: { headers: { authorization: 'Bearer token' } } }
