@@ -2,6 +2,10 @@
   "name": "@google/chrome-enterprise-premium-mcp",
   "version": "0.1.4",
   "description": "Chrome Enterprise Premium MCP server",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/google/chrome-enterprise-premium-mcp.git"
+  },
   "license": "Apache-2.0",
   "type": "module",
   "main": "mcp-server.js",
@@ -15,10 +19,11 @@
     "eval:knowledge": "CEP_BACKEND=fake node test/evals/run.js --category knowledge",
     "format": "prettier --write .",
     "lint": "eslint .",
+    "lint:fix": "eslint --fix .",
     "mcp-inspector": "npx @modelcontextprotocol/inspector node mcp-server.js",
     "postsubmit": "(npm run presubmit && npm run test:integration:real && node -e \"console.log('\\n✅ POSTSUBMIT: PASSED\\n')\") || (node -e \"console.error('\\n❌ POSTSUBMIT: FAILED\\n')\"; exit 1)",
     "prepare": "husky",
-    "presubmit": "(npm run test:unit && npm run test:integration:fake && npm run test:smoke && node -e \"console.log('\\n✅ PRESUBMIT: PASSED\\n')\") || (node -e \"console.error('\\n❌ PRESUBMIT: FAILED\\n')\"; exit 1)",
+    "presubmit": "(npm run format && npm run lint:fix && npm run test:unit && npm run test:integration:fake && npm run test:smoke && node -e \"console.log('\\n✅ PRESUBMIT: PASSED\\n')\") || (node -e \"console.error('\\n❌ PRESUBMIT: FAILED\\n')\"; exit 1)",
     "start": "node mcp-server.js",
     "test": "node test/run-all.js",
     "test:full": "EXPERIMENT_DELETE_TOOL_ENABLED=true node test/run-integration.js fake",
@@ -27,9 +32,9 @@
     "test:smoke": "CEP_LOG_LEVEL=SILENT GCP_STDIO=false node test/local/smoke-test.js",
     "test:unit": "CEP_LOG_LEVEL=SILENT node test/run-unit.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/google/chrome-enterprise-premium-mcp.git"
+  "lint-staged": {
+    "*.{js,ts}": "eslint --fix",
+    "*.md": "prettier --write"
   },
   "dependencies": {
     "@dotenvx/dotenvx": "^1.52.0",
@@ -38,8 +43,8 @@
     "axios": "^1.7.2",
     "express": "^5.1.0",
     "google-auth-library": "^10.4.0",
-    "gray-matter": "^4.0.3",
     "googleapis": "^166.0.0",
+    "gray-matter": "^4.0.3",
     "zod": "^3.25.76"
   },
   "devDependencies": {
@@ -60,9 +65,6 @@
     "prettier": "^3.8.1",
     "prettier-plugin-packagejson": "^3.0.2",
     "uuid": "^13.0.0"
-  },
-  "lint-staged": {
-    "*.js": "eslint --fix"
   },
   "engines": {
     "node": ">=18.0.0"

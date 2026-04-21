@@ -100,32 +100,40 @@ describe('Diagnose Environment Integration', () => {
     )
   })
 
-  test('When detail mode is requested for orgUnits, then it returns paginated results', { skip: process.env.SKIP_SLOW === 'true' }, async () => {
-    const { client } = harness
-    const page1 = await client.callTool({
-      name: 'diagnose_environment',
-      arguments: { section: 'orgUnits', limit: 2, offset: 0 },
-    })
-    const sc = page1.structuredContent
-    assert.ok(sc.section === 'orgUnits', 'Section is orgUnits')
-    assert.ok(Array.isArray(sc.items), 'Items is an array')
-    assert.ok(sc.items.length <= 2, 'Respects limit')
-    assert.ok(typeof sc.total === 'number', 'Has total count')
-    assert.ok(typeof sc.hasMore === 'boolean', 'Has hasMore flag')
-  })
+  test(
+    'When detail mode is requested for orgUnits, then it returns paginated results',
+    { skip: process.env.SKIP_SLOW === 'true' },
+    async () => {
+      const { client } = harness
+      const page1 = await client.callTool({
+        name: 'diagnose_environment',
+        arguments: { section: 'orgUnits', limit: 2, offset: 0 },
+      })
+      const sc = page1.structuredContent
+      assert.ok(sc.section === 'orgUnits', 'Section is orgUnits')
+      assert.ok(Array.isArray(sc.items), 'Items is an array')
+      assert.ok(sc.items.length <= 2, 'Respects limit')
+      assert.ok(typeof sc.total === 'number', 'Has total count')
+      assert.ok(typeof sc.hasMore === 'boolean', 'Has hasMore flag')
+    },
+  )
 
-  test('When detail mode is requested for dlpRules, then it returns paginated results', { skip: process.env.SKIP_SLOW === 'true' }, async () => {
-    const { client } = harness
-    const result = await client.callTool({
-      name: 'diagnose_environment',
-      arguments: { section: 'dlpRules', limit: 1, offset: 0 },
-    })
-    const sc = result.structuredContent
-    assert.ok(sc.section === 'dlpRules')
-    assert.ok(sc.items.length <= 1, 'Respects limit=1')
-    if (sc.items.length > 0) {
-      assert.ok(sc.items[0].displayName, 'Rule has display name')
-      assert.ok(sc.items[0].actionType, 'Rule has action type')
-    }
-  })
+  test(
+    'When detail mode is requested for dlpRules, then it returns paginated results',
+    { skip: process.env.SKIP_SLOW === 'true' },
+    async () => {
+      const { client } = harness
+      const result = await client.callTool({
+        name: 'diagnose_environment',
+        arguments: { section: 'dlpRules', limit: 1, offset: 0 },
+      })
+      const sc = result.structuredContent
+      assert.ok(sc.section === 'dlpRules')
+      assert.ok(sc.items.length <= 1, 'Respects limit=1')
+      if (sc.items.length > 0) {
+        assert.ok(sc.items[0].displayName, 'Rule has display name')
+        assert.ok(sc.items[0].actionType, 'Rule has action type')
+      }
+    },
+  )
 })

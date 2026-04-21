@@ -68,9 +68,8 @@ Chrome Enterprise Premium's DLP engine supports Optical Character Recognition (O
 
 The **Action** (Audit, Warn, Block) determines the response to the primary trigger event:
 
--   **Audit:** Logs the event silently without user interruption.
--   **Warn:** Displays a dialog requiring acknowledgement. For **URL Visited** (navigation), this dialog appears immediately upon site entry.
--   **Block:** Prevents the event entirely.
+- **Audit:** Logs the event silently without user interruption.
+- **Warn:** Displays a dialog requiring acknowledgement. For **URL Visited** (navigation), this dialog appears immediately upon site entry.
+- **Block:** Prevents the event entirely.
 
 **Action Scope:** The selected action applies to the primary event defined by the trigger (such as the site visit, file transfer, or print job). Independent restrictions like `blockScreenshot` or `dataMasking` remain active even when the primary action is **Audit**. This allows for an uninterrupted user experience during site navigation while still enforcing specific controls like screenshot blocking.
-

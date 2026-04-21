@@ -241,13 +241,13 @@ PORT=8080 GCP_STDIO=false npx -y @google/chrome-enterprise-premium-mcp@latest
 
 #### 3. Key Variables
 
-| Variable | Description | Default |
-| :--- | :--- | :--- |
-| `GCP_STDIO` | `true` for Stdio (local); `false` for HTTP (remote). | `true` |
-| `PORT` | Network port when `GCP_STDIO=false`. | `3000` |
-| `GOOGLE_CLOUD_QUOTA_PROJECT` | GCP project ID for API quotas. | - |
-| `OAUTH_ENABLED` | Set `true` to require OAuth (HTTP mode only). | `false` |
-| `LOG_LEVEL` | Verbosity (`error`, `warn`, `info`, `debug`). | `info` |
+| Variable                     | Description                                          | Default |
+| :--------------------------- | :--------------------------------------------------- | :------ |
+| `GCP_STDIO`                  | `true` for Stdio (local); `false` for HTTP (remote). | `true`  |
+| `PORT`                       | Network port when `GCP_STDIO=false`.                 | `3000`  |
+| `GOOGLE_CLOUD_QUOTA_PROJECT` | GCP project ID for API quotas.                       | -       |
+| `OAUTH_ENABLED`              | Set `true` to require OAuth (HTTP mode only).        | `false` |
+| `LOG_LEVEL`                  | Verbosity (`error`, `warn`, `info`, `debug`).        | `info`  |
 
 ## Prerequisites
 
