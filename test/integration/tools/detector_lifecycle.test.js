@@ -31,7 +31,7 @@ describe('Detector Lifecycle Integration', () => {
     await teardownIntegrationHarness(harness, createdResources)
   })
 
-  test('Regex Detector Lifecycle: Create -> Verify -> List -> Delete', async () => {
+  test('When a regex detector is created, then it can be verified, listed, and deleted', async () => {
     const { client, testContext } = harness
     const detectorConfig = {
       customerId: testContext.customerId,
@@ -110,7 +110,7 @@ describe('Detector Lifecycle Integration', () => {
     }
   })
 
-  test('URL List Detector Lifecycle: Create -> Verify -> Delete', async () => {
+  test('When a URL list detector is created, then it can be verified and deleted', async () => {
     const { client, testContext } = harness
     const detectorConfig = {
       customerId: testContext.customerId,

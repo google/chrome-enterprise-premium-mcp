@@ -31,7 +31,7 @@ describe('Connector Enablement Integration', () => {
     await teardownIntegrationHarness(harness, createdResources)
   })
 
-  test('Enable All Connectors: Batch Enable -> Verify Skip', async () => {
+  test('When all connectors are enabled at once, then it enables them and subsequent calls skip them', async () => {
     const { client, testContext } = harness
     const connectors = [
       'PRINT',
@@ -72,7 +72,7 @@ describe('Connector Enablement Integration', () => {
     })
   })
 
-  test('Partial Enablement: Mixing configured and unconfigured', async () => {
+  test('When mixing configured and unconfigured connectors, then it enables only the unconfigured ones', async () => {
     const { client, testContext } = harness
 
     // We assume some might be enabled from the previous test.
@@ -96,7 +96,7 @@ describe('Connector Enablement Integration', () => {
     assert.ok(text.includes('Event Reporting'), 'Event Reporting should be mentioned')
   })
 
-  test('ON_SECURITY_EVENT: Verify enablement output', async () => {
+  test('When ON_SECURITY_EVENT is requested, then it enables Event Reporting correctly', async () => {
     const { client, testContext } = harness
 
     const result = await client.callTool({
@@ -115,7 +115,7 @@ describe('Connector Enablement Integration', () => {
     )
   })
 
-  test('Validation: Empty connector list should fail', async () => {
+  test('When an empty connector list is provided, then validation fails', async () => {
     const { client, testContext } = harness
 
     const result = await client.callTool({
@@ -131,7 +131,7 @@ describe('Connector Enablement Integration', () => {
     assert.match(result.content[0].text, /Array must contain at least 1 element\(s\)/)
   })
 
-  test('Validation: Invalid connector name should fail', async () => {
+  test('When an invalid connector name is provided, then validation fails', async () => {
     const { client, testContext } = harness
 
     const result = await client.callTool({
