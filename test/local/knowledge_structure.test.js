@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { describe, it } from 'node:test'
+import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -24,7 +24,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const knowledgeDir = path.resolve(__dirname, '../../lib/knowledge')
 
 describe('Knowledge Folder Structure', () => {
-  it('When knowledge files are listed, then all files should have a number prefix', async () => {
+  test('When knowledge files are listed, then all files should have a number prefix', async () => {
     const files = await fs.readdir(knowledgeDir)
 
     // Ignore hidden files like .gitkeep or .DS_Store

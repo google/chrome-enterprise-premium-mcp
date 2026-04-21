@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { describe, it } from 'node:test'
+import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
@@ -22,7 +22,7 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { z } from 'zod'
 
 describe('SDK Compatibility - Output Schema', () => {
-  it('When z.object().passthrough() is used for output schema, then it successfully returns structuredContent', async () => {
+  test('When z.object().passthrough() is used for output schema, then it successfully returns structuredContent', async () => {
     const server = new McpServer({ name: 'test-server', version: '1.0.0' })
     server.registerTool(
       'test_tool',
@@ -53,7 +53,7 @@ describe('SDK Compatibility - Output Schema', () => {
     // but the transport message contains it.
   })
 
-  it('When top-level is not an object for output schema, then it fails', async () => {
+  test('When top-level is not an object for output schema, then it fails', async () => {
     // In SDK 1.29.0, passing anything other than z.object() to registerTool schema
     // often results in it being normalized to undefined, which then causes
     // validateToolOutput to throw when it tries to use it.
