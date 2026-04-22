@@ -219,7 +219,7 @@ function runResourceTest() {
       body += chunk
     })
     res.on('end', () => {
-      if (res.statusCode === 200 && body.includes('cep://knowledge/4-dlp-core-features')) {
+      if (res.statusCode === 200 && body.includes('cep://knowledge/12-security-posture-guide')) {
         logger.info('Resource smoke test passed!')
         server.kill()
         runOAuthTest()

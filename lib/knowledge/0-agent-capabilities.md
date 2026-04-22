@@ -14,18 +14,19 @@ This document outlines what the Chrome Enterprise Premium AI Agent can and canno
 
 The agent can query your environment to help diagnose issues:
 
-- **License & Subscription Checks:** Verify if your organization has an active [Chrome Enterprise Premium subscription](1-product-and-licensing.md) and check if specific users have been assigned a license.
-- **Policy Verification:** When auditing or checking if "correct" connectors are in place, the agent must verify all 6 connectors: **FILE_UPLOAD** (`ON_FILE_ATTACHED`), **FILE_DOWNLOAD** (`ON_FILE_DOWNLOAD`), **BULK_TEXT_ENTRY** (`ON_BULK_TEXT_ENTRY`), **PRINT** (`ON_PRINT`), **REALTIME_URL_CHECK** (`ON_REALTIME_URL_NAVIGATION`), and **ON_SECURITY_EVENT**. By default, these checks must be performed against the **root Organizational Unit (OU)** unless a specific OU is requested. For each connector, the agent must follow a mandatory sequence: first retrieve the current configuration for all 6 connectors, then provide a comprehensive summary of all findings to the user. ONLY after presenting this summary and identifying which connectors are 'Not configured' or 'not enabled' should the agent ask for explicit permission to enable them. If the retrieval output contains any warnings, the agent must present the specific manual Admin Console links provided in the warning text as part of the summary. During this specific audit, focus strictly on technical configuration (Provider, Status, Delay Delivery) and do NOT check for the Secure Enterprise Browser (SEB) extension or active DLP rules unless explicitly requested.
-- **Log Analysis:** Retrieve the last 10 days of [Chrome activity logs](9-siem-and-event-reporting.md) for a user, including device sync events and security flags.
-- **Environment Discovery:** List Organizational Units (OUs), active [Data Loss Prevention (DLP) rules](4-dlp-core-features.md), and DLP content detectors (Regex, Word lists, URL lists).
+- **License & Subscription Checks:** Verify if your organization has an active [Chrome Enterprise Premium subscription](01-cep-overview.md) and check if specific users have been assigned a license.
+- **Policy Verification:** When auditing or checking if "correct" connectors are in place, the agent must verify all 6 connectors: **File Upload**, **File Download**, **Bulk Text Entry (Paste)**, **Print**, **Real-time URL Check**, and **Security Event Reporting**. By default, these checks must be performed against the **root Organizational Unit (OU)** unless a specific OU is requested. For each connector, the agent must follow a mandatory sequence: first retrieve the current configuration for all 6 connectors, then provide a comprehensive summary of all findings to the user. ONLY after presenting this summary and identifying which connectors are 'Not configured' or 'not enabled' should the agent ask for explicit permission to enable them. If the retrieval output contains any warnings, the agent must present the specific manual Admin Console links provided in the warning text as part of the summary. During this specific audit, focus strictly on technical configuration (Provider, Status, Delay Delivery) and do NOT check for the Secure Enterprise Browser (SEB) extension or active DLP rules unless explicitly requested.
+- **Log Analysis:** Retrieve the last 10 days of [Chrome activity logs](09-chrome-log-events.md) for a user, including device sync events and security flags.
+
+- **Environment Discovery:** List Organizational Units (OUs), active [Data Loss Prevention (DLP) rules](06-dlp-rule-troubleshooting.md) and [limits](21-dlp-limits.md).
 - **Health Checks:** The agent can perform a 'health check' of a CEP deployment by combining discovery tools to report on **subscription status**, **OU structure**, **browser version distribution**, and active **DLP rules**, then provide a summary assessment.
 - **License Assignment Status:** The agent can check the specific Chrome Enterprise Premium license assignment status for one or more individual users when provided with their email addresses.
 - **Version Audits:** The agent can audit all deployed Chrome browser versions across an organization, providing a count of devices on each version and channel. It should also be able to **identify and flag versions that are older than the current stable release** as 'outdated'.
 - **Customer & OU Structure:** The agent is capable of discovering environment details on command, such as retrieving the **Customer ID** and listing the full **Organizational Unit (OU) structure**, including parent-child relationships.
 - **Content Detectors:** The agent can discover and list all custom **DLP content detectors** configured in the environment. For each detector, it can provide the name, type, and the specific content it is configured to detect.
-- **Extension Status:** Check if the [Secure Enterprise Browser (SEB) extension](2-deployment-and-enrollment.md) is force-installed for an OU.
+- **Extension Status:** Check if the [Secure Enterprise Browser (SEB) extension](22-dlp-data-masking.md) is force-installed for an OU.
 - **API Status:** Check if required Google Cloud APIs (Admin SDK, Chrome Management, Chrome Policy, Cloud Identity, and Licensing) are enabled for a project. Note that the **Service Usage API** (`serviceusage.googleapis.com`) is also required if any of these five APIs are missing.
-- **URL Filtering:** Check active [URL filtering policies](10-policy-and-url-filtering.md).
+- **URL Filtering:** Check active [URL filtering policies](07-caa-dlp-integration.md).
 
 ### Configuration & Remediation (Mutations)
 
@@ -50,7 +51,7 @@ The agent maps administrator requests to the appropriate diagnostic and configur
 
 - **Organizational Structure:** List Organizational Units (OUs) to understand policy application.
 - **DLP Rule Discovery:** List active Data Loss Prevention (DLP) rules and their configurations.
-- **Connector Verification:** Verify if `ON_FILE_ATTACHED`, `ON_SECURITY_EVENT`, or other connector policies are active for a specific OU.
+- **Connector Verification:** Verify if **File Upload**, **Security Event Reporting**, or other connector policies are active for a specific OU.
 
 ### 3. Endpoint and Browser Health
 
@@ -84,7 +85,7 @@ For security and architectural reasons, the agent has explicit limitations:
 ### 3. Client-Side Actions
 
 - **No Remote Syncing:** The agent cannot remotely force a user's Endpoint Verification extension to sync. The user must manually click **"Sync Now"** in their browser.
-- **Diagnostics:** The agent can guide users to the local client-side diagnostic page at **`chrome://safe-browsing/#tab-reporting`** to verify rule hits.
+- **Diagnostics:** The agent can guide users to the local client-side diagnostic page.
 - **No Local OS Control:** The agent cannot modify Platform policies (e.g., Windows Registry, macOS Profiles) directly on end-user machines. It can only configure Cloud policies via the Admin Console.
 
 ### 4. Third-Party Integrations
@@ -99,3 +100,9 @@ For security and architectural reasons, the agent has explicit limitations:
 ### 6. Connector Configuration Limits
 
 - **No Configuration Updates:** The agent cannot update or modify existing Chrome Enterprise connector configurations. It is strictly limited to enabling connectors that are not yet configured. If an existing configuration needs adjustment, the agent must provide the relevant manual Admin Console link to the administrator.
+
+### Knowledge Base
+
+The agent has access to a comprehensive knowledge base of Chrome Enterprise Premium documentation. To find relevant articles, use the **'search_content'** or **'list_documents'** tools.
+
+Most product documentation is retrieved in real-time from the official **Google Workspace Knowledge Base** to ensure you always receive the most up-to-date information. Specialized operational guardrails and technical frameworks remain stored locally for the agent's internal use.
