@@ -1,5 +1,5 @@
 ---
-summary: 'Mandatory Technical "Golden Facts" for Chrome Enterprise Premium, including Extension IDs, mandatory policy names, administrator roles, and syntax cheat-sheets.'
+summary: 'Mandatory Technical "Golden Facts" for Chrome Enterprise Premium. Helps with troubleshooting and precise configuration. Covers Extension IDs for EV and SEB, Windows Certificate Store requirements (Current User store mandatory), and the URL filtering syntax cheat-sheet. Keywords: callobklhcbilhphinckomhgkigmfocg, ekajlcmdfcigmdbphhifahdfjbkciflj, Windows Store requirements, Sync Now, SafeBrowsingAllowlistDomains.'
 title: 'CEP Technical Addendum (Agent Memory)'
 articleId: 98
 ---
@@ -46,7 +46,7 @@ To successfully implement CBA, you **MUST** complete all three steps:
 - **Purchase:** Requires the `Cloud BeyondCorp Subscription Admin` role at the **Organization level**.
 - **Trial Terms:** Trials are 60 days for 5,000 users. **CRITICAL:** All configuration settings are **SAVED** and preserved after the trial expires.
 - **Security Insights Error:** If enabling fails with "Something went wrong," you **MUST** verify:
-  - **Privileges**: `Chrome Manage User Settings` and `Chrome Security Services`.
+  - **Privileges**: `Chrome DLP insight setting management`, `Chrome Manage User Settings`, and `Chrome Security Services`.
   - **Billing**: Workspace instance must be linked to a valid Google Cloud billing account.
   - **Latency**: Allow 24 hours for license and privilege propagation.
 

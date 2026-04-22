@@ -1,7 +1,7 @@
 ---
-summary: 'Guide for deploying Chrome browser to your organization, including MSI/PKG installers and the Chrome Enterprise bundle.'
+summary: 'Comprehensive browser deployment and enrollment guide. Use this to perform large-scale MSI/PKG installation via MDM and configure cloud management. Covers how to: deploy the Chrome Enterprise bundle, apply policy templates, use Cloud management enrollment tokens, force-install Endpoint Verification, and perform the two-step unenrollment process.'
 title: 'Chrome Browser Deployment Guide'
-articleId: 2
+articleId: 02
 url: 'https://support.google.com/chrome/a/answer/188446'
 ---
 

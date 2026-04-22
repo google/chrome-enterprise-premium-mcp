@@ -1,5 +1,5 @@
 ---
-summary: 'Instructions for configuring SafeBrowsingAllowlistDomains to exempt specific domains from malware, phishing, and password reuse checks.'
+summary: 'Helps administrators exempt trusted internal sites from Safe Browsing warnings. Covers how to bypass malware, phishing, and password reuse checks. Keywords: SafeBrowsingAllowlistDomains, trusted domains, bypass warnings.'
 title: 'Safe Browsing Allowlists'
 articleId: 28
 url: 'https://support.google.com/chrome/a/answer/9696707'

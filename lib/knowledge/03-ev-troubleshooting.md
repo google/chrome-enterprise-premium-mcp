@@ -1,7 +1,7 @@
 ---
-summary: 'Troubleshooting guide for Endpoint Verification sync errors, OS update reporting delays, and native messaging host issues.'
+summary: 'Endpoint Verification (EV) troubleshooting and privacy guide. Helps resolve device posture sync errors and access denial issues. Covers how to: fix OS-level sync failures by investigating Native Helper status, EDR/Antivirus blocks, and firewalls; resolve OS update delays via manual "Sync Now"; and understand privacy boundaries (no browsing history collected). Keywords: Failed to sync, Native messaging host, manual sync, privacy statement, BYOD security.'
 title: 'Endpoint Verification Troubleshooting'
-articleId: 3
+articleId: 03
 url: 'https://support.google.com/a/users/answer/9018161?hl=en'
 ---
 

@@ -1,5 +1,5 @@
 ---
-summary: 'Overview of Chrome security reports in the Admin Console, including threat protection (malware, unsafe sites) and data protection (PII transfers, uploads/downloads).'
+summary: 'Overview of Chrome security reports in the Admin Console. Helps administrators monitor threat and data protection events. Covers Malware, Unsafe Sites, PII transfers, and high-volume upload/download reports. Keywords: Data protection reports, Threat protection dashboard, security telemetry.'
 title: 'Chrome Security Reports Overview'
 articleId: 24
 url: 'https://knowledge.workspace.google.com/admin/security/chrome-data-protection-summary-report'

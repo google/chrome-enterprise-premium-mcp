@@ -1,5 +1,5 @@
 ---
-summary: 'Detailed list of device posture attributes collected by the Endpoint Verification extension, including OS, hardware, and encryption status.'
+summary: 'Comprehensive list of device posture attributes collected by Endpoint Verification. Helps with creating granular Context-Aware Access (CAA) levels. Covers OS version, serial numbers, disk encryption, and screen lock status. Keywords: Device attributes, postural data, hardware identifiers, encryption status.'
 title: 'Device Attributes Collected by Endpoint Verification'
 articleId: 30
 url: 'https://cloud.google.com/endpoint-verification/docs/device-information'
