@@ -76,7 +76,7 @@ export function registerCreateChromeDlpRuleTool(server, options, sessionState) {
 Applies browser-level protection (uploads, downloads, printing).
 ${MCP_SAFETY_CONSTRAINTS.ACTIVE_BLOCK_RESTRICTION}
 
-To ensure technical accuracy and verify trigger compatibility, you should retrieve the full technical reference using 'get_document' for '11-dlp-cel-syntax' before using this tool.`,
+To ensure technical accuracy and verify trigger compatibility, you should retrieve the full technical reference using 'get_document' for '11-dlp-rule-reference' before using this tool.`,
       inputSchema: {
         customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345).'),
         orgUnitId: z.string().describe('The target Organizational Unit ID'),
@@ -96,10 +96,10 @@ To ensure technical accuracy and verify trigger compatibility, you should retrie
           .string()
           .optional()
           .describe(
-            "CEL condition string. To ensure technical accuracy and verify trigger compatibility, you should retrieve the full technical reference using 'get_document' for '11-dlp-cel-syntax' before formulating a condition.",
+            "CEL condition string. To ensure technical accuracy and verify trigger compatibility, you should retrieve the full technical reference using 'get_document' for '11-dlp-rule-reference' before formulating a condition.",
           ),
         action: z
-          .enum([CHROME_ACTION_TYPES.BLOCK, CHROME_ACTION_TYPES.WARN, CHROME_ACTION_TYPES.AUDIT])
+          .enum([CHROME_ACTION_TYPES.BLOCK.value, CHROME_ACTION_TYPES.WARN.value, CHROME_ACTION_TYPES.AUDIT.value])
           .describe(
             'Action to take when the rule is triggered. AUDIT mode is silent and logs events without notifying or blocking the user.',
           ),
@@ -247,13 +247,7 @@ To ensure technical accuracy and verify trigger compatibility, you should retrie
             }
           }
 
-          const actionMap = {
-            [CHROME_ACTION_TYPES.BLOCK]: 'blockContent',
-            [CHROME_ACTION_TYPES.WARN]: 'warnUser',
-            [CHROME_ACTION_TYPES.AUDIT]: 'auditOnly',
-          }
-
-          const actionKey = actionMap[action]
+          const actionKey = CHROME_ACTION_TYPES[action].apiKey
           const chromeAction = {
             [actionKey]: Object.keys(actionData).length > 0 ? { actionParams: actionData } : {},
           }
@@ -278,7 +272,7 @@ To ensure technical accuracy and verify trigger compatibility, you should retrie
               const createdDisplayName =
                 raw?.setting?.value?.displayName || raw.name?.split('/').pop() || 'Unnamed Rule'
               const auditNote =
-                action === CHROME_ACTION_TYPES.AUDIT
+                action === CHROME_ACTION_TYPES.AUDIT.value
                   ? '\n\nNote: AUDIT mode is silent and logs events without notifying or blocking the user.'
                   : ''
               return formatToolResponse({

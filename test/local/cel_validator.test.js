@@ -137,13 +137,15 @@ describe('CEL Validator', () => {
 
   describe('validateActionParameters', () => {
     test('When valid parameters are provided, then it passes validation', () => {
-      const result = validateActionParameters(CHROME_ACTION_TYPES.BLOCK, { customMessage: 'Blocked' }, ['FILE_UPLOAD'])
+      const result = validateActionParameters(CHROME_ACTION_TYPES.BLOCK.value, { customMessage: 'Blocked' }, [
+        'FILE_UPLOAD',
+      ])
       assert.strictEqual(result.isValid, true)
     })
 
     test('When customMessage is too long, then it fails validation', () => {
       const longMessage = 'A'.repeat(301)
-      const result = validateActionParameters(CHROME_ACTION_TYPES.BLOCK, { customMessage: longMessage }, [
+      const result = validateActionParameters(CHROME_ACTION_TYPES.BLOCK.value, { customMessage: longMessage }, [
         'FILE_UPLOAD',
       ])
       assert.strictEqual(result.isValid, false)
@@ -151,19 +153,23 @@ describe('CEL Validator', () => {
     })
 
     test('When watermarkMessage is used without URL_NAVIGATION trigger, then it fails validation', () => {
-      const result = validateActionParameters(CHROME_ACTION_TYPES.WARN, { watermarkMessage: 'Test' }, ['FILE_UPLOAD'])
+      const result = validateActionParameters(CHROME_ACTION_TYPES.WARN.value, { watermarkMessage: 'Test' }, [
+        'FILE_UPLOAD',
+      ])
       assert.strictEqual(result.isValid, false)
       assert.ok(result.errors.some(e => e.includes('watermarkMessage') && e.includes('URL_NAVIGATION')))
     })
 
     test('When blockScreenshot is used without URL_NAVIGATION trigger, then it fails validation', () => {
-      const result = validateActionParameters(CHROME_ACTION_TYPES.WARN, { blockScreenshot: true }, ['FILE_UPLOAD'])
+      const result = validateActionParameters(CHROME_ACTION_TYPES.WARN.value, { blockScreenshot: true }, [
+        'FILE_UPLOAD',
+      ])
       assert.strictEqual(result.isValid, false)
       assert.ok(result.errors.some(e => e.includes('blockScreenshot') && e.includes('URL_NAVIGATION')))
     })
 
     test('When dataMasking is used without URL_NAVIGATION trigger, then it fails validation', () => {
-      const result = validateActionParameters(CHROME_ACTION_TYPES.WARN, { dataMasking: { regexDetectors: [] } }, [
+      const result = validateActionParameters(CHROME_ACTION_TYPES.WARN.value, { dataMasking: { regexDetectors: [] } }, [
         'FILE_UPLOAD',
       ])
       assert.strictEqual(result.isValid, false)
@@ -171,13 +177,13 @@ describe('CEL Validator', () => {
     })
 
     test('When AUDIT action is used with any trigger, then it passes validation', () => {
-      const result = validateActionParameters(CHROME_ACTION_TYPES.AUDIT, {}, ['FILE_UPLOAD'])
+      const result = validateActionParameters(CHROME_ACTION_TYPES.AUDIT.value, {}, ['FILE_UPLOAD'])
       assert.strictEqual(result.isValid, true)
     })
 
     test('When advanced features are used with URL_NAVIGATION trigger, then it passes validation', () => {
       const result = validateActionParameters(
-        CHROME_ACTION_TYPES.WARN,
+        CHROME_ACTION_TYPES.WARN.value,
         {
           watermarkMessage: 'Test',
           blockScreenshot: true,
@@ -190,7 +196,7 @@ describe('CEL Validator', () => {
 
     test('When dataMasking contains unsupported detectors, then it fails validation', () => {
       const result = validateActionParameters(
-        CHROME_ACTION_TYPES.WARN,
+        CHROME_ACTION_TYPES.WARN.value,
         {
           dataMasking: { wordListDetectors: [{}] },
         },
@@ -201,15 +207,17 @@ describe('CEL Validator', () => {
     })
 
     test('When customMessage contains unauthorized HTML tags, then it fails validation', () => {
-      const result = validateActionParameters(CHROME_ACTION_TYPES.BLOCK, { customMessage: '<b>Bold</b> not allowed' }, [
-        'FILE_UPLOAD',
-      ])
+      const result = validateActionParameters(
+        CHROME_ACTION_TYPES.BLOCK.value,
+        { customMessage: '<b>Bold</b> not allowed' },
+        ['FILE_UPLOAD'],
+      )
       assert.strictEqual(result.isValid, false)
     })
 
     test('When <a> tag contains unauthorized attributes, then it fails validation', () => {
       const result = validateActionParameters(
-        CHROME_ACTION_TYPES.BLOCK,
+        CHROME_ACTION_TYPES.BLOCK.value,
         { customMessage: '<a href="http://google.com" onclick="alert(1)">Link</a>' },
         ['FILE_UPLOAD'],
       )
@@ -218,7 +226,7 @@ describe('CEL Validator', () => {
 
     test('When watermarkMessage is too long, then it fails validation', () => {
       const longWatermark = 'A'.repeat(61)
-      const result = validateActionParameters(CHROME_ACTION_TYPES.WARN, { watermarkMessage: longWatermark }, [
+      const result = validateActionParameters(CHROME_ACTION_TYPES.WARN.value, { watermarkMessage: longWatermark }, [
         'URL_NAVIGATION',
       ])
       assert.strictEqual(result.isValid, false)
@@ -227,7 +235,7 @@ describe('CEL Validator', () => {
 
     test('When customMessage contains only allowed <a> tags, then it passes validation', () => {
       const result = validateActionParameters(
-        CHROME_ACTION_TYPES.BLOCK,
+        CHROME_ACTION_TYPES.BLOCK.value,
         { customMessage: 'Click <a href="http://google.com">here</a>' },
         ['FILE_UPLOAD'],
       )
@@ -235,7 +243,7 @@ describe('CEL Validator', () => {
     })
 
     test('When watermarkMessage is used with BLOCK action, then it fails validation', () => {
-      const result = validateActionParameters(CHROME_ACTION_TYPES.BLOCK, { watermarkMessage: 'Test' }, [
+      const result = validateActionParameters(CHROME_ACTION_TYPES.BLOCK.value, { watermarkMessage: 'Test' }, [
         'URL_NAVIGATION',
       ])
       assert.strictEqual(result.isValid, false)

@@ -23,6 +23,7 @@ import { guardedToolCall, formatToolResponse, safeFormatResponse, formatStatus }
 import { commonOutputSchemas } from './shared.js'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
+import { CHROME_ACTION_TYPES } from '../../lib/util/chrome_dlp_constants.js'
 
 /**
  * Registers the 'list_dlp_rules' tool with the MCP server.
@@ -83,12 +84,9 @@ export function registerListDlpRulesTool(server, options, sessionState) {
 
                 let action = 'Unknown'
                 const chromeAction = value.action?.chromeAction || {}
-                if (chromeAction.blockContent) {
-                  action = 'Block'
-                } else if (chromeAction.warnUser) {
-                  action = 'Warn'
-                } else if (chromeAction.auditOnly) {
-                  action = 'Audit'
+                const foundAction = Object.values(CHROME_ACTION_TYPES).find(a => chromeAction[a.apiKey])
+                if (foundAction) {
+                  action = foundAction.value.charAt(0).toUpperCase() + foundAction.value.slice(1).toLowerCase()
                 }
                 const triggers = (value.triggers || [])
                   .map(t =>

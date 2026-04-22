@@ -29,6 +29,7 @@ import { guardedToolCall, formatToolResponse } from '../utils/wrapper.js'
 import { TAGS, CONNECTOR_DISPLAY_NAMES } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 import { ConnectorPolicyFilter } from '../../lib/api/chromepolicy.js'
+import { CHROME_ACTION_TYPES } from '../../lib/util/chrome_dlp_constants.js'
 
 const CONNECTOR_TYPES = {
   uploadAnalysis: ConnectorPolicyFilter.ON_FILE_ATTACHED,
@@ -133,14 +134,9 @@ function computeIssues(data) {
  * @returns {string} One of: block, warn, audit, watermark, unknown
  */
 function classifyAction(action) {
-  if (action.blockContent !== undefined) {
-    return 'block'
-  }
-  if (action.warnUser !== undefined) {
-    return 'warn'
-  }
-  if (action.auditOnly !== undefined) {
-    return 'audit'
+  const foundAction = Object.values(CHROME_ACTION_TYPES).find(a => action[a.apiKey] !== undefined)
+  if (foundAction) {
+    return foundAction.value.toLowerCase()
   }
   if (action.watermarkContent !== undefined) {
     return 'watermark'
