@@ -120,7 +120,7 @@ ${indexTable}`
             const { data: metadata, content } = matter(fileContent)
 
             const doc = {
-              id: metadata.articleId || file,
+              id: String(metadata.articleId || file),
               filename: file.replace('.md', ''),
               title: metadata.title || file.replace('.md', ''),
               content: content,
@@ -139,7 +139,7 @@ ${indexTable}`
         dynamicDocs.forEach(doc => {
           const processedDoc = {
             ...doc,
-            id: doc.articleId || doc.filename,
+            id: String(doc.articleId || doc.filename),
           }
           allDocs.push(processedDoc)
           docLookup.set(doc.filename, processedDoc)
@@ -414,12 +414,22 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
 
           const summary = found.map(d => `## ${d.title}\n\n${d.content}`).join('\n\n---\n\n')
           const suffix = missing.length ? `\n\n---\n\n_(Missing: ${missing.join(', ')})_` : ''
+
+          // Optimization: Strip content from structured data to avoid token "double-charging"
+          // The agent already has the content in the summary block above.
+          const dataWithoutContent = found.map(d => {
+            const copy = { ...d }
+            delete copy.content
+            return copy
+          })
+
           return formatToolResponse({
             summary: summary + suffix,
-            data: { documents: found, missing },
+            data: { documents: dataWithoutContent, missing },
             structuredContent: { documents: found, missing },
           })
         },
+
         skipAutoResolve: true,
       },
       options,
