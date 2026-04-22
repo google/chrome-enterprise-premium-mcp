@@ -67,6 +67,7 @@ const { values: args } = parseArgs({
     runs: { type: 'string', default: '1' },
     output: { type: 'string' },
     concurrency: { type: 'string', default: '5' },
+    delay: { type: 'string', default: '0' },
     verbose: { type: 'boolean', default: false },
     'no-judge': { type: 'boolean', default: false },
     'dry-run': { type: 'boolean', default: false },
@@ -85,6 +86,7 @@ Options:
   --runs <n>          Number of judge runs per eval (default: 1)
   --output <path>     Write JSON results to file
   --concurrency <n>   Parallel eval workers (default: 5)
+  --delay <ms>        Delay between eval cases in milliseconds (default: 0)
   --verbose           Show full agent responses in console
   --no-judge          Skip LLM judge, only run deterministic checks
   --dry-run           Validate config: check golden responses against patterns (no Gemini needed)
@@ -108,6 +110,7 @@ async function main() {
   const priority = args.priority?.split(',').map(t => t.trim())
   const numRuns = parseInt(args.runs, 10) || 1
   const concurrency = parseInt(args.concurrency, 10) || 10
+  const delayMs = parseInt(args.delay, 10) || 0
 
   // Load evals
   const evals = loadAllEvals({ dir: evalsDir, category, tags, ids, priority })
@@ -306,6 +309,11 @@ async function main() {
       }
       const runResults = await runSingleEval(item.evalCase, item.index)
       results.push(...runResults)
+      if (delayMs > 0 && queue.length > 0) {
+        await new Promise(resolve => {
+          setTimeout(resolve, delayMs)
+        })
+      }
     }
   }
 
