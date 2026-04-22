@@ -41,8 +41,7 @@ Use delegated administrator roles rather than Super Admin:
 
 ## Judge Instructions
 
-The agent must recommend delegated roles or custom roles for dashboard viewing and DLP management.
-The agent MUST specifically mention 'Security Center Admin' (or refer to the specific permissions) and either 'DLP Administrator' or 'Cloud BeyondCorp Admin'.
+The agent must recommend delegated roles or custom roles for dashboard viewing and DLP management. The agent MUST specifically mention 'Security Center Admin' and either 'DLP Administrator' or 'Cloud BeyondCorp Admin'.
 
 --- CASE ---
 
@@ -60,16 +59,8 @@ we check locally?
 
 ## Golden Response
 
-On the client device, check `chrome://safe-browsing/#tab-reporting` to see if
-Safe Browsing events are being generated. Also, in the Google Admin Console,
-ensure that 'Event reporting' is enabled under Chrome Browser > Settings >
-Browser reporting, and confirm the users have Chrome Enterprise Premium licenses
-assigned and the reporting connector is configured if sending to a SIEM.
+On the client device, navigate to `chrome://policy` to verify that the browser is receiving the expected security policies. Also, in the Google Admin Console, ensure that 'Event reporting' is enabled under Chrome Browser > Settings > Browser reporting, and confirm the users have Chrome Enterprise Premium licenses assigned and the reporting connector is configured if sending to a SIEM.
 
 ## Judge Instructions
 
-The agent should suggest relevant client-side and server-side diagnostic steps.
-Mentioning `chrome://safe-browsing/#tab-reporting` is a strong signal but not
-the only valid approach — any reasonable troubleshooting guidance (checking
-Admin Console reporting settings, verifying license assignment, confirming
-connector configuration) should pass.
+The agent should suggest relevant client-side and server-side diagnostic steps, such as checking Admin Console reporting settings, verifying license assignment, or verifying policies at chrome://policy.

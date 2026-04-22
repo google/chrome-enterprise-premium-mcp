@@ -53,12 +53,7 @@ Cloud Console? I am a Workspace Super Admin.
 
 ## Golden Response
 
-To purchase or manage CEP via the Cloud Console, your account needs the 'Cloud
-BeyondCorp Admin' and 'Cloud BeyondCorp Subscription Admin' IAM roles granted at the Google Cloud _Organization_ level.
-Workspace Super Admin permissions are not sufficient — these are GCP IAM roles,
-not Workspace roles.
+To purchase or manage CEP via the Cloud Console, your account needs specific Identity and Access Management (IAM) roles granted at the Google Cloud _Organization_ level. The official documentation identifies the **'Cloud BeyondCorp Admin'** role as necessary for initial purchase and setup. The **'Cloud BeyondCorp Subscription Admin'** role is also commonly required for subscription management. Workspace Super Admin permissions are not sufficient on their own for these GCP-level tasks.
 
 ## Judge Instructions
-The agent must correctly identify that purchasing requires Google Cloud Organization-level
-permissions, not just Workspace Super Admin. It must specifically mention the required
-'Cloud BeyondCorp Admin' and 'Cloud BeyondCorp Subscription Admin' roles.
+The agent must correctly identify that purchasing requires Google Cloud Organization-level permissions, not just Workspace Super Admin. It must specifically mention the 'Cloud BeyondCorp Admin' or 'Cloud BeyondCorp Subscription Admin' roles.
