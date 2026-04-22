@@ -36,9 +36,9 @@ describe('Knowledge Tools Real Database Integration', () => {
 
     assert.ok(documents.length > 0, 'Should return at least one document')
 
-    // Look for Chrome Enterprise Premium Product & Licensing Overview
-    const policy = documents.find(d => d.title === 'Chrome Enterprise Premium Product & Licensing Overview')
-    assert.ok(policy, 'Should find Chrome Enterprise Premium Product & Licensing Overview policy')
+    // Look for Chrome Enterprise Premium Overview and Implementation
+    const policy = documents.find(d => d.title === 'Chrome Enterprise Premium Overview and Implementation')
+    assert.ok(policy, 'Should find Chrome Enterprise Premium Overview and Implementation policy')
     assert.ok(policy.id, 'Found policy should have an ID')
   })
 
@@ -59,7 +59,7 @@ describe('Knowledge Tools Real Database Integration', () => {
     // Search to resolve ID
     const searchResult = await searchHandler({ query: 'Licensing' }, { requestInfo: {} })
     const documents = searchResult.structuredContent.documents
-    const policy = documents.find(d => d.title === 'Chrome Enterprise Premium Product & Licensing Overview')
+    const policy = documents.find(d => d.title === 'Chrome Enterprise Premium Overview and Implementation')
     assert.ok(policy, 'Should fetch match to resolve ID')
 
     // Fetch full body
