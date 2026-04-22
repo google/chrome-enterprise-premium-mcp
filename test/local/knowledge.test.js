@@ -86,7 +86,7 @@ describe('Knowledge Tools Native Search Integration', () => {
     }
 
     // Register tools with mock data
-    registerKnowledgeTools(server, { allDocs, docLookup, idToDoc }, {})
+    registerKnowledgeTools(server, { allDocs, docLookup, idToDoc, featureFlags: { isEnabled: () => true } }, {})
   })
 
   test('When searched with a keyword, then search_content finds matching text', async () => {
