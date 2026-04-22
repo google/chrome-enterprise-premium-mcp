@@ -167,7 +167,7 @@ describe('Tool Utils', () => {
       })
     })
 
-    test('When handler fails with 401, then it returns a proactive remediation message', async () => {
+    test('When handler fails with 401, then it returns a proactive remediation message with all required scopes', async () => {
       const handler = async () => {
         const error = new Error('Unauthorized')
         error.status = 401
@@ -180,6 +180,7 @@ describe('Tool Utils', () => {
       assert.strictEqual(result.isError, true)
       assert.ok(result.content[0].text.includes('Authentication required'))
       assert.ok(result.content[0].text.includes('gcloud auth application-default login'))
+      assert.ok(result.content[0].text.includes('chrome.management.profiles.readonly'))
       assert.ok(!result.structuredContent)
     })
 
