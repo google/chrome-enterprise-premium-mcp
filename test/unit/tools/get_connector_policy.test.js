@@ -814,4 +814,74 @@ describe('get_connector_policy tool handler', () => {
 
     assert.strictEqual(capturedOrgUnitId, 'OU123')
   })
+
+  test('When ON_PRINT has sensitive scanning restricted (Inclusion List), then it reports "ONLY enabled" warning', async () => {
+    const mockChromePolicyClient = {
+      getConnectorPolicy: async () => [
+        {
+          value: {
+            value: {
+              onPrintAnalysisConnectorConfiguration: {
+                printConfigurations: [
+                  {
+                    serviceProvider: 'SERVICE_PROVIDER_CHROME_ENTERPRISE_PREMIUM',
+                    sensitiveUrlPatterns: {
+                      onByDefault: false,
+                      urlPatterns: ['print-only.com'],
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      ],
+    }
+
+    const handler = getHandler(mockChromePolicyClient)
+
+    const result = await handler({ customerId: 'C123', orgUnitId: 'OU123', policy: 'ON_PRINT' }, { requestInfo: {} })
+    const summary = result.content[0].text
+    const dataText = result.content[1].text
+
+    assert.match(summary, /⚠️ Sensitive Analysis is restricted. Scanning is ONLY enabled for specific URL patterns/)
+    assert.doesNotMatch(summary, /⚠️ Malware Analysis is restricted/)
+    assert.match(dataText, /"sensitiveOnByDefault \(describe to user as 'Sensitive Scan All'\)": "No"/)
+  })
+
+  test('When ON_FILE_DOWNLOAD has Malware restricted (Exclusion List) and Sensitive restricted (Disabled), then it reports specific warnings', async () => {
+    const mockChromePolicyClient = {
+      getConnectorPolicy: async () => [
+        {
+          value: {
+            value: {
+              onFileDownloadedAnalysisConnectorConfiguration: {
+                fileDownloadedConfiguration: {
+                  serviceProvider: 'SERVICE_PROVIDER_CHROME_ENTERPRISE_PREMIUM',
+                  malwareUrlPatterns: {
+                    onByDefault: true,
+                    urlPatterns: ['malware-check.com'],
+                  },
+                  sensitiveUrlPatterns: {
+                    onByDefault: false,
+                  },
+                },
+              },
+            },
+          },
+        },
+      ],
+    }
+
+    const handler = getHandler(mockChromePolicyClient)
+
+    const result = await handler(
+      { customerId: 'C123', orgUnitId: 'OU123', policy: 'ON_FILE_DOWNLOAD' },
+      { requestInfo: {} },
+    )
+    const summary = result.content[0].text
+
+    assert.match(summary, /⚠️ Malware Analysis is restricted. Scanning is DISABLED for specific URL patterns/)
+    assert.match(summary, /⚠️ Sensitive Analysis is restricted. Scanning is NOT enabled for all files/)
+  })
 })
