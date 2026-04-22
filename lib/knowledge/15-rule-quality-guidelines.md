@@ -3,6 +3,7 @@ title: 'Rule Quality Guidelines'
 summary: 'Guidelines for evaluating and optimizing DLP rules.'
 articleId: 15
 ---
+
 Analyze the provided Chrome Enterprise Premium (CEP) Data Loss Prevention (DLP) API configurations (raw JSON arrays). Apply the following MECE framework—grounded in factual CEP API heuristics—to identify logic flaws, eliminate noise, and generate optimized, ready-to-deploy JSON/CEL payloads.
 
 <agent_steering_protocol>

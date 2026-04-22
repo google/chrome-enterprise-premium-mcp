@@ -27,6 +27,7 @@ import { TAGS } from '../../lib/constants.js'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import matter from 'gray-matter'
+import axios from 'axios'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -35,6 +36,55 @@ const DB_DIR = path.resolve(__dirname, '../../lib/knowledge')
 let cachedDb = null
 let isDbLoading = false
 let dbLoadingPromise = null
+
+/**
+ * Strips HTML tags and extracts main content from a page to optimize token usage.
+ * @param {string} html Raw HTML content.
+ * @returns {string} Cleaned text content.
+ */
+function cleanHtml(html) {
+  // Try to extract the article or main body first
+  const bodyMatch =
+    html.match(/<article[^>]*>([\s\S]*?)<\/article>/i) ||
+    html.match(/<div class="devsite-article-body[^>]*>([\s\S]*?)<\/div>/i) ||
+    html.match(/<div class="cc"[^>]*>([\s\S]*?)<\/div>/i) ||
+    html.match(/<main[^>]*>([\s\S]*?)<\/main>/i)
+
+  let content = bodyMatch ? bodyMatch[1] : html
+
+  // Strip scripts, styles, and other non-content blocks
+  content = content
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<nav[\s\S]*?<\/nav>/gi, '')
+    .replace(/<header[\s\S]*?<\/header>/gi, '')
+    .replace(/<footer[\s\S]*?<\/footer>/gi)
+    .replace(/<devsite-toc[^>]*>([\s\S]*?)<\/devsite-toc>/gi, '')
+
+  // Aggressively strip boilerplate and support site headers
+  content = content
+    .replace(/Google Workspace Help/g, '')
+    .replace(/Administrators/g, '')
+    .replace(/Security & data protection/g, '')
+    .replace(/Guides/g, '')
+    .replace(/Send feedback/g, '')
+    .replace(/Stay organized with collections Save and categorize content based on your preferences\./g, '')
+    .replace(/Got 5 mins\? Help us with a quick survey about Google Workspace admin help center tasks\./g, '')
+    .replace(/Compare your edition/g, '')
+
+  // Strip all remaining tags but preserve content
+  content = content.replace(/<[^>]+>/g, ' ')
+
+  // Normalize whitespace and unescape common entities
+  return content
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
 
 /**
  * Registers knowledge search tools with the MCP server.
@@ -68,6 +118,7 @@ export function registerKnowledgeTools(server, options, sessionState) {
           docSummaries.push({
             filename: file.replace('.md', ''),
             summary: metadata.summary,
+            source: metadata.url ? 'Remote' : 'Local',
           })
         }
       }
@@ -76,13 +127,13 @@ export function registerKnowledgeTools(server, options, sessionState) {
     logger.error(`${TAGS.MCP} Failed to pre-scan knowledge for index:`, e)
   }
 
-  const indexTable = docSummaries.map(s => `| **${s.filename}** | ${s.summary} |`).join('\n')
+  const indexTable = docSummaries.map(s => `| **${s.filename}** | ${s.summary} | ${s.source} |`).join('\n')
 
   const knowledgeIndex = `### Knowledge Index
-This index is for locating relevant documentation by topic. Document summaries are not a source of truth; for authoritative technical details, exact roles, or procedures, retrieve the full content via 'get_document'.
+This index is for locating relevant documentation by topic. Document summaries are not a source of truth; for authoritative technical details, exact roles, or procedures, the agent retrieves the content in real-time via 'get_document'.
 
-| Filename | Topics Covered |
-| :--- | :--- |
+| Filename | Topics Covered | Source |
+| :--- | :--- | :--- |
 ${indexTable}`
 
   /**
@@ -126,6 +177,7 @@ ${indexTable}`
               content: content,
               articleId: metadata.articleId,
               summary: metadata.summary,
+              url: metadata.url,
             }
 
             allDocs.push(doc)
@@ -393,7 +445,31 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
           for (const f of requested) {
             const doc = resolveOne(f)
             if (doc) {
-              found.push(doc)
+              // Smart Proxy: If the document has a URL, fetch it from the web
+              if (doc.url) {
+                try {
+                  logger.info(`${TAGS.MCP} Fetching remote document: ${doc.url}`)
+                  const response = await axios.get(doc.url, {
+                    headers: {
+                      'User-Agent':
+                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+                    },
+                    timeout: 10000,
+                  })
+                  // Extract clean text from HTML to save tokens and improve quality
+                  const cleanContent = cleanHtml(response.data)
+                  logger.info(
+                    `${TAGS.MCP} Remote document fetched and cleaned: ${doc.filename} (${cleanContent.length} chars)`,
+                  )
+                  found.push({ ...doc, content: cleanContent })
+                } catch (e) {
+                  logger.error(`${TAGS.MCP} Failed to fetch remote document: ${doc.url}`, e.message)
+                  // Fallback to local stub content if fetch fails
+                  found.push(doc)
+                }
+              } else {
+                found.push(doc)
+              }
             } else {
               missing.push(String(f))
             }
