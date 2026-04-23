@@ -104,5 +104,5 @@ export function registerTools(server, options = {}, sessionState) {
     { ...commonOpts, chromeManagementClient, chromePolicyClient, cloudIdentityClient },
     state,
   )
-  registerKnowledgeTools(server, options, state)
+  registerKnowledgeTools(server, { ...options, featureFlags: flags }, state)
 }

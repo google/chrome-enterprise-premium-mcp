@@ -25,7 +25,8 @@ describe('Knowledge Tools Real Database Integration', () => {
   }
 
   // Register tools using the default construction path (lib/knowledge directory)
-  registerKnowledgeTools(server, {}, {})
+  // Enable search tools experiment flag for these tests.
+  registerKnowledgeTools(server, { featureFlags: { isEnabled: () => true } }, {})
 
   test('When searched for Licensing, then search_content finds the overview document', async () => {
     const handler = handlers['search_content']
@@ -63,7 +64,7 @@ describe('Knowledge Tools Real Database Integration', () => {
     assert.ok(policy, 'Should fetch match to resolve ID')
 
     // Fetch full body
-    const docResult = await getDocHandler({ kind: policy.kind, filename: policy.filename }, { requestInfo: {} })
+    const docResult = await getDocHandler({ filename: policy.filename }, { requestInfo: {} })
     const docText = docResult.content[0].text
 
     assert.ok(docText.includes('Chrome Enterprise Premium'), 'Full content should include the policy text')

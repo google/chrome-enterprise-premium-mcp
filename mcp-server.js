@@ -172,11 +172,6 @@ async function main() {
     const dataAccessStr = process.env.GOOGLE_API_ROOT_URL ? 'Fake Data' : 'Live Production Data'
     const dbStr = `Default: lib/knowledge (${articleCount} articles)`
 
-    const activeExps =
-      Object.values(FLAGS)
-        .filter(flag => featureFlags.isEnabled(flag))
-        .join(', ') || 'None'
-
     console.log(`------------------------------------------------------------`)
     console.log(`Chrome Enterprise Premium MCP Server Starting`)
     console.log(`------------------------------------------------------------`)
@@ -186,7 +181,7 @@ async function main() {
     console.log(`Auth Strategy:      ${authStr}`)
     console.log(`Data Access:        ${dataAccessStr}`)
     console.log(`Knowledge DB:       ${dbStr}`)
-    console.log(`Active Experiments: ${activeExps}`)
+    featureFlags.logActive()
     console.log(`------------------------------------------------------------`)
 
     // Maintain session state globally for all server connections

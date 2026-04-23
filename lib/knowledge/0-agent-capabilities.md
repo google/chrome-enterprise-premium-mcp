@@ -103,6 +103,6 @@ For security and architectural reasons, the agent has explicit limitations:
 
 ### Knowledge Base
 
-The agent has access to a comprehensive knowledge base of Chrome Enterprise Premium documentation. To find relevant articles, use the **'search_content'** or **'list_documents'** tools.
+The agent has access to a comprehensive knowledge base of Chrome Enterprise Premium documentation. To read authoritative technical details, exact roles, or procedures, use the **'get_document'** tool.
 
 Most product documentation is retrieved in real-time from the official **Google Workspace Knowledge Base** to ensure you always receive the most up-to-date information. Specialized operational guardrails and technical frameworks remain stored locally for the agent's internal use.

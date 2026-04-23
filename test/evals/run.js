@@ -53,6 +53,7 @@ import { printConsole, writeResults } from './lib/reporter.js'
 import { startFakeServer } from '../helpers/fake-api-server.js'
 import { applyScenario } from './scenarios/index.js'
 import { createIntegrationHarness, teardownIntegrationHarness } from '../helpers/integration/tools/harness.js'
+import { FeatureFlags } from '../../lib/util/feature_flags.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -165,7 +166,12 @@ async function main() {
 
   const effectiveConcurrency = Math.min(concurrency, evals.length)
   const mode = noJudge ? 'deterministic only' : 'full (agent + judge)'
-  console.log(`Running ${evals.length} eval(s) [${mode}] concurrency=${effectiveConcurrency}, runs=${numRuns}...\n`)
+
+  const featureFlags = new FeatureFlags()
+
+  console.log(`Running ${evals.length} eval(s) [${mode}] concurrency=${effectiveConcurrency}, runs=${numRuns}...`)
+  featureFlags.logActive()
+  console.log()
 
   const judgeFn = noJudge ? null : createJudge(apiKey, baseUrl || undefined).judge
 
@@ -182,7 +188,10 @@ async function main() {
     }
 
     try {
-      harness = await createIntegrationHarness(localFakeServer ? { rootUrl: localFakeServer.url } : {})
+      harness = await createIntegrationHarness({
+        featureFlags,
+        ...(localFakeServer ? { rootUrl: localFakeServer.url } : {}),
+      })
     } catch (err) {
       console.error(`Failed to initialize MCP harness: ${err.message}`)
       if (localFakeServer) {
