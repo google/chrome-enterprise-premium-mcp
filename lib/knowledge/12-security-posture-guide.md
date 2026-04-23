@@ -1,7 +1,7 @@
 ---
 title: CEP Security Posture & Remediation Guide
 articleId: '12'
-summary: 'Definitive roadmap for improving security posture. Covers the CEP maturity model (Tiers 0-3), remediation steps for each stage, and strategies for establishing visibility and enforcement in the environment.'
+summary: 'Definitive roadmap for improving security posture using the CEP Maturity Model (Tiers 0-3). Helps administrators transition from visibility to active protection. Covers the critical "Telemetry Dependency" (logs require active rules) and remediation for each tier. Keywords: Maturity Tiers, Starter Pack rules, Telemetry Dependency, SEB extension requirements.'
 ---
 
 # CEP Security Posture & Remediation Guide

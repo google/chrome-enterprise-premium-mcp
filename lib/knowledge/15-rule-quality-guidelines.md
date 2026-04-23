@@ -1,6 +1,6 @@
 ---
 title: 'Rule Quality Guidelines'
-summary: 'Guidelines for evaluating and optimizing DLP rules.'
+summary: 'Framework for evaluating and optimizing DLP rule quality using the MECE (Mutually Exclusive, Collectively Exhaustive) model. Helps reduce false positives and establish high-fidelity enforcement. Covers heuristics for "Shotgun Triggers", "Context Blindness", and "Audit First" deployment. Keywords: MECE framework, Shotgun Triggers, Context Blindness, rule tuning, JSON payload optimization.'
 articleId: 15
 ---
 

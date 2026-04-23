@@ -1,5 +1,5 @@
 ---
-summary: 'Detailed format for URL blocklist and allowlist filters, including wildcard (*) usage and subdomain matching (.) syntax.'
+summary: 'Detailed technical format for URL blocklist and allowlist filters. Helps with precise web access control. Covers wildcard syntax rules: example.com (matches domain and all subdomains) vs .example.com (matches exact host only). Keywords: wildcard (*), subdomain (.), URL filter syntax, blocklist vs allowlist.'
 title: 'URL Blocklist Filter Format'
 articleId: 27
 url: 'https://support.google.com/chrome/a/answer/9942583'
