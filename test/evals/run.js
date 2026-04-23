@@ -28,6 +28,7 @@ limitations under the License.
  *   --runs <n>          Number of judge runs per eval (default: 1)
  *   --output <path>     Write JSON results to file
  *   --concurrency <n>   Parallel eval workers (default: 5)
+ *   --delay <ms>        Delay between eval cases in milliseconds (default: 0)
  *   --verbose           Show full agent responses in console
  *   --no-judge          Skip LLM judge, only run deterministic checks
  *   --dry-run           Validate eval config: run deterministic checks against golden responses
