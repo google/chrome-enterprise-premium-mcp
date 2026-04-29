@@ -10,7 +10,7 @@
   "type": "module",
   "main": "mcp-server.js",
   "bin": {
-    "chrome-enterprise-premium-mcp": "mcp-server.js"
+    "chrome-enterprise-premium-mcp": "bin/cli.js"
   },
   "scripts": {
     "audit:scopes": "node scripts/audit-scopes.js",

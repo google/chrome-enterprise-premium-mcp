@@ -141,7 +141,7 @@ async function getServer(gcpInfo, sharedSessionState) {
 /**
  * Starts the MCP server.
  */
-async function main() {
+export async function runServer() {
   try {
     const gcpInfo = await checkGCP()
     const isStdio = shouldStartStdio(gcpInfo)
@@ -334,4 +334,6 @@ const shutdown = async () => {
 process.on('SIGINT', shutdown)
 process.on('SIGTERM', shutdown)
 
-main()
+if (import.meta.url === `file://${process.argv[1]}`) {
+  runServer()
+}
