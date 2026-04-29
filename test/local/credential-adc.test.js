@@ -17,6 +17,7 @@ limitations under the License.
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import { adcCredential } from '../../lib/util/credential/adc.js'
+import { SCOPES } from '../../lib/constants.js'
 
 describe('adcCredential', () => {
   describe('probe', () => {
@@ -36,6 +37,52 @@ describe('adcCredential', () => {
           // eslint-disable-next-line require-atomic-updates
           process.env.GOOGLE_APPLICATION_CREDENTIALS = origValue
         }
+      }
+    })
+
+    it('When tokeninfo returns email and a scope subset, then probe reports the missing scopes and the principal', async () => {
+      const origFetch = globalThis.fetch
+      // Stub fetch so tokeninfo returns two scopes; the rest are "missing".
+      globalThis.fetch = async url => {
+        if (typeof url === 'string' && url.includes('tokeninfo')) {
+          return new Response(
+            JSON.stringify({
+              email: 'tim@example.com',
+              scope: SCOPES.EMAIL + ' ' + SCOPES.CHROME_MANAGEMENT_POLICY,
+            }),
+            { status: 200 },
+          )
+        }
+        return origFetch(url)
+      }
+
+      // Stub GoogleAuth so getClient returns an object with a stubbed getAccessToken.
+      const { GoogleAuth } = await import('google-auth-library')
+      const origGetClient = GoogleAuth.prototype.getClient
+      GoogleAuth.prototype.getClient = async function () {
+        return {
+          getAccessToken: async () => ({ token: 'fake-token-abc' }),
+          email: null,
+          quotaProjectId: null,
+          constructor: { name: 'FakeClient' },
+        }
+      }
+
+      try {
+        const cred = adcCredential()
+        const probe = await cred.probe()
+        assert.equal(probe.principal, 'tim@example.com')
+        assert.equal(probe.scopesKnown, true)
+        assert.ok(probe.missingScopes.length > 0, 'should report scopes beyond the two stubbed ones as missing')
+        assert.ok(!probe.missingScopes.includes(SCOPES.EMAIL), 'EMAIL scope should not be missing')
+        assert.ok(
+          !probe.missingScopes.includes(SCOPES.CHROME_MANAGEMENT_POLICY),
+          'CHROME_MANAGEMENT_POLICY scope should not be missing',
+        )
+      } finally {
+        // eslint-disable-next-line require-atomic-updates
+        globalThis.fetch = origFetch
+        GoogleAuth.prototype.getClient = origGetClient
       }
     })
   })
