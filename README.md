@@ -59,6 +59,8 @@ https://www.googleapis.com/auth/service.management.readonly,\
 https://www.googleapis.com/auth/cloud-platform
 ```
 
+For service-account, BYO-OAuth, or managed-OAuth setups, see [docs/configuration.md#authentication](docs/configuration.md#authentication).
+
 These scopes map to the underlying APIs:
 
 | Scope                                                                 | API                                                                             | Used for                                                           |
