@@ -56,7 +56,7 @@ describe('Tool Utils', () => {
 
     describe('Registration and Auto-Resolution', () => {
       test('When tools are registered, then it auto-resolves customerId using provided adminSdk client and apiOptions', async () => {
-        const mockGetCustomerId = mock.fn(async (authToken, apiOptions) => {
+        const mockGetCustomerId = mock.fn(async (credential, apiOptions) => {
           if (apiOptions?.rootUrl === 'http://fake-api') {
             return { id: 'C_AUTO' }
           }
@@ -84,9 +84,20 @@ describe('Tool Utils', () => {
         // Execute the handler without a customerId
         await handler({}, { requestInfo: { headers: { authorization: 'Bearer token' } } })
 
-        // Verify that getCustomerId was called with the correct arguments
+        // Verify that getCustomerId was called with a Credential object
         assert.strictEqual(mockGetCustomerId.mock.callCount(), 1, 'getCustomerId should have been called')
-        assert.strictEqual(mockGetCustomerId.mock.calls[0].arguments[0], 'token')
+        const credentialArg = mockGetCustomerId.mock.calls[0].arguments[0]
+        assert.strictEqual(
+          typeof credentialArg.getClient,
+          'function',
+          'first argument should be a Credential with getClient()',
+        )
+        const authClient = await credentialArg.getClient()
+        assert.strictEqual(
+          authClient.credentials?.access_token,
+          'token',
+          'getClient() should return an OAuth2Client with the bearer token',
+        )
         assert.deepStrictEqual(mockGetCustomerId.mock.calls[0].arguments[1], apiOptions)
 
         // Verify that the resolved customerId was passed to the actual handler

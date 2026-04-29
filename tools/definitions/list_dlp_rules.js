@@ -56,12 +56,12 @@ export function registerListDlpRulesTool(server, options, sessionState) {
          * @param {object} _ - The tool parameters (unused).
          * @param {object} context - The tool execution context.
          * @param {object} context._requestInfo - The request info object.
-         * @param {string} context.authToken - The OAuth2 access token.
+         * @param {import('../../lib/util/credential/index.js').Credential} context.credential - Credential for API authentication.
          * @returns {Promise<object>} The formatted tool response.
          */
-        handler: async (_, { _requestInfo, authToken }) => {
+        handler: async (_, { _requestInfo, credential }) => {
           logger.debug(`${TAGS.MCP} Calling 'list_dlp_rules'`)
-          const policies = await cloudIdentityClient.listDlpRules(authToken)
+          const policies = await cloudIdentityClient.listDlpRules(credential)
 
           return safeFormatResponse({
             rawData: policies,

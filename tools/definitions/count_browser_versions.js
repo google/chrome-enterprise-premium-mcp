@@ -53,11 +53,11 @@ Use this for auditing and reporting on the distribution of browser versions acro
     },
     guardedToolCall(
       {
-        handler: async ({ customerId, orgUnitId }, { _requestInfo, authToken }) => {
+        handler: async ({ customerId, orgUnitId }, { _requestInfo, credential }) => {
           logger.debug(
             `${TAGS.MCP} Calling 'count_browser_versions' with customerId: ${customerId}, orgUnitId: ${orgUnitId}`,
           )
-          const versions = await chromeManagementClient.countBrowserVersions(customerId, orgUnitId, authToken)
+          const versions = await chromeManagementClient.countBrowserVersions(customerId, orgUnitId, credential)
 
           return safeFormatResponse({
             rawData: versions,

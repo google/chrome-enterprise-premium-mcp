@@ -294,10 +294,10 @@ Use this tool to ACTIVATE security protections. It will ONLY apply changes to co
          * @param {string[]} params.connectors - The list of connectors to enable.
          * @param {object} context - The tool execution context.
          * @param {object} context._requestInfo - The request info object.
-         * @param {string} context.authToken - The OAuth2 access token.
+         * @param {import('../../lib/util/credential/index.js').Credential} context.credential - Credential for API authentication.
          * @returns {Promise<object>} The formatted tool response.
          */
-        handler: async ({ customerId, orgUnitId, connectors }, { _requestInfo, authToken }) => {
+        handler: async ({ customerId, orgUnitId, connectors }, { _requestInfo, credential }) => {
           logger.debug(`${TAGS.MCP} Calling 'enable_chrome_enterprise_connectors' for ${connectors.join(', ')}`)
           const connectorResults = []
           const batchRequests = []
@@ -309,7 +309,7 @@ Use this tool to ACTIVATE security protections. It will ONLY apply changes to co
               customerId,
               orgUnitId,
               config.schema,
-              authToken,
+              credential,
             )
             return { config, connectorType, resolvedPolicies }
           })
@@ -339,7 +339,7 @@ Use this tool to ACTIVATE security protections. It will ONLY apply changes to co
 
           // Execute Batch
           if (batchRequests.length > 0) {
-            await chromePolicyClient.batchModifyPolicy(customerId, orgUnitId, batchRequests, authToken)
+            await chromePolicyClient.batchModifyPolicy(customerId, orgUnitId, batchRequests, credential)
           }
 
           const summaryLines = connectorResults.map(

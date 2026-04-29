@@ -92,12 +92,12 @@ Use this for security investigations and auditing user actions within the manage
          * @param {string} [params.customerId] - The Chrome customer ID.
          * @param {object} context - The tool execution context.
          * @param {object} context._requestInfo - The request info object.
-         * @param {string} context.authToken - The OAuth2 access token.
+         * @param {import('../../lib/util/credential/index.js').Credential} context.credential - Credential for API authentication.
          * @returns {Promise<object>} The formatted tool response.
          */
         handler: async (
           { userKey, eventName, startTime, endTime, maxResults, customerId },
-          { _requestInfo, authToken },
+          { _requestInfo, credential },
         ) => {
           logger.debug(
             `${TAGS.MCP} Calling 'get_chrome_activity_log' with userKey: ${userKey}, eventName: ${eventName}, startTime: ${startTime}, endTime: ${endTime}, maxResults: ${maxResults}, customerId: ${customerId}`,
@@ -111,7 +111,7 @@ Use this for security investigations and auditing user actions within the manage
               maxResults,
               customerId,
             },
-            authToken,
+            credential,
           )
 
           return safeFormatResponse({

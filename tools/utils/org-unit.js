@@ -26,18 +26,18 @@ import { logger } from '../../lib/util/logger.js'
  * Uses session caching to avoid redundant API calls.
  * @param {object} apiClients - The API clients object
  * @param {string} customerId - The customer ID
- * @param {string} authToken - The authentication token
+ * @param {import('../../lib/util/credential/index.js').Credential} credential - Credential for API authentication
  * @param {object} sessionState - The session state object for caching
  * @returns {Promise<string|null>} The root OU ID or null if resolution fails
  */
-export async function resolveRootOrgUnitId(apiClients, customerId, authToken, sessionState) {
+export async function resolveRootOrgUnitId(apiClients, customerId, credential, sessionState) {
   if (sessionState.cachedRootOrgUnitId) {
     return sessionState.cachedRootOrgUnitId
   }
 
   try {
     if (apiClients && apiClients.adminSdk) {
-      const orgUnitsResponse = await apiClients.adminSdk.listOrgUnits({ customerId }, authToken)
+      const orgUnitsResponse = await apiClients.adminSdk.listOrgUnits({ customerId }, credential)
       const rootOU = orgUnitsResponse.organizationUnits?.find(ou => ou.orgUnitPath === '/')
       if (rootOU && rootOU.orgUnitId) {
         const id = rootOU.orgUnitId
