@@ -14,10 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+<<<<<<< HEAD
+=======
+/**
+ * @file Unit tests for the CLI entry point (bin/cli.js).
+ */
+
+>>>>>>> auth-task26
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
+<<<<<<< HEAD
 
 const CLI = path.resolve('bin/cli.js')
 
@@ -32,5 +40,32 @@ describe('bin/cli.js', () => {
     const result = spawnSync('node', [CLI, 'auth-status'], { encoding: 'utf8' })
     assert.equal(result.status, 1)
     assert.match(result.stderr, /not yet implemented/i)
+=======
+import { fileURLToPath } from 'node:url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const CLI = path.resolve(__dirname, '../../bin/cli.js')
+
+describe('cli.js', () => {
+  describe('auth-status', () => {
+    it('When invoked with auth-status and ADC absent, then it prints the ADC line and an OAuth flow line', () => {
+      const result = spawnSync('node', [CLI, 'auth-status'], {
+        encoding: 'utf8',
+        env: { ...process.env, GOOGLE_APPLICATION_CREDENTIALS: '/nonexistent' },
+      })
+      assert.equal(result.status, 0)
+      assert.match(result.stdout, /Auth status:/)
+      assert.match(result.stdout, /ADC:/)
+      assert.match(result.stdout, /OAuth flow:/)
+    })
+  })
+
+  describe('login', () => {
+    it('When invoked with login, then it exits 1 with not yet implemented', () => {
+      const result = spawnSync('node', [CLI, 'login'], { encoding: 'utf8' })
+      assert.equal(result.status, 1)
+      assert.match(result.stderr, /not yet implemented/)
+    })
+>>>>>>> auth-task26
   })
 })

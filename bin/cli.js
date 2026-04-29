@@ -15,23 +15,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/**
+ * @file CLI entry point. Dispatches argv[2] to a subcommand or to the MCP server.
+ */
+
 /* eslint-disable n/no-process-exit */
 
 import { runServer } from '../mcp-server.js'
 
-/**
- * Dispatches argv[2] to the appropriate subcommand or to the MCP server.
- * @returns {Promise<void>}
- */
 async function main() {
   const sub = process.argv[2]
-  if (sub === 'login') {
-    console.error('mcp auth login: not yet implemented (issue #91)')
-    process.exit(1)
-  }
   if (sub === 'auth-status') {
-    console.error('mcp auth-status: not yet implemented (issue #91)')
-    process.exit(1)
+    const { runAuthStatusCommand } = await import('../lib/util/credential/cli_commands.js')
+    return runAuthStatusCommand()
+  }
+  if (sub === 'login') {
+    const { runLoginCommand } = await import('../lib/util/credential/cli_commands.js')
+    return runLoginCommand()
   }
   return runServer()
 }
