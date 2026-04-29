@@ -43,10 +43,11 @@ import { checkGCP } from './lib/util/gcp.js'
 import { featureFlags, FLAGS } from './lib/util/feature_flags.js'
 import { logger } from './lib/util/logger.js'
 import { printBanner, dim } from './lib/util/banner.js'
-import { buildScopesField, buildAuthRemediationLines, buildQuotaProjectWarning } from './lib/util/auth_messages.js'
+import { buildScopesField, buildAuthRemediationLines, buildQuotaProjectWarning, buildOAuthClientField } from './lib/util/auth_messages.js'
 import { TAGS, SCOPES } from './lib/constants.js'
 import { adcCredential } from './lib/util/credential/adc.js'
 import { oauthFlowCredential } from './lib/util/credential/oauth_flow.js'
+import { resolveOAuthClientConfig } from './lib/util/credential/oauth_client_config.js'
 
 // Import Real Clients
 import { RealAdminSdkClient } from './lib/api/real_admin_sdk_client.js'
@@ -200,6 +201,8 @@ export async function runServer() {
       logger.warn(`${TAGS.MCP} OAuth-flow probe skipped: ${err.message}`)
     }
 
+    const oauthClientConfig = resolveOAuthClientConfig()
+
     printBanner({
       transport: isStdio ? 'Stdio' : ['SSE/HTTP', `(Port: ${process.env.PORT || '0'})`],
       auth: isStdio ? ['None', '(Local channel)'] : ['None', '(Unauthenticated)'],
@@ -208,6 +211,7 @@ export async function runServer() {
       oauthFlowScopes: oauthProbe
         ? buildScopesField(oauthProbe, requiredScopes)
         : '⚪ OAuth flow: probe unavailable',
+      oauthClient: buildOAuthClientField(oauthClientConfig),
       dataAccess: process.env.GOOGLE_API_ROOT_URL ? 'Fake' : 'Production',
       knowledge: ['lib/knowledge', `(${articleCount} articles)`],
     })
