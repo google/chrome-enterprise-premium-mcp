@@ -26,8 +26,8 @@ import { runServer } from '../mcp-server.js'
 async function main() {
   const sub = process.argv[2]
   if (sub === 'login') {
-    console.error('mcp auth login: not yet implemented (issue #91)')
-    process.exit(1)
+    const { runLoginCommand } = await import('../lib/util/credential/cli_commands.js')
+    return runLoginCommand()
   }
   if (sub === 'auth-status') {
     console.error('mcp auth-status: not yet implemented (issue #91)')
