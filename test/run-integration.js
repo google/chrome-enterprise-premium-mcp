@@ -22,7 +22,7 @@ limitations under the License.
  * Accepts a positional argument ("fake" or "real") that determines the
  * CEP_BACKEND environment variable. Defaults to "fake" when omitted.
  *
- * Discovers `.test.js` files under `test/integration/tools/` using a recursive
+ * Discovers `.test.js` files under `test/integration/` using a recursive
  * directory walk so that glob expansion is not required (works on Windows and
  * POSIX).
  *
@@ -53,10 +53,11 @@ if (backend !== 'fake' && backend !== 'real') {
 
 process.env.CEP_BACKEND = backend
 
-const testFiles = findTestFiles(join(root, 'test', 'integration', 'tools')).sort()
+const integrationRoot = join(root, 'test', 'integration')
+const testFiles = findTestFiles(integrationRoot).sort()
 
 if (testFiles.length === 0) {
-  console.error('No test files found under test/integration/tools/')
+  console.error('No test files found under test/integration/')
   process.exit(1)
 }
 
