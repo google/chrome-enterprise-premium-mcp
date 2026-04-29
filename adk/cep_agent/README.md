@@ -42,8 +42,7 @@ To run the agent locally, follow these steps:
 
     ```bash
     gcloud auth application-default login \
-    --scopes=openid,\
-    https://www.googleapis.com/auth/userinfo.email,\
+    --scopes=https://www.googleapis.com/auth/userinfo.email,\
     https://www.googleapis.com/auth/chrome.management.policy,\
     https://www.googleapis.com/auth/chrome.management.reports.readonly,\
     https://www.googleapis.com/auth/chrome.management.profiles.readonly,\
@@ -52,8 +51,6 @@ To run the agent locally, follow these steps:
     https://www.googleapis.com/auth/admin.directory.customer.readonly,\
     https://www.googleapis.com/auth/apps.licensing,\
     https://www.googleapis.com/auth/cloud-identity.policies,\
-    https://www.googleapis.com/auth/service.management,\
-    https://www.googleapis.com/auth/service.management.readonly,\
     https://www.googleapis.com/auth/cloud-platform \
     --no-launch-browser
     ```
