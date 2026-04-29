@@ -61,15 +61,15 @@ export function registerDeleteAgentDlpRuleTool(server, options, sessionState) {
          * @param {object} params - The tool parameters.
          * @param {string} params.policyName - The resource name of the DLP rule.
          * @param {object} context - The tool execution context.
-         * @param {string} context.authToken - The OAuth2 access token.
+         * @param {import('../../lib/util/credential/index.js').Credential} context.credential - Credential for API authentication.
          * @returns {Promise<object>} The formatted tool response.
          */
-        handler: async ({ policyName }, { authToken }) => {
+        handler: async ({ policyName }, { credential }) => {
           logger.debug(`${TAGS.MCP} Calling 'delete_agent_dlp_rule' with policyName: ${policyName}`)
 
           let rule
           try {
-            rule = await cloudIdentityClient.getDlpRule(policyName, authToken)
+            rule = await cloudIdentityClient.getDlpRule(policyName, credential)
           } catch (error) {
             const status = error.response?.status
             const isNotFound = error.code === 5 || status === 404 || error.message?.toLowerCase().includes('not found')
@@ -84,7 +84,7 @@ export function registerDeleteAgentDlpRuleTool(server, options, sessionState) {
           const isAgentCreated = displayName.startsWith(AGENT_DISPLAY_NAME_PREFIX)
 
           if (isAgentCreated) {
-            await cloudIdentityClient.deleteDlpRule(policyName, authToken)
+            await cloudIdentityClient.deleteDlpRule(policyName, credential)
             logger.debug(`${TAGS.MCP} Successfully deleted agent-created DLP rule: ${policyName}`)
           }
 

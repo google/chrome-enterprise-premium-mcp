@@ -67,7 +67,7 @@ This is a PREREQUISITE tool. Many other tools will fail if necessary APIs are di
     },
     guardedToolCall(
       {
-        handler: async ({ projectId, apiName, enable = false, checkAll = true }, { _requestInfo, authToken }) => {
+        handler: async ({ projectId, apiName, enable = false, checkAll = true }, { _requestInfo, credential }) => {
           const actualApiName = apiName || SERVICE_NAMES.ADMIN_SDK
           logger.debug(
             `${TAGS.MCP} Calling 'check_and_enable_cep_api' for project ${projectId} (enable: ${enable}, checkAll: ${checkAll}, apiName: ${actualApiName})`,
@@ -80,14 +80,14 @@ This is a PREREQUISITE tool. Many other tools will fail if necessary APIs are di
 
           for (const api of apisToCheck) {
             try {
-              let status = await serviceUsageClient.getServiceStatus(projectId, api, authToken)
+              let status = await serviceUsageClient.getServiceStatus(projectId, api, credential)
 
               if (status.state === 'ENABLED') {
                 results.push(`- **${api}** — ENABLED (project: \`${projectId}\`)`)
                 apiStatuses.push({ apiName: api, status: 'ENABLED', projectId })
               } else if (enable) {
                 logger.info(`${TAGS.MCP} Enabling API [${api}] for project [${projectId}]...`)
-                await serviceUsageClient.enableService(projectId, api, authToken)
+                await serviceUsageClient.enableService(projectId, api, credential)
                 results.push(`- **${api}** — NEWLY_ENABLED (project: \`${projectId}\`)`)
                 apiStatuses.push({ apiName: api, status: 'ENABLED', projectId })
               } else {

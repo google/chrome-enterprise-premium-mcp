@@ -52,10 +52,10 @@ Use this to verify if an individual user (by email or unique ID) is licensed for
     },
     guardedToolCall(
       {
-        handler: async ({ userId }, { _requestInfo, authToken }) => {
+        handler: async ({ userId }, { _requestInfo, credential }) => {
           logger.debug(`${TAGS.MCP} Calling 'check_user_cep_license' for user: ${userId}`)
 
-          const result = await adminSdkClient.checkUserCepLicense(userId, authToken)
+          const result = await adminSdkClient.checkUserCepLicense(userId, credential)
 
           if (result) {
             return formatToolResponse({

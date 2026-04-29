@@ -53,10 +53,10 @@ export function registerCheckCepSubscriptionTool(server, options, sessionState) 
     },
     guardedToolCall(
       {
-        handler: async ({ customerId }, { _requestInfo, authToken }) => {
+        handler: async ({ customerId }, { _requestInfo, credential }) => {
           logger.debug(`${TAGS.MCP} Calling 'check_cep_subscription' for customer: ${customerId}`)
 
-          const result = await adminSdkClient.checkCepSubscription(customerId, authToken)
+          const result = await adminSdkClient.checkCepSubscription(customerId, credential)
 
           const assignments = result?.items || []
           if (assignments.length > 0) {

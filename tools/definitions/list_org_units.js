@@ -58,12 +58,12 @@ Use this tool to find the 'orgUnitId' required by most other Chrome management a
          * @param {string} [params.customerId] - The Chrome customer ID.
          * @param {object} context - The tool execution context.
          * @param {object} context._requestInfo - The request info object.
-         * @param {string} context.authToken - The OAuth2 access token.
+         * @param {import('../../lib/util/credential/index.js').Credential} context.credential - Credential for API authentication.
          * @returns {Promise<object>} The formatted tool response.
          */
-        handler: async ({ customerId }, { _requestInfo, authToken }) => {
+        handler: async ({ customerId }, { _requestInfo, credential }) => {
           logger.debug(`${TAGS.MCP} Calling 'list_org_units' with customerId: ${customerId}`)
-          const orgUnitsData = await adminSdkClient.listOrgUnits({ customerId }, authToken)
+          const orgUnitsData = await adminSdkClient.listOrgUnits({ customerId }, credential)
 
           const orgUnits = orgUnitsData?.organizationUnits
 

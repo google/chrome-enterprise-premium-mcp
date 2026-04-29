@@ -54,12 +54,12 @@ This ID (often starting with 'C') is required as a parameter for many other Chro
          * @param {object} params - The tool parameters.
          * @param {object} context - The tool execution context.
          * @param {object} context._requestInfo - The request info object.
-         * @param {string} context.authToken - The OAuth2 access token.
+         * @param {import('../../lib/util/credential/index.js').Credential} context.credential - Credential for API authentication.
          * @returns {Promise<object>} The formatted tool response.
          */
-        handler: async (params, { _requestInfo, authToken }) => {
+        handler: async (params, { _requestInfo, credential }) => {
           logger.debug(`${TAGS.MCP} Calling 'get_customer_id'`)
-          const customer = await adminSdkClient.getCustomerId(authToken)
+          const customer = await adminSdkClient.getCustomerId(credential)
           logger.debug(`${TAGS.MCP} Raw customer data:`, JSON.stringify(customer, null, 2))
 
           if (!customer) {

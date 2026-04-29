@@ -68,10 +68,10 @@ Note: The 'enable_chrome_enterprise_connectors' tool can only ACTIVATE connector
          * @param {string} params.policy - The connector type to retrieve.
          * @param {object} context - The tool execution context.
          * @param {object} context._requestInfo - The request info object.
-         * @param {string} context.authToken - The OAuth2 access token.
+         * @param {import('../../lib/util/credential/index.js').Credential} context.credential - Credential for API authentication.
          * @returns {Promise<object>} The formatted tool response.
          */
-        handler: async ({ customerId, orgUnitId, policy }, { _requestInfo, authToken }) => {
+        handler: async ({ customerId, orgUnitId, policy }, { _requestInfo, credential }) => {
           const POLICY_LINK_MAPPING = {
             ON_FILE_ATTACHED: 'file_attached',
             ON_FILE_DOWNLOAD: 'file_downloaded',
@@ -87,7 +87,7 @@ Note: The 'enable_chrome_enterprise_connectors' tool can only ACTIVATE connector
             customerId,
             orgUnitId,
             ConnectorPolicyFilter[policy],
-            authToken,
+            credential,
           )
 
           const displayName = POLICY_DISPLAY_NAMES[policy] || policy

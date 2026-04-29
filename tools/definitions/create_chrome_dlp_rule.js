@@ -162,7 +162,7 @@ To ensure technical accuracy and verify trigger compatibility, you should retrie
             : `${prefix}${params.displayName}`
           return { ...params, displayName: newDisplayName }
         },
-        handler: async (params, { authToken }) => {
+        handler: async (params, { credential }) => {
           const {
             customerId,
             orgUnitId,
@@ -256,7 +256,7 @@ To ensure technical accuracy and verify trigger compatibility, you should retrie
             chromeAction,
           }
 
-          const result = await cloudIdentityClient.createDlpRule(customerId, orgUnitId, ruleConfig, authToken)
+          const result = await cloudIdentityClient.createDlpRule(customerId, orgUnitId, ruleConfig, credential)
 
           const createdPolicy = result.response
 

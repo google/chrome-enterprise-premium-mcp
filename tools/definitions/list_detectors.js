@@ -50,9 +50,9 @@ Detectors are used within DLP rules to identify sensitive content. Use this to f
     },
     guardedToolCall(
       {
-        handler: async (_, { authToken }) => {
+        handler: async (_, { credential }) => {
           logger.debug(`${TAGS.MCP} Calling 'list_detectors'`)
-          const detectors = await cloudIdentityClient.listDetectors(authToken)
+          const detectors = await cloudIdentityClient.listDetectors(credential)
 
           return safeFormatResponse({
             rawData: detectors,

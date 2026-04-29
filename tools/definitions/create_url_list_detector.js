@@ -69,10 +69,10 @@ Detectors are building blocks for DLP rules. After creating a detector, you must
          * @param {string[]} params.urls - A list of URLs to match.
          * @param {object} context - The tool execution context.
          * @param {object} context._requestInfo - The request info object.
-         * @param {string} context.authToken - The OAuth2 access token.
+         * @param {import('../../lib/util/credential/index.js').Credential} context.credential - Credential for API authentication.
          * @returns {Promise<object>} The formatted tool response.
          */
-        handler: async (params, { _requestInfo, authToken }) => {
+        handler: async (params, { _requestInfo, credential }) => {
           const { customerId, displayName, description, urls } = params
 
           const detectorConfig = {
@@ -85,7 +85,7 @@ Detectors are building blocks for DLP rules. After creating a detector, you must
             apiClients,
             cloudIdentityClient,
             customerId,
-            authToken,
+            credential,
             sessionState,
             detectorConfig,
             'URL list',

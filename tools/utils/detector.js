@@ -26,7 +26,7 @@ import { formatToolResponse } from './wrapper.js'
  * @param {object} apiClients - The API clients collection.
  * @param {import('../../lib/api/interfaces/cloud_identity_client.js').CloudIdentityClient} cloudIdentityClient - The Cloud Identity client instance.
  * @param {string} customerId - The customer ID.
- * @param {string} authToken - The authentication token.
+ * @param {import('../../lib/util/credential/index.js').Credential} credential - Credential for API authentication.
  * @param {object} sessionState - The session state object.
  * @param {object} detectorConfig - The detector configuration object.
  * @param {string} detectorTypeString - A string describing the type of detector (e.g. 'URL list').
@@ -36,17 +36,17 @@ export async function createDetectorAndFormatResponse(
   apiClients,
   cloudIdentityClient,
   customerId,
-  authToken,
+  credential,
   sessionState,
   detectorConfig,
   detectorTypeString,
 ) {
-  const orgUnitId = await resolveRootOrgUnitId(apiClients, customerId, authToken, sessionState)
+  const orgUnitId = await resolveRootOrgUnitId(apiClients, customerId, credential, sessionState)
   if (!orgUnitId) {
     throw new Error('Failed to resolve root organizational unit ID.')
   }
 
-  const result = await cloudIdentityClient.createDetector(customerId, orgUnitId, detectorConfig, authToken)
+  const result = await cloudIdentityClient.createDetector(customerId, orgUnitId, detectorConfig, credential)
   const createdPolicy = result.response
   const createdDisplayName = createdPolicy?.setting?.value?.displayName || detectorConfig.displayName
 

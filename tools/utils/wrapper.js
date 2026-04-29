@@ -21,6 +21,7 @@ limitations under the License.
 import { TAGS, SCOPES } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 import { validateAndGetOrgUnitId } from './org-unit.js'
+import { adcCredential, bearerCredential } from '../../lib/util/credential/index.js'
 
 /**
  * Formats a raw string (e.g., SNAKE_CASE status) to Title Case with spaces.
@@ -175,7 +176,8 @@ export function guardedToolCall(
   sessionState = { customerId: null, cachedRootOrgUnitId: null },
 ) {
   return async (params, context) => {
-    const authToken = getAuthToken(context?.requestInfo)
+    const headerToken = getAuthToken(context?.requestInfo)
+    const credential = headerToken ? bearerCredential(headerToken) : adcCredential()
     try {
       const { apiClients, apiOptions } = options
       let currentParams = { ...params }
@@ -189,7 +191,7 @@ export function guardedToolCall(
         } else {
           try {
             if (apiClients && apiClients.adminSdk && typeof apiClients.adminSdk.getCustomerId === 'function') {
-              const customer = await apiClients.adminSdk.getCustomerId(authToken, apiOptions)
+              const customer = await apiClients.adminSdk.getCustomerId(credential, apiOptions)
               if (customer && customer.id) {
                 if (sessionState) {
                   sessionState.customerId = customer.id
@@ -216,7 +218,7 @@ export function guardedToolCall(
         validate(transformedParams)
       }
 
-      const result = await handler(transformedParams, { ...context, authToken })
+      const result = await handler(transformedParams, { ...context, credential })
       logger.debug(`${TAGS.MCP} Handler result for '${context?.name || 'unknown'}':`, JSON.stringify(result, null, 2))
 
       if (result && !result.structuredContent && result.content) {
@@ -266,7 +268,7 @@ export function guardedToolCall(
           errorMessage.includes('invalid_grant')
             ? 401
             : 403)
-        const isOAuth = !!context?.authToken || !!context?.requestInfo?.headers?.authorization
+        const isOAuth = !!context?.requestInfo?.headers?.authorization
         const remediationMessage = getAuthRemediationMessage(resolvedStatus, isOAuth)
         return {
           content: [{ type: 'text', text: remediationMessage }],
