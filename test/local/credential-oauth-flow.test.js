@@ -116,3 +116,115 @@ function makeIdToken(payload) {
   const b64 = obj => Buffer.from(JSON.stringify(obj)).toString('base64url')
   return `${b64({ alg: 'RS256' })}.${b64(payload)}.signature`
 }
+
+describe('oauthFlowCredential runLoginFlow', () => {
+  it('When access_denied error is returned to the loopback, then runLoginFlow throws the consent-declined message', async () => {
+    const cachePath = await tmpCachePath()
+    const cred = oauthFlowCredential({ clientId: 'client123', clientSecret: 'secret', cachePath })
+
+    // openBrowser hits the loopback server with ?error=access_denied instead of opening a real browser.
+    async function openBrowser(url) {
+      // Extract the redirect_uri from the consent URL and fire a fetch to it.
+      const parsed = new URL(url)
+      const redirectUri = parsed.searchParams.get('redirect_uri')
+      await fetch(`${redirectUri}?error=access_denied`)
+    }
+
+    await assert.rejects(
+      () => cred.runLoginFlow({ openBrowser }),
+      err => {
+        assert.ok(err.message.includes('Consent declined'), `unexpected message: ${err.message}`)
+        return true
+      },
+    )
+  })
+
+  it('When the OAuth code-exchange returns redirect_uri_mismatch, then runLoginFlow throws the parent-issue message naming the client_id', async () => {
+    const cachePath = await tmpCachePath()
+    const clientId = 'client-mismatch-456'
+    const cred = oauthFlowCredential({ clientId, clientSecret: 'secret', cachePath })
+
+    async function openBrowser(url) {
+      const parsed = new URL(url)
+      const redirectUri = parsed.searchParams.get('redirect_uri')
+      await fetch(`${redirectUri}?code=fakecode`)
+    }
+
+    // Inject an OAuth2Client whose getToken always throws redirect_uri_mismatch.
+    function createOAuth2Client(cfg) {
+      return {
+        generateAuthUrl(params) {
+          // Must return a URL that openBrowser can parse, including redirect_uri.
+          const u = new URL('https://accounts.google.com/o/oauth2/v2/auth')
+          u.searchParams.set('redirect_uri', cfg.redirectUri)
+          u.searchParams.set('scope', (params.scope || []).join(' '))
+          return u.toString()
+        },
+        async getToken(_code) {
+          const err = new Error('redirect_uri_mismatch')
+          err.response = { data: { error: 'redirect_uri_mismatch' } }
+          throw err
+        },
+      }
+    }
+
+    await assert.rejects(
+      () => cred.runLoginFlow({ openBrowser, createOAuth2Client }),
+      err => {
+        assert.ok(
+          err.message.includes(clientId),
+          `expected message to include client_id "${clientId}", got: ${err.message}`,
+        )
+        assert.ok(
+          err.message.includes('http://127.0.0.1'),
+          `expected message to mention redirect URI, got: ${err.message}`,
+        )
+        return true
+      },
+    )
+  })
+
+  it('When the OAuth code exchange succeeds, then runLoginFlow writes tokens to the cache file with mode 0600', async () => {
+    const cachePath = await tmpCachePath()
+    const cred = oauthFlowCredential({ clientId: 'client789', clientSecret: 'secret', cachePath })
+
+    const fakeTokens = {
+      access_token: 'access-abc',
+      refresh_token: 'refresh-xyz',
+      expiry_date: Date.now() + 3600_000,
+    }
+
+    async function openBrowser(url) {
+      const parsed = new URL(url)
+      const redirectUri = parsed.searchParams.get('redirect_uri')
+      await fetch(`${redirectUri}?code=fakecode`)
+    }
+
+    function createOAuth2Client(cfg) {
+      return {
+        generateAuthUrl(params) {
+          const u = new URL('https://accounts.google.com/o/oauth2/v2/auth')
+          u.searchParams.set('redirect_uri', cfg.redirectUri)
+          u.searchParams.set('scope', (params.scope || []).join(' '))
+          return u.toString()
+        },
+        async getToken(_code) {
+          return { tokens: fakeTokens }
+        },
+      }
+    }
+
+    const returned = await cred.runLoginFlow({ openBrowser, createOAuth2Client })
+    assert.equal(returned.access_token, fakeTokens.access_token)
+    assert.equal(returned.refresh_token, fakeTokens.refresh_token)
+
+    // Verify the cache file exists with the correct tokens and mode 0600.
+    const raw = await fs.readFile(cachePath, 'utf8')
+    const cached = JSON.parse(raw)
+    assert.equal(cached.access_token, fakeTokens.access_token)
+    assert.equal(cached.refresh_token, fakeTokens.refresh_token)
+
+    const stat = await fs.stat(cachePath)
+    assert.equal(stat.mode & 0o777, 0o600, `expected cache file mode 0600, got ${(stat.mode & 0o777).toString(8)}`)
+  })
+})
