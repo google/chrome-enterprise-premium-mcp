@@ -19,7 +19,7 @@ limitations under the License.
  */
 
 import express from 'express'
-import { generateKeyPair, exportJWK, SignJWT } from 'jose'
+import { generateKeyPair, exportJWK, SignJWT, createLocalJWKSet } from 'jose'
 
 /**
  * Starts a fake OAuth issuer on a random port. Returns config including the
@@ -85,30 +85,41 @@ export async function startFakeOAuthServer() {
   const port = server.address().port
   const baseUrl = `http://127.0.0.1:${port}`
 
+  const stopFn = () =>
+    new Promise(resolve => {
+      server.close(() => {
+        resolve()
+      })
+    })
+
+  const jwks = createLocalJWKSet({ keys: [jwk] })
+
   return {
     baseUrl,
     authorizeUrl: `${baseUrl}/authorize`,
     tokenUrl: `${baseUrl}/token`,
     revokeUrl: `${baseUrl}/revoke`,
     certsUrl: `${baseUrl}/certs`,
-    stop: () =>
-      new Promise(resolve => {
-        server.close(() => {
-          resolve()
-        })
-      }),
+    jwks,
+    stop: stopFn,
+    close: stopFn,
     /**
      * Issues a signed JWT for testing the ID-token branch.
      * @param {object} claims - JWT claims object
+     * @param {object} [opts] - Optional overrides
+     * @param {string} [opts.audience] - Sets the `aud` claim on the token.
      * @returns {Promise<string>} signed JWT
      */
-    async signIdToken(claims) {
-      return new SignJWT(claims)
+    async signIdToken(claims, { audience } = {}) {
+      let builder = new SignJWT(claims)
         .setProtectedHeader({ alg: 'RS256', kid: 'test-key' })
         .setIssuedAt()
         .setIssuer('https://accounts.google.com')
         .setExpirationTime('1h')
-        .sign(privateKey)
+      if (audience) {
+        builder = builder.setAudience(audience)
+      }
+      return builder.sign(privateKey)
     },
   }
 }
