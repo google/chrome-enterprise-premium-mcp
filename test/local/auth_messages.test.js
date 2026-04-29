@@ -20,6 +20,7 @@ import {
   buildScopesField,
   buildAuthRemediationLines,
   buildQuotaProjectWarning,
+  buildOAuthClientField,
   shellTokenize,
 } from '../../lib/util/auth_messages.js'
 import { SCOPES } from '../../lib/constants.js'
@@ -343,6 +344,27 @@ describe('buildAuthRemediationLines', () => {
         `scope "${scope}" must be a full googleapis.com/auth/ URL; short-form scopes trigger gcloud's "Scope has changed" abort`,
       )
     }
+  })
+})
+
+describe('buildOAuthClientField', () => {
+  test('When source is managed, then it returns "OAuth client: Google-managed"', () => {
+    assert.equal(
+      buildOAuthClientField({ clientId: 'a', clientSecret: 'b', source: 'managed' }),
+      'OAuth client: Google-managed',
+    )
+  })
+  test('When source is custom, then it returns "OAuth client: custom (<first 8 chars>...)"', () => {
+    assert.equal(
+      buildOAuthClientField({ clientId: '1234567890abcdef', clientSecret: 'b', source: 'custom' }),
+      'OAuth client: custom (12345678...)',
+    )
+  })
+  test('When the custom client_id is shorter than 8 chars, then it returns the full id followed by ...', () => {
+    assert.equal(
+      buildOAuthClientField({ clientId: 'short', clientSecret: 'b', source: 'custom' }),
+      'OAuth client: custom (short...)',
+    )
   })
 })
 
