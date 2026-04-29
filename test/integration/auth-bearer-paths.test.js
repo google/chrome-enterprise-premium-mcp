@@ -25,7 +25,7 @@ limitations under the License.
 import { describe, it, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { OAuth2Client } from 'google-auth-library'
-import { SignJWT, generateKeyPair, exportJWK } from 'jose'
+import { SignJWT, generateKeyPair } from 'jose'
 import { bearerCredential } from '../../lib/util/credential/bearer.js'
 import { startFakeOAuthServer } from '../helpers/fake-oauth-server.js'
 import { startFakeServer } from '../helpers/fake-api-server.js'
@@ -136,7 +136,8 @@ describe('bearer credential — four end-to-end paths', () => {
     await assert.rejects(
       () => cred.getClient(),
       err =>
-        err.message === 'ID token audience does not match this server. Verify the client is calling the correct service URL.',
+        err.message ===
+        'ID token audience does not match this server. Verify the client is calling the correct service URL.',
       'Should reject with audience-mismatch message',
     )
   })
