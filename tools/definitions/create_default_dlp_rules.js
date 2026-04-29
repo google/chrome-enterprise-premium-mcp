@@ -111,7 +111,7 @@ Rules included:
 
     guardedToolCall(
       {
-        handler: async (params, { authToken }) => {
+        handler: async (params, { credential }) => {
           logger.debug(`${TAGS.MCP} Calling 'create_default_dlp_rules' with params: ${JSON.stringify(params)}`)
           const { customerId, orgUnitId } = params
 
@@ -130,7 +130,7 @@ Rules included:
             }
 
             try {
-              const result = await cloudIdentityClient.createDlpRule(customerId, orgUnitId, ruleConfig, authToken)
+              const result = await cloudIdentityClient.createDlpRule(customerId, orgUnitId, ruleConfig, credential)
               const createdPolicy = result.response
               ruleResults.push({
                 displayName: rule.displayName,

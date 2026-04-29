@@ -59,12 +59,12 @@ These profiles represent managed browser instances and provide details like OS v
          * @param {string} [params.customerId] - The Chrome customer ID.
          * @param {object} context - The tool execution context.
          * @param {object} context._requestInfo - The request info object.
-         * @param {string} context.authToken - The OAuth2 access token.
+         * @param {import('../../lib/util/credential/index.js').Credential} context.credential - Credential for API authentication.
          * @returns {Promise<object>} The formatted tool response.
          */
-        handler: async ({ customerId }, { _requestInfo, authToken }) => {
+        handler: async ({ customerId }, { _requestInfo, credential }) => {
           logger.debug(`${TAGS.MCP} Calling 'list_customer_profiles' with customerId: ${customerId}`)
-          const profiles = await chromeManagementClient.listCustomerProfiles(customerId, authToken)
+          const profiles = await chromeManagementClient.listCustomerProfiles(customerId, credential)
 
           return safeFormatResponse({
             rawData: profiles,

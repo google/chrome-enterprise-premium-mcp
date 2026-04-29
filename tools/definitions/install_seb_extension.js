@@ -66,10 +66,10 @@ The SEB extension is REQUIRED for advanced Chrome Enterprise Premium features li
          * @param {string} params.orgUnitId - The organizational unit ID.
          * @param {object} context - The tool execution context.
          * @param {object} context._requestInfo - The request info object.
-         * @param {string} context.authToken - The OAuth2 access token.
+         * @param {import('../../lib/util/credential/index.js').Credential} context.credential - Credential for API authentication.
          * @returns {Promise<object>} The formatted tool response.
          */
-        handler: async ({ customerId, orgUnitId }, { _requestInfo, authToken }) => {
+        handler: async ({ customerId, orgUnitId }, { _requestInfo, credential }) => {
           logger.debug(
             `${TAGS.MCP} Calling 'install_seb_extension' with customerId: ${customerId}, orgUnitId: ${orgUnitId}`,
           )
@@ -79,7 +79,7 @@ The SEB extension is REQUIRED for advanced Chrome Enterprise Premium features li
             customerId,
             orgUnitId,
             INSTALL_TYPE_SCHEMA,
-            authToken,
+            credential,
           )
 
           const sebPolicy = currentPolicies?.find(
@@ -116,7 +116,7 @@ The SEB extension is REQUIRED for advanced Chrome Enterprise Premium features li
             },
           ]
 
-          await chromePolicyClient.batchModifyPolicy(customerId, orgUnitId, requests, authToken)
+          await chromePolicyClient.batchModifyPolicy(customerId, orgUnitId, requests, credential)
 
           const sc = { success: true, alreadyInstalled: false, newlyInstalled: true }
           return formatToolResponse({

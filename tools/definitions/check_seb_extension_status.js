@@ -57,12 +57,17 @@ The SEB extension is REQUIRED for advanced Chrome Enterprise Premium features li
     },
     guardedToolCall(
       {
-        handler: async ({ customerId, orgUnitId }, { _requestInfo, authToken }) => {
+        handler: async ({ customerId, orgUnitId }, { _requestInfo, credential }) => {
           logger.debug(
             `${TAGS.MCP} Calling 'check_seb_extension_status' with customerId: ${customerId}, orgUnitId: ${orgUnitId}`,
           )
 
-          const policies = await chromePolicyClient.resolvePolicy(customerId, orgUnitId, INSTALL_TYPE_SCHEMA, authToken)
+          const policies = await chromePolicyClient.resolvePolicy(
+            customerId,
+            orgUnitId,
+            INSTALL_TYPE_SCHEMA,
+            credential,
+          )
 
           const sebPolicy = policies?.find(
             p =>

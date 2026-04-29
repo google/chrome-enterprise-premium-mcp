@@ -75,10 +75,10 @@ Detectors are building blocks for DLP rules. After creating a detector, you must
          * @param {string[]} params.words - A list of words to match.
          * @param {object} context - The tool execution context.
          * @param {object} context._requestInfo - The request info object.
-         * @param {string} context.authToken - The OAuth2 access token.
+         * @param {import('../../lib/util/credential/index.js').Credential} context.credential - Credential for API authentication.
          * @returns {Promise<object>} The formatted tool response.
          */
-        handler: async (params, { _requestInfo, authToken }) => {
+        handler: async (params, { _requestInfo, credential }) => {
           const { customerId, displayName, description, words } = params
 
           const totalChars = words.reduce((acc, word) => acc + word.length, 0)
@@ -98,7 +98,7 @@ Detectors are building blocks for DLP rules. After creating a detector, you must
             apiClients,
             cloudIdentityClient,
             customerId,
-            authToken,
+            credential,
             sessionState,
             detectorConfig,
             'word list',

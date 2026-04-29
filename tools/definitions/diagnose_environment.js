@@ -152,7 +152,7 @@ function classifyAction(action) {
  * @param {import('../../lib/api/interfaces/chrome_policy_client.js').ChromePolicyClient} chromePolicyClient - Client for verifying connector and extension policies
  * @param {import('../../lib/api/interfaces/cloud_identity_client.js').CloudIdentityClient} cloudIdentityClient - Client for listing DLP rules and detectors
  * @param {string} customerId - The Chrome customer ID used for scoping requests
- * @param {string} authToken - The Bearer token for authorized API access
+ * @param {import('../../lib/util/credential/index.js').Credential} credential - Credential for API authentication
  * @returns {Promise<object>} A consolidated object containing raw data from all services
  */
 async function fetchEnvironment(
@@ -161,16 +161,16 @@ async function fetchEnvironment(
   chromePolicyClient,
   cloudIdentityClient,
   customerId,
-  authToken,
+  credential,
 ) {
   const [customerData, orgUnitsData, subscriptionData, dlpPolicies, detectorPolicies, browserVersions] =
     await Promise.all([
-      adminSdkClient.getCustomerId(authToken),
-      adminSdkClient.listOrgUnits({ customerId }, authToken),
-      adminSdkClient.checkCepSubscription(customerId, authToken),
-      cloudIdentityClient.listDlpRules(authToken),
-      cloudIdentityClient.listDetectors(authToken),
-      chromeManagementClient.countBrowserVersions(customerId, null, authToken),
+      adminSdkClient.getCustomerId(credential),
+      adminSdkClient.listOrgUnits({ customerId }, credential),
+      adminSdkClient.checkCepSubscription(customerId, credential),
+      cloudIdentityClient.listDlpRules(credential),
+      cloudIdentityClient.listDetectors(credential),
+      chromeManagementClient.countBrowserVersions(customerId, null, credential),
     ])
 
   const orgUnits = orgUnitsData?.organizationUnits || []
@@ -220,7 +220,7 @@ async function fetchEnvironment(
     const connectorResults = await Promise.all(
       Object.entries(CONNECTOR_TYPES).map(async ([key, schema]) => {
         try {
-          const policies = await chromePolicyClient.getConnectorPolicy(customerId, rootOUId, schema, authToken)
+          const policies = await chromePolicyClient.getConnectorPolicy(customerId, rootOUId, schema, credential)
           return [key, { configured: policies.length > 0, policyCount: policies.length }]
         } catch {
           return [key, { configured: false, policyCount: 0, error: true }]
@@ -236,7 +236,7 @@ async function fetchEnvironment(
   let sebExtension = { isInstalled: false }
   if (rootOUId && chromePolicyClient) {
     try {
-      const sebPolicies = await chromePolicyClient.resolvePolicy(customerId, rootOUId, SEB_EXTENSION_SCHEMA, authToken)
+      const sebPolicies = await chromePolicyClient.resolvePolicy(customerId, rootOUId, SEB_EXTENSION_SCHEMA, credential)
       const sebEntry = sebPolicies.find(p => p.targetKey?.additionalTargetKeys?.app_id === SEB_EXTENSION_ID)
       sebExtension = { isInstalled: sebEntry?.value?.value?.appInstallType === 'FORCED' }
     } catch {
@@ -283,7 +283,7 @@ Use 'limit' and 'offset' for pagination on large datasets.`,
     },
     guardedToolCall(
       {
-        handler: async ({ customerId, section, limit, offset }, { _requestInfo, authToken }) => {
+        handler: async ({ customerId, section, limit, offset }, { _requestInfo, credential }) => {
           logger.info(`${TAGS.MCP} diagnose_environment: starting (section=${section || 'summary'})`)
 
           const env = await fetchEnvironment(
@@ -292,7 +292,7 @@ Use 'limit' and 'offset' for pagination on large datasets.`,
             chromePolicyClient,
             cloudIdentityClient,
             customerId,
-            authToken,
+            credential,
           )
 
           // Detail mode: return paginated section data

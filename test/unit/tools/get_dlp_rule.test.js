@@ -58,7 +58,7 @@ describe('get_dlp_rule tool handler', () => {
 
     const handler = getHandler(mockCloudIdentityClient)
 
-    const result = await handler({ resourceName: 'policies/rule123' }, { authToken: 'token' })
+    const result = await handler({ resourceName: 'policies/rule123' }, { credential: null })
     const text = result.content[0].text
 
     assert.match(text, /## DLP Rule: Block Secret Uploads/)
@@ -84,7 +84,7 @@ describe('get_dlp_rule tool handler', () => {
 
     const handler = getHandler(mockCloudIdentityClient)
 
-    const result = await handler({ resourceName: 'policies/empty' }, { authToken: 'token' })
+    const result = await handler({ resourceName: 'policies/empty' }, { credential: null })
     const text = result.content[0].text
 
     assert.match(text, /DLP Rule: Unnamed Rule/)

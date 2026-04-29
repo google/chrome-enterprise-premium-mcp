@@ -58,12 +58,12 @@ export function registerGetDlpRuleTool(server, options, sessionState) {
          * @param {object} params - The tool parameters.
          * @param {string} params.resourceName - The resource name.
          * @param {object} context - The tool execution context.
-         * @param {string} context.authToken - The OAuth2 access token.
+         * @param {import('../../lib/util/credential/index.js').Credential} context.credential - Credential for API authentication.
          * @returns {Promise<object>} The formatted tool response.
          */
-        handler: async ({ resourceName }, { authToken }) => {
+        handler: async ({ resourceName }, { credential }) => {
           logger.debug(`${TAGS.MCP} Calling 'get_dlp_rule' for ${resourceName}`)
-          const policy = await cloudIdentityClient.getDlpRule(resourceName, authToken)
+          const policy = await cloudIdentityClient.getDlpRule(resourceName, credential)
 
           return safeFormatResponse({
             rawData: policy,

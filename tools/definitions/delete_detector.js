@@ -62,20 +62,20 @@ Note: This will not automatically remove the detector from any DLP rules that re
          * @param {object} params - The tool parameters.
          * @param {string} params.policyName - The resource name of the detector.
          * @param {object} context - The tool execution context.
-         * @param {string} context.authToken - The OAuth2 access token.
+         * @param {import('../../lib/util/credential/index.js').Credential} context.credential - Credential for API authentication.
          * @returns {Promise<object>} The formatted tool response.
          */
-        handler: async ({ policyName }, { authToken }) => {
+        handler: async ({ policyName }, { credential }) => {
           // Retrieve display name before deletion for the confirmation message
           let displayName = policyName.split('/').pop()
           try {
-            const detector = await cloudIdentityClient.getDetector(policyName, authToken)
+            const detector = await cloudIdentityClient.getDetector(policyName, credential)
             displayName = detector?.setting?.value?.displayName || displayName
           } catch {
             // Lookup failed; use the extracted ID segment as the display name
           }
 
-          const result = await cloudIdentityClient.deleteDetector(policyName, authToken)
+          const result = await cloudIdentityClient.deleteDetector(policyName, credential)
 
           return safeFormatResponse({
             rawData: { success: true, policyName, displayName, result },
