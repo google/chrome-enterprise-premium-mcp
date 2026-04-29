@@ -46,6 +46,7 @@ import { printBanner, dim } from './lib/util/banner.js'
 import { buildScopesField, buildAuthRemediationLines, buildQuotaProjectWarning } from './lib/util/auth_messages.js'
 import { TAGS, SCOPES } from './lib/constants.js'
 import { adcCredential } from './lib/util/credential/adc.js'
+import { oauthFlowCredential } from './lib/util/credential/oauth_flow.js'
 
 // Import Real Clients
 import { RealAdminSdkClient } from './lib/api/real_admin_sdk_client.js'
@@ -187,11 +188,26 @@ export async function runServer() {
       quotaProject: process.env.GOOGLE_CLOUD_QUOTA_PROJECT || null,
     }
 
+    // OAuth-flow probe runs concurrently. A missing cache file returns
+    // immediately; the boot does not block on network calls.
+    let oauthProbe = null
+    try {
+      oauthProbe = await Promise.race([
+        oauthFlowCredential().probe(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('OAuth probe timed out')), 2000)),
+      ])
+    } catch (err) {
+      logger.warn(`${TAGS.MCP} OAuth-flow probe skipped: ${err.message}`)
+    }
+
     printBanner({
       transport: isStdio ? 'Stdio' : ['SSE/HTTP', `(Port: ${process.env.PORT || '0'})`],
       auth: isStdio ? ['None', '(Local channel)'] : ['None', '(Unauthenticated)'],
       apiCreds: adc.valid ? ['ADC', adc.email ? `(${adc.email})` : '(detected)'] : ['ADC', '(not configured)'],
       scopes: buildScopesField(adc, requiredScopes),
+      oauthFlowScopes: oauthProbe
+        ? buildScopesField(oauthProbe, requiredScopes)
+        : '⚪ OAuth flow: probe unavailable',
       dataAccess: process.env.GOOGLE_API_ROOT_URL ? 'Fake' : 'Production',
       knowledge: ['lib/knowledge', `(${articleCount} articles)`],
     })
