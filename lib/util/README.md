@@ -23,16 +23,31 @@ logging, retry, GCP detection, CEL validation, and feature flags.
 
 **Auth**
 
-- `auth.js` — `getAuthClient()` returns an authenticated client using
-  Application Default Credentials (ADC), or wraps a supplied bearer when
-  one is passed. Also exports `ensureADCCredentials()`.
-- `auth-error.js` — Generates descriptive error messages for auth failures
-  (missing credentials, insufficient scopes, quota project not set). Detects
-  `gcloud` installation and suggests fix commands.
-- `google-auth-provider.js` — Production auth provider class. Wraps
-  `getAuthClient` for use by real API clients.
-- `fake-auth-provider.js` — Test auth provider. Redirects requests to a local
-  mock server via `GOOGLE_API_ROOT_URL`.
+- `credential/` — three credential factories sharing one contract
+  (`probe()`, `getClient()`, `buildRemediation()`):
+  - `adc.js` — Application Default Credentials. The boot probe runs
+    tokeninfo against the access token, resolves the principal email,
+    and diffs granted scopes against `lib/constants.js#SCOPES`.
+  - `bearer.js` — wraps an `Authorization: Bearer …` token from an HTTP
+    request. Detects access tokens vs OIDC ID tokens; ID tokens go
+    through signature verification (jose, JWK set at `oauth2/v3/certs`),
+    audience validation, and DWD impersonation via google-auth-library's
+    `JWT` class.
+  - `oauth_flow.js` — managed OAuth flow. Loopback installed-app
+    consent, refresh + access tokens cached at
+    `~/.config/cep-mcp/tokens.json` mode `0600`. Reads
+    `CEP_OAUTH_CLIENT_ID` / `CEP_OAUTH_CLIENT_SECRET` for BYO;
+    falls back to the bundled Google-managed client.
+  - `cli_commands.js` — `runAuthStatusCommand`, `runLoginCommand`.
+  - `oauth_client_config.js`, `token_cache.js`, `loopback_server.js`,
+    `jwt_classify.js`, `jwk_cache.js` — supporting helpers.
+- `auth_messages.js` — banner-field renderers (`buildScopesField`,
+  `buildAuthRemediationLines`, `buildOAuthClientField`,
+  `buildQuotaProjectWarning`).
+- `auth-error.js` — Google API error → human-readable message.
+  Detects `gcloud` installation and suggests fix commands.
+- `google-auth-provider.js` — production auth provider used by the
+  real API clients.
 
 **API plumbing**
 

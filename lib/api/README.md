@@ -35,12 +35,13 @@ fake API server in `test/helpers/fake-api-server.js`. The factory in
 `test/helpers/integration/tools/client_factory.js` does the wiring:
 
 ```js
-// Real backend (production / postsubmit): no args, uses ADC.
+// Real backend (production / postsubmit): no args, the wrapper passes a
+// Credential (ADC, bearer, or oauth-flow) per request.
 new RealAdminSdkClient()
 
-// Fake backend (presubmit): same class, redirected via rootUrl + a fake
-// auth provider that short-circuits getAuthClient().
-new RealAdminSdkClient({ rootUrl, auth: fakeAuth })
+// Fake backend (presubmit): same class, redirected via rootUrl. The fake
+// API server ignores the auth header, so any Credential is accepted.
+new RealAdminSdkClient({ rootUrl })
 ```
 
 `mcp-server.js` uses the same trick: when `GOOGLE_API_ROOT_URL` is set, it
