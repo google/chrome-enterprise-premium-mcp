@@ -20,7 +20,6 @@ limitations under the License.
 
 import { z } from 'zod'
 import { guardedToolCall, formatToolResponse, safeFormatResponse, formatStatus } from '../utils/wrapper.js'
-import { commonOutputSchemas } from './shared.js'
 import { CONNECTOR_KEY_MAPPING, POLICY_DISPLAY_NAMES, EVENT_NAME_MAPPING } from '../../lib/constants.js'
 import { ConnectorPolicyFilter } from '../../lib/api/chromepolicy.js'
 
@@ -48,13 +47,10 @@ To enable or modify a connector that is not yet configured, use the "enable_chro
       },
       outputSchema: z
         .object({
-          connectorPolicies: z.array(
-            commonOutputSchemas.resolvedChromePolicy.extend({
-              isEnabled: z.boolean().describe('Whether the connector is currently enabled.'),
-            }),
-          ),
+          connectorPolicies: z.array(z.object({ isEnabled: z.boolean() }).passthrough()),
           connectorType: z.string(),
           orgUnitId: z.string(),
+          configured: z.boolean(),
         })
         .passthrough(),
     },
@@ -316,7 +312,12 @@ To enable or modify a connector that is not yet configured, use the "enable_chro
 
               return formatToolResponse({
                 summary: summaryStr,
-                data: formattedPolicies,
+                data: {
+                  connectorPolicies: formattedPolicies,
+                  connectorType: policy,
+                  orgUnitId,
+                  configured: isConfigured,
+                },
                 structuredContent: {
                   connectorPolicies: formattedPolicies,
                   connectorType: policy,
