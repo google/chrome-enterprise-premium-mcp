@@ -13,6 +13,7 @@
     "chrome-enterprise-premium-mcp": "mcp-server.js"
   },
   "scripts": {
+    "audit:scopes": "node scripts/audit-scopes.js",
     "eval": "CEP_BACKEND=fake node test/evals/run.js",
     "eval:agentic": "CEP_BACKEND=fake node test/evals/run.js --category inspection,troubleshooting,mutation,discovery,connectors",
     "eval:full": "CEP_BACKEND=fake node test/evals/run.js --runs 3 --output results/eval-full.md",
