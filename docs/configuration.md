@@ -120,12 +120,23 @@ token out of band (e.g., `gcloud auth print-access-token`) and sends
 `Authorization: Bearer <token>` on each MCP request. The server forwards the
 token verbatim and does not verify it.
 
-### Cell 6 — HTTP + OIDC ID token + DWD impersonation (proposed)
+### Cell 6 — HTTP + OIDC ID token + DWD impersonation (fallback only)
+
+> **Recommendation: do not start here.** For Cloud Run + Gemini Enterprise
+> deployments, the recommended auth pattern is OAuth on behalf of the user,
+> not server-side service-account + DWD impersonation. SA + DWD grants the
+> server's service account the ability to impersonate any user in the
+> domain for the granted scopes; the OAuth flow is bounded to the
+> consenting user and revocable at `myaccount.google.com`. See the
+> [ADK + OAuth + Gemini Enterprise reference](https://fmind.medium.com/powering-up-your-agent-in-production-with-adk-oauth-and-gemini-enterprise-a52b0716fcba)
+> for the recommended pattern. Cell 6 is the fallback for cross-org
+> automation, headless contexts, and environments where the user cannot
+> complete an interactive consent.
 
 The Cloud Run + Gemini Enterprise topology. The client (Gemini CLI / Enterprise)
 sends its standard OIDC ID token in `Authorization: Bearer …`. The server
 validates the JWT, extracts the `email` claim, and uses its own service account
-— configured with domain-wide delegation in the Workspace Admin Console — to
+(configured with domain-wide delegation in the Workspace Admin Console) to
 mint a user-scoped access token for that principal.
 
 This cell is proposed and not in the published version.
