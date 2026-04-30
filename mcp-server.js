@@ -32,7 +32,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { SetLevelRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import fs from 'node:fs/promises'
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 const pkg = JSON.parse(readFileSync(fileURLToPath(new URL('./package.json', import.meta.url)), 'utf8'))
 
 import { buildServerInstructions } from './lib/knowledge/instructions.js'
@@ -349,6 +349,9 @@ const shutdown = async () => {
 process.on('SIGINT', shutdown)
 process.on('SIGTERM', shutdown)
 
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Run only when invoked directly. pathToFileURL handles Windows drive letters
+// and percent-encoding correctly; the prior `file://${argv[1]}` form was
+// broken on Windows.
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   runServer()
 }
