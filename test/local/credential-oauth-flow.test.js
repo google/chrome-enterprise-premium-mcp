@@ -218,8 +218,6 @@ describe('oauthFlowCredential runLoginFlow', () => {
     const returned = await cred.runLoginFlow({ openBrowser, createOAuth2Client })
     assert.equal(returned.access_token, fakeTokens.access_token)
 
-    // Verify the cache file exists with the access token but no refresh
-    // token (policy: refresh tokens are never persisted).
     const raw = await fs.readFile(cachePath, 'utf8')
     const cached = JSON.parse(raw)
     assert.equal(cached.access_token, fakeTokens.access_token)
