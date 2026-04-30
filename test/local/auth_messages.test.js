@@ -366,6 +366,11 @@ describe('buildOAuthClientField', () => {
       'OAuth client: custom (short...)',
     )
   })
+  test('When config is null, then it returns a TODO line flagging the unprovisioned managed client', () => {
+    const text = buildOAuthClientField(null)
+    assert.match(text, /TODO/)
+    assert.match(text, /CEP_OAUTH_CLIENT_ID/)
+  })
 })
 
 describe('buildQuotaProjectWarning', () => {

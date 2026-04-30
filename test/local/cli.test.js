@@ -48,16 +48,17 @@ describe('runLoginCommand', () => {
 
     const runLoginFlow = mock.fn(async () => {})
     const credentialFactory = mock.fn(() => ({ runLoginFlow }))
+    const configResolver = mock.fn(() => ({ source: 'managed', clientId: '', clientSecret: '' }))
 
     const lines = []
-    // eslint-disable-next-line require-atomic-updates
+
     const origLog = console.log
-    // eslint-disable-next-line require-atomic-updates
+
     console.log = msg => {
       lines.push(msg)
     }
     try {
-      await runLoginCommand({ credentialFactory })
+      await runLoginCommand({ credentialFactory, configResolver })
     } finally {
       // eslint-disable-next-line require-atomic-updates
       console.log = origLog
@@ -83,9 +84,9 @@ describe('runLoginCommand BYO notice', () => {
     }))
 
     const lines = []
-    // eslint-disable-next-line require-atomic-updates
+
     const origLog = console.log
-    // eslint-disable-next-line require-atomic-updates
+
     console.log = msg => {
       lines.push(msg)
     }
@@ -118,9 +119,9 @@ describe('runLoginCommand BYO notice', () => {
     }))
 
     const lines = []
-    // eslint-disable-next-line require-atomic-updates
+
     const origLog = console.log
-    // eslint-disable-next-line require-atomic-updates
+
     console.log = msg => {
       lines.push(msg)
     }
@@ -158,9 +159,9 @@ describe('runLoginCommand BYO notice', () => {
     }))
 
     const lines = []
-    // eslint-disable-next-line require-atomic-updates
+
     const origLog = console.log
-    // eslint-disable-next-line require-atomic-updates
+
     console.log = msg => {
       lines.push(msg)
     }

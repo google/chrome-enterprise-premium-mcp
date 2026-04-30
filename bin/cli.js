@@ -23,6 +23,10 @@ limitations under the License.
 
 import { runServer } from '../mcp-server.js'
 
+/**
+ * Dispatches the CLI subcommand.
+ * @returns {Promise<void>} Resolves when the chosen command finishes.
+ */
 async function main() {
   const sub = process.argv[2]
   if (sub === 'auth-status') {
@@ -36,7 +40,7 @@ async function main() {
   return runServer()
 }
 
-main().catch((err) => {
+main().catch(err => {
   console.error(err.message || err)
   process.exit(1)
 })

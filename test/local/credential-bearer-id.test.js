@@ -17,7 +17,26 @@ limitations under the License.
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import { generateKeyPair, exportJWK, createLocalJWKSet, SignJWT } from 'jose'
+import { JWT } from 'google-auth-library'
 import { bearerCredential } from '../../lib/util/credential/bearer.js'
+
+/**
+ * Builds a real `JWT` subclass instance whose `authorize` is replaced by the
+ * supplied stub and which counts how many times `authorize` was called. The
+ * instance still satisfies `instanceof JWT`, so bearer.js's check passes.
+ * @param {object} opts Options for the fake.
+ * @param {() => Promise<void>} opts.authorize Stub for JWT.authorize.
+ * @returns {object} A JWT-typed object with `authorizeCalls` counter and `subject` setter.
+ */
+function makeFakeJwt({ authorize }) {
+  const instance = new JWT({ email: 'sa@project.iam.gserviceaccount.com', key: '-', scopes: ['x'] })
+  instance.authorizeCalls = 0
+  instance.authorize = async function () {
+    instance.authorizeCalls += 1
+    return authorize()
+  }
+  return instance
+}
 
 /**
  * Generate a real RSA key pair and return helpers for signing tokens and
@@ -87,55 +106,70 @@ describe('bearerCredential — ID-token branch', () => {
       )
     })
 
-    it('When JWT.authorize fails, then getClient rejects with the DWD-configuration message', async () => {
+    it('When the SA acquirer returns a non-JWT client, then getClient rejects with the not-a-service-account message', async () => {
       const { signToken, localJwks } = await makeKeyPairFixture()
       const token = await signToken({ email: 'user@example.com' }, { audience: 'https://myserver.example.com' })
 
-      // Stub JWT.prototype.authorize to simulate a missing DWD configuration.
-      const { JWT } = await import('google-auth-library')
-      const origAuthorize = JWT.prototype.authorize
-      JWT.prototype.authorize = async function () {
-        throw new Error('access_denied')
-      }
+      const cred = bearerCredential(token, {
+        requestHost: 'myserver.example.com',
+        jwks: localJwks,
+        acquireSaClient: async () => ({ notAJwt: true }),
+      })
 
-      try {
-        const cred = bearerCredential(token, {
-          requestHost: 'myserver.example.com',
-          jwks: localJwks,
-        })
-
-        await assert.rejects(
-          () => cred.getClient(),
-          err =>
-            err.message ===
-            "Server cannot impersonate the requesting user. Configure domain-wide delegation for the server's service account in the Workspace Admin Console with the scopes from lib/constants.js#SCOPES.",
-        )
-      } finally {
-        JWT.prototype.authorize = origAuthorize
-      }
+      await assert.rejects(
+        () => cred.getClient(),
+        err => err.message.includes("Server's ADC is not a service account"),
+      )
     })
 
-    it('When signature and DWD both succeed, then getClient returns a JWT instance', async () => {
+    it('When JWT.authorize fails, then getClient rejects with the DWD-configuration message and only after subject was set to the verified email', async () => {
       const { signToken, localJwks } = await makeKeyPairFixture()
-      const token = await signToken({ email: 'user@example.com' }, { audience: 'https://myserver.example.com' })
+      const token = await signToken(
+        { email: 'verified-user@example.com' },
+        { audience: 'https://myserver.example.com' },
+      )
 
-      const { JWT } = await import('google-auth-library')
-      const origAuthorize = JWT.prototype.authorize
-      JWT.prototype.authorize = async function () {
-        this.credentials = { access_token: 'impersonated-token' }
-      }
+      const fake = makeFakeJwt({
+        authorize: async () => {
+          throw new Error('access_denied')
+        },
+      })
 
-      try {
-        const cred = bearerCredential(token, {
-          requestHost: 'myserver.example.com',
-          jwks: localJwks,
-        })
+      const cred = bearerCredential(token, {
+        requestHost: 'myserver.example.com',
+        jwks: localJwks,
+        acquireSaClient: async () => fake,
+      })
 
-        const client = await cred.getClient()
-        assert.ok(client instanceof JWT, `Expected JWT instance, got ${client.constructor.name}`)
-      } finally {
-        JWT.prototype.authorize = origAuthorize
-      }
+      await assert.rejects(
+        () => cred.getClient(),
+        err => err.message.includes('Server cannot impersonate the requesting user'),
+      )
+      // Subject must be set BEFORE authorize is called — otherwise impersonation runs as the wrong user.
+      assert.equal(fake.subject, 'verified-user@example.com')
+      assert.equal(fake.authorizeCalls, 1)
+    })
+
+    it('When signature and DWD both succeed, then getClient returns the SA client with subject set to the verified email and authorize called once', async () => {
+      const { signToken, localJwks } = await makeKeyPairFixture()
+      const token = await signToken(
+        { email: 'verified-user@example.com' },
+        { audience: 'https://myserver.example.com' },
+      )
+
+      const fake = makeFakeJwt({ authorize: async () => {} })
+
+      const cred = bearerCredential(token, {
+        requestHost: 'myserver.example.com',
+        jwks: localJwks,
+        acquireSaClient: async () => fake,
+      })
+
+      const client = await cred.getClient()
+      assert.equal(client, fake)
+      assert.ok(client instanceof JWT)
+      assert.equal(fake.subject, 'verified-user@example.com')
+      assert.equal(fake.authorizeCalls, 1)
     })
   })
 
