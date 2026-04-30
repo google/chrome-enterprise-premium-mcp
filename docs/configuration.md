@@ -138,7 +138,11 @@ and caches refresh and access tokens locally. Subsequent server starts use the
 cached tokens. Set `CEP_OAUTH_CLIENT_ID` and `CEP_OAUTH_CLIENT_SECRET` to use
 your own OAuth client instead of the bundled one.
 
-This cell is proposed and not in the published version.
+The managed client is not yet provisioned. Until it ships, only the BYO path
+works — see `docs/auth-bring-your-own-oauth-client.md`. Until the managed
+client is allowlisted, leaving both env vars unset prints
+`OAuth client: TODO …` in the banner and `mcp auth login` exits with a
+"Managed OAuth client is not yet provisioned" error.
 
 ### Decision tree
 

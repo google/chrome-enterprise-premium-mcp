@@ -1,6 +1,6 @@
 # Bring Your Own OAuth Client
 
-By default, the CEP MCP server uses a bundled Google-managed OAuth client. The customer can swap in their own OAuth client for audit, brand, compliance, or scope-restriction reasons.
+The CEP MCP server will eventually ship with a bundled Google-managed OAuth client. Until that managed client is published and allowlisted, **bring-your-own (BYO) is the only way to use the `mcp auth login` flow**. After the managed client ships, BYO remains supported for customers who need it for audit, brand, compliance, or scope-restriction reasons.
 
 ## Register the OAuth client
 
@@ -48,7 +48,7 @@ export CEP_OAUTH_CLIENT_ID="<client-id>"
 export CEP_OAUTH_CLIENT_SECRET="<client-secret>"
 ```
 
-If both variables are unset, the server uses the bundled Google-managed client.
+If both variables are unset and the bundled managed client has not yet been provisioned, the server prints `OAuth client: TODO …` in the boot banner and `mcp auth login` exits with a clear "Managed OAuth client is not yet provisioned" error. Once the managed client ships, leaving both env vars unset selects it.
 
 ## Authenticate with the custom client
 
