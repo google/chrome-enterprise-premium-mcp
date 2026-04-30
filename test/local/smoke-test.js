@@ -18,7 +18,7 @@ limitations under the License.
 
 process.env.GCP_STDIO ??= 'false'
 
-import { spawn } from 'child_process'
+import { spawn, spawnSync } from 'child_process'
 import http from 'http'
 import { logger } from '../../lib/util/logger.js'
 
@@ -29,13 +29,16 @@ import { logger } from '../../lib/util/logger.js'
 // so the grounding-content check would give a false negative over HTTP.
 await runStdioInitializeTest()
 
-const server = spawn('node', ['mcp-server.js'], {
+// Auth phase: confirm `node bin/cli.js auth-status` runs cleanly.
+runAuthStatusTest()
+
+const server = spawn('node', ['bin/cli.js'], {
   env: { ...process.env, GOOGLE_API_ROOT_URL: 'http://localhost:1234', PORT: '3000' },
 })
 
 async function runStdioInitializeTest() {
   return new Promise(resolve => {
-    const stdio = spawn('node', ['mcp-server.js'], {
+    const stdio = spawn('node', ['bin/cli.js'], {
       env: { ...process.env, GCP_STDIO: 'true', GOOGLE_API_ROOT_URL: 'http://localhost:1234' },
       stdio: ['pipe', 'pipe', 'inherit'],
     })
@@ -84,6 +87,30 @@ async function runStdioInitializeTest() {
     // Safety net — if no valid response within 5s, fail.
     setTimeout(() => finish(false), 5000)
   })
+}
+
+function runAuthStatusTest() {
+  logger.info('--- AUTH PHASE ---')
+  const result = spawnSync('node', ['bin/cli.js', 'auth-status'], {
+    encoding: 'utf8',
+    env: { ...process.env, GOOGLE_APPLICATION_CREDENTIALS: '/nonexistent', CEP_LOG_LEVEL: 'SILENT' },
+  })
+  if (result.status !== 0) {
+    logger.error('auth-status failed: exit', result.status, result.stderr)
+    process.exit(1)
+  }
+  for (const expected of ['Auth status:', 'ADC:', 'OAuth flow:']) {
+    if (!result.stdout.includes(expected)) {
+      logger.error(`auth-status output missing expected line: ${expected}`)
+      logger.error(`stdout was:\n${result.stdout}`)
+      process.exit(1)
+    }
+  }
+  if (result.stderr.includes('Error:') || result.stderr.includes('at ')) {
+    logger.error('auth-status stderr contains errors:', result.stderr)
+    process.exit(1)
+  }
+  logger.info('auth-status output OK')
 }
 
 function runToolTest() {
