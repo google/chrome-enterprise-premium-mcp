@@ -52,6 +52,6 @@ If both variables are unset and the bundled managed client has not yet been prov
 
 ## Authenticate with the custom client
 
-Run `mcp auth login` to authenticate against the custom client. The command opens your browser to the Google consent screen. Grant consent; the server caches your refresh and access tokens locally.
+Run `mcp auth login` to authenticate against the custom client. The command opens your browser to the Google consent screen. After you grant consent, your access token is cached locally. Refresh tokens are not persisted; the server uses an access-token-only grant because the requested scopes are sensitive.
 
-Subsequent server starts use the cached tokens. Run `mcp auth login` again if the tokens are revoked or scopes change.
+Once the cached token has expired, run `mcp auth login` again. Run it again whenever scopes change or the token has been revoked.
