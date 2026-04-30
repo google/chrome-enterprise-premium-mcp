@@ -85,7 +85,7 @@ describe('oauthFlowCredential probe', () => {
     })
     const probe = await cred.probe()
     assert.equal(probe.ok, false)
-    assert.ok(probe.missingScopes.includes('https://www.googleapis.com/auth/cloud-platform'))
+    assert.deepEqual(probe.missingScopes, ['https://www.googleapis.com/auth/cloud-platform'])
   })
 
   it('When the cache file mode is wider than 0600, then probe is ok:true with a permissions warning flag', async () => {
@@ -139,7 +139,7 @@ describe('oauthFlowCredential runLoginFlow', () => {
     )
   })
 
-  it('When the OAuth code-exchange returns redirect_uri_mismatch, then runLoginFlow throws the parent-issue message naming the client_id', async () => {
+  it('When the OAuth code-exchange returns redirect_uri_mismatch, then runLoginFlow throws the parent-issue message with a truncated client_id hint', async () => {
     const cachePath = await tmpCachePath()
     const clientId = 'client-mismatch-456'
     const cred = oauthFlowCredential({ clientId, clientSecret: 'secret', cachePath })
@@ -171,9 +171,10 @@ describe('oauthFlowCredential runLoginFlow', () => {
     await assert.rejects(
       () => cred.runLoginFlow({ openBrowser, createOAuth2Client }),
       err => {
+        const idHint = clientId.slice(0, 8) + '...'
         assert.ok(
-          err.message.includes(clientId),
-          `expected message to include client_id "${clientId}", got: ${err.message}`,
+          err.message.includes(idHint),
+          `expected message to include truncated client_id "${idHint}", got: ${err.message}`,
         )
         assert.ok(
           err.message.includes('http://127.0.0.1'),
