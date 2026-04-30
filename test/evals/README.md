@@ -290,14 +290,14 @@ The runner accepts more flags (`--runs`, `--concurrency`, `--delay`,
 
 ### Environment variables
 
-| Variable                        | Description                                                                                                                   | Default |
-| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------- |
-| `GEMINI_API_KEY`                | **Required.** Gemini API key for both the agent and the judge.                                                                | --      |
-| `CEP_BACKEND`                   | `fake` (in-process mock) or `real` (live Google APIs).                                                                        | `fake`  |
-| `EVAL_CATEGORY`                 | Alternative to `--category` flag.                                                                                             | --      |
-| `EVAL_IDS`                      | Alternative to `--id` flag. Comma-separated.                                                                                  | --      |
-| `EVAL_TAGS`                     | Alternative to `--tags` flag. Comma-separated.                                                                                | --      |
-| `EXPERIMENT_DELETE_TOOL_ENABLED`| Registers the delete-tool experiment. The runner defaults this to `true` so cases like `m03` test real agent judgment. Set to `false` to disable. | `true`  |
+| Variable                         | Description                                                                                                                                       | Default |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| `GEMINI_API_KEY`                 | **Required.** Gemini API key for both the agent and the judge.                                                                                    | --      |
+| `CEP_BACKEND`                    | `fake` (in-process mock) or `real` (live Google APIs).                                                                                            | `fake`  |
+| `EVAL_CATEGORY`                  | Alternative to `--category` flag.                                                                                                                 | --      |
+| `EVAL_IDS`                       | Alternative to `--id` flag. Comma-separated.                                                                                                      | --      |
+| `EVAL_TAGS`                      | Alternative to `--tags` flag. Comma-separated.                                                                                                    | --      |
+| `EXPERIMENT_DELETE_TOOL_ENABLED` | Registers the delete-tool experiment. The runner defaults this to `true` so cases like `m03` test real agent judgment. Set to `false` to disable. | `true`  |
 
 ### Output
 

@@ -71,8 +71,13 @@ export function registerDeleteAgentDlpRuleTool(server, options, sessionState) {
           try {
             rule = await cloudIdentityClient.getDlpRule(policyName, credential)
           } catch (error) {
+            const status = error.response?.status
+            const isNotFound = error.code === 5 || status === 404 || error.message?.toLowerCase().includes('not found')
+            if (isNotFound) {
+              throw new Error(`Rule not found: ${policyName}`)
+            }
             logger.error(`${TAGS.MCP} Failed to fetch rule details for ${policyName}: ${error.message}`)
-            // If we can't fetch the rule, we'll fall back to providing the Admin Console link
+            throw error
           }
 
           const displayName = rule?.setting?.value?.displayName || ''
