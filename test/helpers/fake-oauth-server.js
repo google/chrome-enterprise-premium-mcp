@@ -1,0 +1,142 @@
+/*
+Copyright 2026 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+/**
+ * @file Minimal fake OAuth issuer for end-to-end tests of the managed OAuth flow.
+ */
+
+import express from 'express'
+import { generateKeyPair, exportJWK, SignJWT, createLocalJWKSet } from 'jose'
+
+/**
+ * Starts a fake OAuth issuer on a random port. Returns config including the
+ * authorize/token URLs, the JWK set URL, a stop function, and helpers to
+ * generate test tokens.
+ * @returns {Promise<object>}
+ */
+export async function startFakeOAuthServer() {
+  const { privateKey, publicKey } = await generateKeyPair('RS256')
+  const jwk = { ...(await exportJWK(publicKey)), kid: 'test-key', alg: 'RS256', use: 'sig' }
+
+  const issuedTokens = new Map() // code → { access_token, refresh_token, scope }
+
+  const app = express()
+  app.use(express.urlencoded({ extended: true }))
+  app.use(express.json())
+
+  app.get('/authorize', (req, res) => {
+    // Loopback-style redirect: the test typically calls this directly with code in the URL.
+    const code = 'test-auth-code-' + Math.random().toString(36).slice(2)
+    issuedTokens.set(code, { scope: req.query.scope || '' })
+    // Build the redirect target from a strict allow-list: hostname must be
+    // 127.0.0.1, port must be a positive integer, path is fixed to '/'. The
+    // test fake mirrors the loopback-only redirect security boundary of an
+    // installed-app OAuth flow and stays a closed redirect even if exposed
+    // beyond the test process.
+    const match = String(req.query.redirect_uri || '').match(/^http:\/\/127\.0\.0\.1:(\d{1,5})(\/?)$/)
+    if (!match) {
+      res.status(400).json({ error: 'invalid_redirect_uri' })
+      return
+    }
+    const port = Number(match[1])
+    if (!Number.isInteger(port) || port < 1 || port > 65535) {
+      res.status(400).json({ error: 'invalid_redirect_uri' })
+      return
+    }
+    const target = new URL(`http://127.0.0.1:${port}/`)
+    target.searchParams.set('code', code)
+    target.searchParams.set('state', String(req.query.state || ''))
+    res.redirect(target.toString())
+  })
+
+  app.post('/token', (req, res) => {
+    const { code, grant_type } = req.body
+    if (grant_type === 'refresh_token') {
+      // Return a refreshed access token.
+      res.json({
+        access_token: 'refreshed-' + Math.random().toString(36).slice(2),
+        expires_in: 3600,
+        token_type: 'Bearer',
+      })
+      return
+    }
+    const session = issuedTokens.get(code)
+    if (!session) {
+      res.status(400).json({ error: 'invalid_grant' })
+      return
+    }
+    res.json({
+      access_token: 'access-' + Math.random().toString(36).slice(2),
+      refresh_token: 'refresh-' + Math.random().toString(36).slice(2),
+      expires_in: 3600,
+      token_type: 'Bearer',
+      scope: session.scope,
+    })
+  })
+
+  app.post('/revoke', (req, res) => {
+    res.status(200).end()
+  })
+
+  app.get('/certs', (req, res) => {
+    res.set('cache-control', 'max-age=3600').json({ keys: [jwk] })
+  })
+
+  const server = app.listen(0, '127.0.0.1')
+  await new Promise(resolve => {
+    server.on('listening', resolve)
+  })
+  const port = server.address().port
+  const baseUrl = `http://127.0.0.1:${port}`
+
+  const stopFn = () =>
+    new Promise(resolve => {
+      server.close(() => {
+        resolve()
+      })
+    })
+
+  const jwks = createLocalJWKSet({ keys: [jwk] })
+
+  return {
+    baseUrl,
+    authorizeUrl: `${baseUrl}/authorize`,
+    tokenUrl: `${baseUrl}/token`,
+    revokeUrl: `${baseUrl}/revoke`,
+    certsUrl: `${baseUrl}/certs`,
+    jwks,
+    stop: stopFn,
+    close: stopFn,
+    /**
+     * Issues a signed JWT for testing the ID-token branch.
+     * @param {object} claims - JWT claims object
+     * @param {object} [opts] - Optional overrides
+     * @param {string} [opts.audience] - Sets the `aud` claim on the token.
+     * @returns {Promise<string>} signed JWT
+     */
+    async signIdToken(claims, { audience } = {}) {
+      let builder = new SignJWT(claims)
+        .setProtectedHeader({ alg: 'RS256', kid: 'test-key' })
+        .setIssuedAt()
+        .setIssuer('https://accounts.google.com')
+        .setExpirationTime('1h')
+      if (audience) {
+        builder = builder.setAudience(audience)
+      }
+      return builder.sign(privateKey)
+    },
+  }
+}

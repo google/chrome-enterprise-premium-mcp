@@ -177,7 +177,9 @@ export function guardedToolCall(
 ) {
   return async (params, context) => {
     const headerToken = getAuthToken(context?.requestInfo)
-    const credential = headerToken ? bearerCredential(headerToken) : adcCredential()
+    const credential = headerToken
+      ? bearerCredential(headerToken, { requestHost: context?.requestInfo?.headers?.host })
+      : adcCredential()
     try {
       const { apiClients, apiOptions } = options
       let currentParams = { ...params }
