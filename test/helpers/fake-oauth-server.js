@@ -41,15 +41,25 @@ export async function startFakeOAuthServer() {
     // Loopback-style redirect: the test typically calls this directly with code in the URL.
     const code = 'test-auth-code-' + Math.random().toString(36).slice(2)
     issuedTokens.set(code, { scope: req.query.scope || '' })
-    const redirectUri = req.query.redirect_uri
-    // Only redirect to loopback URLs — matches the security boundary of an
-    // installed-app OAuth flow and keeps this test fake from being a generic
-    // open redirect if it ever gets exposed beyond the test process.
-    if (typeof redirectUri !== 'string' || !/^http:\/\/127\.0\.0\.1:\d+(\/|$)/.test(redirectUri)) {
+    // Build the redirect target from a strict allow-list: hostname must be
+    // 127.0.0.1, port must be a positive integer, path is fixed to '/'. The
+    // test fake mirrors the loopback-only redirect security boundary of an
+    // installed-app OAuth flow and stays a closed redirect even if exposed
+    // beyond the test process.
+    const match = String(req.query.redirect_uri || '').match(/^http:\/\/127\.0\.0\.1:(\d{1,5})(\/?)$/)
+    if (!match) {
       res.status(400).json({ error: 'invalid_redirect_uri' })
       return
     }
-    res.redirect(`${redirectUri}?code=${code}&state=${req.query.state || ''}`)
+    const port = Number(match[1])
+    if (!Number.isInteger(port) || port < 1 || port > 65535) {
+      res.status(400).json({ error: 'invalid_redirect_uri' })
+      return
+    }
+    const target = new URL(`http://127.0.0.1:${port}/`)
+    target.searchParams.set('code', code)
+    target.searchParams.set('state', String(req.query.state || ''))
+    res.redirect(target.toString())
   })
 
   app.post('/token', (req, res) => {
