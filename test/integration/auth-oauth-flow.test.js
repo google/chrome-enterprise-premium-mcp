@@ -67,9 +67,8 @@ describe('OAuth flow end-to-end', () => {
 
       const tokens = JSON.parse(await fs.readFile(cachePath, 'utf8'))
       assert.ok(tokens.access_token, 'cache must contain access_token')
-      assert.ok(tokens.refresh_token, 'cache must contain refresh_token')
       assert.ok(tokens.access_token.startsWith('access-'), 'access_token must come from the fake issuer')
-      assert.ok(tokens.refresh_token.startsWith('refresh-'), 'refresh_token must come from the fake issuer')
+      assert.equal(tokens.refresh_token, undefined, 'cache must not persist refresh_token (policy)')
     } finally {
       await fake.stop()
       await fs.rm(cacheDir, { recursive: true, force: true })

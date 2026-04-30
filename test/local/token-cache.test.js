@@ -44,12 +44,27 @@ describe('TokenCache', () => {
     assert.ok(stat.isFile())
   })
 
-  it('When write then read, then the round-trip preserves the JSON shape', async () => {
+  it('When write then read, then the round-trip preserves access_token, expiry_date, and scope', async () => {
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'cep-mcp-test-'))
     const cache = new TokenCache(path.join(dir, 'tokens.json'))
-    const tokens = { access_token: 'a', refresh_token: 'r', expiry_date: 12345, scope: 'x y z' }
-    await cache.write(tokens)
-    assert.deepEqual(await cache.read(), tokens)
+    const input = { access_token: 'a', expiry_date: 12345, scope: 'x y z' }
+    await cache.write(input)
+    assert.deepEqual(await cache.read(), input)
+  })
+
+  it('When the input includes a refresh_token, then write strips it before persisting', async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'cep-mcp-test-'))
+    const cache = new TokenCache(path.join(dir, 'tokens.json'))
+    await cache.write({
+      access_token: 'a',
+      refresh_token: 'must-not-persist',
+      expiry_date: 12345,
+      scope: 'x',
+    })
+    const persisted = await cache.read()
+    assert.equal(persisted.refresh_token, undefined, 'refresh_token must not be persisted')
+    assert.equal(persisted.access_token, 'a')
+    assert.equal(persisted.scope, 'x')
   })
 
   it('When the existing file has mode 0644, then write tightens it to 0600', async () => {
