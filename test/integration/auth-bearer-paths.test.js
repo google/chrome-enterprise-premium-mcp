@@ -24,7 +24,7 @@ limitations under the License.
 
 import { describe, it, before, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { OAuth2Client } from 'google-auth-library'
+import { OAuth2Client, JWT } from 'google-auth-library'
 import { SignJWT, generateKeyPair } from 'jose'
 import { bearerCredential } from '../../lib/util/credential/bearer.js'
 import { startFakeOAuthServer } from '../helpers/fake-oauth-server.js'
@@ -93,24 +93,32 @@ describe('bearer credential — four end-to-end paths', () => {
     assert.equal(customer.id, 'C0123456', 'Should receive fake customer ID from API')
   })
 
-  it('valid ID token — signature verified; getClient returns injected JWT client; API call succeeds', async () => {
+  it('valid ID token — signature verified; subject set from email claim; SA client carries impersonated token; API call succeeds', async () => {
     const idToken = await oauthServer.signIdToken(
       { email: 'user@example.com' },
       { audience: 'https://fake-server.example.com' },
     )
 
-    // Stub a pre-authorized JWT client that carries a known impersonated token.
+    // A real JWT subclass with authorize stubbed to a no-op. The credentials
+    // are pre-set so that, after the bearer factory wires subject + calls
+    // authorize, the client carries the impersonated access token for the HTTP call.
     const impersonatedToken = 'impersonated-access-token-dwd'
-    const stubbedJwtClient = new OAuth2Client()
-    stubbedJwtClient.setCredentials({ access_token: impersonatedToken })
+    const fakeSaClient = new JWT({
+      email: 'sa@project.iam.gserviceaccount.com',
+      key: '-',
+      scopes: ['x'],
+    })
+    fakeSaClient.credentials = { access_token: impersonatedToken }
+    fakeSaClient.authorize = async () => {}
 
     const cred = bearerCredential(idToken, {
       expectedAudience: 'https://fake-server.example.com',
       jwks: oauthServer.jwks,
-      jwtClient: stubbedJwtClient,
+      acquireSaClient: async () => fakeSaClient,
     })
 
     const client = await cred.getClient()
+    assert.equal(client.subject, 'user@example.com', 'subject must be set from the verified ID token email claim')
     assert.equal(
       client.credentials.access_token,
       impersonatedToken,

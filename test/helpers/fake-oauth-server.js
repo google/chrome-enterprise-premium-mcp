@@ -42,6 +42,13 @@ export async function startFakeOAuthServer() {
     const code = 'test-auth-code-' + Math.random().toString(36).slice(2)
     issuedTokens.set(code, { scope: req.query.scope || '' })
     const redirectUri = req.query.redirect_uri
+    // Only redirect to loopback URLs — matches the security boundary of an
+    // installed-app OAuth flow and keeps this test fake from being a generic
+    // open redirect if it ever gets exposed beyond the test process.
+    if (typeof redirectUri !== 'string' || !/^http:\/\/127\.0\.0\.1:\d+(\/|$)/.test(redirectUri)) {
+      res.status(400).json({ error: 'invalid_redirect_uri' })
+      return
+    }
     res.redirect(`${redirectUri}?code=${code}&state=${req.query.state || ''}`)
   })
 
