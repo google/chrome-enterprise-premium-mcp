@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /*
 Copyright 2026 Google LLC
 
@@ -142,7 +141,7 @@ async function getServer(gcpInfo, sharedSessionState) {
 /**
  * Starts the MCP server.
  */
-async function main() {
+export async function runServer() {
   try {
     const gcpInfo = await checkGCP()
     const isStdio = shouldStartStdio(gcpInfo)
@@ -188,9 +187,8 @@ async function main() {
       quotaProject: process.env.GOOGLE_CLOUD_QUOTA_PROJECT || null,
     }
 
-    // OAuth-flow probe runs alongside the ADC probe. A missing cache file
-    // returns immediately; a 2-second timeout caps the network worst case so
-    // the boot does not block.
+    // OAuth-flow probe runs concurrently. A missing cache file returns
+    // immediately; the boot does not block on network calls.
     let oauthProbe = null
     try {
       oauthProbe = await Promise.race([
@@ -351,4 +349,6 @@ const shutdown = async () => {
 process.on('SIGINT', shutdown)
 process.on('SIGTERM', shutdown)
 
-main()
+if (import.meta.url === `file://${process.argv[1]}`) {
+  runServer()
+}
