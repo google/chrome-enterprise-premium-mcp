@@ -24,5 +24,15 @@ commands) we want it to cite when answering CEP questions.
 
 The extension manifest at the repo root
 ([`gemini-extension.json`](../gemini-extension.json)) points at this
-file, declares the OAuth scopes the agent requests on first run, and
-tells Gemini CLI to launch `mcp-server.js` as the MCP backend.
+file, declares the OAuth scopes for Gemini CLI's install-time consent
+flow, and tells Gemini CLI to launch `mcp-server.js` as the MCP backend.
+The scopes declared in `gemini-extension.json#oauth_scopes` drive the
+consent flow that Gemini CLI runs on the user's behalf when they install
+the extension. Gemini CLI requests those scopes; Google issues an access
+token covering them; Gemini CLI uses that token internally and may
+forward it to the MCP server in HTTP transport mode (see
+`docs/configuration.md#authentication` for the cells where that path is
+in scope). The MCP server itself does not read the `oauth_scopes` field
+at runtime; it requests scopes via `lib/constants.js#SCOPES` for ADC and
+via the bundled or BYO OAuth client config when the `mcp auth login`
+flow runs.

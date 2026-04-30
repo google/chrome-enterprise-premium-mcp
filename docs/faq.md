@@ -57,3 +57,11 @@ EXPERIMENT_DELETE_TOOL_ENABLED=true npm start
 
 See [`lib/util/feature_flags.js`](../lib/util/feature_flags.js) for the full
 list.
+
+## Which auth path should I use?
+
+- One developer on a workstation, stdio MCP client → cell 1 (`gcloud auth application-default login`).
+- Server-to-server automation with a service account → cell 2 (or cell 4 for HTTP), with domain-wide delegation in the Workspace Admin Console.
+- Cloud Run deployment with Gemini Enterprise → prefer OAuth over server-side SA + DWD impersonation. SA + DWD grants the server's service account broad domain-wide impersonation; OAuth is bounded to the consenting user and revocable. See the [ADK + OAuth + Gemini Enterprise reference](https://fmind.medium.com/powering-up-your-agent-in-production-with-adk-oauth-and-gemini-enterprise-a52b0716fcba). When OAuth is not viable (cross-org automation, headless contexts), fall back to cell 6 (server validates the OIDC ID token and impersonates via DWD; see [`docs/auth-cloud-run-and-gemini-enterprise.md`](auth-cloud-run-and-gemini-enterprise.md)).
+- Interactive developer who wants OAuth instead of `gcloud` → cell 7 (`mcp auth login`, once the managed client ships).
+- Bringing your own OAuth client → see [`docs/auth-bring-your-own-oauth-client.md`](auth-bring-your-own-oauth-client.md).
