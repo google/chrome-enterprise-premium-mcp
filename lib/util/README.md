@@ -34,9 +34,10 @@ logging, retry, GCP detection, CEL validation, and feature flags.
     audience validation, and DWD impersonation via google-auth-library's
     `JWT` class.
   - `oauth_flow.js` — managed OAuth flow. Loopback installed-app
-    consent, refresh + access tokens cached at
-    `~/.config/cep-mcp/tokens.json` mode `0600`. Reads
-    `CEP_OAUTH_CLIENT_ID` / `CEP_OAUTH_CLIENT_SECRET` for BYO;
+    consent. Access tokens are cached at
+    `~/.config/cep-mcp/tokens.json` mode `0600`; refresh tokens are
+    not persisted (consent uses an access-token-only grant).
+    Reads `CEP_OAUTH_CLIENT_ID` / `CEP_OAUTH_CLIENT_SECRET` for BYO;
     falls back to the bundled Google-managed client.
   - `cli_commands.js` — `runAuthStatusCommand`, `runLoginCommand`.
   - `oauth_client_config.js`, `token_cache.js`, `loopback_server.js`,

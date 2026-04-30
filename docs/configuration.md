@@ -85,8 +85,8 @@ credentials) and SA (service account).
 | 3   | HTTP          | ADC                                       | EUC       | Available |
 | 4   | HTTP          | ADC                                       | SA        | Available |
 | 5   | HTTP          | Bearer (Google access token)              | EUC or SA | Available |
-| 6   | HTTP          | Bearer (OIDC ID token) + DWD on server SA | EUC       | Proposed  |
-| 7   | stdio or HTTP | OAuth flow with cached tokens             | EUC       | Proposed  |
+| 6   | HTTP          | Bearer (OIDC ID token) + DWD on server SA | EUC       | Available |
+| 7   | stdio or HTTP | OAuth flow with cached tokens (BYO)       | EUC       | Available |
 
 Stdio has no `Authorization` header concept, so stdio + bearer is not a valid
 combination.
@@ -139,9 +139,9 @@ validates the JWT, extracts the `email` claim, and uses its own service account
 (configured with domain-wide delegation in the Workspace Admin Console) to
 mint a user-scoped access token for that principal.
 
-This cell is proposed and not in the published version.
+This cell ships in the auth-refactor chain (PR #107). The bearer factory verifies the JWT signature against Google's JWK set, validates the audience against the request `Host` header, then uses google-auth-library's `JWT` class with `subject = <email from token>` for the DWD impersonation.
 
-### Cell 7 — OAuth flow with cached tokens (proposed)
+### Cell 7 — OAuth flow with cached tokens
 
 `npx -y @google/chrome-enterprise-premium-mcp@latest login` runs the consent
 flow against a Google-managed CEP OAuth client (public, loopback redirect URI)
@@ -160,5 +160,5 @@ client is allowlisted, leaving both env vars unset prints
 - **stdio + one user or service account** → Cell 1 (EUC) or Cell 2 (SA).
 - **HTTP + all clients share one identity** → Cell 3 (EUC) or Cell 4 (SA).
 - **HTTP + per-client Google access tokens** → Cell 5.
-- **HTTP + per-user identity (Gemini CLI / Enterprise)** → Cell 6 once it ships; Cell 5 until then.
-- **stdio or HTTP + interactive consent, cached tokens** → Cell 7 once it ships.
+- **HTTP + per-user identity (Gemini CLI / Enterprise)** → Cell 6.
+- **stdio or HTTP + interactive consent, cached tokens** → Cell 7 (BYO available; managed client pending product).

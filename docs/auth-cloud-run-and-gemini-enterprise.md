@@ -8,7 +8,7 @@ The reference pattern is the [ADK + OAuth + Gemini Enterprise article](https://f
 
 ## Status of this guide
 
-The CEP MCP server's existing OAuth flow (`mcp auth login`) ships with a loopback redirect URI for local CLI use, not the web-redirect URI Vertex AI Agent Engine expects. A web-redirect OAuth path for the Cloud Run topology is a tracked follow-up; until it ships, **a complete Cloud Run + Gemini Enterprise deployment guide is out of scope of this repository**. The detailed instructions in earlier drafts of this file pointed at SA + DWD, which we no longer recommend; we have removed them rather than leave conflicting guidance in place.
+The existing `mcp auth login` flow uses a loopback redirect URI for local CLI use; Vertex AI Agent Engine expects a web redirect URI. The web-redirect OAuth factory lives in PR #117 (issue #114). A complete Cloud Run + Gemini Enterprise deployment guide is out of scope of this repository for now; the [ADK + OAuth + Gemini Enterprise reference](https://fmind.medium.com/powering-up-your-agent-in-production-with-adk-oauth-and-gemini-enterprise-a52b0716fcba) is the canonical pattern.
 
 ## What is in the repository today
 
