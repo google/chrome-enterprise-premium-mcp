@@ -39,13 +39,15 @@ const PROJECT_ROOT = path.resolve(__dirname, '..')
 async function fetchDiscoveryDoc(url) {
   try {
     // eslint-disable-next-line n/no-unsupported-features/node-builtins
-    const response = await fetch(url, { timeout: 5000 })
+    const response = await fetch(url, { signal: AbortSignal.timeout(5000) })
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`)
     }
     return await response.json()
-  } catch (_error) {
-    // Silently fail; discovery docs are optional for this audit.
+  } catch (err) {
+    // Print the URL + error so a flaky network does not silently produce a
+    // false "0 mismatches" result. The caller treats null as "skipped".
+    console.error(`[audit-scopes] discovery fetch failed for ${url}: ${err.message}`)
     return null
   }
 }
