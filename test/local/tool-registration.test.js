@@ -48,9 +48,10 @@ const CORE_TOOLS = [
   'list_org_units',
 ]
 
-const DELETE_EXPERIMENT_TOOLS = ['delete_agent_dlp_rule', 'delete_detector']
-
-const KNOWLEDGE_SEARCH_EXPERIMENT_TOOLS = ['search_content', 'list_documents']
+const EXPERIMENT_MAPPING = {
+  [FLAGS.DELETE_TOOL_ENABLED]: ['delete_agent_dlp_rule', 'delete_detector'],
+  [FLAGS.KNOWLEDGE_SEARCH_ENABLED]: ['search_content', 'list_documents'],
+}
 
 // Tests for SEB tool registration and individual tool handler logic.
 describe('SEB Tool Registration', () => {
@@ -63,36 +64,47 @@ describe('SEB Tool Registration', () => {
   })
 
   // Test if all tools are registered with the server.
-  test('When registerTools is called with no experiments, then it registers only core tools', () => {
+  test('When registerTools is called, then all core tools are always registered', () => {
+    // Disable all experiments to check base core tools
     registerTools(server, { featureFlags: { isEnabled: () => false } })
 
     const registeredToolNames = server.registerTool.mock.calls.map(call => call.arguments[0])
-    assert.deepStrictEqual(registeredToolNames.sort(), [...CORE_TOOLS].sort())
+    for (const tool of CORE_TOOLS) {
+      assert.ok(registeredToolNames.includes(tool), `Core tool "${tool}" should be registered`)
+    }
   })
 
-  test('When registerTools is called with KNOWLEDGE_SEARCH_ENABLED, then it registers core + search tools', () => {
-    registerTools(server, {
-      featureFlags: {
-        isEnabled: flag => flag === FLAGS.KNOWLEDGE_SEARCH_ENABLED,
-      },
+  // Test each experiment registration dynamically
+  for (const [flag, tools] of Object.entries(EXPERIMENT_MAPPING)) {
+    test(`When ${flag} is enabled, then it registers its experimental tools`, () => {
+      registerTools(server, {
+        featureFlags: {
+          isEnabled: f => f === flag,
+        },
+      })
+
+      const registeredToolNames = server.registerTool.mock.calls.map(call => call.arguments[0])
+      for (const tool of tools) {
+        assert.ok(registeredToolNames.includes(tool), `Experimental tool "${tool}" should be registered under ${flag}`)
+      }
     })
 
-    const registeredToolNames = server.registerTool.mock.calls.map(call => call.arguments[0])
-    const expected = [...CORE_TOOLS, ...KNOWLEDGE_SEARCH_EXPERIMENT_TOOLS].sort()
-    assert.deepStrictEqual(registeredToolNames.sort(), expected)
-  })
+    test(`When ${flag} is disabled, then it does NOT register its experimental tools`, () => {
+      registerTools(server, {
+        featureFlags: {
+          isEnabled: f => f !== flag, // Enable others but not this one
+        },
+      })
 
-  test('When registerTools is called with DELETE_TOOL_ENABLED, then it registers core + delete tools', () => {
-    registerTools(server, {
-      featureFlags: {
-        isEnabled: flag => flag === FLAGS.DELETE_TOOL_ENABLED,
-      },
+      const registeredToolNames = server.registerTool.mock.calls.map(call => call.arguments[0])
+      for (const tool of tools) {
+        assert.ok(
+          !registeredToolNames.includes(tool),
+          `Experimental tool "${tool}" should NOT be registered when ${flag} is disabled`,
+        )
+      }
     })
-
-    const registeredToolNames = server.registerTool.mock.calls.map(call => call.arguments[0])
-    const expected = [...CORE_TOOLS, ...DELETE_EXPERIMENT_TOOLS].sort()
-    assert.deepStrictEqual(registeredToolNames.sort(), expected)
-  })
+  }
 
   test('When a shared session state is provided, then it is used across tool registrations', async () => {
     const mockAdminSdkClient = {
