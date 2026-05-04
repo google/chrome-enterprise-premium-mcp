@@ -195,4 +195,43 @@ describe('create_default_dlp_rules Tool', () => {
     assert.strictEqual(result.isError, true)
     assert.ok(result.content[0].text.includes('Authentication required'))
   })
+
+  test('When createDlpRule returns an in-progress LRO (no response field), then the rule lands in failedRules with a clear message', async () => {
+    const mockCreateDlpRule = mock.fn(async () => ({
+      // LRO not done: response is absent, only metadata + name of the operation
+      name: 'operations/abc',
+      done: false,
+    }))
+    const MockCloudIdentityClient = class {
+      constructor() {
+        this.createDlpRule = mockCreateDlpRule
+      }
+    }
+
+    const { registerTools } = await esmock(
+      '../../tools/index.js',
+      {},
+      {
+        '../../lib/api/real_cloud_identity_client.js': {
+          RealCloudIdentityClient: MockCloudIdentityClient,
+        },
+      },
+    )
+    registerTools(server, {
+      gcpCredentialsAvailable: true,
+      apiClients: { cloudIdentity: new MockCloudIdentityClient() },
+    })
+
+    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'create_default_dlp_rules')
+      .arguments[2]
+
+    const result = await handler({ customerId: 'C0123', orgUnitId: 'ou1' }, { requestInfo: {} })
+
+    // No rules should be reported as created — every attempt returned an in-progress LRO.
+    assert.strictEqual(result.structuredContent.successCount, 0)
+    assert.strictEqual(result.structuredContent.failedRules.length, 3)
+    for (const failed of result.structuredContent.failedRules) {
+      assert.match(failed.error, /did not return a completed policy/)
+    }
+  })
 })

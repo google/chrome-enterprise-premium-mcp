@@ -131,7 +131,12 @@ Rules included:
 
             try {
               const result = await cloudIdentityClient.createDlpRule(customerId, orgUnitId, ruleConfig, authToken)
-              const createdPolicy = result.response
+              const createdPolicy = result?.response
+              if (!createdPolicy?.name) {
+                throw new Error(
+                  `createDlpRule for "${rule.displayName}" did not return a completed policy (operation may still be in progress)`,
+                )
+              }
               ruleResults.push({
                 displayName: rule.displayName,
                 status: 'Created',
