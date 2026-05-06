@@ -149,7 +149,7 @@ describe('Auth', () => {
       })
 
       const error = new Error('The admin.googleapis.com API requires a quota project, which is not set by default.')
-      const message = await getAuthErrorMessage(error)
+      const message = await getAuthErrorMessage(error, { authMode: 'adc' })
 
       assert.match(message, /We found a potential quota project "proj-2"/)
       assert.match(message, /gcloud auth application-default set-quota-project proj-2/)
@@ -181,7 +181,7 @@ describe('Auth', () => {
       })
 
       const error = new Error('The admin.googleapis.com API requires a quota project, which is not set by default.')
-      const message = await getAuthErrorMessage(error)
+      const message = await getAuthErrorMessage(error, { authMode: 'adc' })
 
       assert.match(message, /We found a potential quota project "proj-1"/) // Fallback to first (most recent)
     })
@@ -207,7 +207,7 @@ describe('Auth', () => {
       })
 
       const error = new Error('The admin.googleapis.com API requires a quota project, which is not set by default.')
-      const message = await getAuthErrorMessage(error)
+      const message = await getAuthErrorMessage(error, { authMode: 'adc' })
 
       assert.match(message, /Google Cloud Console/)
       assert.match(message, /console\.cloud\.google\.com\/cloud-resource-manager/)
@@ -235,10 +235,99 @@ describe('Auth', () => {
       })
 
       const error = new Error('The admin.googleapis.com API requires a quota project, which is not set by default.')
-      const message = await getAuthErrorMessage(error)
+      const message = await getAuthErrorMessage(error, { authMode: 'adc' })
 
       assert.match(message, /We found a potential quota project "configured-project"/)
       assert.match(message, /gcloud auth application-default set-quota-project configured-project/)
     })
+
+    describe('OAuth-flow mode', () => {
+      test('When authMode is oauth and the error reports a missing quota project, then the remediation points at GOOGLE_CLOUD_QUOTA_PROJECT and not at a gcloud command', async () => {
+        const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
+        const error = new Error('The admin.googleapis.com API requires a quota project, which is not set by default.')
+        const message = await getAuthErrorMessage(error, { authMode: 'oauth' })
+
+        assert.match(message, /GOOGLE_CLOUD_QUOTA_PROJECT/)
+        assert.doesNotMatch(message, /gcloud auth application-default set-quota-project/)
+        assert.doesNotMatch(message, /Please run:\ngcloud/)
+      })
+
+      test('When authMode is oauth and the error reports insufficient scopes, then the remediation points at `mcp auth login`', async () => {
+        const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
+        const error = new Error('Request had insufficient authentication scopes.')
+        const message = await getAuthErrorMessage(error, { authMode: 'oauth' })
+
+        assert.match(message, /mcp auth login/)
+        assert.doesNotMatch(message, /gcloud auth application-default login/)
+      })
+
+      test('When authMode is oauth and the error reports missing credentials, then the remediation suggests `mcp auth login`', async () => {
+        const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
+        const error = new Error('Could not load the default credentials.')
+        const message = await getAuthErrorMessage(error, { authMode: 'oauth' })
+
+        assert.match(message, /mcp auth login/)
+        assert.doesNotMatch(message, /Application Default Credentials are not set up/)
+      })
+
+      test('When authMode is oauth, then the trailing ADC paragraph is omitted', async () => {
+        const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
+        const error = new Error('The admin.googleapis.com API requires a quota project, which is not set by default.')
+        const message = await getAuthErrorMessage(error, { authMode: 'oauth' })
+
+        assert.doesNotMatch(message, /Application Default Credentials are not set up/)
+        assert.doesNotMatch(message, /GOOGLE_APPLICATION_CREDENTIALS environment variable/)
+      })
+    })
+  })
+})
+
+describe('getAuthClient quota project plumbing', () => {
+  test('When GOOGLE_CLOUD_QUOTA_PROJECT is set and an authToken is supplied, then quotaProjectId is applied to the OAuth2Client', async () => {
+    const { getAuthClient } = await esmock('../../lib/util/auth.js', {
+      'google-auth-library': {
+        OAuth2Client: class {
+          setCredentials(credentials) {
+            this.credentials = credentials
+          }
+        },
+      },
+    })
+    const previous = process.env.GOOGLE_CLOUD_QUOTA_PROJECT
+    process.env.GOOGLE_CLOUD_QUOTA_PROJECT = 'my-quota-project'
+    try {
+      const client = await getAuthClient([], 'test-token')
+      assert.equal(client.quotaProjectId, 'my-quota-project')
+    } finally {
+      if (previous === undefined) {
+        delete process.env.GOOGLE_CLOUD_QUOTA_PROJECT
+      } else {
+        // eslint-disable-next-line require-atomic-updates
+        process.env.GOOGLE_CLOUD_QUOTA_PROJECT = previous
+      }
+    }
+  })
+
+  test('When GOOGLE_CLOUD_QUOTA_PROJECT is unset, then quotaProjectId is left undefined on the OAuth2Client', async () => {
+    const { getAuthClient } = await esmock('../../lib/util/auth.js', {
+      'google-auth-library': {
+        OAuth2Client: class {
+          setCredentials(credentials) {
+            this.credentials = credentials
+          }
+        },
+      },
+    })
+    const previous = process.env.GOOGLE_CLOUD_QUOTA_PROJECT
+    delete process.env.GOOGLE_CLOUD_QUOTA_PROJECT
+    try {
+      const client = await getAuthClient([], 'test-token')
+      assert.equal(client.quotaProjectId, undefined)
+    } finally {
+      if (previous !== undefined) {
+        // eslint-disable-next-line require-atomic-updates
+        process.env.GOOGLE_CLOUD_QUOTA_PROJECT = previous
+      }
+    }
   })
 })
