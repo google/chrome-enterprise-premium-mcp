@@ -28,7 +28,7 @@ Chrome Enterprise Premium is a paid add-on available with any Google Workspace e
 
 The right path depends on your environment.
 
-- **Workstation, gcloud installed, you are a Google Cloud admin for the project:** Application Default Credentials. Run `gcloud auth application-default login` per the [Quick Start](../README.md#1-authenticate-with-google-cloud).
+- **Workstation, gcloud installed, you are a Google Cloud admin for the project:** Application Default Credentials. Run `gcloud auth application-default login` per [Application Default Credentials](../README.md#application-default-credentials) in the README.
 - **Workstation, no gcloud or you are not a Google Cloud admin:** OAuth login. Run `mcp auth login`. For the setup walkthrough, see [`auth-bring-your-own-oauth-client.md`](auth-bring-your-own-oauth-client.md).
 - **Hosted on Cloud Run, Vertex AI Agent Engine, or a similar managed environment:** OAuth bearer per request. The caller sets `Authorization: Bearer <id-token>` and the server verifies the token's `aud` claim against `CEP_BEARER_AUDIENCE`. A service account with domain-wide delegation is the alternative. OAuth is preferred for hosted deployments because a service account with domain-wide delegation grants the server impersonation rights for any user in the domain.
 
