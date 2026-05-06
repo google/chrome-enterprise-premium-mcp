@@ -20,7 +20,7 @@ limitations under the License.
 
 ### "Could not load the default credentials"
 
-Your Application Default Credentials are not configured. Run the login command from the [Quick Start](../README.md#1-authenticate-with-google-cloud), then verify the credentials file exists:
+Your Application Default Credentials are not configured. Run the login command from [Application Default Credentials](../README.md#application-default-credentials), then verify the credentials file exists:
 
 ```bash
 cat ~/.config/gcloud/application_default_credentials.json
@@ -36,7 +36,7 @@ The credentials lack the required scopes. The most common cause is running `gclo
 rm ~/.config/gcloud/application_default_credentials.json
 ```
 
-Then re-run the full login command from the [Quick Start](../README.md#1-authenticate-with-google-cloud).
+Then re-run the full login command from [Application Default Credentials](../README.md#application-default-credentials).
 
 ### "API requires a quota project, which is not set by default"
 

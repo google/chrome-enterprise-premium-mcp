@@ -64,7 +64,7 @@ PORT=8080 GCP_STDIO=false npx -y @google/chrome-enterprise-premium-mcp@latest
 
 | Setup                      | Transport | Credential source                              | Setup walkthrough                                                                               |
 | :------------------------- | :-------- | :--------------------------------------------- | :---------------------------------------------------------------------------------------------- |
-| `gcloud` ADC (recommended) | stdio     | ADC, full scope set including `cloud-platform` | [Quick Start §1](../README.md#1-authenticate-with-google-cloud)                                 |
+| `gcloud` ADC (recommended) | stdio     | ADC, full scope set including `cloud-platform` | [Application Default Credentials](../README.md#application-default-credentials)                 |
 | OAuth login (workstation)  | stdio     | OAuth token cache, narrow scope set            | [`auth-bring-your-own-oauth-client.md`](auth-bring-your-own-oauth-client.md)                    |
 | Bearer pass-through        | HTTP      | per-request `Authorization: Bearer <token>`    | The caller sets the header; the server forwards it to Google verbatim.                          |
 | Service account + DWD      | stdio     | Service account with domain-wide delegation    | [FAQ entry on service accounts](faq.md#can-i-use-a-service-account-instead-of-user-credentials) |
