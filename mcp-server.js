@@ -323,10 +323,11 @@ export async function runServer() {
       makeLoggingCompatibleWithStdio()
     }
 
-    // Log all enabled feature flags
+    // Log feature flag overrides
     Object.values(FLAGS).forEach(flag => {
-      if (featureFlags.isEnabled(flag)) {
-        logger.info(`${TAGS.MCP} EXPERIMENT_${flag} is active.`)
+      if (!featureFlags.isDefault(flag)) {
+        const status = featureFlags.isEnabled(flag) ? 'ENABLED' : 'DISABLED'
+        logger.info(`${TAGS.MCP} EXPERIMENT_${flag} override: ${status}`)
       }
     })
 
@@ -342,9 +343,10 @@ export async function runServer() {
       // Ignore or log
     }
 
-    const activeExps =
+    const flagOverrides =
       Object.values(FLAGS)
-        .filter(flag => featureFlags.isEnabled(flag))
+        .filter(flag => !featureFlags.isDefault(flag))
+        .map(flag => `${flag}=${featureFlags.isEnabled(flag)}`)
         .join(', ') || 'None'
 
     const requiredScopes = Object.values(SCOPES)
@@ -375,7 +377,7 @@ export async function runServer() {
         }
         console.log()
       }
-      console.log(dim(`Active Experiments: ${activeExps}`))
+      console.log(dim(`Experiment Overrides: ${flagOverrides}`))
     }
 
     if (isStdio) {
