@@ -49,7 +49,7 @@ Follow these steps to authenticate the CLI with the OAuth client you created:
 
 2. Run `mcp auth login`.
 3. Approve consent in the browser that the CLI opens.
-4. Verify the cache by running `mcp auth-status`.
+4. Verify the cache by running `mcp auth status`.
 
 ## Sign in from a host without a browser
 
@@ -68,7 +68,7 @@ Follow these steps to sign in by pasting the redirect URL from a different machi
 
 ## Scopes
 
-When you log in, the CLI requests every scope listed in `lib/constants.js#OAUTH_SCOPES`. That set is `SCOPES` minus `cloud-platform`, so the consent screen shows the narrower per-API scopes the server actually uses. To see which scopes the cached token actually granted, run `mcp auth-status`.
+When you log in, the CLI requests every scope listed in `lib/constants.js#OAUTH_SCOPES`. That set is `SCOPES` minus `cloud-platform`, so the consent screen shows the narrower per-API scopes the server actually uses. To see which scopes the cached token actually granted, run `mcp auth status`.
 
 ## Refresh expired tokens
 

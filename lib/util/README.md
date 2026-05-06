@@ -62,7 +62,7 @@ logging, retry, GCP detection, CEL validation, and feature flags.
   bundled placeholder, BYO env vars, or future custom modes).
 
 - `cli_commands.js`: `runAuthStatusCommand` and `runLoginCommand` for
-  the `mcp auth-status` and `mcp auth login` CLI subcommands.
+  the `mcp auth status` and `mcp auth login` CLI subcommands.
 
 - `jwt_verifier.js`: `verifyIdToken` plus `parseExpectedAudience`. Used
   by `mcp-server.js` middleware in HTTP mode when `CEP_BEARER_AUDIENCE`
