@@ -58,7 +58,6 @@ Follow these steps to run the agent against a real Google Cloud project.
    https://www.googleapis.com/auth/apps.licensing,\
    https://www.googleapis.com/auth/cloud-identity.policies,\
    https://www.googleapis.com/auth/service.management,\
-   https://www.googleapis.com/auth/service.management.readonly,\
    https://www.googleapis.com/auth/cloud-platform \
      --no-launch-browser
    ```
