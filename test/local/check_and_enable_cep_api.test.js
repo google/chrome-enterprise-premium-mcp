@@ -48,14 +48,14 @@ describe('check_and_enable_cep_api Tool', () => {
   })
 
   test('When authentication errors occur, then it returns remediation instructions', async () => {
-    const mockGetServiceStatus = mock.fn(async () => {
+    const mockListEnabledServices = mock.fn(async () => {
       const err = new Error('UNAUTHENTICATED')
       err.status = 401
       throw err
     })
 
     const serviceUsageClient = {
-      getServiceStatus: mockGetServiceStatus,
+      listEnabledServices: mockListEnabledServices,
     }
 
     const state = { customerId: null }
