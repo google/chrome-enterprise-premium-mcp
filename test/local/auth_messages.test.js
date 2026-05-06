@@ -369,9 +369,9 @@ describe('buildOAuthClientField', () => {
       'OAuth client: custom (short...)',
     )
   })
-  test('When config is null, then it returns a TODO line flagging the unprovisioned managed client', () => {
+  test('When config is null, then it returns an unresolved line referencing the env-var pairing', () => {
     const text = buildOAuthClientField(null)
-    assert.match(text, /TODO/)
+    assert.match(text, /unresolved/)
     assert.match(text, /CEP_OAUTH_CLIENT_ID/)
   })
 })
