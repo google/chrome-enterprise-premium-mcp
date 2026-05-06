@@ -28,9 +28,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const CLI = path.resolve(__dirname, '../../../bin/cli.js')
 
 describe('bin/cli.js', () => {
-  describe('auth-status', () => {
-    it('When invoked with auth-status and ADC absent, then it prints the ADC line and an OAuth flow line', () => {
-      const result = spawnSync('node', [CLI, 'auth-status'], {
+  describe('auth status', () => {
+    it('When invoked with `auth status` and ADC absent, then it prints the ADC line and an OAuth flow line', () => {
+      const result = spawnSync('node', [CLI, 'auth', 'status'], {
         encoding: 'utf8',
         env: { ...process.env, GOOGLE_APPLICATION_CREDENTIALS: '/nonexistent' },
       })
@@ -38,6 +38,25 @@ describe('bin/cli.js', () => {
       assert.match(result.stdout, /Auth status:/)
       assert.match(result.stdout, /ADC:/)
       assert.match(result.stdout, /OAuth flow:/)
+    })
+  })
+
+  describe('auth (no verb)', () => {
+    it('When invoked with bare `auth`, then it prints the help text on stderr and exits 0', () => {
+      const result = spawnSync('node', [CLI, 'auth'], { encoding: 'utf8' })
+      assert.equal(result.status, 0)
+      assert.match(result.stderr, /Usage: mcp auth <verb>/)
+      assert.match(result.stderr, /login\s+Run the OAuth-flow login/)
+      assert.match(result.stderr, /status\s+Show ADC and OAuth-flow credential status/)
+    })
+  })
+
+  describe('auth <unknown>', () => {
+    it('When invoked with an unknown auth verb, then it prints help on stderr and exits 2', () => {
+      const result = spawnSync('node', [CLI, 'auth', 'whoami'], { encoding: 'utf8' })
+      assert.equal(result.status, 2)
+      assert.match(result.stderr, /Unknown auth verb: whoami/)
+      assert.match(result.stderr, /Usage: mcp auth <verb>/)
     })
   })
 })
