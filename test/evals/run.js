@@ -207,9 +207,18 @@ async function main() {
       localFakeServer = await startFakeServer()
     }
 
+    // Merge global experiments with per-case overrides
+    const caseEnv = { ...process.env }
+    if (evalCase.experiments) {
+      for (const [key, value] of Object.entries(evalCase.experiments)) {
+        caseEnv[`EXPERIMENT_${key.toUpperCase()}`] = String(value)
+      }
+    }
+    const caseFeatureFlags = new FeatureFlags(caseEnv)
+
     try {
       harness = await createIntegrationHarness({
-        featureFlags,
+        featureFlags: caseFeatureFlags,
         ...(localFakeServer ? { rootUrl: localFakeServer.url } : {}),
       })
     } catch (err) {

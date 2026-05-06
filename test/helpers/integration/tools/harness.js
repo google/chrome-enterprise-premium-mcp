@@ -126,7 +126,7 @@ export async function createIntegrationHarness(options = {}) {
   const harnessOptions = { ...options, rootUrl, usingManager }
   const apiClients = getApiClients(harnessOptions)
   const sessionState = {}
-  registerTools(server, { apiClients, apiOptions: { rootUrl } }, sessionState)
+  registerTools(server, { apiClients, apiOptions: { rootUrl }, featureFlags: options.featureFlags }, sessionState)
   registerPrompts(server)
 
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()

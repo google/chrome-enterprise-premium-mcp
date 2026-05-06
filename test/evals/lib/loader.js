@@ -129,6 +129,7 @@ export function loadEvalsFromFile(filepath, globalConfig) {
       scenario: frontmatter.scenario || null,
       promptName: frontmatter.prompt_name || null,
       fixtures: frontmatter.fixtures || [],
+      experiments: frontmatter.experiments || null,
       prompt: extractSection(body, 'Prompt') || '',
       goldenResponse: extractSection(body, 'Golden Response') || '',
       judgeInstructions: extractSection(body, 'Judge Instructions'),
