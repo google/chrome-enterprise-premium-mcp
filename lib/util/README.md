@@ -49,8 +49,7 @@ logging, retry, GCP detection, CEL validation, and feature flags.
 
 - `oauth_flow.js`: `oauthFlowCredential()`. Managed-OAuth login flow
   through `runLoginFlow()` (loopback callback or headless paste-back) and
-  a probe over the cached token. Default scopes: `OAUTH_SCOPES` (no
-  `cloud-platform`).
+  a probe over the cached token. Default scopes: every entry in `SCOPES`.
 
 - `token_cache.js`: `TokenCache`. Read-write access on a path-injected
   file with mode 0600. Refresh tokens are stripped.

@@ -62,12 +62,12 @@ PORT=8080 GCP_STDIO=false npx -y @google/chrome-enterprise-premium-mcp@latest
 
 `lib/util/auth.js#getAuthClient` resolves credentials in this priority order: a bearer header on the request, Application Default Credentials, then the OAuth token cache. Pick a setup based on your environment. For situational guidance by deployment shape, see the [Which auth path should I use?](faq.md#which-auth-path-should-i-use) FAQ entry.
 
-| Setup                          | Transport | Credential source                              | Setup walkthrough                                                                               |
-| :----------------------------- | :-------- | :--------------------------------------------- | :---------------------------------------------------------------------------------------------- |
-| `mcp auth login` (recommended) | stdio     | OAuth token cache, narrow scope set            | [`auth-bring-your-own-oauth-client.md`](auth-bring-your-own-oauth-client.md)                    |
-| `gcloud` ADC                   | stdio     | ADC, full scope set including `cloud-platform` | [Application Default Credentials](../README.md#application-default-credentials)                 |
-| Bearer pass-through            | HTTP      | per-request `Authorization: Bearer <token>`    | The caller sets the header; the server forwards it to Google verbatim.                          |
-| Service account + DWD          | stdio     | Service account with domain-wide delegation    | [FAQ entry on service accounts](faq.md#can-i-use-a-service-account-instead-of-user-credentials) |
+| Setup                          | Transport | Credential source                           | Setup walkthrough                                                                               |
+| :----------------------------- | :-------- | :------------------------------------------ | :---------------------------------------------------------------------------------------------- |
+| `mcp auth login` (recommended) | stdio     | OAuth token cache, narrow scope set         | [`auth-bring-your-own-oauth-client.md`](auth-bring-your-own-oauth-client.md)                    |
+| `gcloud` ADC                   | stdio     | ADC, full scope set                         | [Application Default Credentials](../README.md#application-default-credentials)                 |
+| Bearer pass-through            | HTTP      | per-request `Authorization: Bearer <token>` | The caller sets the header; the server forwards it to Google verbatim.                          |
+| Service account + DWD          | stdio     | Service account with domain-wide delegation | [FAQ entry on service accounts](faq.md#can-i-use-a-service-account-instead-of-user-credentials) |
 
 > [!IMPORTANT]
 > The HTTP-mode default has no network-layer authentication. Bind the listener to a trusted interface only, or set `CEP_BEARER_AUDIENCE` (HTTP mode only) for per-request ID-token verification.

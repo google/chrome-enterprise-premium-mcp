@@ -28,10 +28,9 @@ file, declares the OAuth scopes Gemini CLI prompts for at install
 time, and tells Gemini CLI to launch `mcp-server.js` as the MCP
 backend.
 
-> **`oauth_scopes` is install-time only.** The list lives in the
-> manifest so the Gemini CLI extension installer has the right consent
-> screen during `gemini extension install`. The MCP server's runtime
-> scope sets live separately in `lib/constants.js`: `SCOPES` is the
-> full ADC set (including `cloud-platform`); `OAUTH_SCOPES` is the
-> narrower set the OAuth-flow login uses on the consent screen.
-> Updating any of the three lists without the others is a real foot-gun.
+> **`oauth_scopes` is install-time only.** This manifest list drives the
+> consent screen the Gemini CLI extension installer shows during
+> `gemini extension install`. The server's runtime scope set lives
+> separately in `lib/constants.js#SCOPES`. Keep the two in sync — every
+> entry in `SCOPES` must also appear in this manifest, or the agent
+> consents to fewer scopes than the server needs.

@@ -38,7 +38,7 @@ gcloud run deploy cep-mcp \
 
 Replace `YOUR_OAUTH_CLIENT_ID` with the client ID of the OAuth client you registered with Agent Engine.
 
-Register the OAuth client with Vertex AI Agent Engine through the Agent Engine console or its CLI. The exact `create-auth` invocation lives in the Agent Engine documentation. For this MCP server, the registration needs the OAuth client ID, the OAuth client secret, Google's standard authorization and token URIs, and a scope list. The scope list is `OAUTH_SCOPES` from `lib/constants.js`, which is the full `SCOPES` set minus `cloud-platform`.
+Register the OAuth client with Vertex AI Agent Engine through the Agent Engine console or its CLI. The exact `create-auth` invocation lives in the Agent Engine documentation. For this MCP server, the registration needs the OAuth client ID, the OAuth client secret, Google's standard authorization and token URIs, and a scope list. The scope list is `Object.values(SCOPES)` from `lib/constants.js`.
 
 A reference walkthrough of an end-to-end ADK agent on Vertex AI Agent Engine with OAuth is the third-party blog post [Powering up your agent in production with ADK, OAuth, and Gemini Enterprise](https://fmind.medium.com/powering-up-your-agent-in-production-with-adk-oauth-and-gemini-enterprise-a52b0716fcba).
 
