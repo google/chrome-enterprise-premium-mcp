@@ -25,7 +25,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const CLI = path.resolve(__dirname, '../../bin/cli.js')
+const CLI = path.resolve(__dirname, '../../../bin/cli.js')
 
 describe('bin/cli.js', () => {
   describe('auth-status', () => {
@@ -44,7 +44,7 @@ describe('bin/cli.js', () => {
 
 describe('runLoginCommand', () => {
   it('When login is invoked and runLoginFlow succeeds, then it prints the cached message and exits 0', async () => {
-    const { runLoginCommand } = await import('../../lib/util/credential/cli_commands.js')
+    const { runLoginCommand } = await import('../../../lib/util/credential/cli_commands.js')
 
     const runLoginFlow = mock.fn(async () => {})
     const credentialFactory = mock.fn(() => ({ runLoginFlow }))
@@ -72,7 +72,7 @@ describe('runLoginCommand', () => {
 
 describe('runLoginCommand BYO notice', () => {
   it('When source is managed, then no notice prints', async () => {
-    const { runLoginCommand } = await import('../../lib/util/credential/cli_commands.js')
+    const { runLoginCommand } = await import('../../../lib/util/credential/cli_commands.js')
 
     const runLoginFlow = mock.fn(async () => {})
     const credentialFactory = mock.fn(() => ({ runLoginFlow }))
@@ -101,7 +101,7 @@ describe('runLoginCommand BYO notice', () => {
   })
 
   it('When source is custom and no marker exists, then notice prints and marker is created', async () => {
-    const { runLoginCommand } = await import('../../lib/util/credential/cli_commands.js')
+    const { runLoginCommand } = await import('../../../lib/util/credential/cli_commands.js')
     const fs = await import('node:fs/promises')
     const os = await import('node:os')
     const path = await import('node:path')
@@ -137,7 +137,7 @@ describe('runLoginCommand BYO notice', () => {
   })
 
   it('When source is custom and marker exists, then notice does not print', async () => {
-    const { runLoginCommand } = await import('../../lib/util/credential/cli_commands.js')
+    const { runLoginCommand } = await import('../../../lib/util/credential/cli_commands.js')
     const fs = await import('node:fs/promises')
     const os = await import('node:os')
     const path = await import('node:path')
