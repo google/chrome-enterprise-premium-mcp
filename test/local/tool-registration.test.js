@@ -34,7 +34,6 @@ const CORE_TOOLS = [
   'create_regex_detector',
   'create_url_list_detector',
   'create_word_list_detector',
-  'diagnose_environment',
   'enable_chrome_enterprise_connectors',
   'get_chrome_activity_log',
   'get_connector_policy',
@@ -51,6 +50,7 @@ const CORE_TOOLS = [
 const EXPERIMENT_MAPPING = {
   [FLAGS.DELETE_TOOL_ENABLED]: ['delete_agent_dlp_rule', 'delete_detector'],
   [FLAGS.KNOWLEDGE_SEARCH_ENABLED]: ['search_content', 'list_documents'],
+  [FLAGS.DIAGNOSE_TOOL_ENABLED]: ['diagnose_environment'],
 }
 
 // Tests for SEB tool registration and individual tool handler logic.
