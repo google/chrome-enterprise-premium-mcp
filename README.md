@@ -73,24 +73,23 @@ https://www.googleapis.com/auth/admin.directory.customer.readonly,\
 https://www.googleapis.com/auth/apps.licensing,\
 https://www.googleapis.com/auth/cloud-identity.policies,\
 https://www.googleapis.com/auth/service.management,\
-https://www.googleapis.com/auth/service.management.readonly,\
 https://www.googleapis.com/auth/cloud-platform
 ```
 
 These scopes map to the underlying APIs:
 
-| Scope                                                                 | API                                                                             | Used for                                                           |
-| :-------------------------------------------------------------------- | :------------------------------------------------------------------------------ | :----------------------------------------------------------------- |
-| `openid`, `userinfo.email`                                            | OpenID Connect                                                                  | Identifies the principal in startup banner output                  |
-| `chrome.management.policy`                                            | [Chrome Policy](https://developers.google.com/chrome/policy)                    | Reading and writing connector policies, extension install policies |
-| `chrome.management.reports.readonly`                                  | [Chrome Management](https://developers.google.com/chrome/management)            | Browser version counts                                             |
-| `chrome.management.profiles.readonly`                                 | [Chrome Management](https://developers.google.com/chrome/management)            | Listing managed browser profiles                                   |
-| `admin.reports.audit.readonly`                                        | [Admin SDK Reports](https://developers.google.com/admin-sdk/reports)            | Chrome activity logs                                               |
-| `admin.directory.orgunit.readonly`                                    | [Admin SDK Directory](https://developers.google.com/admin-sdk/directory)        | Organizational unit hierarchy                                      |
-| `admin.directory.customer.readonly`                                   | [Admin SDK Directory](https://developers.google.com/admin-sdk/directory)        | Customer ID resolution                                             |
-| `apps.licensing`                                                      | [Enterprise License Manager](https://developers.google.com/admin-sdk/licensing) | CEP subscription and per-user license checks                       |
-| `cloud-identity.policies`                                             | [Cloud Identity](https://cloud.google.com/identity/docs)                        | DLP rules and content detectors (CRUD)                             |
-| `service.management`, `service.management.readonly`, `cloud-platform` | [Service Usage](https://cloud.google.com/service-usage/docs)                    | Checking and enabling required APIs                                |
+| Scope                                  | API                                                                             | Used for                                                           |
+| :------------------------------------- | :------------------------------------------------------------------------------ | :----------------------------------------------------------------- |
+| `openid`, `userinfo.email`             | OpenID Connect                                                                  | Identifies the principal in startup banner output                  |
+| `chrome.management.policy`             | [Chrome Policy](https://developers.google.com/chrome/policy)                    | Reading and writing connector policies, extension install policies |
+| `chrome.management.reports.readonly`   | [Chrome Management](https://developers.google.com/chrome/management)            | Browser version counts                                             |
+| `chrome.management.profiles.readonly`  | [Chrome Management](https://developers.google.com/chrome/management)            | Listing managed browser profiles                                   |
+| `admin.reports.audit.readonly`         | [Admin SDK Reports](https://developers.google.com/admin-sdk/reports)            | Chrome activity logs                                               |
+| `admin.directory.orgunit.readonly`     | [Admin SDK Directory](https://developers.google.com/admin-sdk/directory)        | Organizational unit hierarchy                                      |
+| `admin.directory.customer.readonly`    | [Admin SDK Directory](https://developers.google.com/admin-sdk/directory)        | Customer ID resolution                                             |
+| `apps.licensing`                       | [Enterprise License Manager](https://developers.google.com/admin-sdk/licensing) | CEP subscription and per-user license checks                       |
+| `cloud-identity.policies`              | [Cloud Identity](https://cloud.google.com/identity/docs)                        | DLP rules and content detectors (CRUD)                             |
+| `service.management`, `cloud-platform` | [Service Usage](https://cloud.google.com/service-usage/docs)                    | Checking and enabling required APIs                                |
 
 Then set a quota project (identifies which Google Cloud project's API
 enablement and quotas to use):
