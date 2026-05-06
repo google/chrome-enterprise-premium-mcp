@@ -47,70 +47,107 @@ describe('Auth', () => {
     assert.ok(client)
   })
 
-  test('When no auth token is provided, then it returns a GoogleAuth client', async () => {
-    let getClientCalled = false
+  test('When GOOGLE_APPLICATION_CREDENTIALS points at an SA key, then it returns a JWT bound to that key', async () => {
+    let observedConfig = null
+    const fakeKey = {
+      type: 'service_account',
+      client_email: 'svc@example.iam.gserviceaccount.com',
+      private_key: '-----BEGIN PRIVATE KEY-----\nstub\n-----END PRIVATE KEY-----\n',
+    }
     const { getAuthClient } = await esmock('../../lib/util/auth.js', {
+      'node:fs/promises': {
+        readFile: async () => JSON.stringify(fakeKey),
+      },
       'google-auth-library': {
-        GoogleAuth: class {
-          async getClient() {
-            getClientCalled = true
-            return {
-              getAccessToken: async () => ({ token: 'mock-token' }),
-            }
+        JWT: class {
+          constructor(cfg) {
+            observedConfig = cfg
           }
         },
       },
     })
-    const client = await getAuthClient([])
-    assert.ok(client)
-    assert.strictEqual(getClientCalled, true)
-    assert.equal(typeof client.getAccessToken, 'function')
+
+    const previous = process.env.GOOGLE_APPLICATION_CREDENTIALS
+    process.env.GOOGLE_APPLICATION_CREDENTIALS = '/tmp/fake-key.json'
+    try {
+      const client = await getAuthClient(['https://www.googleapis.com/auth/cloud-platform'])
+      assert.ok(client)
+      assert.strictEqual(observedConfig.email, 'svc@example.iam.gserviceaccount.com')
+      assert.deepStrictEqual(observedConfig.scopes, ['https://www.googleapis.com/auth/cloud-platform'])
+      assert.strictEqual(observedConfig.subject, undefined)
+    } finally {
+      if (previous === undefined) {
+        delete process.env.GOOGLE_APPLICATION_CREDENTIALS
+      } else {
+        // eslint-disable-next-line require-atomic-updates
+        process.env.GOOGLE_APPLICATION_CREDENTIALS = previous
+      }
+    }
   })
 
-  test('When ADC credentials are valid, then ensureADCCredentials returns true', async () => {
-    // Mock console.log/error to suppress output during test
-    const consoleLogMock = mock.method(console, 'log', () => {})
-    const consoleErrorMock = mock.method(console, 'error', () => {})
-
-    const { ensureADCCredentials } = await esmock('../../lib/util/auth.js', {
+  test('When CEP_IMPERSONATE_SUBJECT is set, then the JWT is built with that subject for DWD', async () => {
+    let observedConfig = null
+    const fakeKey = {
+      type: 'service_account',
+      client_email: 'svc@example.iam.gserviceaccount.com',
+      private_key: '-----BEGIN PRIVATE KEY-----\nstub\n-----END PRIVATE KEY-----\n',
+    }
+    const { getAuthClient } = await esmock('../../lib/util/auth.js', {
+      'node:fs/promises': {
+        readFile: async () => JSON.stringify(fakeKey),
+      },
       'google-auth-library': {
-        GoogleAuth: class {
-          async getClient() {
-            return {
-              getAccessToken: async () => ({ token: 'mock-token' }),
-            }
+        JWT: class {
+          constructor(cfg) {
+            observedConfig = cfg
           }
         },
       },
     })
 
-    const result = await ensureADCCredentials()
-    assert.strictEqual(result, true)
-
-    // Restore console mocks
-    consoleLogMock.mock.restore()
-    consoleErrorMock.mock.restore()
+    const prevCred = process.env.GOOGLE_APPLICATION_CREDENTIALS
+    const prevSub = process.env.CEP_IMPERSONATE_SUBJECT
+    process.env.GOOGLE_APPLICATION_CREDENTIALS = '/tmp/fake-key.json'
+    process.env.CEP_IMPERSONATE_SUBJECT = 'admin@example.com'
+    try {
+      await getAuthClient(['https://www.googleapis.com/auth/admin.directory.user'])
+      assert.strictEqual(observedConfig.subject, 'admin@example.com')
+    } finally {
+      if (prevCred === undefined) {
+        delete process.env.GOOGLE_APPLICATION_CREDENTIALS
+      } else {
+        // eslint-disable-next-line require-atomic-updates
+        process.env.GOOGLE_APPLICATION_CREDENTIALS = prevCred
+      }
+      if (prevSub === undefined) {
+        delete process.env.CEP_IMPERSONATE_SUBJECT
+      } else {
+        // eslint-disable-next-line require-atomic-updates
+        process.env.CEP_IMPERSONATE_SUBJECT = prevSub
+      }
+    }
   })
 
-  test('When ADC credentials are missing or invalid, then ensureADCCredentials returns false', async () => {
-    // Mock console.error to suppress output during test
-    const consoleErrorMock = mock.method(console, 'error', () => {})
-
-    const { ensureADCCredentials } = await esmock('../../lib/util/auth.js', {
-      'google-auth-library': {
-        GoogleAuth: class {
-          async getClient() {
-            throw new Error('No ADC found')
-          }
-        },
+  test('When GOOGLE_APPLICATION_CREDENTIALS points at a non-SA key, then it throws', async () => {
+    const { getAuthClient } = await esmock('../../lib/util/auth.js', {
+      'node:fs/promises': {
+        readFile: async () =>
+          JSON.stringify({ type: 'authorized_user', client_id: 'x', client_secret: 'y', refresh_token: 'z' }),
       },
     })
 
-    const result = await ensureADCCredentials()
-    assert.strictEqual(result, false)
-
-    // Restore console mocks
-    consoleErrorMock.mock.restore()
+    const previous = process.env.GOOGLE_APPLICATION_CREDENTIALS
+    process.env.GOOGLE_APPLICATION_CREDENTIALS = '/tmp/fake-key.json'
+    try {
+      await assert.rejects(() => getAuthClient([]), /not "service_account"/)
+    } finally {
+      if (previous === undefined) {
+        delete process.env.GOOGLE_APPLICATION_CREDENTIALS
+      } else {
+        // eslint-disable-next-line require-atomic-updates
+        process.env.GOOGLE_APPLICATION_CREDENTIALS = previous
+      }
+    }
   })
 
   describe('getAuthErrorMessage', () => {

@@ -15,9 +15,8 @@ limitations under the License.
 */
 
 /**
- * @file Tests the OAuth-cache fallback path of getAuthClient. Mocks GoogleAuth
- * so ADC genuinely throws; the cache file at ~/.config/cep-mcp/tokens.json is
- * backed up before each run and restored after.
+ * @file Tests the OAuth-flow cached-tokens path of getAuthClient. Backs up
+ * and restores the real cache at ~/.config/cep-mcp/tokens.json around each run.
  */
 
 import { describe, test, before, after } from 'node:test'
@@ -31,8 +30,11 @@ const CACHE_PATH = path.join(os.homedir(), '.config', 'cep-mcp', 'tokens.json')
 const SAVED_PATH = path.join(os.tmpdir(), `cep-tokens-saved-${process.pid}.json`)
 const SYNTHETIC_TOKEN = 'ya29.SYNTHETIC_TEST_TOKEN'
 
-describe('getAuthClient OAuth-cache fallback', () => {
+describe('getAuthClient OAuth-flow cached tokens', () => {
+  let savedAppCreds
   before(async () => {
+    savedAppCreds = process.env.GOOGLE_APPLICATION_CREDENTIALS
+    delete process.env.GOOGLE_APPLICATION_CREDENTIALS
     try {
       await fs.copyFile(CACHE_PATH, SAVED_PATH)
     } catch (err) {
@@ -54,6 +56,9 @@ describe('getAuthClient OAuth-cache fallback', () => {
   })
 
   after(async () => {
+    if (savedAppCreds !== undefined) {
+      process.env.GOOGLE_APPLICATION_CREDENTIALS = savedAppCreds
+    }
     try {
       await fs.copyFile(SAVED_PATH, CACHE_PATH)
       await fs.unlink(SAVED_PATH)
@@ -65,14 +70,9 @@ describe('getAuthClient OAuth-cache fallback', () => {
     }
   })
 
-  test('returns OAuth2Client populated from token cache when ADC throws', async () => {
+  test('When no authToken and no GOOGLE_APPLICATION_CREDENTIALS, then it returns an OAuth2Client populated from the token cache', async () => {
     const { getAuthClient } = await esmock('../../lib/util/auth.js', {
       'google-auth-library': {
-        GoogleAuth: class {
-          async getClient() {
-            throw new Error('SYNTHETIC: ADC unavailable')
-          }
-        },
         OAuth2Client: class {
           constructor() {
             this._creds = null
@@ -93,7 +93,7 @@ describe('getAuthClient OAuth-cache fallback', () => {
     assert.equal(tok.token, SYNTHETIC_TOKEN, 'returned cached token')
   })
 
-  test('When ADC throws and the cache file has mode 0644, then getAuthClient throws with a chmod hint', async t => {
+  test('When the cache file has mode 0644, then getAuthClient throws with a chmod hint', async t => {
     if (process.platform === 'win32') {
       return t.skip('mode bits are meaningless on Windows ACLs')
     }
@@ -101,11 +101,6 @@ describe('getAuthClient OAuth-cache fallback', () => {
     try {
       const { getAuthClient } = await esmock('../../lib/util/auth.js', {
         'google-auth-library': {
-          GoogleAuth: class {
-            async getClient() {
-              throw new Error('SYNTHETIC: ADC unavailable')
-            }
-          },
           OAuth2Client: class {
             constructor() {
               this._creds = null

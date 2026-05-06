@@ -25,7 +25,7 @@ describe('Helpers', () => {
 
     before(async () => {
       const helpersModule = await esmock('../../lib/util/helpers.js', {
-        '../../lib/util/auth.js': {
+        '../../lib/util/auth-error.js': {
           getAuthErrorMessage: () =>
             'The API requires a quota project. gcloud auth application-default set-quota-project. Your credentials have insufficient scopes',
         },
