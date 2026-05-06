@@ -16,7 +16,12 @@ limitations under the License.
 
 # Bring your own OAuth client
 
-To run `mcp auth login`, you need a Google OAuth client. Until Google provisions a managed client for this project, you must supply your own. Set `CEP_OAUTH_CLIENT_ID` and `CEP_OAUTH_CLIENT_SECRET` in your environment to point at a Desktop OAuth client that you create in your Google Cloud project.
+By default, `mcp auth login` uses a Google-managed Desktop OAuth client that ships with this project. You do not need to supply your own credentials to authenticate.
+
+Set `CEP_OAUTH_CLIENT_ID` and `CEP_OAUTH_CLIENT_SECRET` only if you want to authenticate through a Desktop OAuth client that you have created in a Google Cloud project of your own. With a custom client, the OAuth consent screen and any authorization grants are scoped to your own project rather than to the bundled one.
+
+> [!NOTE]
+> The `client_secret` of a Desktop OAuth client is a public value, not a confidential credential. Per Google's documentation for installed applications, the secret is "embedded in the source code of your application" and "is obviously not treated as a secret." Authorization is bound to the end user's Google consent and to the registered loopback redirect URI (`http://127.0.0.1`), not to the secret. The same property holds for any Desktop OAuth client you create yourself, including under BYO.
 
 When you log in, the CLI writes an access token to `~/.config/cep-mcp/tokens.json` with file mode `0600`. The cache contains the access token only—no refresh token—and the access token expires after about an hour.
 

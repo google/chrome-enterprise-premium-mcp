@@ -16,34 +16,34 @@ limitations under the License.
 
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { resolveOAuthClientConfig, managedClientIsPlaceholder } from '../../lib/util/credential/oauth_client_config.js'
-import {
-  MANAGED_OAUTH_CLIENT_ID,
-  MANAGED_OAUTH_CLIENT_SECRET,
-  MANAGED_OAUTH_CLIENT_PLACEHOLDER,
-} from '../../lib/constants.js'
+import { resolveOAuthClientConfig } from '../../lib/util/credential/oauth_client_config.js'
+import { MANAGED_OAUTH_CLIENT_ID, MANAGED_OAUTH_CLIENT_SECRET } from '../../lib/constants.js'
 
-describe('managed OAuth client placeholder', () => {
-  it('Both managed constants reference the shared TODO placeholder', () => {
-    assert.equal(MANAGED_OAUTH_CLIENT_ID, MANAGED_OAUTH_CLIENT_PLACEHOLDER)
-    assert.equal(MANAGED_OAUTH_CLIENT_SECRET, MANAGED_OAUTH_CLIENT_PLACEHOLDER)
+describe('managed OAuth client constants', () => {
+  it('When the bundled client id is read, then it is a non-empty Google OAuth client id', () => {
+    assert.equal(typeof MANAGED_OAUTH_CLIENT_ID, 'string')
+    assert.match(MANAGED_OAUTH_CLIENT_ID, /\.apps\.googleusercontent\.com$/)
   })
 
-  it('managedClientIsPlaceholder() returns true while the constants hold the TODO value', () => {
-    assert.equal(managedClientIsPlaceholder(), true)
+  it('When the bundled client secret is read, then it is a non-empty string with the GOCSPX prefix', () => {
+    assert.equal(typeof MANAGED_OAUTH_CLIENT_SECRET, 'string')
+    assert.match(MANAGED_OAUTH_CLIENT_SECRET, /^GOCSPX-/)
   })
 })
 
 describe('resolveOAuthClientConfig', () => {
-  it('When neither env var is set and managed client is unprovisioned, then it throws a clear TODO message', () => {
-    assert.throws(() => resolveOAuthClientConfig({}), /Managed OAuth client is not yet provisioned/)
+  it('When neither env var is set, then it returns the bundled managed client with source:managed', () => {
+    const config = resolveOAuthClientConfig({})
+    assert.equal(config.source, 'managed')
+    assert.equal(config.clientId, MANAGED_OAUTH_CLIENT_ID)
+    assert.equal(config.clientSecret, MANAGED_OAUTH_CLIENT_SECRET)
   })
 
-  it('When env vars are empty strings (set but blank), then it falls through to the unprovisioned-managed throw', () => {
-    assert.throws(
-      () => resolveOAuthClientConfig({ CEP_OAUTH_CLIENT_ID: '', CEP_OAUTH_CLIENT_SECRET: '' }),
-      /Managed OAuth client is not yet provisioned/,
-    )
+  it('When both env vars are empty strings, then it returns the bundled managed client with source:managed', () => {
+    const config = resolveOAuthClientConfig({ CEP_OAUTH_CLIENT_ID: '', CEP_OAUTH_CLIENT_SECRET: '' })
+    assert.equal(config.source, 'managed')
+    assert.equal(config.clientId, MANAGED_OAUTH_CLIENT_ID)
+    assert.equal(config.clientSecret, MANAGED_OAUTH_CLIENT_SECRET)
   })
 
   it('When both env vars are set, then it returns the custom values with source:custom', () => {
