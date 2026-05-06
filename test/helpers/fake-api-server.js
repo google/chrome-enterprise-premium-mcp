@@ -616,7 +616,6 @@ export function createFakeApp() {
     res.status(404).json({ error: { message: `Policy ${name} not found` } })
   })
 
-  // Service Usage: Get Service
   app.get('/v1/projects/:projectId/services/:serviceName', (req, res) => {
     const stateVal = state.serviceUsage[req.params.serviceName] || 'DISABLED'
     res.json({
@@ -625,7 +624,6 @@ export function createFakeApp() {
     })
   })
 
-  // Service Usage: Enable Service
   app.post('/v1/projects/:projectId/services/:serviceName\\:enable', (req, res) => {
     state.serviceUsage[req.params.serviceName] = 'ENABLED'
     res.json({
@@ -634,6 +632,18 @@ export function createFakeApp() {
         state: 'ENABLED',
       },
     })
+  })
+
+  app.get('/v1/services', (req, res) => {
+    const consumerId = req.query.consumerId
+    if (typeof consumerId !== 'string' || !consumerId.startsWith('project:')) {
+      res.status(400).json({ error: { message: 'consumerId must be of form project:PROJECT_ID' } })
+      return
+    }
+    const services = Object.entries(state.serviceUsage)
+      .filter(([, stateVal]) => stateVal === 'ENABLED')
+      .map(([serviceName]) => ({ serviceName, producerProjectId: 'google.com' }))
+    res.json({ services })
   })
 
   // Test Helper: Reset State
