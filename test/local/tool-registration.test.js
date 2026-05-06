@@ -94,6 +94,20 @@ describe('SEB Tool Registration', () => {
     assert.deepStrictEqual(registeredToolNames.sort(), expected)
   })
 
+  test('When registerEnableApi is false, then check_and_enable_cep_api is not registered', () => {
+    registerTools(server, { featureFlags: { isEnabled: () => false }, registerEnableApi: false })
+
+    const registeredToolNames = server.registerTool.mock.calls.map(call => call.arguments[0])
+    assert.ok(!registeredToolNames.includes('check_and_enable_cep_api'))
+  })
+
+  test('When registerEnableApi is omitted, then check_and_enable_cep_api is registered', () => {
+    registerTools(server, { featureFlags: { isEnabled: () => false } })
+
+    const registeredToolNames = server.registerTool.mock.calls.map(call => call.arguments[0])
+    assert.ok(registeredToolNames.includes('check_and_enable_cep_api'))
+  })
+
   test('When a shared session state is provided, then it is used across tool registrations', async () => {
     const mockAdminSdkClient = {
       listOrgUnits: mock.fn(async () => [{ orgUnitPath: '/Test' }]),

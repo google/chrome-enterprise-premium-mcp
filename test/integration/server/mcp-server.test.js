@@ -66,7 +66,7 @@ describe('MCP Server in stdio mode', () => {
     }
   })
 
-  test('When listTools is called, then it returns all registered tools', async () => {
+  test('When listTools is called in Google-managed OAuth mode, then check_and_enable_cep_api is absent', async () => {
     const response = await client.listTools()
 
     const tools = response.tools
@@ -75,7 +75,6 @@ describe('MCP Server in stdio mode', () => {
     assert.deepStrictEqual(
       toolNames.sort(),
       [
-        'check_and_enable_cep_api',
         'check_cep_subscription',
         'check_seb_extension_status',
         'check_user_cep_license',

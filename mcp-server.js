@@ -46,6 +46,7 @@ import { logger } from './lib/util/logger.js'
 import { printBanner, dim } from './lib/util/banner.js'
 import { buildScopesField, buildAuthRemediationLines, buildQuotaProjectWarning } from './lib/util/auth_messages.js'
 import { verifyIdToken, parseExpectedAudience } from './lib/util/credential/jwt_verifier.js'
+import { resolveOAuthClientConfig } from './lib/util/credential/oauth_client_config.js'
 import { TAGS, SCOPES } from './lib/constants.js'
 
 // Import Real Clients
@@ -248,6 +249,22 @@ export function createSseHandler(gcpInfo, sseTransports, getServerImpl = getServ
 }
 
 /**
+ * Returns whether the `enable_api` tool should be registered for this server.
+ * Skipped in Google-managed OAuth mode (the maintainer's project has APIs
+ * enabled, so end users never need to call it). Registered in all other
+ * modes — BYO OAuth, bearer header, ADC — defensively.
+ * @returns {boolean} True if `enable_api` should be registered.
+ */
+function shouldRegisterEnableApi() {
+  try {
+    const config = resolveOAuthClientConfig()
+    return config.source !== 'managed'
+  } catch {
+    return true
+  }
+}
+
+/**
  * Initializes and configures the MCP server instance.
  * @param {object} gcpInfo - The detected GCP environment metadata
  * @param {object} sharedSessionState - The shared session state for cross-request persistence
@@ -297,6 +314,7 @@ export async function getServer(gcpInfo, sharedSessionState) {
     apiOptions,
     dbPath: process.env.KNOWLEDGE_DB_PATH,
     featureFlags,
+    registerEnableApi: shouldRegisterEnableApi(),
   }
 
   registerTools(server, toolOptions, sharedSessionState)
