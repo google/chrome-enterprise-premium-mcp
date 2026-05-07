@@ -15,22 +15,8 @@ limitations under the License.
 */
 
 import assert from 'node:assert/strict'
-import { describe, test, mock } from 'node:test'
+import { describe, test } from 'node:test'
 import esmock from 'esmock'
-
-function createMockExecFile(...handlers) {
-  return mock.fn((cmd, args, opts, cb) => {
-    let stdout = ''
-    for (const handler of handlers) {
-      const result = handler(cmd, args, opts)
-      if (result !== undefined && result !== null) {
-        stdout = result
-        break
-      }
-    }
-    cb(null, stdout, '')
-  })
-}
 
 describe('Auth', () => {
   test('When an auth token is provided, then it returns an OAuth2 client', async () => {
@@ -151,170 +137,31 @@ describe('Auth', () => {
   })
 
   describe('getAuthErrorMessage', () => {
-    test('When a project with the required API enabled is found, then it is suggested', async () => {
-      const mockExecFile = createMockExecFile(
-        (cmd, args) => {
-          if (cmd === 'gcloud' && args.includes('--version')) {
-            return 'Google Cloud SDK'
-          }
-        },
-        (cmd, args) => {
-          if (cmd === 'gcloud' && args.includes('config') && args.includes('get-value')) {
-            return '(unset)\n'
-          }
-        },
-        (cmd, args) => {
-          if (cmd === 'gcloud' && args.includes('projects') && args.includes('list') && args.includes('--limit=10')) {
-            return 'proj-1\nproj-2\nproj-3\n'
-          }
-        },
-        (cmd, args) => {
-          if (cmd === 'gcloud' && args.includes('services') && args.includes('list')) {
-            const projectIndex = args.indexOf('--project') + 1
-            const projectId = args[projectIndex]
-            if (projectId === 'proj-2') {
-              return 'admin.googleapis.com\n'
-            }
-          }
-        },
-      )
-
-      const { getAuthErrorMessage } = await esmock('../../lib/util/auth-error.js', {
-        'node:child_process': {
-          execFile: mockExecFile,
-        },
-      })
-
+    test('When the error reports a missing quota project, then the remediation points at GOOGLE_CLOUD_QUOTA_PROJECT', async () => {
+      const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
       const error = new Error('The admin.googleapis.com API requires a quota project, which is not set by default.')
-      const message = await getAuthErrorMessage(error, { authMode: 'adc' })
+      const message = await getAuthErrorMessage(error)
 
-      assert.match(message, /We found a potential quota project "proj-2"/)
-      assert.match(message, /gcloud auth application-default set-quota-project proj-2/)
+      assert.match(message, /GOOGLE_CLOUD_QUOTA_PROJECT/)
+      assert.doesNotMatch(message, /gcloud auth application-default set-quota-project/)
     })
 
-    test('When no project has the API enabled, then it falls back to the most recent project', async () => {
-      const mockExecFile = createMockExecFile(
-        (cmd, args) => {
-          if (cmd === 'gcloud' && args.includes('--version')) {
-            return 'Google Cloud SDK'
-          }
-        },
-        (cmd, args) => {
-          if (cmd === 'gcloud' && args.includes('config') && args.includes('get-value')) {
-            return '(unset)\n'
-          }
-        },
-        (cmd, args) => {
-          if (cmd === 'gcloud' && args.includes('projects') && args.includes('list') && args.includes('--limit=10')) {
-            return 'proj-1\nproj-2\n'
-          }
-        },
-      )
+    test('When the error reports insufficient scopes, then the remediation points at `mcp auth login`', async () => {
+      const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
+      const error = new Error('Request had insufficient authentication scopes.')
+      const message = await getAuthErrorMessage(error)
 
-      const { getAuthErrorMessage } = await esmock('../../lib/util/auth-error.js', {
-        'node:child_process': {
-          execFile: mockExecFile,
-        },
-      })
-
-      const error = new Error('The admin.googleapis.com API requires a quota project, which is not set by default.')
-      const message = await getAuthErrorMessage(error, { authMode: 'adc' })
-
-      assert.match(message, /We found a potential quota project "proj-1"/) // Fallback to first (most recent)
+      assert.match(message, /mcp auth login/)
+      assert.doesNotMatch(message, /gcloud auth application-default login/)
     })
 
-    test('When no projects are found at all, then it falls back to a generic console URL message', async () => {
-      const mockExecFile = createMockExecFile(
-        (cmd, args) => {
-          if (cmd === 'gcloud' && args.includes('--version')) {
-            return 'Google Cloud SDK'
-          }
-        },
-        (cmd, args) => {
-          if (cmd === 'gcloud' && args.includes('config') && args.includes('get-value')) {
-            return '(unset)\n'
-          }
-        },
-      )
+    test('When the error reports missing credentials, then the remediation suggests `mcp auth login`', async () => {
+      const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
+      const error = new Error('Could not load the default credentials.')
+      const message = await getAuthErrorMessage(error)
 
-      const { getAuthErrorMessage } = await esmock('../../lib/util/auth-error.js', {
-        'node:child_process': {
-          execFile: mockExecFile,
-        },
-      })
-
-      const error = new Error('The admin.googleapis.com API requires a quota project, which is not set by default.')
-      const message = await getAuthErrorMessage(error, { authMode: 'adc' })
-
-      assert.match(message, /Google Cloud Console/)
-      assert.match(message, /console\.cloud\.google\.com\/cloud-resource-manager/)
-      assert.doesNotMatch(message, /gcloud projects list/)
-    })
-
-    test('When a project is already configured in gcloud, then it uses that project directly', async () => {
-      const mockExecFile = createMockExecFile(
-        (cmd, args) => {
-          if (cmd === 'gcloud' && args.includes('--version')) {
-            return 'Google Cloud SDK'
-          }
-        },
-        (cmd, args) => {
-          if (cmd === 'gcloud' && args.includes('config') && args.includes('get-value')) {
-            return 'configured-project\n'
-          }
-        },
-      )
-
-      const { getAuthErrorMessage } = await esmock('../../lib/util/auth-error.js', {
-        'node:child_process': {
-          execFile: mockExecFile,
-        },
-      })
-
-      const error = new Error('The admin.googleapis.com API requires a quota project, which is not set by default.')
-      const message = await getAuthErrorMessage(error, { authMode: 'adc' })
-
-      assert.match(message, /We found a potential quota project "configured-project"/)
-      assert.match(message, /gcloud auth application-default set-quota-project configured-project/)
-    })
-
-    describe('OAuth-flow mode', () => {
-      test('When authMode is oauth-flow and the error reports a missing quota project, then the remediation points at GOOGLE_CLOUD_QUOTA_PROJECT and not at a gcloud command', async () => {
-        const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
-        const error = new Error('The admin.googleapis.com API requires a quota project, which is not set by default.')
-        const message = await getAuthErrorMessage(error, { authMode: 'oauth-flow' })
-
-        assert.match(message, /GOOGLE_CLOUD_QUOTA_PROJECT/)
-        assert.doesNotMatch(message, /gcloud auth application-default set-quota-project/)
-        assert.doesNotMatch(message, /Please run:\ngcloud/)
-      })
-
-      test('When authMode is oauth-flow and the error reports insufficient scopes, then the remediation points at `mcp auth login`', async () => {
-        const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
-        const error = new Error('Request had insufficient authentication scopes.')
-        const message = await getAuthErrorMessage(error, { authMode: 'oauth-flow' })
-
-        assert.match(message, /mcp auth login/)
-        assert.doesNotMatch(message, /gcloud auth application-default login/)
-      })
-
-      test('When authMode is oauth-flow and the error reports missing credentials, then the remediation suggests `mcp auth login`', async () => {
-        const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
-        const error = new Error('Could not load the default credentials.')
-        const message = await getAuthErrorMessage(error, { authMode: 'oauth-flow' })
-
-        assert.match(message, /mcp auth login/)
-        assert.doesNotMatch(message, /Application Default Credentials are not set up/)
-      })
-
-      test('When authMode is oauth, then the trailing ADC paragraph is omitted', async () => {
-        const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
-        const error = new Error('The admin.googleapis.com API requires a quota project, which is not set by default.')
-        const message = await getAuthErrorMessage(error, { authMode: 'oauth-flow' })
-
-        assert.doesNotMatch(message, /Application Default Credentials are not set up/)
-        assert.doesNotMatch(message, /GOOGLE_APPLICATION_CREDENTIALS environment variable/)
-      })
+      assert.match(message, /mcp auth login/)
+      assert.doesNotMatch(message, /Application Default Credentials are not set up/)
     })
   })
 })
@@ -366,47 +213,5 @@ describe('getAuthClient quota project plumbing', () => {
         process.env.GOOGLE_CLOUD_QUOTA_PROJECT = previous
       }
     }
-  })
-})
-
-describe('getAuthErrorMessage detectAuthMode fallback', () => {
-  test('When the OAuth token cache has an access_token, then detection returns oauth-flow remediation', async () => {
-    const { getAuthErrorMessage } = await esmock('../../lib/util/auth-error.js', {
-      '../../lib/util/credential/token_cache.js': {
-        TokenCache: class {
-          static defaultPath() {
-            return '/tmp/fake-token-cache'
-          }
-          async read() {
-            return { access_token: 'fake-token', scope: 'openid' }
-          }
-        },
-      },
-    })
-    const error = new Error('The admin.googleapis.com API requires a quota project, which is not set by default.')
-    const message = await getAuthErrorMessage(error)
-    assert.match(message, /GOOGLE_CLOUD_QUOTA_PROJECT/)
-    assert.doesNotMatch(message, /gcloud auth application-default set-quota-project/)
-  })
-
-  test('When the OAuth token cache is empty, then detection returns adc remediation', async () => {
-    const { getAuthErrorMessage } = await esmock('../../lib/util/auth-error.js', {
-      '../../lib/util/credential/token_cache.js': {
-        TokenCache: class {
-          static defaultPath() {
-            return '/tmp/fake-token-cache'
-          }
-          async read() {
-            return null
-          }
-        },
-      },
-      'node:child_process': {
-        execFile: (_cmd, _args, _opts, cb) => cb(new Error('not installed')),
-      },
-    })
-    const error = new Error('The admin.googleapis.com API requires a quota project, which is not set by default.')
-    const message = await getAuthErrorMessage(error)
-    assert.match(message, /Google Cloud SDK|set-quota-project/)
   })
 })
