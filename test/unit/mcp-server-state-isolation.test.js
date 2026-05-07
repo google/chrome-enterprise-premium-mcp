@@ -34,8 +34,8 @@ const fakeMcpServer = {
 
 function makeRecorder() {
   const captured = []
-  const fn = async (_gcpInfo, sessionState) => {
-    captured.push(sessionState)
+  const fn = async (_gcpInfo, sessionState, principal) => {
+    captured.push({ sessionState, principal })
     return fakeMcpServer
   }
   return { fn, captured }
@@ -66,23 +66,64 @@ describe('HTTP per-request session state isolation', () => {
     await handler(fakeReq, fakeRes)
 
     assert.strictEqual(captured.length, 2, 'getServer must be called once per request')
-    assert.notStrictEqual(captured[0], captured[1], 'each request must get a distinct sessionState reference')
-    captured[0].customerId = 'C0TENANT1'
-    assert.strictEqual(captured[1].customerId, null, 'cross-tenant cache must not leak')
+    assert.notStrictEqual(
+      captured[0].sessionState,
+      captured[1].sessionState,
+      'each request must get a distinct sessionState reference',
+    )
+    captured[0].sessionState.customerId = 'C0TENANT1'
+    assert.strictEqual(captured[1].sessionState.customerId, null, 'cross-tenant cache must not leak')
+  })
+
+  test('createMcpPostHandler forwards req.verifiedPrincipal to getServer', async () => {
+    const { fn: recorder, captured } = makeRecorder()
+    const handler = createMcpPostHandler({}, recorder)
+    const principal = { email: 'admin@example.com', sub: '12345', aud: 'a', iss: 'https://accounts.google.com' }
+    const fakeReq = { body: {}, on: () => {}, verifiedPrincipal: principal }
+    const fakeRes = { on: () => {}, headersSent: false, status: () => fakeRes, json: () => {} }
+
+    await handler(fakeReq, fakeRes)
+
+    assert.strictEqual(captured[0].principal, principal)
+  })
+
+  test('createMcpPostHandler passes null principal when req.verifiedPrincipal is absent', async () => {
+    const { fn: recorder, captured } = makeRecorder()
+    const handler = createMcpPostHandler({}, recorder)
+    const fakeReq = { body: {}, on: () => {} }
+    const fakeRes = { on: () => {}, headersSent: false, status: () => fakeRes, json: () => {} }
+
+    await handler(fakeReq, fakeRes)
+
+    assert.strictEqual(captured[0].principal, null)
   })
 
   test('createSseHandler passes a distinct sessionState to getServer per request', async () => {
     const { fn: recorder, captured } = makeRecorder()
     const sseTransports = {}
     const handler = createSseHandler({}, sseTransports, recorder)
+    const fakeReq = { on: () => {} }
     const fakeRes = { on: () => {}, headersSent: false }
 
-    await handler({}, fakeRes)
-    await handler({}, fakeRes)
+    await handler(fakeReq, fakeRes)
+    await handler(fakeReq, fakeRes)
 
     assert.strictEqual(captured.length, 2)
-    assert.notStrictEqual(captured[0], captured[1])
-    captured[0].customerId = 'C0TENANT1'
-    assert.strictEqual(captured[1].customerId, null)
+    assert.notStrictEqual(captured[0].sessionState, captured[1].sessionState)
+    captured[0].sessionState.customerId = 'C0TENANT1'
+    assert.strictEqual(captured[1].sessionState.customerId, null)
+  })
+
+  test('createSseHandler forwards req.verifiedPrincipal to getServer', async () => {
+    const { fn: recorder, captured } = makeRecorder()
+    const sseTransports = {}
+    const handler = createSseHandler({}, sseTransports, recorder)
+    const principal = { email: 'admin@example.com', sub: '12345', aud: 'a', iss: 'https://accounts.google.com' }
+    const fakeReq = { verifiedPrincipal: principal }
+    const fakeRes = { on: () => {}, headersSent: false }
+
+    await handler(fakeReq, fakeRes)
+
+    assert.strictEqual(captured[0].principal, principal)
   })
 })
