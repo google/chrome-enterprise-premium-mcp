@@ -33,8 +33,6 @@ import { SetLevelRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import fs from 'node:fs/promises'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { GoogleAuth, OAuth2Client } from 'google-auth-library'
-
 const pkg = JSON.parse(readFileSync(fileURLToPath(new URL('./package.json', import.meta.url)), 'utf8'))
 
 import { buildServerInstructions } from './lib/knowledge/instructions.js'
@@ -44,9 +42,15 @@ import { checkGCP } from './lib/util/gcp.js'
 import { featureFlags, FLAGS } from './lib/util/feature_flags.js'
 import { logger } from './lib/util/logger.js'
 import { printBanner, dim } from './lib/util/banner.js'
-import { buildScopesField, buildAuthRemediationLines, buildQuotaProjectWarning } from './lib/util/auth_messages.js'
+import {
+  buildApiCredsField,
+  buildScopesField,
+  buildAuthRemediationLines,
+  buildQuotaProjectWarning,
+} from './lib/util/auth_messages.js'
 import { verifyIdToken, parseExpectedAudience } from './lib/util/credential/jwt_verifier.js'
 import { resolveOAuthClientConfig } from './lib/util/credential/oauth_client_config.js'
+import { oauthFlowCredential } from './lib/util/credential/oauth_flow.js'
 import { TAGS, SCOPES } from './lib/constants.js'
 
 // Import Real Clients
@@ -78,86 +82,15 @@ function shouldStartStdio(gcpInfo) {
 }
 
 /**
- * Probes Application Default Credentials and inspects the access token.
- *
- * Returns `{ valid: false }` when no usable credentials are configured.
- * When valid, hits the Google tokeninfo endpoint to read the granted
- * scopes off the access token, then diffs them against `requiredScopes`.
- * `cloud-platform` is treated as implicitly covering the
- * `service.management*` family (matches Google's IAM behavior).
- *
- * `scopesKnown` is false when tokeninfo could not be reached or rejected
- * the token (e.g. some self-signed JWT flows) — callers should not
- * report scope status as authoritative in that case.
- * @param {string[]} requiredScopes - The OAuth scopes the server needs.
- * @returns {Promise<{valid: boolean, email: ?string, missingScopes: string[], scopesKnown: boolean}>} Probe result.
+ * Probes the local OAuth-flow token cache and diffs its granted scopes
+ * against `requiredScopes`. Returns the standard `CredentialProbe` shape
+ * with an additional `quotaProject` field for the banner's quota warning.
+ * @param {string[]} requiredScopes - Scopes the server needs.
+ * @returns {Promise<import('./lib/util/credential/index.js').CredentialProbe & {quotaProject: ?string}>} The probe result.
  */
-async function probeADC(requiredScopes) {
-  const empty = {
-    valid: false,
-    email: null,
-    missingScopes: [],
-    scopesKnown: false,
-    credentialType: null,
-    quotaProject: null,
-  }
-  // Test mode (fake API server) bypasses real ADC; skipping the probe
-  // keeps test startup fast and avoids hitting Google in CI.
-  if (process.env.GOOGLE_API_ROOT_URL) {
-    return empty
-  }
-  // The probe touches the network twice (token endpoint, then tokeninfo).
-  // Cap it so a slow or offline environment can't hold the banner
-  // indefinitely; the server itself works regardless of whether the
-  // probe completes.
-  const PROBE_TIMEOUT_MS = 8000
-  const work = (async () => {
-    try {
-      const auth = new GoogleAuth()
-      const client = await auth.getClient()
-      const { token } = await client.getAccessToken()
-      if (!token) {
-        return empty
-      }
-      let email = client.email || null
-      let granted = []
-      try {
-        const info = await new OAuth2Client().getTokenInfo(token)
-        email = email || info.email || null
-        granted = info.scopes || []
-      } catch {
-        // tokeninfo rejects opaque or self-signed JWT tokens; surface as unknown.
-      }
-      const grantedSet = new Set(granted)
-      const cloudPlatform = grantedSet.has('https://www.googleapis.com/auth/cloud-platform')
-      const missingScopes = requiredScopes.filter(s => {
-        if (grantedSet.has(s)) {
-          return false
-        }
-        if (cloudPlatform && s.startsWith('https://www.googleapis.com/auth/service.management')) {
-          return false
-        }
-        return true
-      })
-      return {
-        valid: true,
-        email,
-        missingScopes,
-        scopesKnown: granted.length > 0,
-        credentialType: client.constructor?.name || null,
-        quotaProject: process.env.GOOGLE_CLOUD_QUOTA_PROJECT || client.quotaProjectId || null,
-      }
-    } catch {
-      return empty
-    }
-  })()
-  let timer
-  const timeout = new Promise(resolve => {
-    timer = setTimeout(() => resolve(empty), PROBE_TIMEOUT_MS)
-  })
-  const result = await Promise.race([work, timeout])
-  clearTimeout(timer)
-  return result
+async function probeOAuthFlow(requiredScopes) {
+  const probe = await oauthFlowCredential({ requiredScopes }).probe()
+  return { ...probe, quotaProject: process.env.GOOGLE_CLOUD_QUOTA_PROJECT || null }
 }
 
 /**
@@ -366,18 +299,24 @@ export async function runServer() {
         .join(', ') || 'None'
 
     const requiredScopes = Object.values(SCOPES)
-    const adc = await probeADC(requiredScopes)
+    const probe = await probeOAuthFlow(requiredScopes)
+    let oauthClientConfig = null
+    try {
+      oauthClientConfig = resolveOAuthClientConfig()
+    } catch {
+      // Resolution failures fall through to the unresolved banner field.
+    }
 
     const printServerStatus = assignedPort => {
       printBanner({
         transport: isStdio ? 'Stdio' : ['SSE/HTTP', `(Port: ${assignedPort})`],
         auth: isStdio ? ['None', '(Local channel)'] : ['None', '(Unauthenticated)'],
-        apiCreds: adc.valid ? ['ADC', adc.email ? `(${adc.email})` : '(detected)'] : ['ADC', '(not configured)'],
-        scopes: buildScopesField(adc, requiredScopes),
+        apiCreds: buildApiCredsField(probe, oauthClientConfig),
+        scopes: buildScopesField(probe, requiredScopes),
         dataAccess: process.env.GOOGLE_API_ROOT_URL ? 'Fake' : 'Production',
         knowledge: ['lib/knowledge', `(${articleCount} articles)`],
       })
-      const remediation = buildAuthRemediationLines(adc, requiredScopes)
+      const remediation = buildAuthRemediationLines(probe, requiredScopes)
       if (remediation) {
         console.log()
         for (const line of remediation) {
@@ -385,7 +324,7 @@ export async function runServer() {
         }
         console.log()
       }
-      const quotaWarning = buildQuotaProjectWarning(adc)
+      const quotaWarning = buildQuotaProjectWarning(probe)
       if (quotaWarning) {
         console.log()
         for (const line of quotaWarning) {
