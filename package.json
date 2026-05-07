@@ -39,6 +39,9 @@
     "test:integration:fake": "CEP_LOG_LEVEL=SILENT SKIP_SLOW=true EXPERIMENT_DELETE_TOOL_ENABLED=true node test/run-integration.js fake",
     "test:integration:real": "CEP_LOG_LEVEL=SILENT EXPERIMENT_DELETE_TOOL_ENABLED=true node test/run-integration.js real",
     "test:smoke": "CEP_LOG_LEVEL=SILENT GCP_STDIO=false node test/local/smoke-test.js",
+    "test:mutation": "stryker run",
+    "test:mutation:incremental": "stryker run --incremental",
+    "test:mutation:full": "stryker run --mutate 'lib/**/*.js,!lib/**/*.test.js'",
     "test:unit": "CEP_LOG_LEVEL=SILENT node test/run-unit.js"
   },
   "lint-staged": {
@@ -61,6 +64,7 @@
     "@commitlint/config-conventional": "^20.5.3",
     "@eslint/js": "^9.0.0",
     "@google/generative-ai": "^0.24.1",
+    "@stryker-mutator/core": "^9.6.1",
     "eslint": "^9.0.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-jsdoc": "^50.6.0",

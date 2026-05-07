@@ -33,3 +33,8 @@ session.db
 .adk/
 
 .DS_Store
+
+# Stryker mutation testing
+.stryker-tmp/
+reports/mutation/
+stryker-incremental.json
