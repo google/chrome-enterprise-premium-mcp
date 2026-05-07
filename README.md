@@ -9,26 +9,7 @@ connector policies, browser telemetry, and license management as MCP tools,
 so any MCP-compatible AI agent can inspect and configure a Chrome Enterprise
 environment.
 
-> [!CAUTION]
-> **This server is an administrator-level interface to Chrome Enterprise Premium.**
-> When you connect it to an MCP client, you can use natural-language prompts to:
->
-> - Create, modify, and delete DLP rules and content detectors.
-> - Change connector policies.
-> - Force-install browser extensions onto every managed Chrome browser.
-> - Enable Google Cloud APIs on your project.
->
-> An attacker who plants hidden instructions in untrusted inputs—mail,
-> documents, scraped pages, ticket bodies—can hijack the connected MCP
-> client through [indirect prompt injection](https://en.wikipedia.org/wiki/Prompt_injection).
-> The attacker can then run those tools without your consent.
->
-> To reduce the blast radius:
->
-> - Connect this server only to MCP clients you trust, on data sources you trust.
-> - Treat every document, message, and webpage you put in front of the agent as untrusted. It might contain hidden instructions.
-> - Pay extra attention to mutating tools (`create_*`, `update_*`, `delete_*`, `enable_*`); they have tenant-wide security impact.
-> - Use a dedicated, least-privilege admin account when experimenting.
+<img width="1280" height="640" alt="c7b0d696-8488-48f9-8a11-bf8bbc72ee7e" src="https://github.com/user-attachments/assets/2665d05d-3f02-4577-8183-2972e74b02e6" />
 
 ## Quick start
 
@@ -107,29 +88,7 @@ Or enable them from the
 The server uses **stdio** transport; your MCP client launches it as a child
 process. Add the config snippet for your client:
 
-<details>
-<summary><strong>VS Code</strong></summary>
-
-Add to `.vscode/mcp.json`:
-
-```json
-{
-  "servers": {
-    "cep": {
-      "command": "npx",
-      "args": ["-y", "@google/chrome-enterprise-premium-mcp@latest"],
-      "env": { "GCP_STDIO": "true" }
-    }
-  }
-}
-```
-
-</details>
-
-<details>
-<summary><strong>Gemini CLI</strong></summary>
-
-Add to `~/.gemini/settings.json`:
+For example, add to `~/.gemini/settings.json`:
 
 ```json
 {
@@ -159,6 +118,27 @@ Restart your MCP client, then ask:
 
 You should see the available tools listed in the response. If they don't
 appear, see [Troubleshooting](#troubleshooting) for the usual causes.
+
+> [!CAUTION]
+> **This server is an administrator-level interface to Chrome Enterprise Premium.**
+> When you connect it to an MCP client, you can use natural-language prompts to:
+>
+> - Create, modify, and delete DLP rules and content detectors.
+> - Change connector policies.
+> - Force-install browser extensions onto every managed Chrome browser.
+> - Enable Google Cloud APIs on your project.
+>
+> An attacker who plants hidden instructions in untrusted inputs—mail,
+> documents, scraped pages, ticket bodies—can hijack the connected MCP
+> client through [indirect prompt injection](https://en.wikipedia.org/wiki/Prompt_injection).
+> The attacker can then run those tools without your consent.
+>
+> To reduce the blast radius:
+>
+> - Connect this server only to MCP clients you trust, on data sources you trust.
+> - Treat every document, message, and webpage you put in front of the agent as untrusted. It might contain hidden instructions.
+> - Pay extra attention to mutating tools (`create_*`, `update_*`, `delete_*`, `enable_*`); they have tenant-wide security impact.
+> - Use a dedicated, least-privilege admin account when experimenting.
 
 ## Configuration
 
