@@ -58,9 +58,17 @@ PORT=8080 GCP_STDIO=false npx -y @google/chrome-enterprise-premium-mcp@latest
 
 ## Authenticate to Google APIs
 
-The server resolves credentials in `lib/util/auth.js#getAuthClient` in three steps. First, if the inbound HTTP request carries an `Authorization: Bearer <token>` header, the server forwards that token to Google verbatim. Otherwise, if `GOOGLE_APPLICATION_CREDENTIALS` is set, the server reads the service-account key file and signs requests with a JWT (set `CEP_IMPERSONATE_SUBJECT` to a user email if you want domain-wide delegation). Otherwise, the server reads the OAuth access token that `mcp auth login` cached at `~/.config/cep-mcp/tokens.json`.
+The server resolves credentials in `lib/util/auth.js#getAuthClient` and tries each source in turn:
 
-Most workstation users want the OAuth flow (`mcp auth login`); most hosted deployments want bearer pass-through; service accounts are for the cases where neither fits. If you're not sure which one applies to you, the [Which auth path should I use?](faq.md#which-auth-path-should-i-use) FAQ entry walks through the common deployment shapes.
+1. **Inbound bearer token.** If the HTTP request carries an `Authorization: Bearer <token>` header, the server forwards that token to Google verbatim.
+
+2. **Service-account key.** Otherwise, if `GOOGLE_APPLICATION_CREDENTIALS` is set, the server reads the service-account JSON key file and signs requests with a JWT. Set `CEP_IMPERSONATE_SUBJECT` to a user email to enable domain-wide delegation.
+
+3. **Cached OAuth token.** Otherwise, the server reads the access token that `mcp auth login` cached at `~/.config/cep-mcp/tokens.json`.
+
+Most workstation users want the OAuth flow. Most hosted deployments (Cloud Run, Vertex AI Agent Engine) want bearer pass-through. Service accounts cover the cases where neither fits.
+
+If you're not sure which path applies to you, the [Which auth path should I use?](faq.md#which-auth-path-should-i-use) FAQ entry walks through the common deployment shapes.
 
 | Setup                          | Transport | Credential source                           | Setup walkthrough                                                                               |
 | :----------------------------- | :-------- | :------------------------------------------ | :---------------------------------------------------------------------------------------------- |
