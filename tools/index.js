@@ -102,10 +102,15 @@ export function registerTools(server, options = {}, sessionState) {
     registerCheckAndEnableCepApiTool(server, { ...commonOpts, serviceUsageClient }, state)
   }
   registerEnableChromeEnterpriseConnectorsTool(server, { ...commonOpts, chromePolicyClient }, state)
-  registerDiagnoseEnvironmentTool(
-    server,
-    { ...commonOpts, chromeManagementClient, chromePolicyClient, cloudIdentityClient },
-    state,
-  )
+
+  if (flags.isEnabled(FLAGS.DIAGNOSE_TOOL_ENABLED)) {
+    logger.debug(`${TAGS.MCP} Registering diagnose tool (EXPERIMENT_DIAGNOSE_TOOL_ENABLED is active)`)
+    registerDiagnoseEnvironmentTool(
+      server,
+      { ...commonOpts, chromeManagementClient, chromePolicyClient, cloudIdentityClient },
+      state,
+    )
+  }
+
   registerKnowledgeTools(server, { ...options, featureFlags: flags }, state)
 }

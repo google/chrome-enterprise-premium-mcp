@@ -34,7 +34,6 @@ const CORE_TOOLS = [
   'create_regex_detector',
   'create_url_list_detector',
   'create_word_list_detector',
-  'diagnose_environment',
   'enable_chrome_enterprise_connectors',
   'get_chrome_activity_log',
   'get_connector_policy',
@@ -49,6 +48,8 @@ const CORE_TOOLS = [
 ]
 
 const DELETE_EXPERIMENT_TOOLS = ['delete_agent_dlp_rule', 'delete_detector']
+
+const DIAGNOSE_EXPERIMENT_TOOLS = ['diagnose_environment']
 
 const KNOWLEDGE_SEARCH_EXPERIMENT_TOOLS = ['search_content', 'list_documents']
 
@@ -91,6 +92,18 @@ describe('SEB Tool Registration', () => {
 
     const registeredToolNames = server.registerTool.mock.calls.map(call => call.arguments[0])
     const expected = [...CORE_TOOLS, ...DELETE_EXPERIMENT_TOOLS].sort()
+    assert.deepStrictEqual(registeredToolNames.sort(), expected)
+  })
+
+  test('When registerTools is called with DIAGNOSE_TOOL_ENABLED, then it registers core + diagnose tools', () => {
+    registerTools(server, {
+      featureFlags: {
+        isEnabled: flag => flag === FLAGS.DIAGNOSE_TOOL_ENABLED,
+      },
+    })
+
+    const registeredToolNames = server.registerTool.mock.calls.map(call => call.arguments[0])
+    const expected = [...CORE_TOOLS, ...DIAGNOSE_EXPERIMENT_TOOLS].sort()
     assert.deepStrictEqual(registeredToolNames.sort(), expected)
   })
 
