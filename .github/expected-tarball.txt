@@ -45,7 +45,6 @@ lib/util/banner.js
 lib/util/cel_validator.js
 lib/util/chrome_dlp_constants.js
 lib/util/connector_policy_helper.js
-lib/util/credential/adc.js
 lib/util/credential/cli_commands.js
 lib/util/credential/index.js
 lib/util/credential/jwt_verifier.js
