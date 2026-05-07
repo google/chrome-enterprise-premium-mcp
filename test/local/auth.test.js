@@ -15,22 +15,8 @@ limitations under the License.
 */
 
 import assert from 'node:assert/strict'
-import { describe, test, mock } from 'node:test'
+import { describe, test } from 'node:test'
 import esmock from 'esmock'
-
-function createMockExecFile(...handlers) {
-  return mock.fn((cmd, args, opts, cb) => {
-    let stdout = ''
-    for (const handler of handlers) {
-      const result = handler(cmd, args, opts)
-      if (result !== undefined && result !== null) {
-        stdout = result
-        break
-      }
-    }
-    cb(null, stdout, '')
-  })
-}
 
 describe('Auth', () => {
   test('When an auth token is provided, then it returns an OAuth2 client', async () => {
@@ -47,198 +33,128 @@ describe('Auth', () => {
     assert.ok(client)
   })
 
-  test('When no auth token is provided, then it returns a GoogleAuth client', async () => {
-    let getClientCalled = false
+  test('When GOOGLE_APPLICATION_CREDENTIALS points at an SA key, then it returns a JWT bound to that key', async () => {
+    let observedConfig = null
+    const fakeKey = {
+      type: 'service_account',
+      client_email: 'svc@example.iam.gserviceaccount.com',
+      private_key: '-----BEGIN PRIVATE KEY-----\nstub\n-----END PRIVATE KEY-----\n',
+    }
     const { getAuthClient } = await esmock('../../lib/util/auth.js', {
+      'node:fs/promises': {
+        readFile: async () => JSON.stringify(fakeKey),
+      },
       'google-auth-library': {
-        GoogleAuth: class {
-          async getClient() {
-            getClientCalled = true
-            return {
-              getAccessToken: async () => ({ token: 'mock-token' }),
-            }
+        JWT: class {
+          constructor(cfg) {
+            observedConfig = cfg
           }
         },
       },
     })
-    const client = await getAuthClient([])
-    assert.ok(client)
-    assert.strictEqual(getClientCalled, true)
-    assert.equal(typeof client.getAccessToken, 'function')
+
+    const previous = process.env.GOOGLE_APPLICATION_CREDENTIALS
+    process.env.GOOGLE_APPLICATION_CREDENTIALS = '/tmp/fake-key.json'
+    try {
+      const client = await getAuthClient(['https://www.googleapis.com/auth/cloud-platform'])
+      assert.ok(client)
+      assert.strictEqual(observedConfig.email, 'svc@example.iam.gserviceaccount.com')
+      assert.deepStrictEqual(observedConfig.scopes, ['https://www.googleapis.com/auth/cloud-platform'])
+      assert.strictEqual(observedConfig.subject, undefined)
+    } finally {
+      if (previous === undefined) {
+        delete process.env.GOOGLE_APPLICATION_CREDENTIALS
+      } else {
+        // eslint-disable-next-line require-atomic-updates
+        process.env.GOOGLE_APPLICATION_CREDENTIALS = previous
+      }
+    }
   })
 
-  test('When ADC credentials are valid, then ensureADCCredentials returns true', async () => {
-    // Mock console.log/error to suppress output during test
-    const consoleLogMock = mock.method(console, 'log', () => {})
-    const consoleErrorMock = mock.method(console, 'error', () => {})
-
-    const { ensureADCCredentials } = await esmock('../../lib/util/auth.js', {
+  test('When CEP_IMPERSONATE_SUBJECT is set, then the JWT is built with that subject for DWD', async () => {
+    let observedConfig = null
+    const fakeKey = {
+      type: 'service_account',
+      client_email: 'svc@example.iam.gserviceaccount.com',
+      private_key: '-----BEGIN PRIVATE KEY-----\nstub\n-----END PRIVATE KEY-----\n',
+    }
+    const { getAuthClient } = await esmock('../../lib/util/auth.js', {
+      'node:fs/promises': {
+        readFile: async () => JSON.stringify(fakeKey),
+      },
       'google-auth-library': {
-        GoogleAuth: class {
-          async getClient() {
-            return {
-              getAccessToken: async () => ({ token: 'mock-token' }),
-            }
+        JWT: class {
+          constructor(cfg) {
+            observedConfig = cfg
           }
         },
       },
     })
 
-    const result = await ensureADCCredentials()
-    assert.strictEqual(result, true)
-
-    // Restore console mocks
-    consoleLogMock.mock.restore()
-    consoleErrorMock.mock.restore()
+    const prevCred = process.env.GOOGLE_APPLICATION_CREDENTIALS
+    const prevSub = process.env.CEP_IMPERSONATE_SUBJECT
+    process.env.GOOGLE_APPLICATION_CREDENTIALS = '/tmp/fake-key.json'
+    process.env.CEP_IMPERSONATE_SUBJECT = 'admin@example.com'
+    try {
+      await getAuthClient(['https://www.googleapis.com/auth/admin.directory.user'])
+      assert.strictEqual(observedConfig.subject, 'admin@example.com')
+    } finally {
+      if (prevCred === undefined) {
+        delete process.env.GOOGLE_APPLICATION_CREDENTIALS
+      } else {
+        // eslint-disable-next-line require-atomic-updates
+        process.env.GOOGLE_APPLICATION_CREDENTIALS = prevCred
+      }
+      if (prevSub === undefined) {
+        delete process.env.CEP_IMPERSONATE_SUBJECT
+      } else {
+        // eslint-disable-next-line require-atomic-updates
+        process.env.CEP_IMPERSONATE_SUBJECT = prevSub
+      }
+    }
   })
 
-  test('When ADC credentials are missing or invalid, then ensureADCCredentials returns false', async () => {
-    // Mock console.error to suppress output during test
-    const consoleErrorMock = mock.method(console, 'error', () => {})
-
-    const { ensureADCCredentials } = await esmock('../../lib/util/auth.js', {
-      'google-auth-library': {
-        GoogleAuth: class {
-          async getClient() {
-            throw new Error('No ADC found')
-          }
-        },
+  test('When GOOGLE_APPLICATION_CREDENTIALS points at a non-SA key, then it throws', async () => {
+    const { getAuthClient } = await esmock('../../lib/util/auth.js', {
+      'node:fs/promises': {
+        readFile: async () =>
+          JSON.stringify({ type: 'authorized_user', client_id: 'x', client_secret: 'y', refresh_token: 'z' }),
       },
     })
 
-    const result = await ensureADCCredentials()
-    assert.strictEqual(result, false)
-
-    // Restore console mocks
-    consoleErrorMock.mock.restore()
+    const previous = process.env.GOOGLE_APPLICATION_CREDENTIALS
+    process.env.GOOGLE_APPLICATION_CREDENTIALS = '/tmp/fake-key.json'
+    try {
+      await assert.rejects(() => getAuthClient([]), /not "service_account"/)
+    } finally {
+      if (previous === undefined) {
+        delete process.env.GOOGLE_APPLICATION_CREDENTIALS
+      } else {
+        // eslint-disable-next-line require-atomic-updates
+        process.env.GOOGLE_APPLICATION_CREDENTIALS = previous
+      }
+    }
   })
 
   describe('getAuthErrorMessage', () => {
-    test('When a project with the required API enabled is found, then it is suggested', async () => {
-      const mockExecFile = createMockExecFile(
-        (cmd, args) => {
-          if (cmd === 'gcloud' && args.includes('--version')) {
-            return 'Google Cloud SDK'
-          }
-        },
-        (cmd, args) => {
-          if (cmd === 'gcloud' && args.includes('config') && args.includes('get-value')) {
-            return '(unset)\n'
-          }
-        },
-        (cmd, args) => {
-          if (cmd === 'gcloud' && args.includes('projects') && args.includes('list') && args.includes('--limit=10')) {
-            return 'proj-1\nproj-2\nproj-3\n'
-          }
-        },
-        (cmd, args) => {
-          if (cmd === 'gcloud' && args.includes('services') && args.includes('list')) {
-            const projectIndex = args.indexOf('--project') + 1
-            const projectId = args[projectIndex]
-            if (projectId === 'proj-2') {
-              return 'admin.googleapis.com\n'
-            }
-          }
-        },
+    test('When the error reports SERVICE_DISABLED for a BYO OAuth client owner project, then the remediation lists the required APIs and points at the BYO walkthrough', async () => {
+      const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
+      const error = new Error(
+        'Admin SDK API has not been used in project 123456789 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/admin.googleapis.com/overview?project=123456789 then retry.',
       )
+      const message = getAuthErrorMessage(error)
 
-      const { getAuthErrorMessage } = await esmock('../../lib/util/auth-error.js', {
-        'node:child_process': {
-          execFile: mockExecFile,
-        },
-      })
-
-      const error = new Error('The admin.googleapis.com API requires a quota project, which is not set by default.')
-      const message = await getAuthErrorMessage(error)
-
-      assert.match(message, /We found a potential quota project "proj-2"/)
-      assert.match(message, /gcloud auth application-default set-quota-project proj-2/)
+      assert.match(message, /admin\.googleapis\.com/)
+      assert.match(message, /gcloud services enable/)
+      assert.match(message, /auth-bring-your-own-oauth-client\.md/)
     })
 
-    test('When no project has the API enabled, then it falls back to the most recent project', async () => {
-      const mockExecFile = createMockExecFile(
-        (cmd, args) => {
-          if (cmd === 'gcloud' && args.includes('--version')) {
-            return 'Google Cloud SDK'
-          }
-        },
-        (cmd, args) => {
-          if (cmd === 'gcloud' && args.includes('config') && args.includes('get-value')) {
-            return '(unset)\n'
-          }
-        },
-        (cmd, args) => {
-          if (cmd === 'gcloud' && args.includes('projects') && args.includes('list') && args.includes('--limit=10')) {
-            return 'proj-1\nproj-2\n'
-          }
-        },
-      )
+    test('When the error reports insufficient scopes, then the remediation points at `mcp auth login`', async () => {
+      const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
+      const error = new Error('Request had insufficient authentication scopes.')
+      const message = getAuthErrorMessage(error)
 
-      const { getAuthErrorMessage } = await esmock('../../lib/util/auth-error.js', {
-        'node:child_process': {
-          execFile: mockExecFile,
-        },
-      })
-
-      const error = new Error('The admin.googleapis.com API requires a quota project, which is not set by default.')
-      const message = await getAuthErrorMessage(error)
-
-      assert.match(message, /We found a potential quota project "proj-1"/) // Fallback to first (most recent)
-    })
-
-    test('When no projects are found at all, then it falls back to a generic console URL message', async () => {
-      const mockExecFile = createMockExecFile(
-        (cmd, args) => {
-          if (cmd === 'gcloud' && args.includes('--version')) {
-            return 'Google Cloud SDK'
-          }
-        },
-        (cmd, args) => {
-          if (cmd === 'gcloud' && args.includes('config') && args.includes('get-value')) {
-            return '(unset)\n'
-          }
-        },
-      )
-
-      const { getAuthErrorMessage } = await esmock('../../lib/util/auth-error.js', {
-        'node:child_process': {
-          execFile: mockExecFile,
-        },
-      })
-
-      const error = new Error('The admin.googleapis.com API requires a quota project, which is not set by default.')
-      const message = await getAuthErrorMessage(error)
-
-      assert.match(message, /Google Cloud Console/)
-      assert.match(message, /console\.cloud\.google\.com\/cloud-resource-manager/)
-      assert.doesNotMatch(message, /gcloud projects list/)
-    })
-
-    test('When a project is already configured in gcloud, then it uses that project directly', async () => {
-      const mockExecFile = createMockExecFile(
-        (cmd, args) => {
-          if (cmd === 'gcloud' && args.includes('--version')) {
-            return 'Google Cloud SDK'
-          }
-        },
-        (cmd, args) => {
-          if (cmd === 'gcloud' && args.includes('config') && args.includes('get-value')) {
-            return 'configured-project\n'
-          }
-        },
-      )
-
-      const { getAuthErrorMessage } = await esmock('../../lib/util/auth-error.js', {
-        'node:child_process': {
-          execFile: mockExecFile,
-        },
-      })
-
-      const error = new Error('The admin.googleapis.com API requires a quota project, which is not set by default.')
-      const message = await getAuthErrorMessage(error)
-
-      assert.match(message, /We found a potential quota project "configured-project"/)
-      assert.match(message, /gcloud auth application-default set-quota-project configured-project/)
+      assert.match(message, /mcp auth login/)
     })
   })
 })

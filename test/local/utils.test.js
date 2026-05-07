@@ -167,7 +167,7 @@ describe('Tool Utils', () => {
       })
     })
 
-    test('When handler fails with 401, then it returns a proactive remediation message with all required scopes', async () => {
+    test('When handler fails with 401 and no inbound bearer, then it points the user at `mcp auth login`', async () => {
       const handler = async () => {
         const error = new Error('Unauthorized')
         error.status = 401
@@ -179,12 +179,11 @@ describe('Tool Utils', () => {
 
       assert.strictEqual(result.isError, true)
       assert.ok(result.content[0].text.includes('Authentication required'))
-      assert.ok(result.content[0].text.includes('gcloud auth application-default login'))
-      assert.ok(result.content[0].text.includes('chrome.management.profiles.readonly'))
+      assert.ok(result.content[0].text.includes('mcp auth login'))
       assert.ok(!result.structuredContent)
     })
 
-    test('When handler fails with 403, then it returns a proactive remediation message without structuredContent', async () => {
+    test('When handler fails with 403 and no inbound bearer, then it lists `mcp auth login` and the required APIs', async () => {
       const handler = async () => {
         const error = new Error('Forbidden')
         error.status = 403
@@ -196,12 +195,12 @@ describe('Tool Utils', () => {
 
       assert.strictEqual(result.isError, true)
       assert.ok(result.content[0].text.includes('Permission denied'))
-      assert.ok(result.content[0].text.includes('gcloud auth application-default login'))
-      assert.match(result.content[0].text, /\badmin\.googleapis\.com\b/)
+      assert.ok(result.content[0].text.includes('mcp auth login'))
+      assert.match(result.content[0].text, /check_and_enable_cep_api|SERVICE_NAMES/)
       assert.ok(!result.structuredContent)
     })
 
-    test('When handler fails with invalid_grant, then it returns a proactive remediation message', async () => {
+    test('When handler fails with invalid_grant, then it points the user at `mcp auth login`', async () => {
       const handler = async () => {
         throw new Error('API Error: invalid_grant - reauth related error (invalid_rapt)')
       }
@@ -211,11 +210,11 @@ describe('Tool Utils', () => {
 
       assert.strictEqual(result.isError, true)
       assert.ok(result.content[0].text.includes('Authentication required'))
-      assert.ok(result.content[0].text.includes('gcloud auth application-default login'))
+      assert.ok(result.content[0].text.includes('mcp auth login'))
       assert.ok(!result.structuredContent)
     })
 
-    test('When handler fails with 401 and an auth header is present, then it returns an OAuth remediation message', async () => {
+    test('When handler fails with 401 and an inbound Bearer token is present, then the remediation tells the caller to refresh the inbound token', async () => {
       const handler = async () => {
         const error = new Error('Unauthorized')
         error.status = 401
@@ -228,11 +227,10 @@ describe('Tool Utils', () => {
 
       assert.strictEqual(result.isError, true)
       assert.ok(result.content[0].text.includes('Authentication required'))
-      assert.ok(result.content[0].text.includes('/mcp reauth'))
-      assert.ok(!result.content[0].text.includes('gcloud auth application-default login'))
+      assert.match(result.content[0].text, /Bearer token .* expired or is invalid/)
     })
 
-    test('When handler fails with 403 and an auth header is present, then it returns an OAuth remediation message', async () => {
+    test('When handler fails with 403 and an inbound Bearer token is present, then the remediation tells the caller to refresh the inbound token', async () => {
       const handler = async () => {
         const error = new Error('Forbidden')
         error.status = 403
@@ -245,9 +243,8 @@ describe('Tool Utils', () => {
 
       assert.strictEqual(result.isError, true)
       assert.ok(result.content[0].text.includes('Permission denied'))
-      assert.ok(result.content[0].text.includes('/mcp reauth'))
-      assert.match(result.content[0].text, /\badmin\.googleapis\.com\b/)
-      assert.ok(!result.content[0].text.includes('gcloud auth application-default login'))
+      assert.match(result.content[0].text, /Refresh the inbound Bearer token/)
+      assert.match(result.content[0].text, /check_and_enable_cep_api|SERVICE_NAMES/)
     })
 
     test('When onError is provided and handler fails, then it calls onError', async () => {

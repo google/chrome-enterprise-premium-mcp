@@ -25,9 +25,9 @@ describe('Helpers', () => {
 
     before(async () => {
       const helpersModule = await esmock('../../lib/util/helpers.js', {
-        '../../lib/util/auth.js': {
+        '../../lib/util/auth-error.js': {
           getAuthErrorMessage: () =>
-            'The API requires a quota project. gcloud auth application-default set-quota-project. Your credentials have insufficient scopes',
+            'A required API is not enabled in the Google Cloud project that owns your OAuth client. Your credentials have insufficient scopes',
         },
         '../../lib/constants.js': {
           DEFAULT_CONFIG: {
@@ -38,7 +38,7 @@ describe('Helpers', () => {
           TAGS: { API: '[api]' },
           ERROR_MESSAGES: {
             INSUFFICIENT_SCOPES: 'Request had insufficient authentication scopes.',
-            QUOTA_PROJECT_NOT_SET: 'API requires a quota project, which is not set by default',
+            API_NOT_USED_IN_PROJECT: 'API has not been used in project',
           },
         },
       })
@@ -68,26 +68,23 @@ describe('Helpers', () => {
       assert.strictEqual(attempts, 1)
     })
 
-    test('When QUOTA_PROJECT_NOT_SET error occurs, then it throws a helpful message and does not retry', async () => {
+    test('When SERVICE_DISABLED error occurs, then it throws a helpful message and does not retry', async () => {
       logger.setLevel(LogLevel.SILENT) // Suppress expected error logs
       try {
         let attempts = 0
-        const quotaError = new Error(
-          'Your application is authenticating by using local Application Default Credentials. The admin.googleapis.com API requires a quota project, which is not set by default.',
+        const apiError = new Error(
+          'Admin SDK API has not been used in project 123456789 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/admin.googleapis.com/overview?project=123456789 then retry.',
         )
 
         await assert.rejects(
           async () => {
             await callWithRetry(async () => {
               attempts++
-              throw quotaError
-            }, 'test quota error')
+              throw apiError
+            }, 'test service-disabled error')
           },
           err => {
-            return (
-              err.message.includes('The API requires a quota project') &&
-              err.message.includes('gcloud auth application-default set-quota-project')
-            )
+            return err.message.includes('A required API is not enabled')
           },
         )
         assert.strictEqual(attempts, 1)

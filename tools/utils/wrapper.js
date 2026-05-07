@@ -18,64 +18,35 @@ limitations under the License.
  * @file Wrapper utilities to guard and transform MCP tool calls.
  */
 
-import { TAGS, SCOPES } from '../../lib/constants.js'
+import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 import { validateAndGetOrgUnitId } from './org-unit.js'
 
 /**
  * Generates a proactive remediation message for authentication errors.
- * @param {number} status - The HTTP status code
- * @param {boolean} [isOAuth] - Whether the CLI is running in OAuth mode
- * @returns {string} The remediation message
+ * @param {number} status - The HTTP status code.
+ * @param {boolean} [bearerInbound] - Whether the request arrived with an inbound Bearer token (HTTP transport).
+ * @returns {string} The remediation message.
  */
-function getAuthRemediationMessage(status, isOAuth = false) {
-  if (isOAuth) {
+function getAuthRemediationMessage(status, bearerInbound = false) {
+  if (bearerInbound) {
     if (status === 401) {
-      return `Authentication required. Your OAuth session has expired or is invalid. Please run \`/mcp reauth\` in your Gemini CLI to re-authenticate.`
+      return `Authentication required. The inbound Bearer token has expired or is invalid. Re-authenticate through your MCP client to refresh the token.`
     }
-    return `Permission denied. Your account lacks the required permissions or the necessary Google Cloud APIs are not enabled.
+    return `Permission denied. The authenticated principal lacks the required permissions, or the necessary Google Cloud APIs are not enabled.
 
-1. **Re-authenticate:** Run \`/mcp reauth\` in your Gemini CLI.
-2. **Verify APIs are enabled:** Ensure \`admin.googleapis.com\`, \`chromemanagement.googleapis.com\`, \`chromepolicy.googleapis.com\`, and \`cloudidentity.googleapis.com\` are enabled in your Google Cloud project.`
+1. **Re-authenticate:** Refresh the inbound Bearer token through your MCP client.
+2. **Verify APIs are enabled:** Run the \`check_and_enable_cep_api\` tool against your project, or enable the API set listed in \`lib/constants.js#SERVICE_NAMES\`.`
   }
 
-  const scopesList = Object.values(SCOPES)
-
-  const bashScopes = scopesList.map(s => `  "${s}"`).join('\n')
-  const bashCommand = `SCOPES=(\n${bashScopes}\n)\ngcloud auth application-default login --scopes=$(IFS=,; echo "\${SCOPES[*]}")`
-
-  const pwshScopes = scopesList.map(s => `  "${s}"`).join(',\n')
-  const pwshCommand = `$scopes = @(\n${pwshScopes}\n)\ngcloud auth application-default login --scopes=($scopes -join ',')`
-
   if (status === 401) {
-    return `Authentication required. Please set up your Application Default Credentials (ADC) by running the following command in your terminal:
-
-**For Mac/Linux (Bash/Zsh):**
-\`\`\`bash
-${bashCommand}
-\`\`\`
-
-**For Windows (PowerShell):**
-\`\`\`powershell
-${pwshCommand}
-\`\`\``
+    return 'Authentication required. Run `mcp auth login` to authorize the server (it caches the access token at ~/.config/cep-mcp/tokens.json), or set GOOGLE_APPLICATION_CREDENTIALS to a service-account key file.'
   }
 
   return `Permission denied. Your account lacks the required permissions or the necessary Google Cloud APIs are not enabled.
 
-1. **Re-authenticate with all required scopes:**
-
-   **For Mac/Linux (Bash/Zsh):**
-   \`\`\`bash
-   ${bashCommand}
-   \`\`\`
-
-   **For Windows (PowerShell):**
-   \`\`\`powershell
-   ${pwshCommand}
-   \`\`\`
-
-2. **Verify APIs are enabled:** Ensure \`admin.googleapis.com\`, \`chromemanagement.googleapis.com\`, \`chromepolicy.googleapis.com\`, and \`cloudidentity.googleapis.com\` are enabled in your Google Cloud project.`
+1. **Re-authenticate with all required scopes:** Run \`mcp auth login\` to re-consent. The required scope set is defined in lib/constants.js#SCOPES.
+2. **Verify APIs are enabled:** Run the \`check_and_enable_cep_api\` tool against your project, or enable the API set listed in lib/constants.js#SERVICE_NAMES.`
 }
 
 /**
@@ -251,17 +222,10 @@ export function guardedToolCall(
           errorMessage.includes('invalid_grant')
             ? 401
             : 403)
-        const isOAuth = !!context?.authToken || !!context?.requestInfo?.headers?.authorization
-        const remediationMessage = getAuthRemediationMessage(resolvedStatus, isOAuth)
+        const bearerInbound = !!context?.authToken || !!context?.requestInfo?.headers?.authorization
+        const remediationMessage = getAuthRemediationMessage(resolvedStatus, bearerInbound)
         return {
           content: [{ type: 'text', text: remediationMessage }],
-          isError: true,
-        }
-      }
-
-      if (errorMessage.includes('quota project')) {
-        return {
-          content: [{ type: 'text', text: `Configuration required. ${errorMessage.replace(/^Error:\s*/i, '')}` }],
           isError: true,
         }
       }

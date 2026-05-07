@@ -19,7 +19,8 @@ limitations under the License.
  *
  * Configures and starts the Model Context Protocol (MCP) server. Supports
  * stdio (local) and HTTP/SSE (remote) transports. Authenticates to Google
- * APIs via Application Default Credentials (ADC) regardless of transport.
+ * APIs via the OAuth-flow token cache, a service-account key, or an
+ * inbound Bearer token, depending on the deployment.
  */
 
 import { config } from '@dotenvx/dotenvx'
@@ -33,8 +34,6 @@ import { SetLevelRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import fs from 'node:fs/promises'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import { GoogleAuth, OAuth2Client } from 'google-auth-library'
-
 const pkg = JSON.parse(readFileSync(fileURLToPath(new URL('./package.json', import.meta.url)), 'utf8'))
 
 import { buildServerInstructions } from './lib/knowledge/instructions.js'
@@ -44,8 +43,10 @@ import { checkGCP } from './lib/util/gcp.js'
 import { featureFlags, FLAGS } from './lib/util/feature_flags.js'
 import { logger } from './lib/util/logger.js'
 import { printBanner, dim } from './lib/util/banner.js'
-import { buildScopesField, buildAuthRemediationLines, buildQuotaProjectWarning } from './lib/util/auth_messages.js'
+import { buildApiCredsField, buildScopesField, buildAuthRemediationLines } from './lib/util/auth_messages.js'
 import { verifyIdToken, parseExpectedAudience } from './lib/util/credential/jwt_verifier.js'
+import { resolveOAuthClientConfig } from './lib/util/credential/oauth_client_config.js'
+import { oauthFlowCredential } from './lib/util/credential/oauth_flow.js'
 import { TAGS, SCOPES } from './lib/constants.js'
 
 // Import Real Clients
@@ -77,86 +78,28 @@ function shouldStartStdio(gcpInfo) {
 }
 
 /**
- * Probes Application Default Credentials and inspects the access token.
- *
- * Returns `{ valid: false }` when no usable credentials are configured.
- * When valid, hits the Google tokeninfo endpoint to read the granted
- * scopes off the access token, then diffs them against `requiredScopes`.
- * `cloud-platform` is treated as implicitly covering the
- * `service.management*` family (matches Google's IAM behavior).
- *
- * `scopesKnown` is false when tokeninfo could not be reached or rejected
- * the token (e.g. some self-signed JWT flows) — callers should not
- * report scope status as authoritative in that case.
- * @param {string[]} requiredScopes - The OAuth scopes the server needs.
- * @returns {Promise<{valid: boolean, email: ?string, missingScopes: string[], scopesKnown: boolean}>} Probe result.
+ * Probes the local OAuth-flow token cache and diffs its granted scopes
+ * against `requiredScopes`. Capped at PROBE_TIMEOUT_MS so a slow homedir
+ * filesystem (e.g., ecryptfs, NFS) cannot hang startup.
+ * @param {string[]} requiredScopes - Scopes the server needs.
+ * @returns {Promise<import('./lib/util/credential/index.js').CredentialProbe>} The probe result, or a synthetic not-ok result on timeout.
  */
-async function probeADC(requiredScopes) {
-  const empty = {
-    valid: false,
-    email: null,
-    missingScopes: [],
-    scopesKnown: false,
-    credentialType: null,
-    quotaProject: null,
-  }
-  // Test mode (fake API server) bypasses real ADC; skipping the probe
-  // keeps test startup fast and avoids hitting Google in CI.
-  if (process.env.GOOGLE_API_ROOT_URL) {
-    return empty
-  }
-  // The probe touches the network twice (token endpoint, then tokeninfo).
-  // Cap it so a slow or offline environment can't hold the banner
-  // indefinitely; the server itself works regardless of whether the
-  // probe completes.
-  const PROBE_TIMEOUT_MS = 8000
-  const work = (async () => {
-    try {
-      const auth = new GoogleAuth()
-      const client = await auth.getClient()
-      const { token } = await client.getAccessToken()
-      if (!token) {
-        return empty
-      }
-      let email = client.email || null
-      let granted = []
-      try {
-        const info = await new OAuth2Client().getTokenInfo(token)
-        email = email || info.email || null
-        granted = info.scopes || []
-      } catch {
-        // tokeninfo rejects opaque or self-signed JWT tokens; surface as unknown.
-      }
-      const grantedSet = new Set(granted)
-      const cloudPlatform = grantedSet.has('https://www.googleapis.com/auth/cloud-platform')
-      const missingScopes = requiredScopes.filter(s => {
-        if (grantedSet.has(s)) {
-          return false
-        }
-        if (cloudPlatform && s.startsWith('https://www.googleapis.com/auth/service.management')) {
-          return false
-        }
-        return true
-      })
-      return {
-        valid: true,
-        email,
-        missingScopes,
-        scopesKnown: granted.length > 0,
-        credentialType: client.constructor?.name || null,
-        quotaProject: process.env.GOOGLE_CLOUD_QUOTA_PROJECT || client.quotaProjectId || null,
-      }
-    } catch {
-      return empty
-    }
-  })()
-  let timer
+async function probeOAuthFlow(requiredScopes) {
+  const PROBE_TIMEOUT_MS = 2000
   const timeout = new Promise(resolve => {
-    timer = setTimeout(() => resolve(empty), PROBE_TIMEOUT_MS)
+    setTimeout(() => {
+      resolve({
+        ok: false,
+        source: 'oauth-flow',
+        principal: null,
+        credentialType: null,
+        scopesKnown: false,
+        missingScopes: requiredScopes,
+        expiry: null,
+      })
+    }, PROBE_TIMEOUT_MS)
   })
-  const result = await Promise.race([work, timeout])
-  clearTimeout(timer)
-  return result
+  return Promise.race([oauthFlowCredential({ requiredScopes }).probe(), timeout])
 }
 
 /**
@@ -323,11 +266,10 @@ export async function runServer() {
       makeLoggingCompatibleWithStdio()
     }
 
-    // Log feature flag overrides
+    // Log all enabled feature flags
     Object.values(FLAGS).forEach(flag => {
-      if (!featureFlags.isDefault(flag)) {
-        const status = featureFlags.isEnabled(flag) ? 'ENABLED' : 'DISABLED'
-        logger.info(`${TAGS.MCP} EXPERIMENT_${flag} override: ${status}`)
+      if (featureFlags.isEnabled(flag)) {
+        logger.info(`${TAGS.MCP} EXPERIMENT_${flag} is active.`)
       }
     })
 
@@ -343,25 +285,30 @@ export async function runServer() {
       // Ignore or log
     }
 
-    const flagOverrides =
+    const activeExps =
       Object.values(FLAGS)
-        .filter(flag => !featureFlags.isDefault(flag))
-        .map(flag => `${flag}=${featureFlags.isEnabled(flag)}`)
+        .filter(flag => featureFlags.isEnabled(flag))
         .join(', ') || 'None'
 
     const requiredScopes = Object.values(SCOPES)
-    const adc = await probeADC(requiredScopes)
+    const probe = await probeOAuthFlow(requiredScopes)
+    let oauthClientConfig = null
+    try {
+      oauthClientConfig = resolveOAuthClientConfig()
+    } catch {
+      // Resolution failures fall through to the unresolved banner field.
+    }
 
     const printServerStatus = assignedPort => {
       printBanner({
         transport: isStdio ? 'Stdio' : ['SSE/HTTP', `(Port: ${assignedPort})`],
         auth: isStdio ? ['None', '(Local channel)'] : ['None', '(Unauthenticated)'],
-        apiCreds: adc.valid ? ['ADC', adc.email ? `(${adc.email})` : '(detected)'] : ['ADC', '(not configured)'],
-        scopes: buildScopesField(adc, requiredScopes),
+        apiCreds: buildApiCredsField(probe, oauthClientConfig),
+        scopes: buildScopesField(probe, requiredScopes),
         dataAccess: process.env.GOOGLE_API_ROOT_URL ? 'Fake' : 'Production',
         knowledge: ['lib/knowledge', `(${articleCount} articles)`],
       })
-      const remediation = buildAuthRemediationLines(adc, requiredScopes)
+      const remediation = buildAuthRemediationLines(probe, requiredScopes)
       if (remediation) {
         console.log()
         for (const line of remediation) {
@@ -369,15 +316,7 @@ export async function runServer() {
         }
         console.log()
       }
-      const quotaWarning = buildQuotaProjectWarning(adc)
-      if (quotaWarning) {
-        console.log()
-        for (const line of quotaWarning) {
-          console.log(dim(line))
-        }
-        console.log()
-      }
-      console.log(dim(`Experiment Overrides: ${flagOverrides}`))
+      console.log(dim(`Active Experiments: ${activeExps}`))
     }
 
     if (isStdio) {

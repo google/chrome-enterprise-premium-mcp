@@ -88,18 +88,18 @@ function handleDiscoveryError(errorText) {
     console.error('\n' + '='.repeat(SEPARATOR_LENGTH))
     console.error('❌ AUTHENTICATION REQUIRED')
     console.error('The integration tests failed to access the Google APIs.')
-    console.error("Please run: 'gcloud auth application-default login' to refresh your credentials.")
+    console.error("Please run: 'mcp auth login' to refresh your credentials.")
     console.error('='.repeat(SEPARATOR_LENGTH) + '\n')
     throw new Error('Integration tests failed: Authentication required.')
   }
 
   if (isQuotaError) {
-    const projectMatch = errorText.match(/quota project "([^"]+)"/i)
-    const projectName = projectMatch ? projectMatch[1] : 'YOUR_PROJECT_ID'
     console.error('\n' + '='.repeat(SEPARATOR_LENGTH))
     console.error('❌ QUOTA PROJECT REQUIRED')
-    console.error('The integration tests failed because a quota project is not set.')
-    console.error(`Please run: 'gcloud auth application-default set-quota-project ${projectName}'`)
+    console.error('The integration tests failed because Google could not attribute the request to a billing project.')
+    console.error(
+      'For BYO OAuth clients, enable the required APIs in the Google Cloud project that owns your OAuth client.',
+    )
     console.error('='.repeat(SEPARATOR_LENGTH) + '\n')
     throw new Error('Integration tests failed: Quota project required.')
   }
