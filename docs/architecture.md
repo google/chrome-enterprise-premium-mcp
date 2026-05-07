@@ -47,4 +47,4 @@ limitations under the License.
 Tests and evals run against two backends, controlled by the `CEP_BACKEND` environment variable.
 
 - **Fake** (default for presubmit). An in-process Express server at `test/helpers/fake-api-server.js` mimics the five Google APIs the server uses. The real client classes target it through a `rootUrl` override and a stub auth client. The fake backend makes no network calls and needs no credentials.
-- **Real** (postsubmit). The real client classes call the live Google APIs using your Application Default Credentials. The real backend requires authentication and the relevant APIs to be enabled.
+- **Real** (postsubmit). The real client classes call the live Google APIs using your cached OAuth tokens (run `mcp auth login` first) or a service-account key from `GOOGLE_APPLICATION_CREDENTIALS`. The real backend requires authentication and the relevant APIs to be enabled.

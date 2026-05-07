@@ -28,15 +28,14 @@ Chrome Enterprise Premium is a paid add-on available with any Google Workspace e
 
 The right path depends on your environment.
 
-- **Workstation (default):** Run `mcp auth login`. For details on bringing your own OAuth client, see [`auth-bring-your-own-oauth-client.md`](auth-bring-your-own-oauth-client.md).
-- **Workstation, already using `gcloud`:** Application Default Credentials is the alternative when you'd rather share a single credential across other Google Cloud tooling. See [Application Default Credentials](../README.md#application-default-credentials) in the README.
-- **Hosted on Cloud Run, Vertex AI Agent Engine, or a similar managed environment:** OAuth bearer per request. The caller sets `Authorization: Bearer <id-token>` and the server verifies the token's `aud` claim against `CEP_BEARER_AUDIENCE`. A service account with domain-wide delegation is the alternative. OAuth is preferred for hosted deployments because a service account with domain-wide delegation grants the server impersonation rights for any user in the domain.
+- **Workstation (default):** Run `mcp auth login`. To use your own OAuth client instead of the bundled Google-managed one, see [`auth-bring-your-own-oauth-client.md`](auth-bring-your-own-oauth-client.md).
+- **Hosted on Cloud Run, Vertex AI Agent Engine, or a similar managed environment:** OAuth bearer per request. The caller sets `Authorization: Bearer <id-token>` and the server verifies the token's `aud` claim against `CEP_BEARER_AUDIENCE`. A service account with domain-wide delegation is the alternative (set `GOOGLE_APPLICATION_CREDENTIALS` to the key file path; set `CEP_IMPERSONATE_SUBJECT` to the user the SA acts as). OAuth is preferred for hosted deployments because a service account with domain-wide delegation grants the server impersonation rights for any user in the domain.
 
 For the per-mechanism technical reference (transport, credential source, setup walkthrough), see the [authentication matrix](configuration.md#authenticate-to-google-apis) in `configuration.md`.
 
 ## Can I use a service account instead of user credentials?
 
-Yes. The service account must have [domain-wide delegation](https://developers.google.com/identity/protocols/oauth2/service-account#delegatingauthority) configured in the Admin Console with the required scopes. Set `GOOGLE_APPLICATION_CREDENTIALS` to the path of the service account key file.
+Yes. The service account must have [domain-wide delegation](https://developers.google.com/identity/protocols/oauth2/service-account#delegatingauthority) configured in the Admin Console with the required scopes. Set `GOOGLE_APPLICATION_CREDENTIALS` to the path of the service account key file, and set `CEP_IMPERSONATE_SUBJECT` to the email of the user the service account should act as.
 
 ## Why do I see "Retrying in 15s..." on the first call?
 

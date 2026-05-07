@@ -51,66 +51,25 @@ grants and the consent screen inside a Google Cloud project you own. See
 For the headless flow, see
 [Sign in from a host without a browser](docs/auth-bring-your-own-oauth-client.md#sign-in-from-a-host-without-a-browser).
 
-#### Application Default Credentials
+The scope set requested at consent maps to the underlying APIs:
 
-If you already use `gcloud` and hold Google Cloud admin rights on a
-project, sign in with Application Default Credentials. Install the
-[Google Cloud CLI](https://cloud.google.com/sdk/docs/install) if you don't
-have it, then create
-[Application Default Credentials](https://cloud.google.com/docs/authentication/application-default-credentials)
-(ADC) with the scopes needed by each API:
-
-```bash
-gcloud auth application-default login \
---scopes=openid,\
-https://www.googleapis.com/auth/userinfo.email,\
-https://www.googleapis.com/auth/chrome.management.policy,\
-https://www.googleapis.com/auth/chrome.management.reports.readonly,\
-https://www.googleapis.com/auth/chrome.management.profiles.readonly,\
-https://www.googleapis.com/auth/admin.reports.audit.readonly,\
-https://www.googleapis.com/auth/admin.directory.orgunit.readonly,\
-https://www.googleapis.com/auth/admin.directory.customer.readonly,\
-https://www.googleapis.com/auth/apps.licensing,\
-https://www.googleapis.com/auth/cloud-identity.policies,\
-https://www.googleapis.com/auth/service.management,\
-https://www.googleapis.com/auth/cloud-platform
-```
-
-These scopes map to the underlying APIs:
-
-| Scope                                  | API                                                                             | Used for                                                           |
-| :------------------------------------- | :------------------------------------------------------------------------------ | :----------------------------------------------------------------- |
-| `openid`, `userinfo.email`             | OpenID Connect                                                                  | Identifies the principal in startup banner output                  |
-| `chrome.management.policy`             | [Chrome Policy](https://developers.google.com/chrome/policy)                    | Reading and writing connector policies, extension install policies |
-| `chrome.management.reports.readonly`   | [Chrome Management](https://developers.google.com/chrome/management)            | Browser version counts                                             |
-| `chrome.management.profiles.readonly`  | [Chrome Management](https://developers.google.com/chrome/management)            | Listing managed browser profiles                                   |
-| `admin.reports.audit.readonly`         | [Admin SDK Reports](https://developers.google.com/admin-sdk/reports)            | Chrome activity logs                                               |
-| `admin.directory.orgunit.readonly`     | [Admin SDK Directory](https://developers.google.com/admin-sdk/directory)        | Organizational unit hierarchy                                      |
-| `admin.directory.customer.readonly`    | [Admin SDK Directory](https://developers.google.com/admin-sdk/directory)        | Customer ID resolution                                             |
-| `apps.licensing`                       | [Enterprise License Manager](https://developers.google.com/admin-sdk/licensing) | CEP subscription and per-user license checks                       |
-| `cloud-identity.policies`              | [Cloud Identity](https://cloud.google.com/identity/docs)                        | DLP rules and content detectors (CRUD)                             |
-| `service.management`, `cloud-platform` | [Service Usage](https://cloud.google.com/service-usage/docs)                    | Checking and enabling required APIs                                |
-
-Then set a quota project (identifies which Google Cloud project's API
-enablement and quotas to use):
-
-```bash
-gcloud auth application-default set-quota-project YOUR_PROJECT_ID
-```
-
-> [!IMPORTANT]
-> Scopes must be provided at login time. You cannot add scopes to existing
-> ADC credentials. If you get "insufficient scopes" errors, delete
-> `~/.config/gcloud/application_default_credentials.json` and re-run the
-> `gcloud auth application-default login` command.
->
-> The quota project is required. Without it the first API call returns a
-> "quota project not set" error.
+| Scope                                 | API                                                                             | Used for                                                           |
+| :------------------------------------ | :------------------------------------------------------------------------------ | :----------------------------------------------------------------- |
+| `openid`, `userinfo.email`            | OpenID Connect                                                                  | Identifies the principal in startup banner output                  |
+| `chrome.management.policy`            | [Chrome Policy](https://developers.google.com/chrome/policy)                    | Reading and writing connector policies, extension install policies |
+| `chrome.management.reports.readonly`  | [Chrome Management](https://developers.google.com/chrome/management)            | Browser version counts                                             |
+| `chrome.management.profiles.readonly` | [Chrome Management](https://developers.google.com/chrome/management)            | Listing managed browser profiles                                   |
+| `admin.reports.audit.readonly`        | [Admin SDK Reports](https://developers.google.com/admin-sdk/reports)            | Chrome activity logs                                               |
+| `admin.directory.orgunit.readonly`    | [Admin SDK Directory](https://developers.google.com/admin-sdk/directory)        | Organizational unit hierarchy                                      |
+| `admin.directory.customer.readonly`   | [Admin SDK Directory](https://developers.google.com/admin-sdk/directory)        | Customer ID resolution                                             |
+| `apps.licensing`                      | [Enterprise License Manager](https://developers.google.com/admin-sdk/licensing) | CEP subscription and per-user license checks                       |
+| `cloud-identity.policies`             | [Cloud Identity](https://cloud.google.com/identity/docs)                        | DLP rules and content detectors (CRUD)                             |
+| `service.management`                  | [Service Usage](https://cloud.google.com/service-usage/docs)                    | Checking and enabling required APIs                                |
 
 > [!NOTE]
 > If your organization restricts third-party app access, an administrator
 > must
-> [trust the gcloud OAuth app](docs/troubleshooting.md#configure-oauth-app-for-sensitive-scopes)
+> [trust the OAuth client](docs/troubleshooting.md#configure-oauth-app-for-sensitive-scopes)
 > before you can authenticate with sensitive Workspace scopes.
 
 #### Hosted deployments
@@ -145,45 +104,6 @@ Or enable them from the
 
 The server uses **stdio** transport; your MCP client launches it as a child
 process. Add the config snippet for your client:
-
-<details>
-<summary><strong>Claude Desktop</strong></summary>
-
-Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
-or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
-
-```json
-{
-  "mcpServers": {
-    "cep": {
-      "command": "npx",
-      "args": ["-y", "@google/chrome-enterprise-premium-mcp@latest"],
-      "env": { "GCP_STDIO": "true" }
-    }
-  }
-}
-```
-
-</details>
-
-<details>
-<summary><strong>Claude Code</strong></summary>
-
-Add to `.mcp.json` in your project root:
-
-```json
-{
-  "mcpServers": {
-    "cep": {
-      "command": "npx",
-      "args": ["-y", "@google/chrome-enterprise-premium-mcp@latest"],
-      "env": { "GCP_STDIO": "true" }
-    }
-  }
-}
-```
-
-</details>
 
 <details>
 <summary><strong>VS Code</strong></summary>
@@ -248,11 +168,10 @@ For environment variables and stdio vs. HTTP transport, see
 | Requirement              | Details                                                                                                                                                                                                                               |
 | :----------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Node.js**              | >= 18.0.0 (`node --version` to check)                                                                                                                                                                                                 |
-| **Google Cloud CLI**     | [`gcloud`](https://cloud.google.com/sdk/docs/install) installed and on your PATH (`gcloud --version` to check)                                                                                                                        |
 | **Google Workspace**     | Any edition, plus a [Chrome Enterprise Premium](https://docs.cloud.google.com/chrome-enterprise-premium/docs/overview) license ([60-day free trial available](https://docs.cloud.google.com/chrome-enterprise-premium/docs/overview)) |
 | **Admin role**           | Google Workspace Super Admin, or a delegated admin with Chrome Management and DLP permissions                                                                                                                                         |
 | **Google Cloud project** | Linked to your Workspace domain, with required APIs enabled                                                                                                                                                                           |
-| **OAuth App Trust**      | The gcloud CLI must be [trusted in the Admin Console](docs/troubleshooting.md#configure-oauth-app-for-sensitive-scopes) for sensitive scopes.                                                                                         |
+| **OAuth App Trust**      | The OAuth client must be [trusted in the Admin Console](docs/troubleshooting.md#configure-oauth-app-for-sensitive-scopes) for sensitive scopes.                                                                                       |
 
 > [!IMPORTANT]
 > Chrome Management and Admin SDK APIs require a Google Workspace admin
