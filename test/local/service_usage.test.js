@@ -48,21 +48,11 @@ describe('check_and_enable_cep_api tool', () => {
 
   test('When an API is disabled, then it reports its status and offers remediation', async () => {
     const mockServiceUsageClient = {
-      getServiceStatus: mock.fn(async (projectId, api) => ({
-        name: `projects/${projectId}/services/${api}`,
-        state: 'DISABLED',
-      })),
+      listEnabledServices: mock.fn(async () => new Set()),
     }
-
     const handler = await setupTool(mockServiceUsageClient)
 
-    const result = await handler(
-      {
-        projectId: 'test-project',
-        apiName: SERVICE_NAMES.ADMIN_SDK,
-      },
-      { requestInfo: {} },
-    )
+    const result = await handler({ projectId: 'test-project', apiName: SERVICE_NAMES.ADMIN_SDK }, { requestInfo: {} })
 
     assert.ok(result.content[0].text.includes(`- **${SERVICE_NAMES.ADMIN_SDK}** — DISABLED`))
     assert.ok(
@@ -74,72 +64,44 @@ describe('check_and_enable_cep_api tool', () => {
 
   test('When checkAll is false, then it reports status of only one specific API', async () => {
     const mockServiceUsageClient = {
-      getServiceStatus: mock.fn(async (projectId, api) => ({
-        name: `projects/${projectId}/services/${api}`,
-        state: 'DISABLED',
-      })),
+      listEnabledServices: mock.fn(async () => new Set()),
     }
-
     const handler = await setupTool(mockServiceUsageClient)
 
     const result = await handler(
-      {
-        projectId: 'test-project',
-        apiName: SERVICE_NAMES.ADMIN_SDK,
-        checkAll: false,
-      },
+      { projectId: 'test-project', apiName: SERVICE_NAMES.ADMIN_SDK, checkAll: false },
       { requestInfo: {} },
     )
 
     assert.ok(result.content[0].text.includes(`- **${SERVICE_NAMES.ADMIN_SDK}** — DISABLED`))
-    // Should NOT include other APIs
     assert.ok(!result.content[0].text.includes(`API:** \`${SERVICE_NAMES.CHROME_POLICY}\``))
   })
 
   test('When enable is true and checkAll is false, then it enables only one specific API', async () => {
     const mockServiceUsageClient = {
-      getServiceStatus: mock.fn(async (projectId, api) => ({
-        name: `projects/${projectId}/services/${api}`,
-        state: 'DISABLED',
-      })),
+      listEnabledServices: mock.fn(async () => new Set()),
       enableService: mock.fn(async () => ({ done: true })),
     }
-
     const handler = await setupTool(mockServiceUsageClient)
 
     const result = await handler(
-      {
-        projectId: 'test-project',
-        apiName: SERVICE_NAMES.ADMIN_SDK,
-        enable: true,
-        checkAll: false,
-      },
+      { projectId: 'test-project', apiName: SERVICE_NAMES.ADMIN_SDK, enable: true, checkAll: false },
       { requestInfo: {} },
     )
 
-    // Only Admin SDK should be ENABLED
     assert.ok(result.content[0].text.includes(`- **${SERVICE_NAMES.ADMIN_SDK}** — NEWLY_ENABLED`))
-    // Others should NOT be in the results
     assert.ok(!result.content[0].text.includes(`API:** \`${SERVICE_NAMES.CHROME_POLICY}\``))
   })
 
   test('When apiName is provided and enable is true, then it enables the specific API', async () => {
     const mockServiceUsageClient = {
-      getServiceStatus: mock.fn(async (projectId, api) => ({
-        name: `projects/${projectId}/services/${api}`,
-        state: 'DISABLED',
-      })),
+      listEnabledServices: mock.fn(async () => new Set()),
       enableService: mock.fn(async () => ({ done: true })),
     }
-
     const handler = await setupTool(mockServiceUsageClient)
 
     const result = await handler(
-      {
-        projectId: 'test-project',
-        apiName: SERVICE_NAMES.ADMIN_SDK,
-        enable: true,
-      },
+      { projectId: 'test-project', apiName: SERVICE_NAMES.ADMIN_SDK, enable: true },
       { requestInfo: {} },
     )
 
@@ -148,42 +110,22 @@ describe('check_and_enable_cep_api tool', () => {
 
   test('When an API is already enabled, then it reports its status as ENABLED', async () => {
     const mockServiceUsageClient = {
-      getServiceStatus: mock.fn(async (projectId, api) => ({
-        name: `projects/${projectId}/services/${api}`,
-        state: 'ENABLED',
-      })),
+      listEnabledServices: mock.fn(async () => new Set([SERVICE_NAMES.ADMIN_SDK])),
     }
-
     const handler = await setupTool(mockServiceUsageClient)
 
-    const result = await handler(
-      {
-        projectId: 'test-project',
-        apiName: SERVICE_NAMES.ADMIN_SDK,
-      },
-      { requestInfo: {} },
-    )
+    const result = await handler({ projectId: 'test-project', apiName: SERVICE_NAMES.ADMIN_SDK }, { requestInfo: {} })
 
     assert.ok(result.content[0].text.includes('— ENABLED'))
   })
 
   test('When checkAll is true, then it checks and reports status of all required APIs', async () => {
     const mockServiceUsageClient = {
-      getServiceStatus: mock.fn(async (projectId, api) => ({
-        name: `projects/${projectId}/services/${api}`,
-        state: 'DISABLED',
-      })),
+      listEnabledServices: mock.fn(async () => new Set()),
     }
-
     const handler = await setupTool(mockServiceUsageClient)
 
-    const result = await handler(
-      {
-        projectId: 'test-project',
-        checkAll: true,
-      },
-      { requestInfo: {} },
-    )
+    const result = await handler({ projectId: 'test-project', checkAll: true }, { requestInfo: {} })
 
     for (const api of Object.values(SERVICE_NAMES)) {
       assert.ok(result.content[0].text.includes(`- **${api}** — DISABLED`))
@@ -193,80 +135,51 @@ describe('check_and_enable_cep_api tool', () => {
 
   test('When checkAll and enable are true, then it enables all required APIs', async () => {
     const mockServiceUsageClient = {
-      getServiceStatus: mock.fn(async (projectId, api) => ({
-        name: `projects/${projectId}/services/${api}`,
-        state: 'DISABLED',
-      })),
+      listEnabledServices: mock.fn(async () => new Set()),
       enableService: mock.fn(async () => ({ done: true })),
     }
-
     const handler = await setupTool(mockServiceUsageClient)
 
-    const result = await handler(
-      {
-        projectId: 'test-project',
-        checkAll: true,
-        enable: true,
-      },
-      { requestInfo: {} },
-    )
+    const result = await handler({ projectId: 'test-project', checkAll: true, enable: true }, { requestInfo: {} })
 
     for (const api of Object.values(SERVICE_NAMES)) {
       assert.ok(result.content[0].text.includes(`- **${api}** — NEWLY_ENABLED`))
     }
   })
 
-  test('When Service Usage API itself is disabled, then it returns a dedicated remediation message', async () => {
+  test('When Service Management API itself is disabled, then it returns a dedicated remediation message', async () => {
     const mockServiceUsageClient = {
-      getServiceStatus: mock.fn(() => {
+      listEnabledServices: mock.fn(() => {
         throw new Error(
-          'API Error 403 (PERMISSION_DENIED): Service Usage API has not been used in project [test-project] before or it is disabled.',
+          'API Error 403 (PERMISSION_DENIED): Service Management API has not been used in project [test-project] before or it is disabled.',
         )
       }),
     }
-
     const handler = await setupTool(mockServiceUsageClient)
 
-    const result = await handler(
-      {
-        projectId: 'test-project',
-        checkAll: true,
-      },
-      { requestInfo: {} },
-    )
+    const result = await handler({ projectId: 'test-project', checkAll: true }, { requestInfo: {} })
 
     assert.strictEqual(result.structuredContent.error, true)
-    assert.ok(result.content[0].text.includes('Service Usage API is disabled'))
+    assert.ok(result.content[0].text.includes('Service Management API is disabled'))
     assert.ok(
       result.content[0].text.includes(
         'Once the API has been enabled, please notify me so that I can re-attempt the check and enablement of all other required services.',
       ),
     )
     assert.ok(
-      result.content[0].text.includes('https://console.cloud.google.com/apis/library/serviceusage.googleapis.com'),
+      result.content[0].text.includes('https://console.cloud.google.com/apis/library/servicemanagement.googleapis.com'),
     )
   })
 
   test('When checkAll is false and only projectId is provided, then it reports status of only the default API', async () => {
     const mockServiceUsageClient = {
-      getServiceStatus: mock.fn(async (projectId, api) => ({
-        name: `projects/${projectId}/services/${api}`,
-        state: 'DISABLED',
-      })),
+      listEnabledServices: mock.fn(async () => new Set()),
     }
-
     const handler = await setupTool(mockServiceUsageClient)
 
-    const result = await handler(
-      {
-        projectId: 'test-project',
-        checkAll: false,
-      },
-      { requestInfo: {} },
-    )
+    const result = await handler({ projectId: 'test-project', checkAll: false }, { requestInfo: {} })
 
     assert.ok(result.content[0].text.includes(`- **${SERVICE_NAMES.ADMIN_SDK}** — DISABLED`))
-    // Should NOT include other APIs
     assert.ok(!result.content[0].text.includes(`**${SERVICE_NAMES.CHROME_POLICY}**`))
     assert.ok(
       result.content[0].text.includes(
@@ -277,22 +190,13 @@ describe('check_and_enable_cep_api tool', () => {
 
   test('When enableService returns done:true, then the API is marked ENABLED (synchronous LRO)', async () => {
     const mockServiceUsageClient = {
-      getServiceStatus: mock.fn(async (projectId, api) => ({
-        name: `projects/${projectId}/services/${api}`,
-        state: 'DISABLED',
-      })),
+      listEnabledServices: mock.fn(async () => new Set()),
       enableService: mock.fn(async () => ({ done: true, response: { state: 'ENABLED' } })),
     }
-
     const handler = await setupTool(mockServiceUsageClient)
 
     const result = await handler(
-      {
-        projectId: 'test-project',
-        apiName: SERVICE_NAMES.ADMIN_SDK,
-        enable: true,
-        checkAll: false,
-      },
+      { projectId: 'test-project', apiName: SERVICE_NAMES.ADMIN_SDK, enable: true, checkAll: false },
       { requestInfo: {} },
     )
 
@@ -303,25 +207,13 @@ describe('check_and_enable_cep_api tool', () => {
 
   test('When enableService returns done:false, then the API is marked ENABLING with a pending message', async () => {
     const mockServiceUsageClient = {
-      getServiceStatus: mock.fn(async (projectId, api) => ({
-        name: `projects/${projectId}/services/${api}`,
-        state: 'DISABLED',
-      })),
-      enableService: mock.fn(async () => ({
-        done: false,
-        name: 'operations/test-operation-123',
-      })),
+      listEnabledServices: mock.fn(async () => new Set()),
+      enableService: mock.fn(async () => ({ done: false, name: 'operations/test-operation-123' })),
     }
-
     const handler = await setupTool(mockServiceUsageClient)
 
     const result = await handler(
-      {
-        projectId: 'test-project',
-        apiName: SERVICE_NAMES.ADMIN_SDK,
-        enable: true,
-        checkAll: false,
-      },
+      { projectId: 'test-project', apiName: SERVICE_NAMES.ADMIN_SDK, enable: true, checkAll: false },
       { requestInfo: {} },
     )
 
@@ -339,30 +231,18 @@ describe('check_and_enable_cep_api tool', () => {
 
   test('When enableService returns done:false with no operation name, then operationName is omitted from structuredContent', async () => {
     const mockServiceUsageClient = {
-      getServiceStatus: mock.fn(async (projectId, api) => ({
-        name: `projects/${projectId}/services/${api}`,
-        state: 'DISABLED',
-      })),
+      listEnabledServices: mock.fn(async () => new Set()),
       enableService: mock.fn(async () => ({ done: false })),
     }
-
     const handler = await setupTool(mockServiceUsageClient)
 
     const result = await handler(
-      {
-        projectId: 'test-project',
-        apiName: SERVICE_NAMES.ADMIN_SDK,
-        enable: true,
-        checkAll: false,
-      },
+      { projectId: 'test-project', apiName: SERVICE_NAMES.ADMIN_SDK, enable: true, checkAll: false },
       { requestInfo: {} },
     )
 
     assert.ok(result.content[0].text.includes(`- **${SERVICE_NAMES.ADMIN_SDK}** — ENABLING`))
-    assert.ok(
-      !result.content[0].text.includes('unknown'),
-      'no "unknown" literal when upstream returned no operation name',
-    )
+    assert.ok(!result.content[0].text.includes('unknown'))
     const status = result.structuredContent.apiStatuses.find(s => s.apiName === SERVICE_NAMES.ADMIN_SDK)
     assert.strictEqual(status.status, 'ENABLING')
     assert.strictEqual(status.operationName, undefined)
@@ -370,16 +250,12 @@ describe('check_and_enable_cep_api tool', () => {
 
   test('When enableService returns an LRO error, then the API is marked FAILED with the message', async () => {
     const mockServiceUsageClient = {
-      getServiceStatus: mock.fn(async (projectId, api) => ({
-        name: `projects/${projectId}/services/${api}`,
-        state: 'DISABLED',
-      })),
+      listEnabledServices: mock.fn(async () => new Set()),
       enableService: mock.fn(async () => ({
         done: true,
         error: { code: 7, message: 'Billing must be enabled for this project to use Service Usage.' },
       })),
     }
-
     const handler = await setupTool(mockServiceUsageClient)
 
     const result = await handler(
@@ -389,10 +265,7 @@ describe('check_and_enable_cep_api tool', () => {
 
     assert.ok(result.content[0].text.includes(`- **${SERVICE_NAMES.ADMIN_SDK}** — FAILED`))
     assert.ok(result.content[0].text.includes('Billing must be enabled'))
-    assert.ok(
-      !result.content[0].text.includes('NEWLY_ENABLED'),
-      'an LRO with done:true plus error must not be reported as NEWLY_ENABLED',
-    )
+    assert.ok(!result.content[0].text.includes('NEWLY_ENABLED'))
     const status = result.structuredContent.apiStatuses.find(s => s.apiName === SERVICE_NAMES.ADMIN_SDK)
     assert.strictEqual(status.status, 'FAILED')
     assert.ok(status.error.includes('Billing must be enabled'))
@@ -400,13 +273,9 @@ describe('check_and_enable_cep_api tool', () => {
 
   test('When enableService returns an unexpected response shape, then the API is marked UNKNOWN', async () => {
     const mockServiceUsageClient = {
-      getServiceStatus: mock.fn(async (projectId, api) => ({
-        name: `projects/${projectId}/services/${api}`,
-        state: 'DISABLED',
-      })),
+      listEnabledServices: mock.fn(async () => new Set()),
       enableService: mock.fn(async () => ({})),
     }
-
     const handler = await setupTool(mockServiceUsageClient)
 
     const result = await handler(
@@ -415,10 +284,7 @@ describe('check_and_enable_cep_api tool', () => {
     )
 
     assert.ok(result.content[0].text.includes(`- **${SERVICE_NAMES.ADMIN_SDK}** — UNKNOWN`))
-    assert.ok(
-      !result.content[0].text.includes('ENABLING'),
-      'an unexpected response shape must not be misreported as ENABLING',
-    )
+    assert.ok(!result.content[0].text.includes('ENABLING'))
     const status = result.structuredContent.apiStatuses.find(s => s.apiName === SERVICE_NAMES.ADMIN_SDK)
     assert.strictEqual(status.status, 'UNKNOWN')
   })

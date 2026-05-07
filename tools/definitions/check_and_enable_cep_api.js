@@ -76,96 +76,99 @@ This is a PREREQUISITE tool. Many other tools will fail if necessary APIs are di
           const apisToCheck = checkAll ? Object.values(SERVICE_NAMES) : [actualApiName]
           const results = []
           const apiStatuses = []
-          let serviceUsageDisabled = false
+
+          let enabledServices
+          try {
+            enabledServices = await serviceUsageClient.listEnabledServices(projectId, authToken)
+          } catch (error) {
+            const errorMessage = error.message || ''
+            const status = error.status || error.code || error.response?.status
+            const mentionsServiceManagement =
+              errorMessage.includes('Service Management API') ||
+              /\bservicemanagement\.googleapis\.com\b/.test(errorMessage)
+
+            if (mentionsServiceManagement || status === 403) {
+              const consoleLink = `https://console.cloud.google.com/apis/library/servicemanagement.googleapis.com?project=${projectId}`
+              const summary =
+                `## API Status (1)\n\n` +
+                `- **servicemanagement.googleapis.com** — ERROR: Service Management API is disabled in project \`${projectId}\`. ` +
+                `This is a prerequisite for checking enablement of other APIs. [Enable Service Management API](${consoleLink})\n\n` +
+                `Once the API has been enabled, please notify me so that I can re-attempt the check and enablement of all other required services.`
+              return formatToolResponse({
+                summary,
+                data: {
+                  apiStatuses: [
+                    {
+                      apiName: 'servicemanagement.googleapis.com',
+                      status: 'ERROR',
+                      projectId,
+                      errorMessage,
+                      consoleLink,
+                    },
+                  ],
+                },
+                structuredContent: {
+                  apiStatuses: [
+                    {
+                      apiName: 'servicemanagement.googleapis.com',
+                      status: 'ERROR',
+                      projectId,
+                      errorMessage,
+                      consoleLink,
+                    },
+                  ],
+                  error: true,
+                },
+              })
+            }
+            throw error
+          }
 
           for (const api of apisToCheck) {
+            if (enabledServices.has(api)) {
+              results.push(`- **${api}** — ENABLED (project: \`${projectId}\`)`)
+              apiStatuses.push({ apiName: api, status: 'ENABLED', projectId })
+              continue
+            }
+            if (!enable) {
+              const consoleLink = `https://console.cloud.google.com/apis/library/${api}?project=${projectId}`
+              results.push(`- **${api}** — DISABLED (project: \`${projectId}\`)`)
+              apiStatuses.push({ apiName: api, status: 'DISABLED', projectId, consoleLink })
+              continue
+            }
+            logger.info(`${TAGS.MCP} Enabling API [${api}] for project [${projectId}]...`)
             try {
-              let status = await serviceUsageClient.getServiceStatus(projectId, api, authToken)
-
-              if (status.state === 'ENABLED') {
-                results.push(`- **${api}** — ENABLED (project: \`${projectId}\`)`)
+              const enableResponse = await serviceUsageClient.enableService(projectId, api, authToken)
+              if (enableResponse?.error) {
+                const errMessage = enableResponse.error.message || JSON.stringify(enableResponse.error)
+                results.push(`- **${api}** — FAILED (project: \`${projectId}\`): ${errMessage}`)
+                apiStatuses.push({ apiName: api, status: 'FAILED', projectId, error: errMessage })
+              } else if (enableResponse?.done === true) {
+                results.push(`- **${api}** — NEWLY_ENABLED (project: \`${projectId}\`)`)
                 apiStatuses.push({ apiName: api, status: 'ENABLED', projectId })
-              } else if (enable) {
-                logger.info(`${TAGS.MCP} Enabling API [${api}] for project [${projectId}]...`)
-                const enableResponse = await serviceUsageClient.enableService(projectId, api, authToken)
-                // LRO error must short-circuit the done:true branch; a completed LRO can carry
-                // an error (billing, permissions, quota), and reporting it as success is worse
-                // than reporting it as still pending.
-                if (enableResponse?.error) {
-                  const errMessage = enableResponse.error.message || JSON.stringify(enableResponse.error)
-                  results.push(`- **${api}** — FAILED (project: \`${projectId}\`): ${errMessage}`)
-                  apiStatuses.push({ apiName: api, status: 'FAILED', projectId, error: errMessage })
-                } else if (enableResponse?.done === true) {
-                  results.push(`- **${api}** — NEWLY_ENABLED (project: \`${projectId}\`)`)
-                  apiStatuses.push({ apiName: api, status: 'ENABLED', projectId })
-                } else if (enableResponse?.done === false) {
-                  results.push(
-                    `- **${api}** — ENABLING (project: \`${projectId}\`): enable requested, may take a few minutes. Re-run this tool to verify status.`,
-                  )
-                  const enablingStatus = { apiName: api, status: 'ENABLING', projectId }
-                  if (enableResponse?.name) {
-                    enablingStatus.operationName = enableResponse.name
-                  }
-                  apiStatuses.push(enablingStatus)
-                } else {
-                  // Falling back to ENABLING here would loop forever; report UNKNOWN explicitly.
-                  results.push(
-                    `- **${api}** — UNKNOWN (project: \`${projectId}\`): unexpected response from Service Usage; re-run this tool to verify status.`,
-                  )
-                  apiStatuses.push({ apiName: api, status: 'UNKNOWN', projectId })
+              } else if (enableResponse?.done === false) {
+                results.push(
+                  `- **${api}** — ENABLING (project: \`${projectId}\`): enable requested, may take a few minutes. Re-run this tool to verify status.`,
+                )
+                const enablingStatus = { apiName: api, status: 'ENABLING', projectId }
+                if (enableResponse?.name) {
+                  enablingStatus.operationName = enableResponse.name
                 }
+                apiStatuses.push(enablingStatus)
               } else {
-                const consoleLink = `https://console.cloud.google.com/apis/library/${api}?project=${projectId}`
-                results.push(`- **${api}** — DISABLED (project: \`${projectId}\`)`)
-                apiStatuses.push({ apiName: api, status: 'DISABLED', projectId, consoleLink })
+                results.push(
+                  `- **${api}** — UNKNOWN (project: \`${projectId}\`): unexpected response from Service Usage; re-run this tool to verify status.`,
+                )
+                apiStatuses.push({ apiName: api, status: 'UNKNOWN', projectId })
               }
             } catch (error) {
               const errorMessage = error.message || ''
-
-              // Rethrow auth errors to let them bubble up to guardedToolCall
-              const status = error.status || error.code || error.response?.status
-              const isAuthError =
-                status === 401 ||
-                status === 403 ||
-                errorMessage.includes('UNAUTHENTICATED') ||
-                errorMessage.includes('PERMISSION_DENIED') ||
-                errorMessage.includes('invalid_grant')
-
-              const mentionsServiceUsage =
-                errorMessage.includes('Service Usage API') || /\bserviceusage\.googleapis\.com\b/.test(errorMessage)
-
-              if (isAuthError && !mentionsServiceUsage) {
-                throw error
-              }
-
-              const isServiceUsageError = error.status === 403 || mentionsServiceUsage
-
-              if (isServiceUsageError) {
-                serviceUsageDisabled = true
-                const consoleLink = `https://console.cloud.google.com/apis/library/serviceusage.googleapis.com?project=${projectId}`
-                results.push(
-                  `- **${api}** — ERROR: Service Usage API is disabled. This is a prerequisite. [Enable Service Usage API](${consoleLink})`,
-                )
-                apiStatuses.push({ apiName: api, status: 'ERROR', projectId, errorMessage, consoleLink })
-                // If service usage is disabled, we can't check any more APIs
-                break
-              } else {
-                results.push(`- **${api}** — ERROR: ${errorMessage} (project: \`${projectId}\`)`)
-                apiStatuses.push({ apiName: api, status: 'ERROR', projectId, errorMessage })
-              }
+              results.push(`- **${api}** — ERROR: ${errorMessage} (project: \`${projectId}\`)`)
+              apiStatuses.push({ apiName: api, status: 'ERROR', projectId, errorMessage })
             }
           }
 
           let resultText = `## API Status (${apiStatuses.length})\n\n${results.join('\n')}`
-
-          if (serviceUsageDisabled) {
-            resultText += `\n\nOnce the API has been enabled, please notify me so that I can re-attempt the check and enablement of all other required services.`
-            return formatToolResponse({
-              summary: resultText,
-              data: { apiStatuses },
-              structuredContent: { apiStatuses, error: true },
-            })
-          }
 
           if (!enable && apiStatuses.some(s => s.status === 'DISABLED')) {
             if (!checkAll) {
