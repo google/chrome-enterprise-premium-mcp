@@ -79,12 +79,27 @@ function shouldStartStdio(gcpInfo) {
 
 /**
  * Probes the local OAuth-flow token cache and diffs its granted scopes
- * against `requiredScopes`.
+ * against `requiredScopes`. Capped at PROBE_TIMEOUT_MS so a slow homedir
+ * filesystem (e.g., ecryptfs, NFS) cannot hang startup.
  * @param {string[]} requiredScopes - Scopes the server needs.
- * @returns {Promise<import('./lib/util/credential/index.js').CredentialProbe>} The probe result.
+ * @returns {Promise<import('./lib/util/credential/index.js').CredentialProbe>} The probe result, or a synthetic not-ok result on timeout.
  */
 async function probeOAuthFlow(requiredScopes) {
-  return oauthFlowCredential({ requiredScopes }).probe()
+  const PROBE_TIMEOUT_MS = 2000
+  const timeout = new Promise(resolve => {
+    setTimeout(() => {
+      resolve({
+        ok: false,
+        source: 'oauth-flow',
+        principal: null,
+        credentialType: null,
+        scopesKnown: false,
+        missingScopes: requiredScopes,
+        expiry: null,
+      })
+    }, PROBE_TIMEOUT_MS)
+  })
+  return Promise.race([oauthFlowCredential({ requiredScopes }).probe(), timeout])
 }
 
 /**
