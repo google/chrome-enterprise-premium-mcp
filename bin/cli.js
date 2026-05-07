@@ -29,7 +29,7 @@ const AUTH_HELP = [
   'Usage: mcp auth <verb>',
   '',
   'Verbs:',
-  '  login    Run the OAuth login and cache an access token.',
+  '  login    Authenticate via OAuth and cache an access token.',
   '  status   Show OAuth credential status.',
 ].join('\n')
 

@@ -42,7 +42,7 @@ describe('bin/cli.js', () => {
       const result = spawnSync('node', [CLI, 'auth'], { encoding: 'utf8' })
       assert.equal(result.status, 0)
       assert.match(result.stderr, /Usage: mcp auth <verb>/)
-      assert.match(result.stderr, /login\s+Run the OAuth login/)
+      assert.match(result.stderr, /login\s+Authenticate via OAuth/)
       assert.match(result.stderr, /status\s+Show OAuth credential status/)
     })
   })
