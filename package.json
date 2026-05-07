@@ -20,6 +20,8 @@
     "prompts/"
   ],
   "scripts": {
+    "auth:login": "node bin/cli.js auth login",
+    "auth:status": "node bin/cli.js auth status",
     "eval": "CEP_BACKEND=fake node test/evals/run.js",
     "eval:agentic": "CEP_BACKEND=fake node test/evals/run.js --category inspection,troubleshooting,mutation,discovery,connectors",
     "eval:boundary": "CEP_BACKEND=fake node test/evals/run.js --category boundary",
