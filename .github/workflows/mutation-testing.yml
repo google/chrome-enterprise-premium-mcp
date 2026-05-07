@@ -1,0 +1,57 @@
+name: Mutation Testing (Postsubmit)
+
+on:
+  schedule:
+    # Run at 02:00 UTC every day
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    # Allow manual triggering from the UI
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  GOOGLE_APPLICATION_CREDENTIALS: /nonexistent
+  GCE_METADATA_HOST: 127.0.0.1:1
+  NO_GCE_CHECK: 'true'
+
+jobs:
+  mutation-test:
+    name: 🧬 Mutation Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Restore Stryker Cache
+        uses: actions/cache@v4
+        with:
+          path: stryker-incremental.json
+          key: ${{ runner.os }}-stryker-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-stryker-
+
+      - name: Run Mutation Tests
+        run: npm run test:mutation:incremental
+        env:
+          # Increase timeout for CI environment if needed
+          STRYKER_TIMEOUT_MS: 60000
+
+      - name: Upload Mutation Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mutation-report
+          path: reports/mutation/
+          retention-days: 7
