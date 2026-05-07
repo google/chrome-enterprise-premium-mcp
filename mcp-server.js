@@ -19,7 +19,8 @@ limitations under the License.
  *
  * Configures and starts the Model Context Protocol (MCP) server. Supports
  * stdio (local) and HTTP/SSE (remote) transports. Authenticates to Google
- * APIs via Application Default Credentials (ADC) regardless of transport.
+ * APIs via the OAuth-flow token cache, a service-account key, or an
+ * inbound Bearer token, depending on the deployment.
  */
 
 import { config } from '@dotenvx/dotenvx'
@@ -185,7 +186,7 @@ export function createSseHandler(gcpInfo, sseTransports, getServerImpl = getServ
  * Returns whether the `enable_api` tool should be registered for this server.
  * Skipped in Google-managed OAuth mode (the maintainer's project has APIs
  * enabled, so end users never need to call it). Registered in all other
- * modes — BYO OAuth, bearer header, ADC — defensively.
+ * modes (BYO OAuth, bearer header, service-account key) defensively.
  * @returns {boolean} True if `enable_api` should be registered.
  */
 function shouldRegisterEnableApi() {

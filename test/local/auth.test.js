@@ -143,7 +143,6 @@ describe('Auth', () => {
       const message = await getAuthErrorMessage(error)
 
       assert.match(message, /GOOGLE_CLOUD_QUOTA_PROJECT/)
-      assert.doesNotMatch(message, /gcloud auth application-default set-quota-project/)
     })
 
     test('When the error reports insufficient scopes, then the remediation points at `mcp auth login`', async () => {
@@ -152,7 +151,6 @@ describe('Auth', () => {
       const message = await getAuthErrorMessage(error)
 
       assert.match(message, /mcp auth login/)
-      assert.doesNotMatch(message, /gcloud auth application-default login/)
     })
 
     test('When the error reports missing credentials, then the remediation suggests `mcp auth login`', async () => {
@@ -161,7 +159,6 @@ describe('Auth', () => {
       const message = await getAuthErrorMessage(error)
 
       assert.match(message, /mcp auth login/)
-      assert.doesNotMatch(message, /Application Default Credentials are not set up/)
     })
   })
 })

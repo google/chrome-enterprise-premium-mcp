@@ -26,7 +26,7 @@ export function getApiClients(options = {}) {
   const rootUrl = options.rootUrl || process.env.GOOGLE_API_ROOT_URL || 'http://localhost:8008'
 
   if (backend === 'real') {
-    console.log('[FACTORY] Using REAL API clients (Ambient Authority/ADC)')
+    console.log('[FACTORY] Using REAL API clients with the cached OAuth token')
     return {
       adminSdk: new RealAdminSdkClient(),
       cloudIdentity: new RealCloudIdentityClient(),

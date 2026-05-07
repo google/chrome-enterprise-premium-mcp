@@ -88,7 +88,7 @@ function handleDiscoveryError(errorText) {
     console.error('\n' + '='.repeat(SEPARATOR_LENGTH))
     console.error('❌ AUTHENTICATION REQUIRED')
     console.error('The integration tests failed to access the Google APIs.')
-    console.error("Please run: 'gcloud auth application-default login' to refresh your credentials.")
+    console.error("Please run: 'mcp auth login' to refresh your credentials.")
     console.error('='.repeat(SEPARATOR_LENGTH) + '\n')
     throw new Error('Integration tests failed: Authentication required.')
   }
@@ -99,7 +99,7 @@ function handleDiscoveryError(errorText) {
     console.error('\n' + '='.repeat(SEPARATOR_LENGTH))
     console.error('❌ QUOTA PROJECT REQUIRED')
     console.error('The integration tests failed because a quota project is not set.')
-    console.error(`Please run: 'gcloud auth application-default set-quota-project ${projectName}'`)
+    console.error(`Please set GOOGLE_CLOUD_QUOTA_PROJECT=${projectName} in your environment or .env file.`)
     console.error('='.repeat(SEPARATOR_LENGTH) + '\n')
     throw new Error('Integration tests failed: Quota project required.')
   }
