@@ -18,7 +18,7 @@ limitations under the License.
  * @file Wrapper utilities to guard and transform MCP tool calls.
  */
 
-import { TAGS, SCOPES, SERVICE_NAMES } from '../../lib/constants.js'
+import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 import { validateAndGetOrgUnitId } from './org-unit.js'
 
@@ -45,8 +45,8 @@ function getAuthRemediationMessage(status, bearerInbound = false) {
 
   return `Permission denied. Your account lacks the required permissions or the necessary Google Cloud APIs are not enabled.
 
-1. **Re-authenticate with all required scopes:** Run \`mcp auth login\` to re-consent. The required scope set is defined in lib/constants.js#SCOPES (${Object.keys(SCOPES).length} scopes).
-2. **Verify APIs are enabled:** Run the \`check_and_enable_cep_api\` tool against your project, or enable the API set listed in \`lib/constants.js#SERVICE_NAMES\` (${Object.keys(SERVICE_NAMES).length} APIs).`
+1. **Re-authenticate with all required scopes:** Run \`mcp auth login\` to re-consent. The required scope set is defined in lib/constants.js#SCOPES.
+2. **Verify APIs are enabled:** Run the \`check_and_enable_cep_api\` tool against your project, or enable the API set listed in lib/constants.js#SERVICE_NAMES.`
 }
 
 /**
@@ -226,13 +226,6 @@ export function guardedToolCall(
         const remediationMessage = getAuthRemediationMessage(resolvedStatus, bearerInbound)
         return {
           content: [{ type: 'text', text: remediationMessage }],
-          isError: true,
-        }
-      }
-
-      if (errorMessage.includes('quota project')) {
-        return {
-          content: [{ type: 'text', text: `Configuration required. ${errorMessage.replace(/^Error:\s*/i, '')}` }],
           isError: true,
         }
       }
