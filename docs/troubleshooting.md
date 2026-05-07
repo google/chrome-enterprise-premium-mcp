@@ -20,17 +20,23 @@ limitations under the License.
 
 ### "No cached OAuth credentials" or "No Google credentials configured"
 
-You haven't authorized the server yet. Run `mcp auth login`. The CLI opens a consent page, then writes the access token to `~/.config/cep-mcp/tokens.json`.
+You haven't authorized the server yet. Run `mcp auth login`; a consent page opens in your browser, and on approval the access token is written to `~/.config/cep-mcp/tokens.json`.
 
-If the file does not exist after running login, the consent didn't complete; check whether your browser opened a consent tab you missed.
+If the file does not exist after the login flow, the consent didn't complete; check whether your browser opened a consent tab you missed.
 
 ### "Request had insufficient authentication scopes"
 
-The cached OAuth token does not cover one or more required scopes. Re-run `mcp auth login` to re-consent with the full scope set. Scopes can't be added to an existing token; the login command always replaces the cache.
+The cached OAuth token does not cover one or more required scopes. Re-run `mcp auth login` to re-consent with the full scope set.
+
+Scopes can't be added to an existing token; the cache is replaced on every login.
 
 ### "API has not been used in project … before or it is disabled"
 
-A required API is not enabled in the Google Cloud project that owns your OAuth client. For Google-managed deployments this should never happen; for [BYO OAuth clients](auth-bring-your-own-oauth-client.md) the project where you created the client must enable the same APIs the server uses. The fastest path is to call the `check_and_enable_cep_api` tool against your project, or run:
+A required API is not enabled in the Google Cloud project that owns your OAuth client.
+
+If you're using the bundled Google-managed OAuth client, you should never see this error.
+
+If you're using a [BYO OAuth client](auth-bring-your-own-oauth-client.md), the project where you created the client must enable the same APIs the server uses. The fastest path is to call the `check_and_enable_cep_api` tool against your project, or run:
 
 ```bash
 gcloud services enable admin.googleapis.com chromemanagement.googleapis.com chromepolicy.googleapis.com cloudidentity.googleapis.com licensing.googleapis.com serviceusage.googleapis.com --project=YOUR_PROJECT_ID
@@ -79,7 +85,9 @@ These warnings are harmless. Some Node.js features used by dependencies emit war
 
 ### Wrong Node version
 
-The server requires Node 18 or later. Check with `node --version`. If you use [nvm](https://github.com/nvm-sh/nvm), run `nvm use 18` (or later) in the project directory. MCP clients launch `node` as a subprocess and use whatever `node` is on the system PATH, which can differ from the version your shell's `nvm` selects.
+The server requires Node 18 or later. Check with `node --version`. If you use [nvm](https://github.com/nvm-sh/nvm), run `nvm use 18` (or later) in the project directory.
+
+When an MCP client spawns `node`, it picks up whatever is on the system PATH, which can differ from the version your shell's `nvm` selects.
 
 ## MCP client integration
 

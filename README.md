@@ -5,8 +5,8 @@ A [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) server for
 (CEP). CEP extends Chrome's built-in security with Data Loss Prevention (DLP),
 real-time threat protection (phishing and malware scanning), and Context-Aware
 Access controls. This server exposes CEP's DLP rules, content detectors,
-connector policies, browser telemetry, and license management as MCP tools —
-letting any MCP-compatible AI agent inspect and configure a Chrome Enterprise
+connector policies, browser telemetry, and license management as MCP tools,
+so any MCP-compatible AI agent can inspect and configure a Chrome Enterprise
 environment.
 
 > [!CAUTION]
@@ -43,13 +43,15 @@ npm install
 Run `mcp auth login` and approve consent in the browser. The CLI caches
 the access token at `~/.config/cep-mcp/tokens.json`.
 
-To use a custom OAuth client, provide `CEP_OAUTH_CLIENT_ID` and
-`CEP_OAUTH_CLIENT_SECRET`. With a custom client, you keep authorization
-grants and the consent screen inside a Google Cloud project you own. See
-[Bring your own OAuth client](docs/auth-bring-your-own-oauth-client.md).
+If you'd rather keep authorization grants and the consent screen inside a
+Google Cloud project you own, provide `CEP_OAUTH_CLIENT_ID` and
+`CEP_OAUTH_CLIENT_SECRET` instead. The
+[Bring your own OAuth client](docs/auth-bring-your-own-oauth-client.md)
+guide walks through creating the OAuth client and registering its redirect URIs.
 
-For the headless flow, see
-[Sign in from a host without a browser](docs/auth-bring-your-own-oauth-client.md#sign-in-from-a-host-without-a-browser).
+If you're signing in from a CI runner or an SSH session without a browser,
+[Sign in from a host without a browser](docs/auth-bring-your-own-oauth-client.md#sign-in-from-a-host-without-a-browser)
+covers the paste-the-redirect flow.
 
 The scope set requested at consent maps to the underlying APIs:
 
@@ -155,8 +157,8 @@ Restart your MCP client, then ask:
 
 > "What Chrome Enterprise Premium tools do you have access to?"
 
-The agent discovers and lists the available tools. If tools don't
-appear, see [Troubleshooting](#troubleshooting).
+You should see the available tools listed in the response. If they don't
+appear, the [Troubleshooting](#troubleshooting) section covers the usual causes.
 
 ## Configuration
 

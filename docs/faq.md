@@ -29,7 +29,11 @@ Chrome Enterprise Premium is a paid add-on available with any Google Workspace e
 The right path depends on your environment.
 
 - **Workstation (default):** Run `mcp auth login`. To use your own OAuth client instead of the bundled Google-managed one, see [`auth-bring-your-own-oauth-client.md`](auth-bring-your-own-oauth-client.md).
-- **Hosted on Cloud Run, Vertex AI Agent Engine, or a similar managed environment:** OAuth bearer per request. The caller sets `Authorization: Bearer <id-token>` and the server verifies the token's `aud` claim against `CEP_BEARER_AUDIENCE`. A service account with domain-wide delegation is the alternative (set `GOOGLE_APPLICATION_CREDENTIALS` to the key file path; set `CEP_IMPERSONATE_SUBJECT` to the user the SA acts as). OAuth is preferred for hosted deployments because a service account with domain-wide delegation grants the server impersonation rights for any user in the domain.
+- **Hosted on Cloud Run, Vertex AI Agent Engine, or a similar managed environment:** OAuth bearer per request. The caller sets `Authorization: Bearer <id-token>`, and the server verifies the token's `aud` claim against `CEP_BEARER_AUDIENCE`.
+
+  A service account with domain-wide delegation is the alternative: set `GOOGLE_APPLICATION_CREDENTIALS` to the key file path, and set `CEP_IMPERSONATE_SUBJECT` to the user the SA should act as.
+
+  OAuth is preferred for hosted deployments because domain-wide delegation grants the server impersonation rights for every user in the domain, which is a much wider trust grant than per-user OAuth.
 
 For the per-mechanism technical reference (transport, credential source, setup walkthrough), see the [authentication matrix](configuration.md#authenticate-to-google-apis) in `configuration.md`.
 
@@ -39,7 +43,7 @@ Yes. The service account must have [domain-wide delegation](https://developers.g
 
 ## Why do I see "Retrying in 15s..." on the first call?
 
-Newly enabled APIs take a few minutes to propagate. The server retries `PERMISSION_DENIED` (gRPC code 7) up to seven times automatically; the first retry waits 15 seconds. The behavior is normal on first run and resolves within a minute or two.
+Newly enabled APIs take a few minutes to propagate. The server retries `PERMISSION_DENIED` (gRPC code 7) up to seven times automatically, with a 15-second initial delay. The behavior is normal on first run and resolves within a minute or two.
 
 ## How do I enable experimental features?
 

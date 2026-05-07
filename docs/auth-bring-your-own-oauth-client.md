@@ -68,7 +68,7 @@ Follow these steps to sign in by pasting the redirect URL from a different machi
 
 ## Scopes
 
-When you log in, the CLI requests every scope listed in `lib/constants.js#SCOPES`. To see which scopes the cached token actually granted, run `mcp auth status`.
+When you log in, you'll see a consent screen requesting the full scope set the server needs (defined in `lib/constants.js`). To see which scopes the cached token actually granted, run `mcp auth status`.
 
 ## Refresh expired tokens
 
