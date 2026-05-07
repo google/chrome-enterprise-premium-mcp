@@ -50,7 +50,6 @@ lib/util/banner.js
 lib/util/cel_validator.js
 lib/util/chrome_dlp_constants.js
 lib/util/connector_policy_helper.js
-lib/util/credential/adc.js
 lib/util/credential/cli_commands.js
 lib/util/credential/index.js
 lib/util/credential/jwt_verifier.js
@@ -60,7 +59,6 @@ lib/util/credential/oauth_flow.js
 lib/util/credential/token_cache.js
 lib/util/feature_flags.js
 lib/util/gcp.js
-lib/util/google-auth-provider.js
 lib/util/helpers.js
 lib/util/logger.js
 mcp-server.js
