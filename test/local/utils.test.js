@@ -196,7 +196,7 @@ describe('Tool Utils', () => {
       assert.strictEqual(result.isError, true)
       assert.ok(result.content[0].text.includes('Permission denied'))
       assert.ok(result.content[0].text.includes('mcp auth login'))
-      assert.match(result.content[0].text, /\badmin\.googleapis\.com\b/)
+      assert.match(result.content[0].text, /check_and_enable_cep_api|SERVICE_NAMES/)
       assert.ok(!result.structuredContent)
     })
 
@@ -244,7 +244,7 @@ describe('Tool Utils', () => {
       assert.strictEqual(result.isError, true)
       assert.ok(result.content[0].text.includes('Permission denied'))
       assert.match(result.content[0].text, /Refresh the inbound Bearer token/)
-      assert.match(result.content[0].text, /\badmin\.googleapis\.com\b/)
+      assert.match(result.content[0].text, /check_and_enable_cep_api|SERVICE_NAMES/)
     })
 
     test('When onError is provided and handler fails, then it calls onError', async () => {

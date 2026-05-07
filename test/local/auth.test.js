@@ -137,12 +137,14 @@ describe('Auth', () => {
   })
 
   describe('getAuthErrorMessage', () => {
-    test('When the error reports a missing quota project, then the remediation tells BYO clients to enable APIs in the OAuth client owner project', async () => {
+    test('When the error reports a missing quota project, then the remediation lists the required APIs and points at the BYO walkthrough', async () => {
       const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
       const error = new Error('The admin.googleapis.com API requires a quota project, which is not set by default.')
       const message = await getAuthErrorMessage(error)
 
-      assert.match(message, /BYO OAuth clients, enable the required APIs/)
+      assert.match(message, /admin\.googleapis\.com/)
+      assert.match(message, /gcloud services enable/)
+      assert.match(message, /auth-bring-your-own-oauth-client\.md/)
     })
 
     test('When the error reports insufficient scopes, then the remediation points at `mcp auth login`', async () => {
