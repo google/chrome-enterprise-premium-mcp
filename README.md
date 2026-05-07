@@ -24,13 +24,12 @@ npm install
 Run `mcp auth login` and approve consent in the browser. The CLI caches
 the access token at `~/.config/cep-mcp/tokens.json`.
 
-To keep authorization grants and the consent screen inside a Google Cloud
-project you own, provide `CEP_OAUTH_CLIENT_ID` and `CEP_OAUTH_CLIENT_SECRET`
-instead. For the steps to create the OAuth client and register its redirect
-URIs, see
-[Bring your own OAuth client](docs/auth-bring-your-own-oauth-client.md).
+To use a custom OAuth client in a Cloud project of your own, set
+`CEP_OAUTH_CLIENT_ID` and `CEP_OAUTH_CLIENT_SECRET` and re-run
+`mcp auth login`. See
+[Use a custom OAuth client](docs/auth-bring-your-own-oauth-client.md).
 
-For the paste-the-redirect flow used on CI runners and SSH sessions without
+For the paste-the-redirect flow on CI runners and SSH sessions without
 a browser, see
 [Sign in from a host without a browser](docs/auth-bring-your-own-oauth-client.md#sign-in-from-a-host-without-a-browser).
 
@@ -61,9 +60,13 @@ For Cloud Run, Vertex AI Agent Engine, or service-account automation, see
 the
 [authentication setup matrix](docs/configuration.md#authenticate-to-google-apis).
 
-### 2. Enable required APIs
+### 2. Enable required APIs (custom OAuth client or service account only)
 
-These APIs must be enabled on your Google Cloud project:
+Skip this step if you used the default Google-managed OAuth client.
+
+For a custom OAuth client (`CEP_OAUTH_CLIENT_ID` /
+`CEP_OAUTH_CLIENT_SECRET`) or a service-account key, enable these
+APIs in the Cloud project that owns those credentials:
 
 ```bash
 gcloud services enable \
@@ -79,9 +82,10 @@ Or enable them from the
 [API Library](https://console.cloud.google.com/apis/library) in Cloud Console.
 
 > [!NOTE]
-> Newly enabled APIs can take 1–5 minutes to become available. The server
-> automatically retries `PERMISSION_DENIED` errors with exponential
-> backoff. If you see retry messages on first run, wait; don't restart.
+> Newly enabled APIs can take 1–5 minutes to become available.
+> `PERMISSION_DENIED` responses are retried automatically with
+> exponential backoff, so wait through any retry messages on first run
+> instead of restarting.
 
 ### 3. Connect your MCP client
 
