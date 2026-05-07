@@ -46,12 +46,13 @@ PORT=8080 GCP_STDIO=false npx -y @google/chrome-enterprise-premium-mcp@latest
 
 ## Key variables
 
-| Variable              | Description                                                                                                                                                                                                                                        | Default |
-| :-------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------ |
-| `GCP_STDIO`           | `true` for stdio (local), `false` for HTTP (remote).                                                                                                                                                                                               | `true`  |
-| `PORT`                | Network port when `GCP_STDIO=false`.                                                                                                                                                                                                               | `0`     |
-| `LOG_LEVEL`           | Verbosity. One of `error`, `warn`, `info`, `debug`.                                                                                                                                                                                                | `info`  |
-| `CEP_BEARER_AUDIENCE` | When set in HTTP mode, every inbound request must carry an `Authorization: Bearer <id-token>` whose `aud` claim is in this value (comma-separated for multiple). When unset, ID-token verification is off and the server prints a startup warning. | -       |
+| Variable                   | Description                                                                                                                                                                                                                                        | Default |
+| :------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------ |
+| `GCP_STDIO`                | `true` for stdio (local), `false` for HTTP (remote).                                                                                                                                                                                               | `true`  |
+| `PORT`                     | Network port when `GCP_STDIO=false`.                                                                                                                                                                                                               | `0`     |
+| `LOG_LEVEL`                | Verbosity. One of `error`, `warn`, `info`, `debug`.                                                                                                                                                                                                | `info`  |
+| `CEP_BEARER_AUDIENCE`      | When set in HTTP mode, every inbound request must carry an `Authorization: Bearer <id-token>` whose `aud` claim is in this value (comma-separated for multiple). When unset, ID-token verification is off and the server prints a startup warning. | -       |
+| `CEP_BEARER_PRINCIPAL_SUB` | When set, narrows access to a single Google account: requests whose token `sub` does not match return `403 Forbidden`. Has no effect unless `CEP_BEARER_AUDIENCE` is also set.                                                                     | -       |
 
 > [!NOTE]
 > When `GCP_STDIO=false` and `PORT` is unset or `0`, the server binds to a random available port. The actual port is logged at startup, for example: `Chrome Enterprise Premium MCP server listening on port X`.
@@ -81,4 +82,22 @@ If you're not sure which path applies to you, see the [Which auth path should I 
 
 ### Inbound bearer ID-token verification (HTTP mode)
 
-For HTTP-mode deployments behind an OAuth-bearing caller, such as Vertex AI Agent Engine, set `CEP_BEARER_AUDIENCE` to the OAuth client ID whose ID-token issuance is allowed for this server. With it set, every inbound request must carry `Authorization: Bearer <id-token>`, and the server checks the token's `aud` claim against `CEP_BEARER_AUDIENCE`. Failures return `401 Unauthorized` ahead of any forward to Google. When `CEP_BEARER_AUDIENCE` is unset, the check is off and the server prints a startup warning.
+For HTTP-mode deployments behind an OAuth-bearing caller (such as Vertex AI Agent Engine), turn on per-request ID-token verification with two environment variables. They serve different purposes and you usually set both.
+
+**`CEP_BEARER_AUDIENCE` — turns verification on.**
+
+- Set it to the OAuth client ID(s) whose ID tokens this server accepts. Comma-separated for multiple.
+- With it set, every inbound request must carry `Authorization: Bearer <id-token>`, and the server checks the token's `aud` claim against this list before forwarding anything to Google.
+- A failure returns `401 Unauthorized`.
+- When `CEP_BEARER_AUDIENCE` is unset, verification is off and the server prints a startup warning.
+
+**`CEP_BEARER_PRINCIPAL_SUB` — locks the server to one Google account.**
+
+- Set it to the `sub` claim from the desired user's ID token. The `sub` is a stable, per-Google-account identifier that does not change when the user's email changes.
+- With it set, the server accepts only tokens whose `sub` matches; mismatches return `403 Forbidden`. With it unset, any token whose `aud` is allowed by `CEP_BEARER_AUDIENCE` may call the server.
+- Why set it: in a single-tenant deployment (one specific human, one specific service account), restrict access to that one principal instead of any caller who can mint a token from an allowed OAuth client.
+- Prerequisite: `CEP_BEARER_AUDIENCE` must also be set. On its own, `CEP_BEARER_PRINCIPAL_SUB` has no effect; the server logs a startup warning explaining what is missing.
+
+**Finding the right `sub` value.**
+
+Start the server with `CEP_BEARER_AUDIENCE` set and `LOG_LEVEL=debug`, then have the desired principal send one request. The server logs `Request authenticated as <email> (sub=<sub>)`. Copy the `sub` value into `CEP_BEARER_PRINCIPAL_SUB` and restart.
