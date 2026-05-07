@@ -60,7 +60,36 @@ describe('HTTP per-request session state isolation', () => {
     const { fn: recorder, captured } = makeRecorder()
     const handler = createMcpPostHandler({}, recorder)
     const fakeReq = { body: {}, on: () => {} }
-    const fakeRes = { on: () => {}, headersSent: false, status: () => fakeRes, json: () => {} }
+    const listeners = {}
+    const fakeRes = {
+      on: (evt, cb) => {
+        listeners[evt] = cb
+        return fakeRes
+      },
+      once: (evt, cb) => {
+        listeners[evt] = cb
+        return fakeRes
+      },
+      emit: (evt, ...args) => {
+        if (listeners[evt]) {
+          listeners[evt](...args)
+        }
+        return true
+      },
+      removeListener: () => fakeRes,
+      headersSent: false,
+      status: () => fakeRes,
+      json: () => {},
+      send: () => {},
+      writeHead: () => fakeRes,
+      write: () => true,
+      end: () => {
+        if (listeners['close']) {
+          listeners['close']()
+        }
+      },
+      setHeader: () => fakeRes,
+    }
 
     await handler(fakeReq, fakeRes)
     await handler(fakeReq, fakeRes)
@@ -75,7 +104,35 @@ describe('HTTP per-request session state isolation', () => {
     const { fn: recorder, captured } = makeRecorder()
     const sseTransports = {}
     const handler = createSseHandler({}, sseTransports, recorder)
-    const fakeRes = { on: () => {}, headersSent: false }
+    const listeners = {}
+    const fakeRes = {
+      on: (evt, cb) => {
+        listeners[evt] = cb
+        return fakeRes
+      },
+      once: (evt, cb) => {
+        listeners[evt] = cb
+        return fakeRes
+      },
+      emit: (evt, ...args) => {
+        if (listeners[evt]) {
+          listeners[evt](...args)
+        }
+        return true
+      },
+      removeListener: () => fakeRes,
+      headersSent: false,
+      writeHead: () => fakeRes,
+      write: () => true,
+      end: () => {
+        if (listeners['close']) {
+          listeners['close']()
+        }
+      },
+      setHeader: () => fakeRes,
+      status: () => fakeRes,
+      send: () => {},
+    }
 
     await handler({}, fakeRes)
     await handler({}, fakeRes)
