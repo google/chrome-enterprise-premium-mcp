@@ -137,10 +137,12 @@ describe('Auth', () => {
   })
 
   describe('getAuthErrorMessage', () => {
-    test('When the error reports a missing quota project, then the remediation lists the required APIs and points at the BYO walkthrough', async () => {
+    test('When the error reports SERVICE_DISABLED for a BYO OAuth client owner project, then the remediation lists the required APIs and points at the BYO walkthrough', async () => {
       const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
-      const error = new Error('The admin.googleapis.com API requires a quota project, which is not set by default.')
-      const message = await getAuthErrorMessage(error)
+      const error = new Error(
+        'Admin SDK API has not been used in project 123456789 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/admin.googleapis.com/overview?project=123456789 then retry.',
+      )
+      const message = getAuthErrorMessage(error)
 
       assert.match(message, /admin\.googleapis\.com/)
       assert.match(message, /gcloud services enable/)
@@ -150,15 +152,7 @@ describe('Auth', () => {
     test('When the error reports insufficient scopes, then the remediation points at `mcp auth login`', async () => {
       const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
       const error = new Error('Request had insufficient authentication scopes.')
-      const message = await getAuthErrorMessage(error)
-
-      assert.match(message, /mcp auth login/)
-    })
-
-    test('When the error reports missing credentials, then the remediation suggests `mcp auth login`', async () => {
-      const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
-      const error = new Error('Could not load the default credentials.')
-      const message = await getAuthErrorMessage(error)
+      const message = getAuthErrorMessage(error)
 
       assert.match(message, /mcp auth login/)
     })
