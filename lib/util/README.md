@@ -58,7 +58,7 @@ logging, retry, GCP detection, CEL validation, and feature flags.
   OAuth callback.
 
 - `oauth_client_config.js`: resolves OAuth client config (managed
-  bundled placeholder, BYO env vars, or future custom modes).
+  bundled placeholder or custom-client env vars).
 
 - `cli_commands.js`: `runAuthStatusCommand` and `runLoginCommand` for
   the `mcp auth status` and `mcp auth login` CLI subcommands.

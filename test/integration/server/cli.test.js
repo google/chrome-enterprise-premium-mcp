@@ -85,7 +85,7 @@ describe('runLoginCommand', () => {
   })
 })
 
-describe('runLoginCommand BYO notice', () => {
+describe('runLoginCommand custom-client notice', () => {
   it('When source is managed, then no notice prints', async () => {
     const { runLoginCommand } = await import('../../../lib/util/credential/cli_commands.js')
 

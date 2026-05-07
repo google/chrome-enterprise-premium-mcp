@@ -98,7 +98,7 @@ function handleDiscoveryError(errorText) {
     console.error('❌ QUOTA PROJECT REQUIRED')
     console.error('The integration tests failed because Google could not attribute the request to a billing project.')
     console.error(
-      'For BYO OAuth clients, enable the required APIs in the Google Cloud project that owns your OAuth client.',
+      'For custom OAuth clients, enable the required APIs in the Google Cloud project that owns your OAuth client.',
     )
     console.error('='.repeat(SEPARATOR_LENGTH) + '\n')
     throw new Error('Integration tests failed: Quota project required.')

@@ -40,14 +40,17 @@ npm install
 
 ### 1. Sign in
 
-Run `mcp auth login` and approve consent in the browser. The CLI caches
-the access token at `~/.config/cep-mcp/tokens.json`.
+> [!IMPORTANT]
+> The Google-managed OAuth client is still being deployed. Until it ships,
+> you must use your own OAuth client to sign in. Set `CEP_OAUTH_CLIENT_ID`
+> and `CEP_OAUTH_CLIENT_SECRET` to the credentials of an OAuth client you
+> create in your own Google Cloud project. The
+> [Use your own OAuth client](docs/auth-bring-your-own-oauth-client.md)
+> guide walks through creating the OAuth client and registering its redirect URIs.
 
-If you'd rather keep authorization grants and the consent screen inside a
-Google Cloud project you own, provide `CEP_OAUTH_CLIENT_ID` and
-`CEP_OAUTH_CLIENT_SECRET` instead. The
-[Bring your own OAuth client](docs/auth-bring-your-own-oauth-client.md)
-guide walks through creating the OAuth client and registering its redirect URIs.
+Once your environment variables are set, run `mcp auth login` and approve
+consent in the browser. The CLI caches the access token at
+`~/.config/cep-mcp/tokens.json`.
 
 If you're signing in from a CI runner or an SSH session without a browser,
 [Sign in from a host without a browser](docs/auth-bring-your-own-oauth-client.md#sign-in-from-a-host-without-a-browser)

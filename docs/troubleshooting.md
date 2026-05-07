@@ -36,7 +36,7 @@ A required API is not enabled in the Google Cloud project that owns your OAuth c
 
 If you're using the bundled Google-managed OAuth client, you should never see this error.
 
-If you're using a [BYO OAuth client](auth-bring-your-own-oauth-client.md), the project where you created the client must enable the same APIs the server uses. The fastest path is to call the `check_and_enable_cep_api` tool against your project, or run:
+If you're using [your own OAuth client](auth-bring-your-own-oauth-client.md), the project where you created the client must enable the same APIs the server uses. The fastest path is to call the `check_and_enable_cep_api` tool against your project, or run:
 
 ```bash
 gcloud services enable admin.googleapis.com chromemanagement.googleapis.com chromepolicy.googleapis.com cloudidentity.googleapis.com licensing.googleapis.com serviceusage.googleapis.com --project=YOUR_PROJECT_ID
@@ -54,7 +54,7 @@ allow-listed.
 
 1.  Go to [App Access Control](https://admin.google.com/ac/owl/list?tab=configuredApps) in the Admin Console. Check that you are logged in with the right account via the upper-right account icon.
 2.  Click **Configure new app** and select **OAuth App Name Or Client ID**.
-3.  Search for the OAuth client ID. For the Google-managed bundled client, look up the value the CLI prints in its banner under "API credentials"; for [BYO clients](auth-bring-your-own-oauth-client.md) use your own client ID.
+3.  Search for the OAuth client ID. For the Google-managed bundled client, look up the value the CLI prints in its banner under "API credentials"; for [your own OAuth client](auth-bring-your-own-oauth-client.md) use your own client ID.
 4.  Select the matching app from the results.
 5.  Check the box for the **OAuth Client ID** and click **Select**.
 6.  Select **Trusted: Can access all Google services** for Access to Google Data and click **Configure**.

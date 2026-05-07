@@ -137,7 +137,7 @@ describe('Auth', () => {
   })
 
   describe('getAuthErrorMessage', () => {
-    test('When the error reports SERVICE_DISABLED for a BYO OAuth client owner project, then the remediation lists the required APIs and points at the BYO walkthrough', async () => {
+    test('When the error reports SERVICE_DISABLED for a custom OAuth client owner project, then the remediation lists the required APIs and points at the custom-client walkthrough', async () => {
       const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
       const error = new Error(
         'Admin SDK API has not been used in project 123456789 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/admin.googleapis.com/overview?project=123456789 then retry.',
