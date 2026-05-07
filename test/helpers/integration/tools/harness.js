@@ -94,12 +94,12 @@ function handleDiscoveryError(errorText) {
   }
 
   if (isQuotaError) {
-    const projectMatch = errorText.match(/quota project "([^"]+)"/i)
-    const projectName = projectMatch ? projectMatch[1] : 'YOUR_PROJECT_ID'
     console.error('\n' + '='.repeat(SEPARATOR_LENGTH))
     console.error('❌ QUOTA PROJECT REQUIRED')
-    console.error('The integration tests failed because a quota project is not set.')
-    console.error(`Please set GOOGLE_CLOUD_QUOTA_PROJECT=${projectName} in your environment or .env file.`)
+    console.error('The integration tests failed because Google could not attribute the request to a billing project.')
+    console.error(
+      'For BYO OAuth clients, enable the required APIs in the Google Cloud project that owns your OAuth client.',
+    )
     console.error('='.repeat(SEPARATOR_LENGTH) + '\n')
     throw new Error('Integration tests failed: Quota project required.')
   }

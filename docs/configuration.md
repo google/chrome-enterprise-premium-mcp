@@ -29,8 +29,7 @@ Add the variables to the `env` block of your MCP client's settings file. The cli
       "command": "npx",
       "args": ["-y", "@google/chrome-enterprise-premium-mcp@latest"],
       "env": {
-        "GCP_STDIO": "true",
-        "GOOGLE_CLOUD_QUOTA_PROJECT": "your-project-id"
+        "GCP_STDIO": "true"
       }
     }
   }
@@ -47,13 +46,12 @@ PORT=8080 GCP_STDIO=false npx -y @google/chrome-enterprise-premium-mcp@latest
 
 ## Key variables
 
-| Variable                     | Description                                                                                                                                                                                                                                        | Default |
-| :--------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------ |
-| `GCP_STDIO`                  | `true` for stdio (local), `false` for HTTP (remote).                                                                                                                                                                                               | `true`  |
-| `PORT`                       | Network port when `GCP_STDIO=false`.                                                                                                                                                                                                               | `0`     |
-| `GOOGLE_CLOUD_QUOTA_PROJECT` | Google Cloud project ID for API quotas.                                                                                                                                                                                                            | -       |
-| `LOG_LEVEL`                  | Verbosity. One of `error`, `warn`, `info`, `debug`.                                                                                                                                                                                                | `info`  |
-| `CEP_BEARER_AUDIENCE`        | When set in HTTP mode, every inbound request must carry an `Authorization: Bearer <id-token>` whose `aud` claim is in this value (comma-separated for multiple). When unset, ID-token verification is off and the server prints a startup warning. | -       |
+| Variable              | Description                                                                                                                                                                                                                                        | Default |
+| :-------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------ |
+| `GCP_STDIO`           | `true` for stdio (local), `false` for HTTP (remote).                                                                                                                                                                                               | `true`  |
+| `PORT`                | Network port when `GCP_STDIO=false`.                                                                                                                                                                                                               | `0`     |
+| `LOG_LEVEL`           | Verbosity. One of `error`, `warn`, `info`, `debug`.                                                                                                                                                                                                | `info`  |
+| `CEP_BEARER_AUDIENCE` | When set in HTTP mode, every inbound request must carry an `Authorization: Bearer <id-token>` whose `aud` claim is in this value (comma-separated for multiple). When unset, ID-token verification is off and the server prints a startup warning. | -       |
 
 > [!NOTE]
 > When `GCP_STDIO=false` and `PORT` is unset or `0`, the server binds to a random available port. The actual port is logged at startup, for example: `Chrome Enterprise Premium MCP server listening on port X`.

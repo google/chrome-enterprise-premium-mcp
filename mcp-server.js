@@ -43,12 +43,7 @@ import { checkGCP } from './lib/util/gcp.js'
 import { featureFlags, FLAGS } from './lib/util/feature_flags.js'
 import { logger } from './lib/util/logger.js'
 import { printBanner, dim } from './lib/util/banner.js'
-import {
-  buildApiCredsField,
-  buildScopesField,
-  buildAuthRemediationLines,
-  buildQuotaProjectWarning,
-} from './lib/util/auth_messages.js'
+import { buildApiCredsField, buildScopesField, buildAuthRemediationLines } from './lib/util/auth_messages.js'
 import { verifyIdToken, parseExpectedAudience } from './lib/util/credential/jwt_verifier.js'
 import { resolveOAuthClientConfig } from './lib/util/credential/oauth_client_config.js'
 import { oauthFlowCredential } from './lib/util/credential/oauth_flow.js'
@@ -84,14 +79,12 @@ function shouldStartStdio(gcpInfo) {
 
 /**
  * Probes the local OAuth-flow token cache and diffs its granted scopes
- * against `requiredScopes`. Returns the standard `CredentialProbe` shape
- * with an additional `quotaProject` field for the banner's quota warning.
+ * against `requiredScopes`.
  * @param {string[]} requiredScopes - Scopes the server needs.
- * @returns {Promise<import('./lib/util/credential/index.js').CredentialProbe & {quotaProject: ?string}>} The probe result.
+ * @returns {Promise<import('./lib/util/credential/index.js').CredentialProbe>} The probe result.
  */
 async function probeOAuthFlow(requiredScopes) {
-  const probe = await oauthFlowCredential({ requiredScopes }).probe()
-  return { ...probe, quotaProject: process.env.GOOGLE_CLOUD_QUOTA_PROJECT || null }
+  return oauthFlowCredential({ requiredScopes }).probe()
 }
 
 /**
@@ -321,14 +314,6 @@ export async function runServer() {
       if (remediation) {
         console.log()
         for (const line of remediation) {
-          console.log(dim(line))
-        }
-        console.log()
-      }
-      const quotaWarning = buildQuotaProjectWarning(probe)
-      if (quotaWarning) {
-        console.log()
-        for (const line of quotaWarning) {
           console.log(dim(line))
         }
         console.log()

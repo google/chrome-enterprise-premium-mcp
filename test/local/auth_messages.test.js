@@ -16,12 +16,7 @@ limitations under the License.
 
 import { describe, test } from 'node:test'
 import assert from 'node:assert'
-import {
-  buildApiCredsField,
-  buildScopesField,
-  buildAuthRemediationLines,
-  buildQuotaProjectWarning,
-} from '../../lib/util/auth_messages.js'
+import { buildApiCredsField, buildScopesField, buildAuthRemediationLines } from '../../lib/util/auth_messages.js'
 import { SCOPES } from '../../lib/constants.js'
 
 const REQUIRED = Object.values(SCOPES)
@@ -34,7 +29,6 @@ const oauthMissing = {
   scopesKnown: false,
   missingScopes: REQUIRED,
   expiry: null,
-  quotaProject: null,
 }
 const oauthValidAllScopes = {
   ok: true,
@@ -44,7 +38,6 @@ const oauthValidAllScopes = {
   scopesKnown: true,
   missingScopes: [],
   expiry: null,
-  quotaProject: 'my-project',
 }
 const oauthValidPartial = {
   ok: false,
@@ -54,17 +47,6 @@ const oauthValidPartial = {
   scopesKnown: true,
   missingScopes: [SCOPES.CHROME_MANAGEMENT_POLICY, SCOPES.ADMIN_DIRECTORY_ORGUNIT_READONLY],
   expiry: null,
-  quotaProject: 'my-project',
-}
-const oauthNoQuotaProject = {
-  ok: true,
-  source: 'oauth-flow',
-  principal: 'tim@example.com',
-  credentialType: 'managed',
-  scopesKnown: true,
-  missingScopes: [],
-  expiry: null,
-  quotaProject: null,
 }
 
 describe('buildScopesField', () => {
@@ -187,22 +169,5 @@ describe('buildApiCredsField', () => {
   test('When the OAuth client config could not be resolved, then the parens label it as "unresolved client"', () => {
     const [, parens] = buildApiCredsField(oauthValidAllScopes, null)
     assert.match(parens, /unresolved client/)
-  })
-})
-
-describe('buildQuotaProjectWarning', () => {
-  test('When the probe is not ok, then it returns null', () => {
-    assert.strictEqual(buildQuotaProjectWarning(oauthMissing), null)
-  })
-
-  test('When a quota project is set, then no warning is needed', () => {
-    assert.strictEqual(buildQuotaProjectWarning(oauthValidAllScopes), null)
-  })
-
-  test('When OAuth credentials lack a quota project, then it points at GOOGLE_CLOUD_QUOTA_PROJECT', () => {
-    const lines = buildQuotaProjectWarning(oauthNoQuotaProject)
-    const text = lines.join('\n')
-    assert.match(text, /quota project/i)
-    assert.match(text, /GOOGLE_CLOUD_QUOTA_PROJECT/)
   })
 })

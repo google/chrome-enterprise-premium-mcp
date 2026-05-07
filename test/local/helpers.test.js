@@ -27,7 +27,7 @@ describe('Helpers', () => {
       const helpersModule = await esmock('../../lib/util/helpers.js', {
         '../../lib/util/auth-error.js': {
           getAuthErrorMessage: () =>
-            'The API requires a quota project. Set GOOGLE_CLOUD_QUOTA_PROJECT. Your credentials have insufficient scopes',
+            'The API requires a quota project. Enable APIs in the OAuth client owner project. Your credentials have insufficient scopes',
         },
         '../../lib/constants.js': {
           DEFAULT_CONFIG: {
@@ -86,7 +86,7 @@ describe('Helpers', () => {
           err => {
             return (
               err.message.includes('The API requires a quota project') &&
-              err.message.includes('GOOGLE_CLOUD_QUOTA_PROJECT')
+              err.message.includes('Enable APIs in the OAuth client owner project')
             )
           },
         )
