@@ -29,15 +29,11 @@ const CLI = path.resolve(__dirname, '../../../bin/cli.js')
 
 describe('bin/cli.js', () => {
   describe('auth status', () => {
-    it('When invoked with `auth status` and ADC absent, then it prints the ADC line and an OAuth flow line', () => {
-      const result = spawnSync('node', [CLI, 'auth', 'status'], {
-        encoding: 'utf8',
-        env: { ...process.env, GOOGLE_APPLICATION_CREDENTIALS: '/nonexistent' },
-      })
+    it('When invoked with `auth status`, then it prints the OAuth status line', () => {
+      const result = spawnSync('node', [CLI, 'auth', 'status'], { encoding: 'utf8' })
       assert.equal(result.status, 0)
       assert.match(result.stdout, /Auth status:/)
-      assert.match(result.stdout, /ADC:/)
-      assert.match(result.stdout, /OAuth flow:/)
+      assert.match(result.stdout, /OAuth:/)
     })
   })
 
@@ -46,8 +42,8 @@ describe('bin/cli.js', () => {
       const result = spawnSync('node', [CLI, 'auth'], { encoding: 'utf8' })
       assert.equal(result.status, 0)
       assert.match(result.stderr, /Usage: mcp auth <verb>/)
-      assert.match(result.stderr, /login\s+Run the OAuth-flow login/)
-      assert.match(result.stderr, /status\s+Show ADC and OAuth-flow credential status/)
+      assert.match(result.stderr, /login\s+Run the OAuth login/)
+      assert.match(result.stderr, /status\s+Show OAuth credential status/)
     })
   })
 

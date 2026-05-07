@@ -29,8 +29,8 @@ const AUTH_HELP = [
   'Usage: mcp auth <verb>',
   '',
   'Verbs:',
-  '  login    Run the OAuth-flow login and cache an access token.',
-  '  status   Show ADC and OAuth-flow credential status.',
+  '  login    Run the OAuth login and cache an access token.',
+  '  status   Show OAuth credential status.',
 ].join('\n')
 
 /**
