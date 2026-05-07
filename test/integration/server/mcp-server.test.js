@@ -66,7 +66,7 @@ describe('MCP Server in stdio mode', () => {
     }
   })
 
-  test('When listTools is called, then it returns all registered tools', async () => {
+  test('When listTools is called in Google-managed OAuth mode, then check_and_enable_cep_api is absent', async () => {
     const response = await client.listTools()
 
     const tools = response.tools
@@ -75,7 +75,6 @@ describe('MCP Server in stdio mode', () => {
     assert.deepStrictEqual(
       toolNames.sort(),
       [
-        'check_and_enable_cep_api',
         'check_cep_subscription',
         'check_seb_extension_status',
         'check_user_cep_license',
@@ -104,11 +103,9 @@ describe('MCP Server in stdio mode', () => {
   })
 
   describe('MCP Server Startup Logs', () => {
-    // A dummy API root causes probeADC() to short-circuit immediately (it
-    // checks process.env.GOOGLE_API_ROOT_URL and returns early), which
-    // removes the 8-second network-probe window that was racing against the
-    // 12-second spawnSync timeout and causing intermittent failures (#47).
-    const NO_ADC_PROBE = 'http://localhost:1'
+    // A non-routable API root puts the server in fake-API mode so the boot
+    // path never makes a real Google call.
+    const FAKE_API_ROOT = 'http://localhost:1'
 
     test('When server starts with custom PORT, then it logs the correct port', () => {
       const serverPath = path.resolve(__dirname, '../../../mcp-server.js')
@@ -118,7 +115,7 @@ describe('MCP Server in stdio mode', () => {
           PORT: '4000',
           GCP_STDIO: 'false',
           CEP_LOG_LEVEL: 'info',
-          GOOGLE_API_ROOT_URL: NO_ADC_PROBE,
+          GOOGLE_API_ROOT_URL: FAKE_API_ROOT,
         },
         timeout: 12000,
       })
@@ -131,7 +128,7 @@ describe('MCP Server in stdio mode', () => {
     test('When server starts without PORT, then it assigns a random port', () => {
       const serverPath = path.resolve(__dirname, '../../../mcp-server.js')
       const result = spawnSync(process.execPath, [serverPath], {
-        env: { ...process.env, GCP_STDIO: 'false', CEP_LOG_LEVEL: 'info', GOOGLE_API_ROOT_URL: NO_ADC_PROBE },
+        env: { ...process.env, GCP_STDIO: 'false', CEP_LOG_LEVEL: 'info', GOOGLE_API_ROOT_URL: FAKE_API_ROOT },
         timeout: 12000,
       })
 
@@ -157,7 +154,7 @@ describe('MCP Server in stdio mode', () => {
             PORT: port.toString(),
             GCP_STDIO: 'false',
             CEP_LOG_LEVEL: 'info',
-            GOOGLE_API_ROOT_URL: NO_ADC_PROBE,
+            GOOGLE_API_ROOT_URL: FAKE_API_ROOT,
           },
           timeout: 12000,
         })
