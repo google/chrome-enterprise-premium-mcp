@@ -65,6 +65,12 @@ const migratedFiles = [
   'tools/definitions/delete_agent_dlp_rule.ts',
   'tools/definitions/delete_detector.ts',
   'tools/definitions/create_chrome_dlp_rule.ts',
+  'tools/utils/detector.ts',
+  'tools/utils/org-unit.ts',
+  'tools/definitions/create_regex_detector.ts',
+  'tools/definitions/create_url_list_detector.ts',
+  'tools/definitions/create_word_list_detector.ts',
+  'tools/definitions/create_default_dlp_rules.ts',
 ]
 
 // Map the recommended type-checked rules to apply ONLY to fully migrated files.

@@ -40,6 +40,7 @@ interface ApiErrorData {
 }
 
 export interface ApiError {
+  message?: string
   response?: {
     data?: ApiErrorData
     status?: number
@@ -241,7 +242,13 @@ function isStringArray(val: unknown): val is string[] {
   return Array.isArray(val) && val.every(item => typeof item === 'string')
 }
 
-function getObject(obj: Record<string, unknown>, key: string): Record<string, unknown> | undefined {
+/**
+ * Safely extracts a nested object property.
+ * @param obj The source object.
+ * @param key The property key.
+ * @returns The nested object, or undefined if not an object or missing.
+ */
+export function getObject(obj: Record<string, unknown>, key: string): Record<string, unknown> | undefined {
   const val = obj[key]
   if (isObject(val)) {
     return val
