@@ -46,6 +46,7 @@ const migratedFiles = [
   'lib/util/auth_messages.ts',
   'lib/util/auth.ts',
   'lib/util/api-client.ts',
+  'lib/util/cel_validator.ts',
   'lib/util/credential/index.ts',
   'lib/util/credential/adc.ts',
   'lib/util/credential/oauth_flow.ts',
@@ -62,6 +63,8 @@ const migratedFiles = [
   'tools/definitions/list_dlp_rules.ts',
   'tools/definitions/list_detectors.ts',
   'tools/definitions/delete_agent_dlp_rule.ts',
+  'tools/definitions/delete_detector.ts',
+  'tools/definitions/create_chrome_dlp_rule.ts',
 ]
 
 // Map the recommended type-checked rules to apply ONLY to fully migrated files.

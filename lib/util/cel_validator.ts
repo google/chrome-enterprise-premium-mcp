@@ -36,14 +36,22 @@ import {
   MCP_SAFETY_CONSTRAINTS,
 } from './chrome_dlp_constants.js'
 
+export interface ValidationResult {
+  isValid: boolean
+  errors: string[]
+}
+
 /**
  * Validates that the requested action and state comply with MCP-specific safety constraints.
- * @param {string} action - The action type (BLOCK, WARN, AUDIT)
- * @param {string} [state] - The rule state (ACTIVE, INACTIVE)
- * @returns {{isValid: boolean, errors: string[]}} Validation result
+ * @param action The action type (BLOCK, WARN, AUDIT)
+ * @param state The rule state (ACTIVE, INACTIVE)
+ * @returns Validation result
  */
-export function validateMcpSafetyConstraints(action, state = POLICY_STATES.ACTIVE.value) {
-  const errors = []
+export function validateMcpSafetyConstraints(
+  action: string,
+  state: string = POLICY_STATES.ACTIVE.value,
+): ValidationResult {
+  const errors: string[] = []
 
   if (action === CHROME_ACTION_TYPES.BLOCK.value && state === POLICY_STATES.ACTIVE.value) {
     errors.push(MCP_SAFETY_CONSTRAINTS.ACTIVE_BLOCK_RESTRICTION)
@@ -67,12 +75,15 @@ export const VALID_CEL_METHODS = Object.keys(CEL_FUNCTIONS).map(func => {
 
 /**
  * Basic offline CEL validator for DLP conditions.
- * @param {string} condition - The CEL condition string
- * @param {string[]} [triggers] - Optional list of triggers
- * @returns {{isValid: boolean, errors: string[]}} Validation result
+ * @param condition The CEL condition string
+ * @param triggers Optional list of triggers
+ * @returns Validation result
  */
-export function validateCelCondition(condition, triggers = []) {
-  const errors = []
+export function validateCelCondition(
+  condition: string | undefined,
+  triggers: readonly string[] = [],
+): ValidationResult {
+  const errors: string[] = []
 
   if (!condition || condition.trim() === '') {
     return { isValid: false, errors: ['Condition cannot be empty.'] }
@@ -106,7 +117,7 @@ export function validateCelCondition(condition, triggers = []) {
 
   // Check if methods are valid
   const methodRegex = /\.([a-zA-Z0-9_]+)\(/g
-  let match
+  let match: RegExpExecArray | null
   while ((match = methodRegex.exec(strippedCondition)) !== null) {
     const method = match[1]
     if (!VALID_CEL_METHODS.includes(method)) {
@@ -128,9 +139,8 @@ export function validateCelCondition(condition, triggers = []) {
   }
 
   // Validate predefined detectors inside matches_dlp_detector
-  // Matches the entire function call to check for extra arguments.
   const dlpDetectorRegex = /\.matches_dlp_detector\(\s*['"]([^'"]+)['"]\s*(,[^)]+)?\)/g
-  let dlpMatch
+  let dlpMatch: RegExpExecArray | null
   while ((dlpMatch = dlpDetectorRegex.exec(condition)) !== null) {
     const detector = dlpMatch[1]
     const extraParams = dlpMatch[2]
@@ -149,9 +159,8 @@ export function validateCelCondition(condition, triggers = []) {
   }
 
   // Validate categories inside matches_web_category
-
   const webCategoryRegex = /\.matches_web_category\(\s*['"]([^'"]+)['"]\s*\)/g
-  let catMatch
+  let catMatch: RegExpExecArray | null
   while ((catMatch = webCategoryRegex.exec(condition)) !== null) {
     const category = catMatch[1]
     if (!VALID_WEB_CATEGORIES.includes(category)) {
@@ -168,9 +177,9 @@ export function validateCelCondition(condition, triggers = []) {
 
   for (const [field, enumObj] of Object.entries(enumValidationMap)) {
     const regex = new RegExp(`\\b${field}\\b\\s*(?:==|\\.matches_enum\\()\\s*['"]([^'"]+)['"]`, 'g')
-    let match
-    while ((match = regex.exec(condition)) !== null) {
-      const value = match[1]
+    let enumMatch: RegExpExecArray | null
+    while ((enumMatch = regex.exec(condition)) !== null) {
+      const value = enumMatch[1]
       const validValues = Object.values(enumObj).map(v => v.value)
       if (!validValues.includes(value)) {
         errors.push(`'${value}' is not a valid value for '${field}'. Valid values are: ${validValues.join(', ')}.`)
@@ -271,15 +280,30 @@ export function validateCelCondition(condition, triggers = []) {
   }
 }
 
+export interface ActionParams {
+  customMessage?: string
+  watermarkMessage?: string
+  blockScreenshot?: boolean
+  dataMasking?: {
+    predefinedDetectors?: unknown
+    wordListDetectors?: unknown
+    regexDetectors?: unknown
+  }
+}
+
 /**
  * Validates action parameter compatibility.
- * @param {string} action - The action type (BLOCK, WARN, AUDIT)
- * @param {object} [params] - The action parameters
- * @param {string[]} [triggers] - The list of triggers
- * @returns {{isValid: boolean, errors: string[]}} Validation result
+ * @param action The action type (BLOCK, WARN, AUDIT)
+ * @param params The action parameters
+ * @param triggers The list of triggers
+ * @returns Validation result
  */
-export function validateActionParameters(action, params = {}, triggers = []) {
-  const errors = []
+export function validateActionParameters(
+  action: string,
+  params: ActionParams = {},
+  triggers: readonly string[] = [],
+): ValidationResult {
+  const errors: string[] = []
   const { customMessage, watermarkMessage, blockScreenshot, dataMasking } = params
   const isUrlNavigationSelected = triggers.includes('URL_NAVIGATION')
 
@@ -300,10 +324,8 @@ export function validateActionParameters(action, params = {}, triggers = []) {
     }
 
     // For <a> tags, ensure only allowed attributes (href, target) are present.
-    // This regex finds <a> tags and checks if they contain attributes other than href or target.
     const aTags = customMessage.match(/<a\s+[^>]+>/g) || []
     for (const tag of aTags) {
-      // Extract all attribute names
       const attributes = tag.match(/[a-z]+(?==)/gi) || []
       const hasInvalidAttr = attributes.some(attr => !['href', 'target'].includes(attr.toLowerCase()))
       if (hasInvalidAttr) {
@@ -344,7 +366,6 @@ export function validateActionParameters(action, params = {}, triggers = []) {
     if (!isUrlNavigationSelected) {
       errors.push(ACTION_PARAMETER_CONSTRAINTS.DATA_MASKING_SUPPORT)
     } else if (dataMasking.predefinedDetectors || dataMasking.wordListDetectors) {
-      // Backend restriction: ONLY regex detectors are supported for data masking.
       errors.push(ACTION_PARAMETER_CONSTRAINTS.DATA_MASKING_SUPPORT)
     }
   }
