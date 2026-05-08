@@ -94,6 +94,9 @@ const migratedFiles = [
   'test/run-unit.ts',
   'test/run-integration.ts',
   'test/run-all.ts',
+  'lib/util/feature_flags.ts',
+  'lib/util/logger.ts',
+  'lib/util/gcp.ts',
 ]
 
 // Map the recommended type-checked rules to apply ONLY to fully migrated files.

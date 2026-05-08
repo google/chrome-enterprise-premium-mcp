@@ -30,12 +30,14 @@ export const FLAGS = {
   DELETE_TOOL_ENABLED: 'DELETE_TOOL_ENABLED',
   KNOWLEDGE_SEARCH_ENABLED: 'KNOWLEDGE_SEARCH_ENABLED',
   DIAGNOSE_TOOL_ENABLED: 'DIAGNOSE_TOOL_ENABLED',
-}
+} as const
+
+export type FeatureFlagName = (typeof FLAGS)[keyof typeof FLAGS]
 
 /**
  * Centralized default values for flags if not explicitly set in the environment.
  */
-const DEFAULT_VALUES = {
+const DEFAULT_VALUES: Record<FeatureFlagName, boolean> = {
   [FLAGS.DELETE_TOOL_ENABLED]: false,
   [FLAGS.KNOWLEDGE_SEARCH_ENABLED]: false,
   [FLAGS.DIAGNOSE_TOOL_ENABLED]: true,
@@ -43,27 +45,30 @@ const DEFAULT_VALUES = {
 
 /**
  * Manages feature flags and experiments for the MCP server.
- * Flags are typically sourced from environment variables.
+ * Flags are sourcing from environment variables.
  */
 export class FeatureFlags {
+  private env: NodeJS.ProcessEnv
+
   /**
    * Initializes a new instance of FeatureFlags.
-   * @param {object} [env] - The environment variables object to use for flag lookups.
+   * @param env The environment variables object to use for flag lookups.
    */
-  constructor(env = process.env) {
+  constructor(env: NodeJS.ProcessEnv = process.env) {
     this.env = env
   }
 
   /**
    * Checks if a feature flag is enabled.
-   * @param {string} flag - The name of the flag to check. MUST be a value from FLAGS.
-   * @param {boolean} [defaultValue] - Optional override for the centralized default value.
-   * @returns {boolean} True if the flag is enabled, false otherwise.
-   * @throws {Error} If the provided flag is not registered in the FLAGS constant.
+   * @param flag The name of the flag to check. MUST be a value from FLAGS.
+   * @param defaultValue Optional override for the centralized default value.
+   * @returns True if the flag is enabled, false otherwise.
+   * @throws If the provided flag is not registered in the FLAGS constant.
    */
-  isEnabled(flag, defaultValue) {
+  isEnabled(flag: FeatureFlagName, defaultValue?: boolean): boolean {
     // Strict check to catch typos during development and CI
-    if (!Object.values(FLAGS).includes(flag)) {
+    const validFlags: string[] = Object.values(FLAGS)
+    if (!validFlags.includes(flag)) {
       throw new Error(`[FeatureFlags] Error: checking unknown flag "${flag}". You must register it in FLAGS first.`)
     }
 
@@ -80,17 +85,17 @@ export class FeatureFlags {
 
   /**
    * Checks if a feature flag is currently using its default value from the environment.
-   * @param {string} flag - The name of the flag to check.
-   * @returns {boolean} True if the flag is NOT set in the environment.
+   * @param flag The name of the flag to check.
+   * @returns True if the flag is NOT set in the environment.
    */
-  isDefault(flag) {
+  isDefault(flag: FeatureFlagName): boolean {
     return this.env[`${PREFIX}${flag}`] === undefined || this.env[`${PREFIX}${flag}`] === null
   }
 
   /**
    * Logs all currently active environment overrides to the console.
    */
-  logActive() {
+  logActive(): void {
     const overrides = Object.values(FLAGS)
       .filter(f => !this.isDefault(f))
       .map(f => `${f}=${this.isEnabled(f)}`)

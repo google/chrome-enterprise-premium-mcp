@@ -28,12 +28,17 @@ export const LogLevel = {
   WARN: 2,
   ERROR: 3,
   SILENT: 4,
-}
+} as const
+
+export type LogLevelValue = (typeof LogLevel)[keyof typeof LogLevel]
 
 /**
  * Leveled logger with optional stderr-only output for MCP Stdio transport.
  */
 class Logger {
+  private level: number
+  private useStderr: boolean
+
   /**
    * Creates a logger at INFO level with stdout routing.
    */
@@ -44,22 +49,21 @@ class Logger {
 
   /**
    * Determines the initial log level based on environment variables.
-   * @returns {number} The initial log level.
-   * @private
+   * @returns The initial log level.
    */
-  _getInitialLogLevel() {
+  private _getInitialLogLevel(): number {
     const envLevel = process.env.CEP_LOG_LEVEL?.toUpperCase()
-    if (envLevel && LogLevel[envLevel] !== undefined) {
-      return LogLevel[envLevel]
+    if (envLevel && envLevel in LogLevel) {
+      return LogLevel[envLevel as keyof typeof LogLevel]
     }
     return LogLevel.INFO
   }
 
   /**
    * Sets the logging level.
-   * @param {number} level - The new log level from the LogLevel enum.
+   * @param level The new log level from the LogLevel enum.
    */
-  setLevel(level) {
+  setLevel(level: number): void {
     this.level = level
   }
 
@@ -67,18 +71,17 @@ class Logger {
    * Routes all output to stderr. Required for MCP Stdio transport, where
    * stdout is reserved for protocol messages.
    */
-  enableStdioMode() {
+  enableStdioMode(): void {
     this.useStderr = true
   }
 
   /**
    * Dispatches to the requested console method, or to console.error in
    * stderr-only mode.
-   * @param {string} method - The console method to call (e.g., 'log', 'warn', 'error').
-   * @param {...unknown} args - The arguments to log.
-   * @private
+   * @param method The console method to call (e.g., 'log', 'warn', 'error').
+   * @param args The arguments to log.
    */
-  _log(method, ...args) {
+  private _log(method: 'log' | 'warn' | 'error', ...args: unknown[]): void {
     if (this.useStderr) {
       console.error(...args)
     } else {
@@ -88,9 +91,9 @@ class Logger {
 
   /**
    * Log at DEBUG level.
-   * @param {...unknown} args - The arguments to log.
+   * @param args The arguments to log.
    */
-  debug(...args) {
+  debug(...args: unknown[]): void {
     if (this.level <= LogLevel.DEBUG) {
       this._log('log', ...args)
     }
@@ -98,9 +101,9 @@ class Logger {
 
   /**
    * Log at INFO level.
-   * @param {...unknown} args - The arguments to log.
+   * @param args The arguments to log.
    */
-  info(...args) {
+  info(...args: unknown[]): void {
     if (this.level <= LogLevel.INFO) {
       this._log('log', ...args)
     }
@@ -108,9 +111,9 @@ class Logger {
 
   /**
    * Log at WARN level.
-   * @param {...unknown} args - The arguments to log.
+   * @param args The arguments to log.
    */
-  warn(...args) {
+  warn(...args: unknown[]): void {
     if (this.level <= LogLevel.WARN) {
       this._log('warn', ...args)
     }
@@ -118,9 +121,9 @@ class Logger {
 
   /**
    * Log at ERROR level.
-   * @param {...unknown} args - The arguments to log.
+   * @param args The arguments to log.
    */
-  error(...args) {
+  error(...args: unknown[]): void {
     if (this.level <= LogLevel.ERROR) {
       this._log('error', ...args)
     }
