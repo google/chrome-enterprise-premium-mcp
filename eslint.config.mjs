@@ -55,6 +55,10 @@ const migratedFiles = [
   'lib/api/chrome_management_client.ts',
   'lib/api/chrome_policy_client.ts',
   'lib/api/service_usage_client.ts',
+  'tools/definitions/shared.ts',
+  'tools/utils/wrapper.ts',
+  'tools/definitions/get_customer_id.ts',
+  'tools/definitions/get_dlp_rule.ts',
 ]
 
 // Map the recommended type-checked rules to apply ONLY to fully migrated files.
