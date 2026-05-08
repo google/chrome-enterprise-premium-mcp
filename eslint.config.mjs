@@ -97,6 +97,15 @@ const migratedFiles = [
   'lib/util/feature_flags.ts',
   'lib/util/logger.ts',
   'lib/util/gcp.ts',
+  'lib/util/banner.ts',
+  'lib/util/auth-error.ts',
+  'lib/util/credential/cli_commands.ts',
+  'lib/util/credential/loopback_server.ts',
+  'lib/knowledge/instructions.ts',
+  'prompts/index.ts',
+  'prompts/definitions/expert.ts',
+  'prompts/definitions/health.ts',
+  'prompts/definitions/optimize.ts',
 ]
 
 // Map the recommended type-checked rules to apply ONLY to fully migrated files.
