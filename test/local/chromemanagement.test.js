@@ -177,11 +177,14 @@ describe('Chrome Management API', () => {
       client.getClient = async authToken => {
         observedAuth = authToken
         return {
-          customers: {
-            reports: {
-              countChromeVersions: async () => ({ data: { browserVersions: [] } }),
+          client: {
+            customers: {
+              reports: {
+                countChromeVersions: async () => ({ data: { browserVersions: [] } }),
+              },
             },
           },
+          source: 'cache',
         }
       }
       await client.countBrowserVersions('C0123', null, 'TEST_BEARER_TOKEN')
@@ -195,11 +198,14 @@ describe('Chrome Management API', () => {
       client.getClient = async authToken => {
         observedAuth = authToken
         return {
-          customers: {
-            profiles: {
-              list: async () => ({ data: { chromeBrowserProfiles: [] } }),
+          client: {
+            customers: {
+              profiles: {
+                list: async () => ({ data: { chromeBrowserProfiles: [] } }),
+              },
             },
           },
+          source: 'cache',
         }
       }
       await client.listCustomerProfiles('C0123', 'TEST_BEARER_TOKEN')

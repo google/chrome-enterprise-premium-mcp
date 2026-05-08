@@ -43,6 +43,9 @@ describe('Admin SDK API', () => {
           '../../lib/api/admin_sdk_client.js': {
             AdminSdkClient: MockAdminSdkClient,
           },
+          '../../lib/util/auth.js': {
+            getAuthClient: async () => ({ source: 'adc' }),
+          },
         },
       )
       registerTools(server, {
@@ -78,6 +81,9 @@ describe('Admin SDK API', () => {
         {
           '../../lib/api/admin_sdk_client.js': {
             AdminSdkClient: MockAdminSdkClient,
+          },
+          '../../lib/util/auth.js': {
+            getAuthClient: async () => ({ source: 'adc' }),
           },
         },
       )
@@ -116,6 +122,9 @@ describe('Admin SDK API', () => {
           '../../lib/api/admin_sdk_client.js': {
             AdminSdkClient: MockAdminSdkClient,
           },
+          '../../lib/util/auth.js': {
+            getAuthClient: async () => ({ source: 'adc' }),
+          },
         },
       )
       registerTools(server, {
@@ -153,6 +162,9 @@ describe('Admin SDK API', () => {
           '../../lib/api/admin_sdk_client.js': {
             AdminSdkClient: MockAdminSdkClient,
           },
+          '../../lib/util/auth.js': {
+            getAuthClient: async () => ({ source: 'adc' }),
+          },
         },
       )
       registerTools(server, {
@@ -182,6 +194,9 @@ describe('Admin SDK API', () => {
         {
           '../../lib/api/admin_sdk_client.js': {
             AdminSdkClient: MockAdminSdkClient,
+          },
+          '../../lib/util/auth.js': {
+            getAuthClient: async () => ({ source: 'adc' }),
           },
         },
       )
@@ -219,6 +234,9 @@ describe('Admin SDK API', () => {
         {
           '../../lib/api/admin_sdk_client.js': {
             AdminSdkClient: MockAdminSdkClient,
+          },
+          '../../lib/util/auth.js': {
+            getAuthClient: async () => ({ source: 'adc' }),
           },
         },
       )
@@ -258,6 +276,9 @@ describe('Admin SDK API', () => {
           '../../lib/api/admin_sdk_client.js': {
             AdminSdkClient: MockAdminSdkClient,
           },
+          '../../lib/util/auth.js': {
+            getAuthClient: async () => ({ source: 'adc' }),
+          },
         },
       )
       registerTools(server, {
@@ -292,6 +313,9 @@ describe('Admin SDK API', () => {
         {
           '../../lib/api/admin_sdk_client.js': {
             AdminSdkClient: MockAdminSdkClient,
+          },
+          '../../lib/util/auth.js': {
+            getAuthClient: async () => ({ source: 'adc' }),
           },
         },
       )
@@ -332,6 +356,9 @@ describe('Admin SDK API', () => {
         {
           '../../lib/api/admin_sdk_client.js': {
             AdminSdkClient: MockAdminSdkClient,
+          },
+          '../../lib/util/auth.js': {
+            getAuthClient: async () => ({ source: 'adc' }),
           },
         },
       )

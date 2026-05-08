@@ -1,0 +1,180 @@
+/*
+Copyright 2026 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+import assert from 'node:assert/strict'
+import { describe, test, mock, beforeEach } from 'node:test'
+import { esmock } from '../helpers/mock-utils.js'
+describe('Chrome Management API', () => {
+  let server
+  beforeEach(async () => {
+    server = {
+      registerTool: mock.fn(),
+    }
+  })
+  describe('count_browser_versions Tool', () => {
+    test('When tool is executed, then it calls countBrowserVersions and returns formatted result', async () => {
+      const mockCountBrowserVersions = mock.fn(async () => [
+        { version: '120.0.6099.71', count: 10, channel: 'Stable' },
+        { version: '119.0.0.0', count: 5, channel: 'Beta' },
+      ])
+      const MockChromeManagementClient = class {
+        constructor() {
+          this.countBrowserVersions = mockCountBrowserVersions
+        }
+      }
+      const { registerTools } = await esmock(
+        '../../tools/index.js',
+        {},
+        {
+          '../../lib/api/chrome_management_client.js': {
+            ChromeManagementClient: MockChromeManagementClient,
+          },
+        },
+      )
+      registerTools(server, {
+        apiClients: { chromeManagement: new MockChromeManagementClient() },
+      })
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'count_browser_versions')
+        .arguments[2]
+      const result = await handler({ project: 'test-project', customerId: 'C0123' }, {})
+      assert.strictEqual(mockCountBrowserVersions.mock.callCount(), 1)
+      assert.ok(result.content[0].text.includes('## Browser Versions (2)'))
+      assert.ok(result.content[0].text.includes('**120.0.6099.71**'))
+      assert.ok(result.content[1].text.includes('```json'))
+    })
+    // Test error handling when the API call fails.
+    test('When API call fails, then it returns an error message', async () => {
+      const mockCountBrowserVersions = mock.fn(async () => {
+        throw new Error('API Error')
+      })
+      const MockChromeManagementClient = class {
+        constructor() {
+          this.countBrowserVersions = mockCountBrowserVersions
+        }
+      }
+      const { registerTools } = await esmock(
+        '../../tools/index.js',
+        {},
+        {
+          '../../lib/api/chrome_management_client.js': {
+            ChromeManagementClient: MockChromeManagementClient,
+          },
+        },
+      )
+      registerTools(server, {
+        apiClients: { chromeManagement: new MockChromeManagementClient() },
+      })
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'count_browser_versions')
+        .arguments[2]
+      const result = await handler({ project: 'test-project', customerId: 'C0123' }, {})
+      assert.deepStrictEqual(result.content[0].text, 'Error: API Error')
+    })
+  })
+  describe('list_customer_profiles Tool', () => {
+    test('When tool is executed, then it calls listCustomerProfiles and returns formatted result', async () => {
+      const mockListCustomerProfiles = mock.fn(async () => [
+        { name: 'profile1', value: 'value1' },
+        { name: 'profile2', value: 'value2' },
+      ])
+      const MockChromeManagementClient = class {
+        constructor() {
+          this.listCustomerProfiles = mockListCustomerProfiles
+        }
+      }
+      const { registerTools } = await esmock(
+        '../../tools/index.js',
+        {},
+        {
+          '../../lib/api/chrome_management_client.js': {
+            ChromeManagementClient: MockChromeManagementClient,
+          },
+        },
+      )
+      registerTools(server, {
+        apiClients: { chromeManagement: new MockChromeManagementClient() },
+      })
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'list_customer_profiles')
+        .arguments[2]
+      const result = await handler({ customerId: 'C0123' }, {})
+      assert.strictEqual(mockListCustomerProfiles.mock.callCount(), 1)
+      assert.ok(result.content[0].text.includes('## Browser Profiles (2)'))
+      assert.ok(result.content[0].text.includes('Profile: `profile1`'))
+      assert.ok(result.content[1].text.includes('```json'))
+    })
+    test('When API call fails, then it surfaces as isError so guardedToolCall can run auth remediation', async () => {
+      const mockListCustomerProfiles = mock.fn(async () => {
+        throw new Error('API Error')
+      })
+      const MockChromeManagementClient = class {
+        constructor() {
+          this.listCustomerProfiles = mockListCustomerProfiles
+        }
+      }
+      const { registerTools } = await esmock(
+        '../../tools/index.js',
+        {},
+        {
+          '../../lib/api/chrome_management_client.js': {
+            ChromeManagementClient: MockChromeManagementClient,
+          },
+        },
+      )
+      registerTools(server, {
+        apiClients: { chromeManagement: new MockChromeManagementClient() },
+      })
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'list_customer_profiles')
+        .arguments[2]
+      const result = await handler({ customerId: 'C0123' }, {})
+      assert.strictEqual(result.isError, true)
+      assert.match(result.content[0].text, /API Error/)
+    })
+  })
+  describe('ChromeManagementClient authToken threading', () => {
+    test('When countBrowserVersions is called with an authToken, then it is forwarded to getClient', async () => {
+      const { ChromeManagementClient } = await import('../../lib/api/chrome_management_client.js')
+      const client = new ChromeManagementClient()
+      let observedAuth = 'sentinel-not-set'
+      client.getClient = async authToken => {
+        observedAuth = authToken
+        return {
+          customers: {
+            reports: {
+              countChromeVersions: async () => ({ data: { browserVersions: [] } }),
+            },
+          },
+        }
+      }
+      await client.countBrowserVersions('C0123', null, 'TEST_BEARER_TOKEN')
+      assert.strictEqual(observedAuth, 'TEST_BEARER_TOKEN')
+    })
+    test('When listCustomerProfiles is called with an authToken, then it is forwarded to getClient', async () => {
+      const { ChromeManagementClient } = await import('../../lib/api/chrome_management_client.js')
+      const client = new ChromeManagementClient()
+      let observedAuth = 'sentinel-not-set'
+      client.getClient = async authToken => {
+        observedAuth = authToken
+        return {
+          customers: {
+            profiles: {
+              list: async () => ({ data: { chromeBrowserProfiles: [] } }),
+            },
+          },
+        }
+      }
+      await client.listCustomerProfiles('C0123', 'TEST_BEARER_TOKEN')
+      assert.strictEqual(observedAuth, 'TEST_BEARER_TOKEN')
+    })
+  })
+})

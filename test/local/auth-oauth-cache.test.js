@@ -87,8 +87,75 @@ describe('getAuthClient OAuth-flow cached tokens', () => {
       },
     })
 
-    const client = await getAuthClient(['https://www.googleapis.com/auth/userinfo.email'], undefined)
+    const { client, source } = await getAuthClient(['https://www.googleapis.com/auth/userinfo.email'], undefined)
     assert.ok(client, 'returned a client')
+    assert.strictEqual(source, 'cache', 'source should be cache')
+    const tok = await client.getAccessToken()
+    assert.equal(tok.token, SYNTHETIC_TOKEN, 'returned cached token')
+  })
+
+  test('returns OAuth2Client populated from token cache when ADC getAccessToken throws', async () => {
+    const { getAuthClient } = await esmock('../../lib/util/auth.js', {
+      'google-auth-library': {
+        GoogleAuth: class {
+          async getClient() {
+            return {
+              getAccessToken: async () => {
+                throw new Error('SYNTHETIC: Token retrieval failed')
+              },
+            }
+          }
+        },
+        OAuth2Client: class {
+          constructor() {
+            this._creds = null
+          }
+          setCredentials(c) {
+            this._creds = c
+          }
+          async getAccessToken() {
+            return { token: this._creds?.access_token }
+          }
+        },
+      },
+    })
+
+    const { client, source } = await getAuthClient(['https://www.googleapis.com/auth/userinfo.email'], undefined)
+    assert.ok(client, 'returned a client')
+    assert.strictEqual(source, 'cache', 'source should be cache')
+    const tok = await client.getAccessToken()
+    assert.equal(tok.token, SYNTHETIC_TOKEN, 'returned cached token')
+  })
+
+  test('returns OAuth2Client populated from token cache when ADC getAccessToken throws', async () => {
+    const { getAuthClient } = await esmock('../../lib/util/auth.js', {
+      'google-auth-library': {
+        GoogleAuth: class {
+          async getClient() {
+            return {
+              getAccessToken: async () => {
+                throw new Error('SYNTHETIC: Token retrieval failed')
+              },
+            }
+          }
+        },
+        OAuth2Client: class {
+          constructor() {
+            this._creds = null
+          }
+          setCredentials(c) {
+            this._creds = c
+          }
+          async getAccessToken() {
+            return { token: this._creds?.access_token }
+          }
+        },
+      },
+    })
+
+    const { client, source } = await getAuthClient(['https://www.googleapis.com/auth/userinfo.email'], undefined)
+    assert.ok(client, 'returned a client')
+    assert.strictEqual(source, 'cache', 'source should be cache')
     const tok = await client.getAccessToken()
     assert.equal(tok.token, SYNTHETIC_TOKEN, 'returned cached token')
   })

@@ -29,8 +29,9 @@ describe('Auth', () => {
         },
       },
     })
-    const client = await getAuthClient([], 'test-token')
+    const { client, source } = await getAuthClient([], 'test-token')
     assert.ok(client)
+    assert.strictEqual(source, 'bearer')
   })
 
   test('When GOOGLE_APPLICATION_CREDENTIALS points at an SA key, then it returns a JWT bound to that key', async () => {
@@ -52,12 +53,12 @@ describe('Auth', () => {
         },
       },
     })
-
     const previous = process.env.GOOGLE_APPLICATION_CREDENTIALS
     process.env.GOOGLE_APPLICATION_CREDENTIALS = '/tmp/fake-key.json'
     try {
-      const client = await getAuthClient(['https://www.googleapis.com/auth/cloud-platform'])
+       const { client, source } = await getAuthClient(['https://www.googleapis.com/auth/cloud-platform'])
       assert.ok(client)
+      assert.strictEqual(source, 'adc')
       assert.strictEqual(observedConfig.email, 'svc@example.iam.gserviceaccount.com')
       assert.deepStrictEqual(observedConfig.scopes, ['https://www.googleapis.com/auth/cloud-platform'])
       assert.strictEqual(observedConfig.subject, undefined)

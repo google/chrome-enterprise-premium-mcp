@@ -20,6 +20,7 @@ limitations under the License.
 
 import { TAGS, SCOPES } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
+import { getAuthClient } from '../../lib/util/auth.js'
 import { validateAndGetOrgUnitId } from './org-unit.js'
 import { isTokenLocallyValid } from '../../lib/util/credential/auth_login.js'
 import { cliInvocation } from '../../lib/util/cli_invocation.js'
@@ -56,19 +57,35 @@ function buildAuthRequiredResponse({ reason, expiresAt }) {
 
 /**
  * Generates a proactive remediation message for authentication errors.
- * @param {number} status - HTTP status code (401 or 403)
- * @param {boolean} bearerInbound - True if request used inbound Bearer auth
- * @returns {string} Human-readable remediation instructions
+ * @param {number} status - The HTTP status code
+ * @param {string} [source] - The credential source ('bearer', 'cache', 'adc', 'provided')
+ * @returns {string} The remediation message
  */
-function getAuthRemediationMessage(status, bearerInbound = false) {
-  if (bearerInbound) {
+function getAuthRemediationMessage(status, source = 'adc') {
+  const REAUTH_ADVICE = {
+    bearer: {
+      cmd: '/mcp reauth in your Gemini CLI',
+      sessionLabel: 'OAuth session',
+    },
+    cache: {
+      cmd: 'mcp login in your terminal',
+      sessionLabel: 'cached tokens',
+    },
+  }
+
+  if (source === 'provided') {
+    return `Authentication failed using pre-supplied credentials. Please check the configuration of the client passed to the server.`
+  }
+
+  const advice = REAUTH_ADVICE[source]
+  if (advice) {
     if (status === 401) {
-      return `Authentication required. The inbound Bearer token has expired or is invalid. Re-authenticate through your MCP client to refresh the token.`
+      return `Authentication required. Your ${advice.sessionLabel} has expired or is invalid. Please run \`${advice.cmd}\` to re-authenticate.`
     }
     return `Permission denied. The authenticated principal lacks the required permissions, or the necessary Google Cloud APIs are not enabled.
 
-1. **Re-authenticate:** Refresh the inbound Bearer token through your MCP client.
-2. **Verify APIs are enabled:** Run the \`check_and_enable_cep_api\` tool against your project, or enable the API set listed in \`lib/constants.js#SERVICE_NAMES\`.`
+1. **Re-authenticate:** Run \`${advice.cmd}\`.
+2. **Verify APIs are enabled:** Ensure \`admin.googleapis.com\`, \`chromemanagement.googleapis.com\`, \`chromepolicy.googleapis.com\`, and \`cloudidentity.googleapis.com\` are enabled in your Google Cloud project.`
   }
 
   const manualLogin = cliInvocation('auth login')
@@ -173,7 +190,20 @@ export function guardedToolCall(
         return buildAuthRequiredResponse(validity)
       }
     }
+
+    let credentialsSource = authToken ? 'bearer' : 'adc'
+
     try {
+      // Resolve the source once so it's available for error remediation even
+      // if validation fails before the API client is invoked.
+      try {
+        const auth = await getAuthClient([], authToken)
+        credentialsSource = auth.source
+      } catch (_e) {
+        // Ignore resolution errors here; we will handle them if the tool
+        // actually needs to make an API call.
+      }
+
       let apiOptions = options.apiOptions || {}
       if (options.server && !apiOptions.onStatusUpdate) {
         const server = options.server
@@ -227,7 +257,7 @@ export function guardedToolCall(
         validate(transformedParams)
       }
 
-      const result = await handler(transformedParams, { ...context, authToken })
+      const result = await handler(transformedParams, { ...context, authToken, credentialsSource })
       logger.debug(`${TAGS.MCP} Handler result for '${context?.name || 'unknown'}':`, JSON.stringify(result, null, 2))
 
       if (result && !result.structuredContent && result.content) {
@@ -277,8 +307,8 @@ export function guardedToolCall(
           errorMessage.includes('invalid_grant')
             ? 401
             : 403)
-        const bearerInbound = !!context?.authToken || !!context?.requestInfo?.headers?.authorization
-        const remediationMessage = getAuthRemediationMessage(resolvedStatus, bearerInbound)
+        const source = error.credentialsSource || credentialsSource
+        const remediationMessage = getAuthRemediationMessage(resolvedStatus, source)
         return {
           content: [{ type: 'text', text: remediationMessage }],
           isError: true,

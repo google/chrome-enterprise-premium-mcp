@@ -20,8 +20,9 @@ import { describe, test, mock } from 'node:test'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import os from 'node:os'
-import { commonTransform, guardedToolCall } from '../../tools/utils/wrapper.js'
-import { validateAndGetOrgUnitId } from '../../tools/utils/org-unit.js'
+import esmock from 'esmock'
+import { commonTransform } from '../../tools/utils/wrapper.js'
+import { validateAndGetOrgUnitId, resolveRootOrgUnitId } from '../../tools/utils/org-unit.js'
 import { formatStatus } from '../../lib/util/helpers.js'
 import { SCOPES } from '../../lib/constants.js'
 
@@ -53,6 +54,14 @@ describe('Tool Utils', () => {
   })
 
   describe('guardedToolCall Infrastructure', () => {
+    async function getGuardedToolCall(mockAuthSource = 'adc') {
+      const { guardedToolCall } = await esmock('../../tools/utils/wrapper.js', {
+        '../../lib/util/auth.js': {
+          getAuthClient: async () => ({ source: mockAuthSource }),
+        },
+      })
+      return guardedToolCall
+    }
     describe('Registration and Auto-Resolution', () => {
       test('When tools are registered, then it auto-resolves customerId using provided adminSdk client and apiOptions', async () => {
         const handler = mock.fn(async () => ({ content: [{ type: 'text', text: 'ok' }] }))
@@ -71,6 +80,7 @@ describe('Tool Utils', () => {
       test('When params.customerId is provided, then it updates sessionState.customerId', async () => {
         const handler = mock.fn(async () => ({ content: [{ type: 'text', text: 'ok' }] }))
         const sessionState = { customerId: null }
+        const guardedToolCall = await getGuardedToolCall()
         const tool = guardedToolCall({ handler }, {}, sessionState)
         await tool({ customerId: 'C_EXPLICIT' }, { requestInfo: { headers: { authorization: 'Bearer fake' } } })
         assert.strictEqual(sessionState.customerId, 'C_EXPLICIT')
@@ -83,6 +93,7 @@ describe('Tool Utils', () => {
       const failHandler = mock.fn(async () => {
         throw err
       })
+      const guardedToolCall = await getGuardedToolCall('adc')
       const tool = guardedToolCall({ handler: failHandler })
       const result = await tool({}, {})
       assert.strictEqual(result.isError, true)
@@ -96,6 +107,7 @@ describe('Tool Utils', () => {
       const failHandler = mock.fn(async () => {
         throw err
       })
+      const guardedToolCall = await getGuardedToolCall('adc')
       const tool = guardedToolCall({ handler: failHandler })
       const result = await tool({}, {})
       assert.strictEqual(result.isError, true)
@@ -109,6 +121,7 @@ describe('Tool Utils', () => {
       const failHandler = mock.fn(async () => {
         throw err
       })
+      const guardedToolCall = await getGuardedToolCall('adc')
       const tool = guardedToolCall({ handler: failHandler })
       const result = await tool({}, {})
       assert.strictEqual(result.isError, true)
@@ -121,6 +134,7 @@ describe('Tool Utils', () => {
       const failHandler = mock.fn(async () => {
         throw err
       })
+      const guardedToolCall = await getGuardedToolCall('bearer')
       const tool = guardedToolCall({ handler: failHandler })
       const result = await tool({}, { requestInfo: { headers: { authorization: 'Bearer abc' } } })
       assert.strictEqual(result.isError, true)
@@ -133,10 +147,44 @@ describe('Tool Utils', () => {
       const failHandler = mock.fn(async () => {
         throw err
       })
+      const guardedToolCall = await getGuardedToolCall('bearer')
       const tool = guardedToolCall({ handler: failHandler })
       const result = await tool({}, { requestInfo: { headers: { authorization: 'Bearer abc' } } })
       assert.strictEqual(result.isError, true)
       assert.match(result.content[0].text, /inbound Bearer token/)
+    })
+
+    test('When handler fails with 401 and source is cache, then it returns the cache remediation message', async () => {
+      const err = new Error('UNAUTHENTICATED')
+      err.status = 401
+      const failHandler = mock.fn(async () => {
+        throw err
+      })
+      const guardedToolCall = await getGuardedToolCall('cache')
+      const tool = guardedToolCall({ handler: failHandler })
+      const result = await tool({}, {})
+
+      assert.strictEqual(result.isError, true)
+      assert.ok(result.content[0].text.includes('Authentication required'))
+      assert.ok(result.content[0].text.includes('mcp login'))
+      assert.ok(!result.content[0].text.includes('gcloud auth application-default login'))
+    })
+
+    test('When handler fails with 401 and source is bearer, then it returns the bearer remediation message', async () => {
+      const err = new Error('UNAUTHENTICATED')
+      err.status = 401
+      const failHandler = mock.fn(async () => {
+        throw err
+      })
+      const guardedToolCall = await getGuardedToolCall('bearer')
+      const tool = guardedToolCall({ handler: failHandler })
+      const result = await tool({}, {})
+
+      assert.strictEqual(result.isError, true)
+      assert.ok(result.content[0].text.includes('Authentication required'))
+      assert.ok(result.content[0].text.includes('/mcp reauth'))
+      assert.ok(!result.content[0].text.includes('mcp login'))
+      assert.ok(!result.content[0].text.includes('gcloud auth application-default login'))
     })
 
     test('When onError is provided and handler fails, then it calls onError', async () => {
@@ -145,6 +193,7 @@ describe('Tool Utils', () => {
         throw err
       })
       const onError = mock.fn(() => ({ content: [{ type: 'text', text: 'custom' }], isError: true }))
+      const guardedToolCall = await getGuardedToolCall()
       const tool = guardedToolCall({ handler: failHandler }, { onError })
       const result = await tool({}, { requestInfo: { headers: { authorization: 'Bearer fake' } } })
       assert.strictEqual(result.isError, true)

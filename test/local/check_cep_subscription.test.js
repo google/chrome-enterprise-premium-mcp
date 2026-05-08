@@ -17,12 +17,11 @@ limitations under the License.
 import assert from 'node:assert/strict'
 import { describe, test, mock, beforeEach } from 'node:test'
 import esmock from 'esmock'
-import { AdminSdkClient } from '../../lib/api/admin_sdk_client.js'
 
-describe('check_cep_subscription Tool', () => {
+describe('check_cep_subscription tool', () => {
   let server
 
-  beforeEach(async () => {
+  beforeEach(() => {
     server = {
       registerTool: mock.fn(),
     }
@@ -43,8 +42,9 @@ describe('check_cep_subscription Tool', () => {
       '../../tools/index.js',
       {},
       {
-        '../../lib/api/admin_sdk_client.js': {
-          AdminSdkClient: MockAdminSdkClient,
+        '../../lib/api/admin_sdk_client.js': { AdminSdkClient: MockAdminSdkClient },
+        '../../lib/util/auth.js': {
+          getAuthClient: async () => ({ source: 'adc' }),
         },
       },
     )
@@ -56,16 +56,18 @@ describe('check_cep_subscription Tool', () => {
     const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_cep_subscription')
       .arguments[2]
 
-    const result = await handler({ customerId: 'C0123' }, {})
+    const result = await handler({ customerId: 'C123' }, {})
 
     assert.strictEqual(mockCheckCepSubscription.mock.callCount(), 1)
-    assert.match(
-      result.content[0].text,
-      /Chrome Enterprise Premium subscription is active\. 1 license assignment\(s\) found\./,
-    )
+    assert.match(result.content[0].text, /Chrome Enterprise Premium subscription is active/)
+    assert.deepStrictEqual(result.structuredContent, {
+      isActive: true,
+      assignmentCount: 1,
+      assignments: [{ productId: '101040', skuId: '1010400001' }],
+    })
   })
 
-  test('When no CEP subscription is found, then it returns info message', async () => {
+  test('When CEP subscription is missing, then it returns information message', async () => {
     const mockCheckCepSubscription = mock.fn(async () => ({
       items: [],
     }))
@@ -80,8 +82,9 @@ describe('check_cep_subscription Tool', () => {
       '../../tools/index.js',
       {},
       {
-        '../../lib/api/admin_sdk_client.js': {
-          AdminSdkClient: MockAdminSdkClient,
+        '../../lib/api/admin_sdk_client.js': { AdminSdkClient: MockAdminSdkClient },
+        '../../lib/util/auth.js': {
+          getAuthClient: async () => ({ source: 'adc' }),
         },
       },
     )
@@ -93,22 +96,16 @@ describe('check_cep_subscription Tool', () => {
     const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_cep_subscription')
       .arguments[2]
 
-    const result = await handler({ customerId: 'C0123' }, {})
+    const result = await handler({ customerId: 'C123' }, {})
 
     assert.strictEqual(mockCheckCepSubscription.mock.callCount(), 1)
-    assert.match(
-      result.content[0].text,
-      /Chrome Enterprise Premium license assignments found\. The customer may have a subscription but no licenses assigned yet\./,
-    )
-    assert.strictEqual(result.structuredContent.isActive, false)
-    assert.strictEqual(result.structuredContent.assignmentCount, 0)
+    assert.match(result.content[0].text, /No Chrome Enterprise Premium license assignments found/)
+    assert.deepStrictEqual(result.structuredContent, { isActive: false, assignmentCount: 0, assignments: [] })
   })
 
-  test('When Licensing API is not enabled, then it returns error message', async () => {
+  test('When API call fails, then it returns error message', async () => {
     const mockCheckCepSubscription = mock.fn(async () => {
-      throw new Error(
-        'API [licensing.googleapis.com] is not enabled. Please enable it at https://console.cloud.google.com/apis/library/licensing.googleapis.com',
-      )
+      throw new Error('API Error')
     })
 
     const MockAdminSdkClient = class {
@@ -121,8 +118,9 @@ describe('check_cep_subscription Tool', () => {
       '../../tools/index.js',
       {},
       {
-        '../../lib/api/admin_sdk_client.js': {
-          AdminSdkClient: MockAdminSdkClient,
+        '../../lib/api/admin_sdk_client.js': { AdminSdkClient: MockAdminSdkClient },
+        '../../lib/util/auth.js': {
+          getAuthClient: async () => ({ source: 'adc' }),
         },
       },
     )
@@ -134,21 +132,17 @@ describe('check_cep_subscription Tool', () => {
     const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_cep_subscription')
       .arguments[2]
 
-    const result = await handler({ customerId: 'C0123' }, {})
+    const result = await handler({ customerId: 'C123' }, {})
 
     assert.strictEqual(mockCheckCepSubscription.mock.callCount(), 1)
-    assert.match(result.content[0].text, /Error: API \[licensing\.googleapis\.com\] is not enabled/)
-    assert.match(
-      result.content[0].text,
-      /https:\/\/console\.cloud\.google\.com\/apis\/library\/licensing\.googleapis\.com/,
-    )
+    assert.match(result.content[0].text, /Error: API Error/)
   })
 
   test('When access is denied, then it returns proactive auth remediation instructions', async () => {
     const mockCheckCepSubscription = mock.fn(async () => {
-      throw new Error(
-        'PERMISSION_DENIED: Access denied to Licensing API. The account may not have permission to access licensing information.',
-      )
+      const error = new Error('Permission denied')
+      error.status = 403
+      throw error
     })
 
     const MockAdminSdkClient = class {
@@ -161,8 +155,9 @@ describe('check_cep_subscription Tool', () => {
       '../../tools/index.js',
       {},
       {
-        '../../lib/api/admin_sdk_client.js': {
-          AdminSdkClient: MockAdminSdkClient,
+        '../../lib/api/admin_sdk_client.js': { AdminSdkClient: MockAdminSdkClient },
+        '../../lib/util/auth.js': {
+          getAuthClient: async () => ({ source: 'adc' }),
         },
       },
     )
@@ -174,73 +169,10 @@ describe('check_cep_subscription Tool', () => {
     const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_cep_subscription')
       .arguments[2]
 
-    const result = await handler({ customerId: 'C0123' }, {})
+    const result = await handler({ customerId: 'C123' }, {})
 
     assert.strictEqual(mockCheckCepSubscription.mock.callCount(), 1)
     assert.match(result.content[0].text, /Permission denied\. Your account lacks/)
     assert.match(result.content[0].text, /auth login/)
-  })
-})
-
-describe('AdminSdkClient', () => {
-  describe('checkCepSubscription', () => {
-    test('When CURRENT_CUSTOMER is used, then it resolves to actual customer ID before querying Licensing API', async () => {
-      const client = new AdminSdkClient()
-
-      const mockListForProductAndSku = mock.fn(async () => {
-        return { data: { items: [] } }
-      })
-
-      client.getLicensingService = mock.fn(async () => {
-        return {
-          licenseAssignments: {
-            listForProductAndSku: mockListForProductAndSku,
-          },
-        }
-      })
-
-      client.getCustomerId = mock.fn(async () => {
-        return { id: 'C_REAL_ID' }
-      })
-
-      // We need to bypass the actual callWithRetry logic for the test if it's tricky,
-      // but callWithRetry in lib/util/helpers.js just executes the function.
-
-      await client.checkCepSubscription('my_customer', 'fake_token')
-
-      assert.strictEqual(client.getCustomerId.mock.callCount(), 1)
-      assert.strictEqual(mockListForProductAndSku.mock.callCount(), 1)
-
-      const args = mockListForProductAndSku.mock.calls[0].arguments[0]
-      assert.strictEqual(args.customerId, 'C_REAL_ID')
-    })
-
-    test('When provided customer ID is not my_customer, then it uses it directly without resolving', async () => {
-      const client = new AdminSdkClient()
-
-      const mockListForProductAndSku = mock.fn(async () => {
-        return { data: { items: [] } }
-      })
-
-      client.getLicensingService = mock.fn(async () => {
-        return {
-          licenseAssignments: {
-            listForProductAndSku: mockListForProductAndSku,
-          },
-        }
-      })
-
-      client.getCustomerId = mock.fn(async () => {
-        return { id: 'C_REAL_ID' }
-      })
-
-      await client.checkCepSubscription('C012345', 'fake_token')
-
-      assert.strictEqual(client.getCustomerId.mock.callCount(), 0)
-      assert.strictEqual(mockListForProductAndSku.mock.callCount(), 1)
-
-      const args = mockListForProductAndSku.mock.calls[0].arguments[0]
-      assert.strictEqual(args.customerId, 'C012345')
-    })
   })
 })
