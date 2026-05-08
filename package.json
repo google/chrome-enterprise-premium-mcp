@@ -1,6 +1,6 @@
 {
   "name": "@google/chrome-enterprise-premium-mcp",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Chrome Enterprise Premium MCP server",
   "repository": {
     "type": "git",
