@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /*
 Copyright 2026 Google LLC
 
@@ -25,9 +24,8 @@ import { runServer } from '../mcp-server.js'
 
 /**
  * Dispatches the CLI subcommand.
- * @returns {Promise<void>} Resolves when the chosen command finishes.
  */
-async function main() {
+async function main(): Promise<void> {
   const sub = process.argv[2]
   if (sub === 'auth-status') {
     const { runAuthStatusCommand } = await import('../lib/util/credential/cli_commands.js')
@@ -40,7 +38,8 @@ async function main() {
   return runServer()
 }
 
-main().catch(err => {
-  console.error(err.message || err)
+void main().catch((err: unknown) => {
+  const message = err instanceof Error ? err.message : String(err)
+  console.error(message)
   process.exit(1)
 })
