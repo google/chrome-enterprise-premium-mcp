@@ -222,6 +222,8 @@ export interface GuardedToolOptions {
 export interface SessionState {
   customerId: string | null
   cachedRootOrgUnitId?: string | null
+  pendingRule?: Record<string, unknown> | null
+  history?: unknown[]
 }
 
 export interface McpContext {

@@ -24,7 +24,7 @@ limitations under the License.
 
 import { config } from '@dotenvx/dotenvx'
 config({ quiet: true, ignore: ['MISSING_ENV_FILE'] })
-import express from 'express'
+import express, { Request, Response, NextFunction } from 'express'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
@@ -34,7 +34,11 @@ import fs from 'node:fs/promises'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
-const pkg = JSON.parse(readFileSync(fileURLToPath(new URL('./package.json', import.meta.url)), 'utf8'))
+interface PackageJson {
+  version: string
+}
+
+const pkg = JSON.parse(readFileSync(fileURLToPath(new URL('./package.json', import.meta.url)), 'utf8')) as PackageJson
 
 import { buildServerInstructions } from './lib/knowledge/instructions.js'
 import { registerTools } from './tools/index.js'
@@ -47,6 +51,8 @@ import { buildScopesField, buildAuthRemediationLines, buildQuotaProjectWarning }
 import { verifyIdToken, parseExpectedAudience } from './lib/util/credential/jwt_verifier.js'
 import { TAGS, SCOPES } from './lib/constants.js'
 import { adcCredential } from './lib/util/credential/adc.js'
+import { SessionState } from './tools/utils/wrapper.js'
+import { isObject } from './lib/util/helpers.js'
 
 // Import Clients
 import { AdminSdkClient } from './lib/api/admin_sdk_client.js'
@@ -55,21 +61,30 @@ import { ChromePolicyClient } from './lib/api/chrome_policy_client.js'
 import { ChromeManagementClient } from './lib/api/chrome_management_client.js'
 import { ServiceUsageClient } from './lib/api/service_usage_client.js'
 
+interface GCPInfo {
+  project: string
+  region: string
+}
+
+interface McpRequest extends Request {
+  verifiedPrincipal?: unknown
+}
+
 /**
  * Redirects console.log to console.error for compatibility with Stdio transport.
  * Stdio transport uses stdout for protocol messages, so logging must go to stderr.
  */
-function makeLoggingCompatibleWithStdio() {
+function makeLoggingCompatibleWithStdio(): void {
   console.log = console.error
   logger.enableStdioMode()
 }
 
 /**
  * Determines whether to start the server in Stdio mode.
- * @param {object} gcpInfo - The detected GCP environment metadata
- * @returns {boolean} True if Stdio mode should be used, false otherwise
+ * @param gcpInfo The detected GCP environment metadata
+ * @returns True if Stdio mode should be used, false otherwise
  */
-function shouldStartStdio(gcpInfo) {
+function shouldStartStdio(gcpInfo: GCPInfo | null): boolean {
   if (process.env.GCP_STDIO === 'false' || (gcpInfo && gcpInfo.project)) {
     return false
   }
@@ -77,28 +92,12 @@ function shouldStartStdio(gcpInfo) {
 }
 
 /**
- * Probes Application Default Credentials and inspects the access token.
- *
- * Returns `{ valid: false }` when no usable credentials are configured.
- * When valid, hits the Google tokeninfo endpoint to read the granted
- * scopes off the access token, then diffs them against `requiredScopes`.
- * `cloud-platform` is treated as implicitly covering the
- * `service.management*` family (matches Google's IAM behavior).
- *
- * `scopesKnown` is false when tokeninfo could not be reached or rejected
- * the token (e.g. some self-signed JWT flows) — callers should not
- * report scope status as authoritative in that case.
- * @param {string[]} requiredScopes - The OAuth scopes the server needs.
- * @returns {Promise<{valid: boolean, email: ?string, missingScopes: string[], scopesKnown: boolean}>} Probe result.
- */
-
-/**
  * Builds a fresh per-request session-state object. Each HTTP request must call
  * this so that resolved customerId / orgUnit data from one Workspace tenant
  * cannot bleed into a concurrent request from another.
- * @returns {{customerId: null, cachedRootOrgUnitId: null, pendingRule: null, history: Array}} A new session-state object with all fields zeroed.
+ * @returns A new session-state object with all fields zeroed.
  */
-export function createSessionState() {
+export function createSessionState(): SessionState {
   return { customerId: null, cachedRootOrgUnitId: null, pendingRule: null, history: [] }
 }
 
@@ -106,12 +105,15 @@ export function createSessionState() {
  * Builds the Express handler for POST /mcp. Each invocation constructs a fresh
  * per-request sessionState via createSessionState() and passes it to getServer,
  * so concurrent requests cannot share customerId/orgUnit cache.
- * @param {object} gcpInfo - GCP environment metadata.
- * @param {(gcpInfo: object, sessionState: object) => Promise<object>} [getServerImpl] - Override for tests.
- * @returns {(req: import('express').Request, res: import('express').Response) => Promise<void>} The Express request handler.
+ * @param gcpInfo GCP environment metadata.
+ * @param getServerImpl Override for tests.
+ * @returns The Express request handler.
  */
-export function createMcpPostHandler(gcpInfo, getServerImpl = getServer) {
-  return async (req, res) => {
+export function createMcpPostHandler(
+  gcpInfo: GCPInfo | null,
+  getServerImpl: (gcpInfo: GCPInfo | null, sharedSessionState: SessionState) => Promise<McpServer> = getServer,
+): (req: Request, res: Response) => Promise<void> {
+  return async (req: Request, res: Response): Promise<void> => {
     const sessionState = createSessionState()
     const server = await getServerImpl(gcpInfo, sessionState)
     try {
@@ -120,18 +122,24 @@ export function createMcpPostHandler(gcpInfo, getServerImpl = getServer) {
       await transport.handleRequest(req, res, req.body)
       res.on('close', () => {
         logger.info(`${TAGS.MCP} Request closed`)
-        transport.close()
-        server.close()
+        void transport.close()
+        void server.close()
       })
     } catch (error) {
       logger.error(`${TAGS.MCP} Error handling MCP request:`, error)
       if (!res.headersSent) {
-        const status = error.status || 500
+        const status = isObject(error) && typeof error.status === 'number' ? error.status : 500
+        const message =
+          error instanceof Error
+            ? error.message
+            : isObject(error) && typeof error.message === 'string'
+              ? error.message
+              : 'Internal server error'
         res.status(status).json({
           jsonrpc: '2.0',
           error: {
             code: status === 401 ? -32001 : -32603,
-            message: error.message || 'Internal server error',
+            message,
           },
           id: null,
         })
@@ -144,13 +152,17 @@ export function createMcpPostHandler(gcpInfo, getServerImpl = getServer) {
  * Builds the Express handler for GET /sse. Each new SSE connection constructs
  * a fresh per-session sessionState; subsequent /messages POSTs route through
  * the registered transport, which holds a reference to that same server.
- * @param {object} gcpInfo - GCP environment metadata.
- * @param {Record<string, SSEServerTransport>} sseTransports - Map of sessionId -> transport.
- * @param {(gcpInfo: object, sessionState: object) => Promise<object>} [getServerImpl] - Override for tests.
- * @returns {(req: import('express').Request, res: import('express').Response) => Promise<void>} The Express request handler.
+ * @param gcpInfo GCP environment metadata.
+ * @param sseTransports Map of sessionId -> transport.
+ * @param getServerImpl Override for tests.
+ * @returns The Express request handler.
  */
-export function createSseHandler(gcpInfo, sseTransports, getServerImpl = getServer) {
-  return async (_req, res) => {
+export function createSseHandler(
+  gcpInfo: GCPInfo | null,
+  sseTransports: Record<string, SSEServerTransport>,
+  getServerImpl: (gcpInfo: GCPInfo | null, sharedSessionState: SessionState) => Promise<McpServer> = getServer,
+): (req: Request, res: Response) => Promise<void> {
+  return async (_req: Request, res: Response): Promise<void> => {
     logger.info(`${TAGS.MCP} /sse Received request`)
     try {
       const sessionState = createSessionState()
@@ -159,22 +171,24 @@ export function createSseHandler(gcpInfo, sseTransports, getServerImpl = getServ
       sseTransports[transport.sessionId] = transport
       res.on('close', () => {
         delete sseTransports[transport.sessionId]
-        try {
-          transport.close()
-        } catch (e) {
+        void transport.close().catch(e => {
           logger.error(`${TAGS.MCP} Error closing SSE transport:`, e)
-        }
-        try {
-          server.close()
-        } catch (e) {
+        })
+        void server.close().catch(e => {
           logger.error(`${TAGS.MCP} Error closing SSE server:`, e)
-        }
+        })
       })
       await server.connect(transport)
     } catch (error) {
       logger.error(`${TAGS.MCP} Error handling SSE request:`, error)
       if (!res.headersSent) {
-        res.status(500).send(error.message || 'Internal server error')
+        const message =
+          error instanceof Error
+            ? error.message
+            : isObject(error) && typeof error.message === 'string'
+              ? error.message
+              : 'Internal server error'
+        res.status(500).send(message)
       }
     }
   }
@@ -182,11 +196,11 @@ export function createSseHandler(gcpInfo, sseTransports, getServerImpl = getServ
 
 /**
  * Initializes and configures the MCP server instance.
- * @param {object} gcpInfo - The detected GCP environment metadata
- * @param {object} sharedSessionState - The shared session state for cross-request persistence
- * @returns {Promise<McpServer>} The configured MCP server instance
+ * @param gcpInfo The detected GCP environment metadata
+ * @param sharedSessionState The shared session state for cross-request persistence
+ * @returns The configured MCP server instance
  */
-export async function getServer(gcpInfo, sharedSessionState) {
+export async function getServer(gcpInfo: GCPInfo | null, sharedSessionState: SessionState): Promise<McpServer> {
   const server = new McpServer(
     {
       name: 'chrome-enterprise-premium',
@@ -208,11 +222,11 @@ export async function getServer(gcpInfo, sharedSessionState) {
     return {}
   })
 
-  const apiOptions = {}
+  const apiOptions: Record<string, string> = {}
 
   if (process.env.GOOGLE_API_ROOT_URL) {
-    apiOptions.rootUrl = process.env.GOOGLE_API_ROOT_URL
-    logger.info(`${TAGS.MCP} TEST MODE: Real API clients redirected to ${apiOptions.rootUrl}`)
+    apiOptions['rootUrl'] = process.env.GOOGLE_API_ROOT_URL
+    logger.info(`${TAGS.MCP} TEST MODE: Real API clients redirected to ${apiOptions['rootUrl']}`)
   } else {
     logger.info(`${TAGS.MCP} Using REAL API clients.`)
   }
@@ -245,9 +259,8 @@ export async function getServer(gcpInfo, sharedSessionState) {
 
 /**
  * Starts the MCP server.
- * @returns {Promise<void>} Resolves when the server is shut down.
  */
-export async function runServer() {
+export async function runServer(): Promise<void> {
   try {
     const gcpInfo = await checkGCP()
     const isStdio = shouldStartStdio(gcpInfo)
@@ -259,7 +272,7 @@ export async function runServer() {
     // Log feature flag overrides
     Object.values(FLAGS).forEach(flag => {
       if (!featureFlags.isDefault(flag)) {
-        const status = featureFlags.isEnabled(flag) ? 'ENABLED' : 'DISABLED'
+        const status = featureFlags.isEnabled(flag, false) ? 'ENABLED' : 'DISABLED'
         logger.info(`${TAGS.MCP} EXPERIMENT_${flag} override: ${status}`)
       }
     })
@@ -279,13 +292,13 @@ export async function runServer() {
     const flagOverrides =
       Object.values(FLAGS)
         .filter(flag => !featureFlags.isDefault(flag))
-        .map(flag => `${flag}=${featureFlags.isEnabled(flag)}`)
+        .map(flag => `${flag}=${featureFlags.isEnabled(flag, false)}`)
         .join(', ') || 'None'
 
     const requiredScopes = Object.values(SCOPES)
     const adc = await adcCredential().probe()
 
-    const printServerStatus = assignedPort => {
+    const printServerStatus = (assignedPort?: number) => {
       printBanner({
         transport: isStdio ? 'Stdio' : ['SSE/HTTP', `(Port: ${assignedPort})`],
         auth: isStdio ? ['None', '(Local channel)'] : ['None', '(Unauthenticated)'],
@@ -342,7 +355,7 @@ export async function runServer() {
         // weaker client-IP attribution behind GCLB, and verifyIdToken caches
         // JWKS so the per-bad-bearer cost is local crypto, not a network round
         // trip. CodeQL: js/missing-rate-limiting (intentionally suppressed).
-        app.use(async (req, res, next) => {
+        app.use(async (req: McpRequest, res: Response, next: NextFunction) => {
           const auth = req.headers.authorization
           if (!auth || !auth.toLowerCase().startsWith('bearer ')) {
             res.status(401).json({ error: 'Bearer token required' })
@@ -355,7 +368,8 @@ export async function runServer() {
             req.verifiedPrincipal = principal
             next()
           } catch (err) {
-            logger.warn(`${TAGS.MCP} ID-token verification failed: ${err.message}`)
+            const errMsg = err instanceof Error ? err.message : String(err)
+            logger.warn(`${TAGS.MCP} ID-token verification failed: ${errMsg}`)
             res.status(401).json({ error: 'Bearer token verification failed' })
           }
         })
@@ -370,7 +384,7 @@ export async function runServer() {
 
       app.post('/mcp', createMcpPostHandler(gcpInfo))
 
-      app.get('/mcp', async (_req, res) => {
+      app.get('/mcp', (_req: Request, res: Response) => {
         logger.info(`${TAGS.MCP} Received GET MCP request`)
         res.status(405).json({
           jsonrpc: '2.0',
@@ -379,35 +393,40 @@ export async function runServer() {
         })
       })
 
-      const sseTransports = {}
+      const sseTransports: Record<string, SSEServerTransport> = {}
 
       app.get('/sse', createSseHandler(gcpInfo, sseTransports))
 
-      app.post('/messages', async (req, res) => {
-        logger.info(`${TAGS.MCP} /messages Received request`)
-        const sessionId = req.query.sessionId
-        const transport = sseTransports[sessionId]
-        if (transport) {
-          await transport.handlePostMessage(req, res, req.body)
-        } else {
-          // Log the unknown sessionId server-side so an operator can correlate
-          // the failure with their /sse stream. We deliberately do not echo it
-          // back: that would reflect a user-controlled query string into the
-          // response body and trip the reflected-XSS detector regardless of
-          // the response content type.
-          logger.warn(`${TAGS.MCP} /messages: no transport found for sessionId: ${String(sessionId)}`)
-          res.status(400).json({
-            jsonrpc: '2.0',
-            error: { code: -32000, message: 'No transport found for the provided sessionId.' },
-            id: null,
-          })
-        }
+      app.post('/messages', (req: Request, res: Response) => {
+        void (async () => {
+          logger.info(`${TAGS.MCP} /messages Received request`)
+          const sessionId = req.query.sessionId
+          if (typeof sessionId === 'string') {
+            const transport = sseTransports[sessionId]
+            if (transport) {
+              await transport.handlePostMessage(req, res, req.body)
+            } else {
+              logger.warn(`${TAGS.MCP} /messages: no transport found for sessionId: ${sessionId}`)
+              res.status(400).json({
+                jsonrpc: '2.0',
+                error: { code: -32000, message: 'No transport found for the provided sessionId.' },
+                id: null,
+              })
+            }
+          } else {
+            res.status(400).json({
+              jsonrpc: '2.0',
+              error: { code: -32000, message: 'Session ID must be a string.' },
+              id: null,
+            })
+          }
+        })()
       })
 
       const PORT = process.env.PORT || 0
       const httpServer = app.listen(PORT, () => {
         const address = httpServer.address()
-        if (address) {
+        if (address && typeof address === 'object') {
           const assignedPort = address.port
           printServerStatus(assignedPort)
           // Use console.log directly so smoke tests waiting for this line
@@ -415,8 +434,8 @@ export async function runServer() {
           console.log(`${TAGS.MCP} Chrome Enterprise Premium MCP server listening on port ${assignedPort}`)
         }
       })
-      httpServer.on('error', e => {
-        if (e.code === 'EADDRINUSE') {
+      httpServer.on('error', (e: unknown) => {
+        if (isObject(e) && e['code'] === 'EADDRINUSE') {
           logger.error(`${TAGS.MCP} Fatal error: Port ${PORT} is already in use.`)
           // eslint-disable-next-line n/no-process-exit
           process.exit(1)
@@ -430,7 +449,7 @@ export async function runServer() {
   }
 }
 
-const shutdown = async () => {
+const shutdown = (): void => {
   logger.error(`${TAGS.MCP} Shutting down server...`)
   // eslint-disable-next-line n/no-process-exit
   process.exit(0)
@@ -442,5 +461,5 @@ process.on('SIGTERM', shutdown)
 // Only auto-start when invoked directly; tests and bin/cli.js import this
 // module without triggering the server.
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
-  runServer()
+  void runServer()
 }

@@ -106,6 +106,7 @@ const migratedFiles = [
   'prompts/definitions/expert.ts',
   'prompts/definitions/health.ts',
   'prompts/definitions/optimize.ts',
+  'mcp-server.ts',
 ]
 
 // Map the recommended type-checked rules to apply ONLY to fully migrated files.
