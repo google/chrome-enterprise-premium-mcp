@@ -43,8 +43,9 @@ describe('Auth', () => {
         },
       },
     })
-    const client = await getAuthClient([], 'test-token')
+    const { client, source } = await getAuthClient([], 'test-token')
     assert.ok(client)
+    assert.strictEqual(source, 'bearer')
   })
 
   test('When no auth token is provided, then it returns a GoogleAuth client', async () => {
@@ -61,8 +62,9 @@ describe('Auth', () => {
         },
       },
     })
-    const client = await getAuthClient([])
+    const { client, source } = await getAuthClient([])
     assert.ok(client)
+    assert.strictEqual(source, 'adc')
     assert.strictEqual(getClientCalled, true)
     assert.equal(typeof client.getAccessToken, 'function')
   })

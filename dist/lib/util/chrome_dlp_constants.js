@@ -1,0 +1,776 @@
+/*
+Copyright 2026 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+/**
+ * @file Shared metadata for Chrome DLP rules.
+ *
+ * Organized by Rule Configuration, CEL Grammar, CEL Vocabulary, and Logic
+ * Constraints.  Used for both tool descriptions and validation.
+ */
+export const CHROME_TRIGGERS = {
+  FILE_UPLOAD: {
+    value: 'google.workspace.chrome.file.v1.upload',
+    description: 'Scanning files that are uploaded.',
+  },
+  FILE_DOWNLOAD: {
+    value: 'google.workspace.chrome.file.v1.download',
+    description: 'Scanning files that are downloaded.',
+  },
+  WEB_CONTENT_UPLOAD: {
+    value: 'google.workspace.chrome.web_content.v1.upload',
+    description: 'Scanning text that is copy-pasted.',
+  },
+  PRINT: {
+    value: 'google.workspace.chrome.page.v1.print',
+    description: 'Scanning pages that are printed.',
+  },
+  URL_NAVIGATION: {
+    value: 'google.workspace.chrome.url.v1.navigation',
+    description: 'Scanning URLs when visited.',
+  },
+}
+export const CHROME_ACTION_TYPES = {
+  BLOCK: {
+    value: 'BLOCK',
+    apiKey: 'blockContent',
+    description: 'Prevents the action entirely and displays a block notification to the user.',
+  },
+  WARN: {
+    value: 'WARN',
+    apiKey: 'warnUser',
+    description:
+      'Displays a warning dialog to the user. The user can choose to acknowledge the warning and proceed with the action, or cancel it.',
+  },
+  AUDIT: {
+    value: 'AUDIT',
+    apiKey: 'auditOnly',
+    description: 'Logs the event silently in the Admin Console without interrupting or notifying the user.',
+  },
+}
+export const POLICY_STATES = {
+  ACTIVE: {
+    value: 'ACTIVE',
+    description: 'The rule is currently enforced.',
+  },
+  INACTIVE: {
+    value: 'INACTIVE',
+    description: 'The rule is saved but not currently enforced.',
+  },
+}
+export const MASK_TYPES = {
+  LIGHT_OBFUSCATION: {
+    value: 'MASK_TYPE_LIGHT_OBFUSCATION',
+    description: 'Text will be masked such that it can be revealed with mouse hover.',
+  },
+  HARD_OBFUSCATION: {
+    value: 'MASK_TYPE_HARD_OBFUSCATION',
+    description: 'Text will be masked such that it can be revealed with mouse click.',
+  },
+  REDACT: {
+    value: 'MASK_TYPE_REDACT',
+    description: 'Text will be replaced entirely such that it is not recoverable.',
+  },
+}
+export const CEL_SYNTAX_GUIDE = [
+  {
+    rule: '1. **Source/Function Pattern**: "{content_type}.{function}(...)"',
+    examples: ["all_content.contains('secret')", "body.matches_word_list('policies/abc-123')"],
+  },
+  {
+    rule: '2. **Comparison Operators**: "{content_type} {operator} {value}"\n   Supported operators: ==, >, <, >=, <=',
+    examples: ['file_size_in_bytes > 1024', "file_type.matches_mime_types(['application/pdf'])"],
+  },
+  {
+    rule: '3. **Logical Operators**: Combine conditions using && (AND), || (OR), ! (NOT).',
+    examples: [
+      "all_content.contains('secret') && !url_category.matches_web_category('ONLINE_COMMUNITIES__SOCIAL_NETWORKS')",
+    ],
+  },
+]
+export const UNIVERSAL_CONTENT_TYPES = {
+  all_content: 'Aggregated content (title, body, url). Not supported for URL_NAVIGATION.',
+  body: 'The body of the web page or file content. Not supported for URL_NAVIGATION.',
+  title: 'The title of the web page or file. Not supported for URL_NAVIGATION.',
+  url: 'The URL of the current request.',
+}
+export const NAVIGATION_CONTENT_TYPES = {
+  url_category: "The category of the URL (requires matches_web_category). See 'Web Categories' below.",
+}
+export const PASTE_CONTENT_TYPES = {
+  source_url: 'The origin URL where data was copied from.',
+  source_url_category: "The category of the origin URL. See 'Web Categories' below.",
+  source_chrome_context: "Context of copied text (e.g., Incognito). See 'Value References' below.",
+  web_app_signed_in_account: 'Account signed into the web app (destination).',
+  source_web_app_signed_in_account: 'Account signed into the web app at the source.',
+}
+export const FILE_CONTENT_TYPES = {
+  file_size_in_bytes: 'Size of the file being transferred.',
+  file_type: "MIME type (e.g. 'application/pdf'). Use with '.matches_mime_types(['MIME'])' (list required).",
+}
+export const SPECIALIZED_CONTENT_TYPES = {
+  access_levels: 'Access levels required for the content.',
+}
+export const CEL_FUNCTIONS = {
+  // String matchers
+  "contains('string')": 'Checks if content contains a string.',
+  "contains_word('string')": 'Checks if content contains a specific word.',
+  "starts_with('string')": "Checks if content starts with a string. Supported for 'url' and 'title' only.",
+  "ends_with('string')": "Checks if content ends with a string. Supported for 'url' and 'title' only.",
+  // Detectors (All take 'RESOURCE_NAME' and optional {minimum_match_count: X, minimum_unique_match_count: Y})
+  "matches_dlp_detector('DETECTOR_NAME')":
+    "Matches a predefined DLP detector (e.g., 'US_SOCIAL_SECURITY_NUMBER', 'GERMANY_DRIVERS_LICENSE_NUMBER'). Do NOT include a second parameters argument for predefined detectors, as it will cause an API error.",
+  "matches_regex_detector('RESOURCE_NAME', {params})": 'Matches a custom regex detector.',
+  "matches_word_list('RESOURCE_NAME', {params})": 'Matches a custom word list detector.',
+  "matches_url_list('RESOURCE_NAME', {params})": 'Matches a custom URL list detector.',
+  'Note for Detectors':
+    "Predefined detectors (used with 'matches_dlp_detector') use their canonical names (e.g. 'US_SOCIAL_SECURITY_NUMBER'). Custom detectors (regex, word list, URL list) use the full resource name (e.g., 'policies/abc-123') returned by list_detectors or detector creation tools.",
+  // Enums and Categories
+  "matches_web_category('CATEGORY')": "Matches a web category (only on 'url_category' or 'source_url_category').",
+  "matches_enum('VALUE')": "Matches an enum value (e.g. context on 'source_chrome_context').",
+  "matches_mime_types(['MIME'])": 'Matches MIME types (requires a list).',
+  // Email/Account
+  "matches_email_address('user@example.com')":
+    "Matches a specific email address. Supported for 'web_app_signed_in_account' only.",
+  "matches_domain_name('domain.com')": "Matches a domain. Supported for 'web_app_signed_in_account' only.",
+}
+/**
+ * Metadata for enum-like fields used inside CEL conditions.
+ */
+export const CHROME_CONTEXTS = {
+  INCOGNITO: { value: 'INCOGNITO', description: 'Private mode' },
+  CLIPBOARD: { value: 'CLIPBOARD', description: 'Standard copy' },
+  OTHER_PROFILE: { value: 'OTHER_PROFILE', description: 'Different user profile' },
+  SAME_PROFILE: { value: 'SAME_PROFILE', description: 'Same user profile' },
+}
+export const URL_CATEGORY_METADATA = {
+  commonValuesDescription:
+    "'ADULT', 'GAMBLING', 'FINANCE', 'ONLINE_COMMUNITIES__SOCIAL_NETWORKS', 'ONLINE_COMMUNITIES__FILE_SHARING_AND_HOSTING', 'INTERNET_AND_TECHNOLOGY__GENERATIVE_AI'",
+}
+export const VALID_WEB_CATEGORIES = [
+  'ADULT',
+  'ARTS_AND_ENTERTAINMENT',
+  'AUTOS_AND_VEHICLES',
+  'BEAUTY_AND_FITNESS',
+  'BOOKS_AND_LITERATURE',
+  'BUSINESS_AND_INDUSTRIAL',
+  'COMPUTERS_AND_ELECTRONICS',
+  'FINANCE',
+  'FOOD_AND_DRINK',
+  'GAMES',
+  'HEALTH',
+  'HOBBIES_AND_LEISURE',
+  'HOME_AND_GARDEN',
+  'INTERNET_AND_TELECOM',
+  'JOBS_AND_EDUCATION',
+  'LAW_AND_GOVERNMENT',
+  'NEWS',
+  'ONLINE_COMMUNITIES',
+  'PEOPLE_AND_SOCIETY',
+  'PETS_AND_ANIMALS',
+  'REAL_ESTATE',
+  'REFERENCE',
+  'SCIENCE',
+  'SENSITIVE_SUBJECTS',
+  'SHOPPING',
+  'SPORTS',
+  'TRAVEL',
+  'TRAVEL_AND_TRANSPORTATION',
+  'GAMBLING',
+  'ARTS_AND_ENTERTAINMENT__CELEBRITIES_AND_ENTERTAINMENT_',
+  'ARTS_AND_ENTERTAINMENT__COMICS_AND_ANIMATION',
+  'ARTS_AND_ENTERTAINMENT__ENTERTAINMENT_INDUSTRY',
+  'ARTS_AND_ENTERTAINMENT__EVENTS_AND_LISTINGS',
+  'ARTS_AND_ENTERTAINMENT__FUN_AND_TRIVIA',
+  'ARTS_AND_ENTERTAINMENT__HUMOR',
+  'ARTS_AND_ENTERTAINMENT__MOVIES',
+  'ARTS_AND_ENTERTAINMENT__MUSIC_AND_AUDIO',
+  'ARTS_AND_ENTERTAINMENT__OFFBEAT',
+  'ARTS_AND_ENTERTAINMENT__ONLINE_MEDIA',
+  'ARTS_AND_ENTERTAINMENT__PERFORMING_ARTS',
+  'ARTS_AND_ENTERTAINMENT__TV_AND_VIDEO',
+  'ARTS_AND_ENTERTAINMENT__VISUAL_ART_AND_DESIGN',
+  'AUTOS_AND_VEHICLES__BICYCLES_AND_ACCESSORIES',
+  'AUTOS_AND_VEHICLES__BOATS_AND_WATERCRAFT',
+  'AUTOS_AND_VEHICLES__CAMPERS_AND_RVS',
+  'AUTOS_AND_VEHICLES__CLASSIC_VEHICLES',
+  'AUTOS_AND_VEHICLES__COMMERCIAL_VEHICLES',
+  'AUTOS_AND_VEHICLES__CUSTOM_AND_PERFORMANCE_VEHICLES',
+  'AUTOS_AND_VEHICLES__MOTOR_VEHICLES',
+  'AUTOS_AND_VEHICLES__PERSONAL_AIRCRAFT',
+  'AUTOS_AND_VEHICLES__VEHICLE_CODES_AND_DRIVING_LAWS',
+  'AUTOS_AND_VEHICLES__VEHICLE_PARTS_AND_SERVICES',
+  'AUTOS_AND_VEHICLES__VEHICLE_SHOPPING',
+  'AUTOS_AND_VEHICLES__VEHICLE_SHOWS',
+  'BEAUTY_AND_FITNESS__BEAUTY_PAGEANTS',
+  'BEAUTY_AND_FITNESS__BEAUTY_SERVICES_AND_SPAS',
+  'BEAUTY_AND_FITNESS__BODY_ART',
+  'BEAUTY_AND_FITNESS__COSMETOLOGY_AND_BEAUTY_PROFESSIONALS',
+  'BEAUTY_AND_FITNESS__FACE_AND_BODY_CARE',
+  'BEAUTY_AND_FITNESS__FASHION_AND_STYLE',
+  'BEAUTY_AND_FITNESS__FITNESS',
+  'BEAUTY_AND_FITNESS__HAIR_CARE',
+  'BEAUTY_AND_FITNESS__WEIGHT_LOSS',
+  'BOOKS_AND_LITERATURE__AUDIOBOOKS',
+  'BOOKS_AND_LITERATURE__BOOK_RETAILERS',
+  'BOOKS_AND_LITERATURE__CHILDRENS_LITERATURE',
+  'BOOKS_AND_LITERATURE__E_BOOKS',
+  'BOOKS_AND_LITERATURE__FAN_FICTION',
+  'BOOKS_AND_LITERATURE__LITERARY_CLASSICS',
+  'BOOKS_AND_LITERATURE__MAGAZINES',
+  'BOOKS_AND_LITERATURE__POETRY',
+  'BOOKS_AND_LITERATURE__WRITERS_RESOURCES',
+  'BUSINESS_AND_INDUSTRIAL__ADVERTISING_AND_MARKETING',
+  'BUSINESS_AND_INDUSTRIAL__AEROSPACE_AND_DEFENSE',
+  'BUSINESS_AND_INDUSTRIAL__AGRICULTURE_AND_FORESTRY',
+  'BUSINESS_AND_INDUSTRIAL__AUTOMOTIVE_INDUSTRY',
+  'BUSINESS_AND_INDUSTRIAL__BUSINESS_EDUCATION',
+  'BUSINESS_AND_INDUSTRIAL__BUSINESS_FINANCE',
+  'BUSINESS_AND_INDUSTRIAL__BUSINESS_OPERATIONS',
+  'BUSINESS_AND_INDUSTRIAL__BUSINESS_SERVICES',
+  'BUSINESS_AND_INDUSTRIAL__CHEMICALS_INDUSTRY',
+  'BUSINESS_AND_INDUSTRIAL__CONSTRUCTION_AND_MAINTENANCE',
+  'BUSINESS_AND_INDUSTRIAL__ENERGY_AND_UTILITIES',
+  'BUSINESS_AND_INDUSTRIAL__HOSPITALITY_INDUSTRY',
+  'BUSINESS_AND_INDUSTRIAL__INDUSTRIAL_MATERIALS_AND_EQUIPMENT',
+  'BUSINESS_AND_INDUSTRIAL__MANUFACTURING',
+  'BUSINESS_AND_INDUSTRIAL__METALS_AND_MINING',
+  'BUSINESS_AND_INDUSTRIAL__PHARMACEUTICALS_AND_BIOTECH',
+  'BUSINESS_AND_INDUSTRIAL__PRINTING_AND_PUBLISHING',
+  'BUSINESS_AND_INDUSTRIAL__PROFESSIONAL_AND_TRADE_ASSOCIATIONS',
+  'BUSINESS_AND_INDUSTRIAL__RETAIL_TRADE',
+  'BUSINESS_AND_INDUSTRIAL__SHIPPING_AND_LOGISTICS',
+  'BUSINESS_AND_INDUSTRIAL__SMALL_BUSINESS',
+  'BUSINESS_AND_INDUSTRIAL__TEXTILES_AND_NONWOVENS',
+  'FINANCE__ACCOUNTING_AND_AUDITING',
+  'FINANCE__BANKING',
+  'FINANCE__CREDIT_AND_LENDING',
+  'FINANCE__CROWDFUNDING',
+  'FINANCE__DIGITAL_CURRENCIES',
+  'FINANCE__FINANCIAL_PLANNING_AND_MANAGEMENT',
+  'FINANCE__GRANTS_SCHOLARSHIPS_AND_FINANCIAL_AID',
+  'FINANCE__INSURANCE',
+  'FINANCE__INVESTING',
+  'FOOD_AND_DRINK__ALCOHOLIC_BEVERAGES',
+  'FOOD_AND_DRINK__BEVERAGES',
+  'FOOD_AND_DRINK__COOKING_AND_RECIPES',
+  'FOOD_AND_DRINK__FOOD',
+  'FOOD_AND_DRINK__FOOD_AND_GROCERY_DELIVERY',
+  'FOOD_AND_DRINK__FOOD_AND_GROCERY_RETAILERS',
+  'FOOD_AND_DRINK__RESTAURANTS',
+  'GAMES__ARCADE_AND_COIN_OP_GAMES',
+  'GAMES__BOARD_GAMES',
+  'GAMES__CARD_GAMES',
+  'GAMES__COMPUTER_AND_VIDEO_GAMES',
+  'GAMES__DICE_GAMES',
+  'GAMES__EDUCATIONAL_GAMES',
+  'GAMES__FAMILY_ORIENTED_GAMES_AND_ACTIVITIES',
+  'GAMES__GAMBLING',
+  'GAMES__PARTY_GAMES',
+  'GAMES__PUZZLES_AND_BRAINTEASERS',
+  'GAMES__ROLEPLAYING_GAMES',
+  'GAMES__TABLE_GAMES',
+  'GAMES__TILE_GAMES',
+  'GAMES__WORD_GAMES',
+  'HEALTH__AGING_AND_GERIATRICS',
+  'HEALTH__ALTERNATIVE_AND_NATURAL_MEDICINE',
+  'HEALTH__HEALTH_CONDITIONS',
+  'HEALTH__HEALTH_EDUCATION_AND_MEDICAL_TRAINING',
+  'HEALTH__HEALTH_FOUNDATIONS_AND_MEDICAL_RESEARCH',
+  'HEALTH__MEDICAL_DEVICES_AND_EQUIPMENT',
+  'HEALTH__MEDICAL_FACILITIES_AND_SERVICES',
+  'HEALTH__MEDICAL_LITERATURE_AND_RESOURCES',
+  'HEALTH__MENS_HEALTH',
+  'HEALTH__MENTAL_HEALTH',
+  'HEALTH__NURSING',
+  'HEALTH__NUTRITION',
+  'HEALTH__ORAL_AND_DENTAL_CARE',
+  'HEALTH__PEDIATRICS',
+  'HEALTH__PHARMACY',
+  'HEALTH__PUBLIC_HEALTH',
+  'HEALTH__REPRODUCTIVE_HEALTH',
+  'HEALTH__SUBSTANCE_ABUSE',
+  'HEALTH__VISION_CARE',
+  'HEALTH__WOMENS_HEALTH',
+  'HOBBIES_AND_LEISURE__CLUBS_AND_ORGANIZATIONS',
+  'HOBBIES_AND_LEISURE__CRAFTS',
+  'HOBBIES_AND_LEISURE__MERIT_PRIZES_AND_CONTESTS',
+  'HOBBIES_AND_LEISURE__OUTDOORS',
+  'HOBBIES_AND_LEISURE__PAINTBALL',
+  'HOBBIES_AND_LEISURE__RADIO_CONTROL_AND_MODELING',
+  'HOBBIES_AND_LEISURE__RECREATIONAL_AVIATION',
+  'HOBBIES_AND_LEISURE__SPECIAL_OCCASIONS',
+  'HOBBIES_AND_LEISURE__SWEEPSTAKES_AND_PROMOTIONAL_GIVEAWAYS',
+  'HOBBIES_AND_LEISURE__WATER_ACTIVITIES',
+  'HOME_AND_GARDEN__BED_AND_BATH',
+  'HOME_AND_GARDEN__DOMESTIC_SERVICES',
+  'HOME_AND_GARDEN__HOME_AND_INTERIOR_DECOR',
+  'HOME_AND_GARDEN__HOME_APPLIANCES',
+  'HOME_AND_GARDEN__HOME_FURNISHINGS',
+  'HOME_AND_GARDEN__HOME_IMPROVEMENT',
+  'HOME_AND_GARDEN__HOME_SAFETY_AND_SECURITY',
+  'HOME_AND_GARDEN__HOME_STORAGE_AND_SHELVING',
+  'HOME_AND_GARDEN__HOME_SWIMMING_POOLS_SAUNAS_AND_SPAS',
+  'HOME_AND_GARDEN__HOUSEHOLD_SUPPLIES',
+  'HOME_AND_GARDEN__HVAC_AND_CLIMATE_CONTROL',
+  'HOME_AND_GARDEN__KITCHEN_AND_DINING',
+  'HOME_AND_GARDEN__LAUNDRY',
+  'HOME_AND_GARDEN__PATIO_LAWN_AND_GARDEN',
+  'HOME_AND_GARDEN__PEST_CONTROL',
+  'INTERNET_AND_TECHNOLOGY__AFFILIATE_PROGRAMS',
+  'INTERNET_AND_TECHNOLOGY__BUSINESS_AND_PRODUCTIVITY_SOFTWARE',
+  'INTERNET_AND_TECHNOLOGY__CLOUD_STORAGE',
+  'INTERNET_AND_TECHNOLOGY__COLLABORATION_AND_CONFERENCING_SOFTWARE',
+  'INTERNET_AND_TECHNOLOGY__COMMUNICATIONS_EQUIPMENT',
+  'INTERNET_AND_TECHNOLOGY__COMPUTER_HARDWARE',
+  'INTERNET_AND_TECHNOLOGY__COMPUTER_SECURITY',
+  'INTERNET_AND_TECHNOLOGY__CONSUMER_ELECTRONICS',
+  'INTERNET_AND_TECHNOLOGY__CONTENT_MANAGEMENT',
+  'INTERNET_AND_TECHNOLOGY__EDUCATIONAL_SOFTWARE',
+  'INTERNET_AND_TECHNOLOGY__ELECTRONICS_AND_ELECTRICAL',
+  'INTERNET_AND_TECHNOLOGY__ELECTRONIC_SPAM',
+  'INTERNET_AND_TECHNOLOGY__EMAIL',
+  'INTERNET_AND_TECHNOLOGY__EMAIL_AND_MESSAGING',
+  'INTERNET_AND_TECHNOLOGY__ENTERPRISE_TECHNOLOGY',
+  'INTERNET_AND_TECHNOLOGY__FREEWARE_AND_SHAREWARE',
+  'INTERNET_AND_TECHNOLOGY__GENERATIVE_AI',
+  'INTERNET_AND_TECHNOLOGY__HACKING_AND_CRACKING',
+  'INTERNET_AND_TECHNOLOGY__MOBILE_AND_WIRELESS',
+  'INTERNET_AND_TECHNOLOGY__NETWORKING',
+  'INTERNET_AND_TECHNOLOGY__OPEN_SOURCE',
+  'INTERNET_AND_TECHNOLOGY__PROGRAMMING',
+  'INTERNET_AND_TECHNOLOGY__PROXYING_AND_FILTERING',
+  'INTERNET_AND_TECHNOLOGY__SEARCH_ENGINE_OPTIMIZATION_AND_MARKETING',
+  'INTERNET_AND_TECHNOLOGY__SEARCH_ENGINES',
+  'INTERNET_AND_TECHNOLOGY__SERVICE_PROVIDERS',
+  'INTERNET_AND_TECHNOLOGY__SOFTWARE',
+  'INTERNET_AND_TECHNOLOGY__TELECONFERENCING',
+  'INTERNET_AND_TECHNOLOGY__TEXT_AND_INSTANT_MESSAGING',
+  'INTERNET_AND_TECHNOLOGY__VOICE_AND_VIDEO_CHAT',
+  'INTERNET_AND_TECHNOLOGY__VPN_AND_REMOTE_ACCESS',
+  'INTERNET_AND_TECHNOLOGY__WEB_APPS_AND_ONLINE_TOOLS',
+  'INTERNET_AND_TECHNOLOGY__WEB_DESIGN_AND_DEVELOPMENT',
+  'INTERNET_AND_TECHNOLOGY__WEB_HOSTING_AND_DOMAIN_REGISTRATION',
+  'INTERNET_AND_TECHNOLOGY__WEB_PORTALS',
+  'INTERNET_AND_TECHNOLOGY__WEB_STATS_AND_ANALYTICS',
+  'JOBS_AND_EDUCATION__EDUCATION',
+  'JOBS_AND_EDUCATION__INTERNSHIPS',
+  'JOBS_AND_EDUCATION__JOBS',
+  'LAW_AND_GOVERNMENT__GOVERNMENT',
+  'LAW_AND_GOVERNMENT__LEGAL',
+  'LAW_AND_GOVERNMENT__MILITARY',
+  'LAW_AND_GOVERNMENT__PUBLIC_SAFETY',
+  'LAW_AND_GOVERNMENT__SOCIAL_SERVICES',
+  'NEWS__BROADCAST_AND_NETWORK_NEWS',
+  'NEWS__BUSINESS_NEWS',
+  'NEWS__GOSSIP_AND_TABLOID_NEWS',
+  'NEWS__HEALTH_NEWS',
+  'NEWS__JOURNALISM_AND_NEWS_INDUSTRY',
+  'NEWS__LOCAL_NEWS',
+  'NEWS__NEWSPAPERS',
+  'NEWS__POLITICS',
+  'NEWS__SPORTS_NEWS',
+  'NEWS__TECHNOLOGY_NEWS',
+  'NEWS__WEATHER',
+  'NEWS__WORLD_NEWS',
+  'ONLINE_COMMUNITIES__BLOGGING_RESOURCES_AND_SERVICES',
+  'ONLINE_COMMUNITIES__DATING_AND_PERSONALS',
+  'ONLINE_COMMUNITIES__FEED_AGGREGATION_AND_SOCIAL_BOOKMARKING',
+  'ONLINE_COMMUNITIES__FILE_SHARING_AND_HOSTING',
+  'ONLINE_COMMUNITIES__FORUM_AND_CHAT_PROVIDERS',
+  'ONLINE_COMMUNITIES__ONLINE_GOODIES',
+  'ONLINE_COMMUNITIES__ONLINE_JOURNALS_AND_PERSONAL_SITES',
+  'ONLINE_COMMUNITIES__PHOTO_AND_VIDEO_SHARING',
+  'ONLINE_COMMUNITIES__SOCIAL_NETWORKS',
+  'ONLINE_COMMUNITIES__VIRTUAL_WORLDS',
+  'PEOPLE_AND_SOCIETY__DISABLED_AND_SPECIAL_NEEDS',
+  'PEOPLE_AND_SOCIETY__ETHNIC_AND_IDENTITY_GROUPS',
+  'PEOPLE_AND_SOCIETY__FAMILY_AND_RELATIONSHIPS',
+  'PEOPLE_AND_SOCIETY__KIDS_AND_TEENS',
+  'PEOPLE_AND_SOCIETY__RELIGION_AND_BELIEF',
+  'PEOPLE_AND_SOCIETY__SELF_HELP_AND_MOTIVATIONAL',
+  'PEOPLE_AND_SOCIETY__SENIORS_AND_RETIREMENT',
+  'PEOPLE_AND_SOCIETY__SOCIAL_ISSUES_AND_ADVOCACY',
+  'PEOPLE_AND_SOCIETY__SOCIAL_SCIENCES',
+  'PEOPLE_AND_SOCIETY__SUBCULTURES_AND_NICHE_INTERESTS',
+  'PETS_AND_ANIMALS__ANIMAL_PRODUCTS_AND_SERVICES',
+  'PETS_AND_ANIMALS__PETS',
+  'PETS_AND_ANIMALS__WILDLIFE',
+  'REAL_ESTATE__PROPERTY_DEVELOPMENT',
+  'REAL_ESTATE__REAL_ESTATE_LISTINGS',
+  'REAL_ESTATE__REAL_ESTATE_SERVICES',
+  'REFERENCE__DIRECTORIES_AND_LISTINGS',
+  'REFERENCE__GENERAL_REFERENCE',
+  'REFERENCE__GEOGRAPHIC_REFERENCE',
+  'REFERENCE__HUMANITIES',
+  'REFERENCE__LANGUAGE_RESOURCES',
+  'REFERENCE__LIBRARIES_AND_MUSEUMS',
+  'REFERENCE__TECHNICAL_REFERENCE',
+  'SCIENCE__ASTRONOMY',
+  'SCIENCE__BIOLOGICAL_SCIENCES',
+  'SCIENCE__CHEMISTRY',
+  'SCIENCE__COMPUTER_SCIENCE',
+  'SCIENCE__EARTH_SCIENCES',
+  'SCIENCE__ECOLOGY_AND_ENVIRONMENT',
+  'SCIENCE__ENGINEERING_AND_TECHNOLOGY',
+  'SCIENCE__MATHEMATICS',
+  'SCIENCE__PHYSICS',
+  'SCIENCE__SCIENTIFIC_EQUIPMENT',
+  'SCIENCE__SCIENTIFIC_INSTITUTIONS',
+  'SENSITIVE_SUBJECTS__ACCIDENTS_AND_DISASTERS',
+  'SENSITIVE_SUBJECTS__DEATH_AND_TRAGEDY',
+  'SENSITIVE_SUBJECTS__FIREARMS_AND_WEAPONS',
+  'SENSITIVE_SUBJECTS__MISSING_PERSONS_AND_ABDUCTIONS',
+  'SENSITIVE_SUBJECTS__RECREATIONAL_DRUGS',
+  'SENSITIVE_SUBJECTS__SELF_HARM',
+  'SENSITIVE_SUBJECTS__VIOLENCE_AND_ABUSE',
+  'SENSITIVE_SUBJECTS__WAR_AND_CONFLICT',
+  'SHOPPING__ANTIQUES_AND_COLLECTIBLES',
+  'SHOPPING__APPAREL',
+  'SHOPPING__AUCTIONS',
+  'SHOPPING__CLASSIFIEDS',
+  'SHOPPING__CONSUMER_RESOURCES',
+  'SHOPPING__DISCOUNT_AND_OUTLET_STORES',
+  'SHOPPING__ENTERTAINMENT_MEDIA',
+  'SHOPPING__GIFTS_AND_SPECIAL_EVENT_ITEMS',
+  'SHOPPING__GREEN_AND_ECO_FRIENDLY_SHOPPING',
+  'SHOPPING__LUXURY_GOODS',
+  'SHOPPING__MASS_MERCHANTS_AND_DEPARTMENT_STORES',
+  'SHOPPING__PHOTO_AND_VIDEO_SERVICES',
+  'SHOPPING__SHOPPING_PORTALS',
+  'SHOPPING__SWAP_MEETS_AND_OUTDOOR_MARKETS',
+  'SHOPPING__TOBACCO_AND_VAPING_PRODUCTS',
+  'SHOPPING__TOYS',
+  'SHOPPING__WHOLESALERS_AND_LIQUIDATORS',
+  'SPORTS__ANIMAL_SPORTS',
+  'SPORTS__COLLEGE_SPORTS',
+  'SPORTS__COMBAT_SPORTS',
+  'SPORTS__EXTREME_SPORTS',
+  'SPORTS__FANTASY_SPORTS',
+  'SPORTS__INDIVIDUAL_SPORTS',
+  'SPORTS__INTERNATIONAL_SPORTS_COMPETITIONS',
+  'SPORTS__MOTOR_SPORTS',
+  'SPORTS__SPORTING_GOODS',
+  'SPORTS__SPORTS_COACHING_AND_TRAINING',
+  'SPORTS__SPORT_SCORES_AND_STATISTICS',
+  'SPORTS__SPORTS_FAN_GEAR_AND_APPAREL',
+  'SPORTS__TEAM_SPORTS',
+  'SPORTS__WATER_SPORTS',
+  'SPORTS__WINTER_SPORTS',
+  'TRAVEL_AND_TRANSPORTATION__HOTELS_AND_ACCOMMODATIONS',
+  'TRAVEL_AND_TRANSPORTATION__LUGGAGE_AND_TRAVEL_ACCESSORIES',
+  'TRAVEL_AND_TRANSPORTATION__SPECIALTY_TRAVEL',
+  'TRAVEL_AND_TRANSPORTATION__TOURIST_DESTINATIONS',
+  'TRAVEL_AND_TRANSPORTATION__TRANSPORTATION',
+  'TRAVEL_AND_TRANSPORTATION__TRAVEL_AGENCIES_AND_SERVICES',
+  'TRAVEL_AND_TRANSPORTATION__TRAVEL_GUIDES_AND_TRAVELOGUES',
+]
+/**
+ * Predefined detector names for use with `matches_dlp_detector`.
+ */
+export const PREDEFINED_DETECTORS = [
+  'ADVERTISING_ID',
+  'AGE',
+  'AMERICAN_BANKERS_CUSIP_ID',
+  'ARGENTINA_DNI_NUMBER',
+  'AUSTRALIA_DRIVERS_LICENSE_NUMBER',
+  'AUSTRALIA_MEDICARE_NUMBER',
+  'AUSTRALIA_PASSPORT',
+  'AUSTRALIA_TAX_FILE_NUMBER',
+  'AUTH_TOKEN',
+  'AWS_CREDENTIALS',
+  'AZURE_AUTH_TOKEN',
+  'BASIC_AUTH_HEADER',
+  'BELGIUM_NATIONAL_ID_CARD_NUMBER',
+  'BRAZIL_CPF_NUMBER',
+  'CANADA_BANK_ACCOUNT',
+  'CANADA_BC_PHN',
+  'CANADA_DRIVERS_LICENSE_NUMBER',
+  'CANADA_OHIP',
+  'CANADA_PASSPORT',
+  'CANADA_QUEBEC_HIN',
+  'CANADA_SOCIAL_INSURANCE_NUMBER',
+  'CHILE_CDI_NUMBER',
+  'CHINA_PASSPORT',
+  'CHINA_RESIDENT_ID_NUMBER',
+  'COLOMBIA_CDC_NUMBER',
+  'CREDIT_CARD_NUMBER',
+  'CREDIT_CARD_TRACK_NUMBER',
+  'DATE',
+  'DATE_OF_BIRTH',
+  'DENMARK_CPR_NUMBER',
+  'DOCUMENT_TYPE/FINANCE/REGULATORY',
+  'DOCUMENT_TYPE/FINANCE/SEC_FILING',
+  'DOCUMENT_TYPE/HR/RESUME',
+  'DOCUMENT_TYPE/LEGAL/BLANK_FORM',
+  'DOCUMENT_TYPE/LEGAL/BRIEF',
+  'DOCUMENT_TYPE/LEGAL/COURT_ORDER',
+  'DOCUMENT_TYPE/LEGAL/LAW',
+  'DOCUMENT_TYPE/LEGAL/PLEADING',
+  'DOCUMENT_TYPE/R&D/DATABASE_BACKUP',
+  'DOCUMENT_TYPE/R&D/PATENT',
+  'DOCUMENT_TYPE/R&D/SOURCE_CODE',
+  'DOCUMENT_TYPE/R&D/SYSTEM_LOG',
+  'DOMAIN_NAME',
+  'EMAIL_ADDRESS',
+  'ENCRYPTION_KEY',
+  'ETHNIC_GROUP',
+  'FDA_CODE',
+  'FINLAND_NATIONAL_ID_NUMBER',
+  'FRANCE_CNI',
+  'FRANCE_NIR',
+  'FRANCE_PASSPORT',
+  'FRANCE_TAX_IDENTIFICATION_NUMBER',
+  'GCP_API_KEY',
+  'GCP_CREDENTIALS',
+  'GENDER',
+  'GERMANY_DRIVERS_LICENSE_NUMBER',
+  'GERMANY_IDENTITY_CARD_NUMBER',
+  'GERMANY_PASSPORT',
+  'GERMANY_SCHUFA_ID',
+  'GERMANY_TAXPAYER_IDENTIFICATION_NUMBER',
+  'HONG_KONG_ID_NUMBER',
+  'HTTP_COOKIE',
+  'IBAN_CODE',
+  'ICD10_CODE',
+  'ICD9_CODE',
+  'IMEI_HARDWARE_ID',
+  'INDIA_AADHAAR_INDIVIDUAL',
+  'INDIA_GST_INDIVIDUAL',
+  'INDIA_PAN_INDIVIDUAL',
+  'INDONESIA_NIK_NUMBER',
+  'IP_ADDRESS',
+  'IRELAND_DRIVING_LICENSE_NUMBER',
+  'IRELAND_EIRCODE',
+  'IRELAND_PASSPORT',
+  'IRELAND_PPSN',
+  'ISRAEL_IDENTITY_CARD_NUMBER',
+  'ITALY_FISCAL_CODE',
+  'JAPAN_BANK_ACCOUNT',
+  'JAPAN_DRIVERS_LICENSE_NUMBER',
+  'JAPAN_INDIVIDUAL_NUMBER',
+  'JAPAN_PASSPORT',
+  'JSON_WEB_TOKEN',
+  'KOREA_PASSPORT',
+  'KOREA_RRN',
+  'MAC_ADDRESS',
+  'MAC_ADDRESS_LOCAL',
+  'MEDICAL_TERM',
+  'MEXICO_CURP_NUMBER',
+  'MEXICO_PASSPORT',
+  'NETHERLANDS_BSN_NUMBER',
+  'NETHERLANDS_PASSPORT',
+  'NORWAY_NI_NUMBER',
+  'PARAGUAY_CIC_NUMBER',
+  'PASSPORT',
+  'PASSWORD',
+  'PERSON_NAME',
+  'PERU_DNI_NUMBER',
+  'PHONE_NUMBER',
+  'POLAND_NATIONAL_ID_NUMBER',
+  'POLAND_PASSPORT',
+  'POLAND_PESEL_NUMBER',
+  'PORTUGAL_CDC_NUMBER',
+  'SCOTLAND_COMMUNITY_HEALTH_INDEX_NUMBER',
+  'SINGAPORE_NATIONAL_REGISTRATION_ID_NUMBER',
+  'SINGAPORE_PASSPORT',
+  'SPAIN_CIF_NUMBER',
+  'SPAIN_DNI_NUMBER',
+  'SPAIN_DRIVERS_LICENSE_NUMBER',
+  'SPAIN_NIE_NUMBER',
+  'SPAIN_NIF_NUMBER',
+  'SPAIN_PASSPORT',
+  'SPAIN_SOCIAL_SECURITY_NUMBER',
+  'STORAGE_SIGNED_POLICY_DOCUMENT',
+  'STORAGE_SIGNED_URL',
+  'SWEDEN_NATIONAL_ID_NUMBER',
+  'SWEDEN_PASSPORT',
+  'SWIFT_CODE',
+  'TAIWAN_PASSPORT',
+  'THAILAND_NATIONAL_ID_NUMBER',
+  'TIME',
+  'TURKEY_ID_NUMBER',
+  'UK_DRIVERS_LICENSE_NUMBER',
+  'UK_NATIONAL_HEALTH_SERVICE_NUMBER',
+  'UK_NATIONAL_INSURANCE_NUMBER',
+  'UK_PASSPORT',
+  'UK_TAXPAYER_REFERENCE',
+  'URL',
+  'URUGUAY_CDI_NUMBER',
+  'US_ADOPTION_TAXPAYER_IDENTIFICATION_NUMBER',
+  'US_BANK_ROUTING_MICR',
+  'US_DEA_NUMBER',
+  'US_DRIVERS_LICENSE_NUMBER',
+  'US_EMPLOYER_IDENTIFICATION_NUMBER',
+  'US_HEALTHCARE_NPI',
+  'US_INDIVIDUAL_TAXPAYER_IDENTIFICATION_NUMBER',
+  'US_PASSPORT',
+  'US_PREPARER_TAXPAYER_IDENTIFICATION_NUMBER',
+  'US_SOCIAL_SECURITY_NUMBER',
+  'US_STATE',
+  'US_TOLLFREE_PHONE_NUMBER',
+  'US_VEHICLE_IDENTIFICATION_NUMBER',
+  'VEHICLE_IDENTIFICATION_NUMBER',
+  'VENEZUELA_CDI_NUMBER',
+  'WEAK_PASSWORD_HASH',
+  'XSRF_TOKEN',
+]
+export const CEL_COMPATIBILITY_RULES = {
+  'URL Categories':
+    "Matching on 'url_category' or 'source_url_category' (via matches_web_category or matches_enum) is supported with URL_NAVIGATION, FILE_DOWNLOAD, or WEB_CONTENT_UPLOAD triggers.",
+  'Source/Origin Fields':
+    "Attributes starting with 'source_' (e.g., source_url, source_chrome_context) are only supported with the WEB_CONTENT_UPLOAD (paste) trigger.",
+  'File Attributes':
+    "File-specific attributes (file_size_in_bytes) are supported with FILE_UPLOAD or FILE_DOWNLOAD triggers. 'file_type' is supported for UPLOAD, DOWNLOAD, and PRINT.",
+  'Navigation Restrictions':
+    "The 'all_content', 'body', and 'title' attributes are NOT supported with the URL_NAVIGATION trigger.",
+  'Operator Restrictions':
+    "The 'starts_with' and 'ends_with' functions are only supported for the 'url' and 'title' attributes.",
+}
+export const AGENT_DISPLAY_NAME_PREFIX = '🤖 '
+export const ADMIN_CONSOLE_DLP_RULE_LINK_TEMPLATE =
+  'https://admin.google.com/ac/dp/rules/{URL_ENCODED_RESOURCE_NAME}?dlpRulesList=true'
+export const WORKSPACE_RULE_LIMITS = {
+  NAME_MAX_LENGTH: 140,
+  DESCRIPTION_MAX_LENGTH: 500,
+  CUSTOM_MESSAGE_MAX_LENGTH: 300,
+  WATERMARK_MAX_LENGTH: 60, // Backend may allow for longer.
+  MAX_WORDS_IN_LIST: 950,
+  MAX_WORD_LIST_CHARS: 12500,
+}
+export const ACTION_PARAMETER_CONSTRAINTS = {
+  CUSTOM_MESSAGE_SUPPORT: `The 'customMessage' parameter is supported with 'BLOCK' and 'WARN' actions, and must be ${WORKSPACE_RULE_LIMITS.CUSTOM_MESSAGE_MAX_LENGTH} characters or less. Only <a> tags with href attributes are allowed.`,
+  WATERMARK_SUPPORT: `The 'watermarkMessage' parameter is only supported with the 'URL_NAVIGATION' trigger and 'WARN' or 'AUDIT' actions, and must be ${WORKSPACE_RULE_LIMITS.WATERMARK_MAX_LENGTH} characters or less.`,
+  SCREENSHOT_SUPPORT:
+    "The 'blockScreenshot' parameter (which also restricts screen-sharing) is only supported with the 'URL_NAVIGATION' trigger and 'WARN' or 'AUDIT' actions.",
+  DATA_MASKING_SUPPORT:
+    "The 'dataMasking' parameter is only supported with the 'URL_NAVIGATION' trigger and 'WARN' or 'AUDIT' actions. Currently, ONLY regex detectors are supported for data masking.",
+}
+export const MCP_SAFETY_CONSTRAINTS = {
+  ACTIVE_BLOCK_RESTRICTION:
+    "For safety reasons, this MCP tool is disabled from creating 'ACTIVE' rules with a 'BLOCK' action. You can create 'INACTIVE' 'BLOCK' rules and enable them later in the UI, or create 'ACTIVE' 'WARN' or 'AUDIT' rules.",
+}
+/**
+ * Generates a technical reference for CEL conditions in Markdown format.
+ * This is used to populate the '11-dlp-rule-reference' knowledge document dynamically.
+ * @returns {string} The generated markdown content.
+ */
+export function generateDlpCelReference() {
+  const syntaxGuide = CEL_SYNTAX_GUIDE.map(
+    item => `${item.rule}\n${item.examples.map(ex => `   Example: "${ex}"`).join('\n')}`,
+  ).join('\n')
+  const universalTypes = Object.entries(UNIVERSAL_CONTENT_TYPES)
+    .map(([k, v]) => `- **${k}**: ${v}`)
+    .join('\n')
+  const navTypes = Object.entries(NAVIGATION_CONTENT_TYPES)
+    .map(([k, v]) => `- **${k}**: ${v}`)
+    .join('\n')
+  const pasteTypes = Object.entries(PASTE_CONTENT_TYPES)
+    .map(([k, v]) => `- **${k}**: ${v}`)
+    .join('\n')
+  const fileTypes = Object.entries(FILE_CONTENT_TYPES)
+    .map(([k, v]) => `- **${k}**: ${v}`)
+    .join('\n')
+  const functions = Object.entries(CEL_FUNCTIONS)
+    .map(([k, v]) => `- **${k}**: ${v}`)
+    .join('\n')
+  const contexts = Object.entries(CHROME_CONTEXTS)
+    .map(([_, v]) => `- '${v.value}': ${v.description}`)
+    .join('\n')
+  const compatibility = Object.entries(CEL_COMPATIBILITY_RULES)
+    .map(([k, v]) => `- **${k}**: ${v}`)
+    .join('\n')
+  const specializedTypes = Object.entries(SPECIALIZED_CONTENT_TYPES)
+    .map(([k, v]) => `- **${k}**: ${v}`)
+    .join('\n')
+  const actionConstraints = Object.entries(ACTION_PARAMETER_CONSTRAINTS)
+    .map(([_, v]) => `- ${v}`)
+    .join('\n')
+  const actionDescriptions = Object.values(CHROME_ACTION_TYPES)
+    .map(a => `- **${a.value}**: ${a.description}`)
+    .join('\n')
+  return `# Chrome DLP Rule Configuration Reference
+
+This document provides a comprehensive technical reference for writing Common Expression Language (CEL) conditions and configuring actions for Chrome [Data Loss Prevention (DLP) rules](06-dlp-rule-troubleshooting.md).
+
+## 1. CEL Condition Syntax Guide
+${syntaxGuide}
+
+---
+
+## 2. Valid Content Types
+
+### Universal
+${universalTypes}
+
+### Navigation Only
+${navTypes}
+
+### Paste (WEB_CONTENT_UPLOAD) Only
+${pasteTypes}
+
+### File (UPLOAD/DOWNLOAD/PRINT) Only
+${fileTypes}
+
+### Specialized
+${specializedTypes}
+
+---
+
+## 3. Valid Functions
+${functions}
+
+---
+
+## 4. Value References
+
+### source_chrome_context
+${contexts}
+
+  ### Full Web Category List (for url_category)
+${VALID_WEB_CATEGORIES.join(', ')}.
+
+---
+
+## 5. Predefined Detectors
+Use these strings exactly as shown with the \`matches_dlp_detector()\` function:
+
+${PREDEFINED_DETECTORS.join(', ')}.
+
+---
+
+## 6. Common MIME Types (for file_type)
+When using \`.matches_mime_types()\`, use standard MIME strings. Common examples:
+\`application/pdf\`, \`application/msword\`, \`application/vnd.openxmlformats-officedocument.wordprocessingml.document\`, \`application/vnd.ms-excel\`, \`application/vnd.openxmlformats-officedocument.spreadsheetml.sheet\`, \`application/vnd.ms-powerpoint\`, \`application/zip\`, \`text/plain\`, \`image/jpeg\`, \`image/png\`.
+
+---
+
+## 7. Trigger Compatibility Rules
+${compatibility}
+
+## 8. Multi-Trigger Logic
+If multiple triggers are selected, a field or function is valid if it is supported by AT LEAST ONE of those triggers.
+*Example:* 'all_content' is supported if you select both 'URL_NAVIGATION' (which doesn't support it) and 'WEB_CONTENT_UPLOAD' (which does).
+
+---
+
+## 9. Action Definitions
+${actionDescriptions}
+
+---
+
+## 10. Action and Safety Constraints
+- **Safety Restriction**: ${MCP_SAFETY_CONSTRAINTS.ACTIVE_BLOCK_RESTRICTION}
+${actionConstraints}`
+}

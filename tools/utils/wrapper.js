@@ -20,22 +20,39 @@ limitations under the License.
 
 import { TAGS, SCOPES } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
+import { getAuthClient } from '../../lib/util/auth.js'
 import { validateAndGetOrgUnitId } from './org-unit.js'
 
 /**
  * Generates a proactive remediation message for authentication errors.
  * @param {number} status - The HTTP status code
- * @param {boolean} [isOAuth] - Whether the CLI is running in OAuth mode
+ * @param {string} [source] - The credential source ('bearer', 'cache', 'adc', 'provided')
  * @returns {string} The remediation message
  */
-function getAuthRemediationMessage(status, isOAuth = false) {
-  if (isOAuth) {
+function getAuthRemediationMessage(status, source = 'adc') {
+  const REAUTH_ADVICE = {
+    bearer: {
+      cmd: '/mcp reauth in your Gemini CLI',
+      sessionLabel: 'OAuth session',
+    },
+    cache: {
+      cmd: 'mcp login in your terminal',
+      sessionLabel: 'cached tokens',
+    },
+  }
+
+  if (source === 'provided') {
+    return `Authentication failed using pre-supplied credentials. Please check the configuration of the client passed to the server.`
+  }
+
+  const advice = REAUTH_ADVICE[source]
+  if (advice) {
     if (status === 401) {
-      return `Authentication required. Your OAuth session has expired or is invalid. Please run \`/mcp reauth\` in your Gemini CLI to re-authenticate.`
+      return `Authentication required. Your ${advice.sessionLabel} has expired or is invalid. Please run \`${advice.cmd}\` to re-authenticate.`
     }
     return `Permission denied. Your account lacks the required permissions or the necessary Google Cloud APIs are not enabled.
 
-1. **Re-authenticate:** Run \`/mcp reauth\` in your Gemini CLI.
+1. **Re-authenticate:** Run \`${advice.cmd}\`.
 2. **Verify APIs are enabled:** Ensure \`admin.googleapis.com\`, \`chromemanagement.googleapis.com\`, \`chromepolicy.googleapis.com\`, and \`cloudidentity.googleapis.com\` are enabled in your Google Cloud project.`
   }
 
@@ -161,7 +178,20 @@ export function guardedToolCall(
 ) {
   return async (params, context) => {
     const authToken = getAuthToken(context?.requestInfo)
+
+    let credentialsSource = authToken ? 'bearer' : 'adc'
+
     try {
+      // Resolve the source once so it's available for error remediation even
+      // if validation fails before the API client is invoked.
+      try {
+        const auth = await getAuthClient([], authToken)
+        credentialsSource = auth.source
+      } catch (_e) {
+        // Ignore resolution errors here; we will handle them if the tool
+        // actually needs to make an API call.
+      }
+
       const { apiClients, apiOptions } = options
       let currentParams = { ...params }
       if (sessionState && currentParams.customerId) {
@@ -201,7 +231,7 @@ export function guardedToolCall(
         validate(transformedParams)
       }
 
-      const result = await handler(transformedParams, { ...context, authToken })
+      const result = await handler(transformedParams, { ...context, authToken, credentialsSource })
       logger.debug(`${TAGS.MCP} Handler result for '${context?.name || 'unknown'}':`, JSON.stringify(result, null, 2))
 
       if (result && !result.structuredContent && result.content) {
@@ -251,8 +281,8 @@ export function guardedToolCall(
           errorMessage.includes('invalid_grant')
             ? 401
             : 403)
-        const isOAuth = !!context?.authToken || !!context?.requestInfo?.headers?.authorization
-        const remediationMessage = getAuthRemediationMessage(resolvedStatus, isOAuth)
+        const source = error.credentialsSource || credentialsSource
+        const remediationMessage = getAuthRemediationMessage(resolvedStatus, source)
         return {
           content: [{ type: 'text', text: remediationMessage }],
           isError: true,

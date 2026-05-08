@@ -16,8 +16,9 @@ limitations under the License.
 
 import assert from 'node:assert/strict'
 import { describe, test, mock, beforeEach } from 'node:test'
+import esmock from 'esmock'
 import { validateAndGetOrgUnitId, resolveRootOrgUnitId } from '../../tools/utils/org-unit.js'
-import { commonTransform, guardedToolCall } from '../../tools/utils/wrapper.js'
+import { commonTransform } from '../../tools/utils/wrapper.js'
 import { registerTools } from '../../tools/index.js'
 
 describe('Tool Utils', () => {
@@ -47,6 +48,15 @@ describe('Tool Utils', () => {
 
   describe('guardedToolCall Infrastructure', () => {
     let server
+
+    async function getGuardedToolCall(mockAuthSource = 'adc') {
+      const { guardedToolCall } = await esmock('../../tools/utils/wrapper.js', {
+        '../../lib/util/auth.js': {
+          getAuthClient: async () => ({ source: mockAuthSource }),
+        },
+      })
+      return guardedToolCall
+    }
 
     beforeEach(() => {
       server = {
@@ -105,6 +115,7 @@ describe('Tool Utils', () => {
           return { params }
         }
         const sessionState = { customerId: null }
+        const guardedToolCall = await getGuardedToolCall()
         const tool = guardedToolCall({ handler }, {}, sessionState)
 
         // First call with a customerId
@@ -173,6 +184,7 @@ describe('Tool Utils', () => {
         error.status = 401
         throw error
       }
+      const guardedToolCall = await getGuardedToolCall('adc')
       const tool = guardedToolCall({ handler })
 
       const result = await tool({}, {})
@@ -190,6 +202,7 @@ describe('Tool Utils', () => {
         error.status = 403
         throw error
       }
+      const guardedToolCall = await getGuardedToolCall('adc')
       const tool = guardedToolCall({ handler })
 
       const result = await tool({}, {})
@@ -205,6 +218,7 @@ describe('Tool Utils', () => {
       const handler = async () => {
         throw new Error('API Error: invalid_grant - reauth related error (invalid_rapt)')
       }
+      const guardedToolCall = await getGuardedToolCall('adc')
       const tool = guardedToolCall({ handler })
 
       const result = await tool({}, {})
@@ -221,6 +235,7 @@ describe('Tool Utils', () => {
         error.status = 401
         throw error
       }
+      const guardedToolCall = await getGuardedToolCall('bearer')
       const tool = guardedToolCall({ handler })
 
       const context = { requestInfo: { headers: { authorization: 'Bearer SOME_TOKEN' } } }
@@ -238,6 +253,7 @@ describe('Tool Utils', () => {
         error.status = 403
         throw error
       }
+      const guardedToolCall = await getGuardedToolCall('bearer')
       const tool = guardedToolCall({ handler })
 
       const context = { requestInfo: { headers: { authorization: 'Bearer SOME_TOKEN' } } }
@@ -250,12 +266,48 @@ describe('Tool Utils', () => {
       assert.ok(!result.content[0].text.includes('gcloud auth application-default login'))
     })
 
+    test('When handler fails with 401 and source is cache, then it returns the cache remediation message', async () => {
+      const handler = async () => {
+        const error = new Error('Unauthorized')
+        error.status = 401
+        throw error
+      }
+      const guardedToolCall = await getGuardedToolCall('cache')
+      const tool = guardedToolCall({ handler })
+
+      const result = await tool({}, {})
+
+      assert.strictEqual(result.isError, true)
+      assert.ok(result.content[0].text.includes('Authentication required'))
+      assert.ok(result.content[0].text.includes('mcp login'))
+      assert.ok(!result.content[0].text.includes('gcloud auth application-default login'))
+    })
+
+    test('When handler fails with 401 and source is bearer, then it returns the bearer remediation message', async () => {
+      const handler = async () => {
+        const error = new Error('Unauthorized')
+        error.status = 401
+        throw error
+      }
+      const guardedToolCall = await getGuardedToolCall('bearer')
+      const tool = guardedToolCall({ handler })
+
+      const result = await tool({}, {})
+
+      assert.strictEqual(result.isError, true)
+      assert.ok(result.content[0].text.includes('Authentication required'))
+      assert.ok(result.content[0].text.includes('/mcp reauth'))
+      assert.ok(!result.content[0].text.includes('mcp login'))
+      assert.ok(!result.content[0].text.includes('gcloud auth application-default login'))
+    })
+
     test('When onError is provided and handler fails, then it calls onError', async () => {
       const handler = async () => {
         throw new Error('Test error')
       }
       const customResponse = { isError: true, content: [{ type: 'text', text: 'Custom Error' }] }
       const onError = mock.fn(() => customResponse)
+      const guardedToolCall = await getGuardedToolCall()
       const tool = guardedToolCall({ handler }, { onError })
 
       const result = await tool({}, {})
