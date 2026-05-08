@@ -12,11 +12,14 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-*/ import js from '@eslint/js'
+*/
+
+import js from '@eslint/js'
 import nodePlugin from 'eslint-plugin-n'
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import jsdoc from 'eslint-plugin-jsdoc'
 import notice from 'eslint-plugin-notice'
+import tseslint from 'typescript-eslint'
 
 const currentYear = new Date().getFullYear()
 const copyrightHeader = `/*
@@ -35,11 +38,48 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */`
 
-export default [
+// List of files that have been fully migrated to TypeScript and should be
+// subject to strict, type-aware linting rules.
+const migratedFiles = [
+  'lib/util/helpers.ts',
+  'lib/constants.ts',
+  'lib/util/auth_messages.ts',
+  'lib/util/auth.ts',
+  'lib/util/api-client.ts',
+  'lib/util/credential/index.ts',
+  'lib/util/credential/adc.ts',
+  'lib/util/credential/oauth_flow.ts',
+  'lib/util/credential/jwt_verifier.ts',
+  'lib/api/admin_sdk_client.ts',
+  'lib/api/cloud_identity_client.ts',
+  'lib/api/chrome_management_client.ts',
+  'lib/api/chrome_policy_client.ts',
+  'lib/api/service_usage_client.ts',
+]
+
+// Map the recommended type-checked rules to apply ONLY to fully migrated files.
+const typeCheckedConfigs = tseslint.configs.recommendedTypeChecked.map(config => ({
+  ...config,
+  files: migratedFiles,
+}))
+
+export default tseslint.config(
   {
     ignores: ['**/dist', '**/node_modules', 'results/**', '.worktrees/**', '.claude/**', '.gemini/**', '.opencode/**'],
   },
+  {
+    // Restrict the TypeScript parser service scope to migrated files
+    files: migratedFiles,
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  },
   js.configs.recommended,
+  ...tseslint.configs.recommended, // Apply standard TS rules globally
+  ...typeCheckedConfigs,           // Apply strict type-aware rules to migrated files
   nodePlugin.configs['flat/recommended'],
   eslintPluginPrettierRecommended,
   jsdoc.configs['flat/recommended'],
@@ -58,11 +98,10 @@ export default [
       ],
 
       // -- JSDoc --
-
       'jsdoc/require-jsdoc': [
         'error',
         {
-          publicOnly: false,
+          publicOnly: true,
           require: {
             FunctionDeclaration: true,
             MethodDefinition: true,
@@ -92,7 +131,8 @@ export default [
       'no-extra-semi': 'off',
 
       // -- Variable hygiene --
-      'no-unused-vars': [
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': [
         'error',
         {
           argsIgnorePattern: '^_',
@@ -136,7 +176,7 @@ export default [
     },
   },
   {
-    files: ['test/**/*.js', '**/*.test.js'],
+    files: ['test/**/*.js', '**/*.test.js', 'test/**/*.ts', '**/*.test.ts'],
     rules: {
       'jsdoc/require-jsdoc': 'off',
       'jsdoc/require-description': 'off',
@@ -153,6 +193,22 @@ export default [
       'jsdoc/check-types': 'off',
       'jsdoc/valid-types': 'off',
       'n/no-unsupported-features/node-builtins': ['error', { version: '>=22.0.0' }],
+      '@typescript-eslint/no-floating-promises': 'off',
+      '@typescript-eslint/require-await': 'off',
     },
   },
-]
+  {
+    // TypeScript specific overrides: JSDoc types are redundant in TS
+    files: ['**/*.ts'],
+    rules: {
+      'jsdoc/require-param-type': 'off',
+      'jsdoc/require-returns-type': 'off',
+      'jsdoc/check-types': 'off',
+      'jsdoc/valid-types': 'off',
+      'jsdoc/require-param': 'off',
+      'jsdoc/require-returns': 'off',
+      'jsdoc/check-param-names': 'off',
+      '@typescript-eslint/require-await': 'off',
+    },
+  },
+)
