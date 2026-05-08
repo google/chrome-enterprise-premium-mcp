@@ -86,8 +86,13 @@ export function registerDeleteAgentDlpRuleTool(
               if (status === 404) {
                 throw new Error(`Rule not found: ${policyName}`)
               }
+            } else if (isObject(error) && 'code' in error && (error.code === 5 || error.code === '5')) {
+              throw new Error(`Rule not found: ${policyName}`)
             } else if (error instanceof Error) {
-              if (error.message?.toLowerCase().includes('not found')) {
+              if (
+                error.message?.toLowerCase().includes('not found') ||
+                error.message?.toLowerCase().includes('not_found')
+              ) {
                 throw new Error(`Rule not found: ${policyName}`)
               }
               logger.error(`${TAGS.MCP} Failed to fetch rule details for ${policyName}: ${error.message}`)

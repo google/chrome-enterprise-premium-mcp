@@ -8,38 +8,38 @@
   },
   "license": "Apache-2.0",
   "type": "module",
-  "main": "mcp-server.js",
+  "main": "dist/mcp-server.js",
   "bin": {
-    "chrome-enterprise-premium-mcp": "bin/cli.js"
+    "chrome-enterprise-premium-mcp": "dist/bin/cli.js"
   },
   "files": [
-    "bin/",
-    "mcp-server.js",
-    "tools/",
-    "lib/",
-    "prompts/"
+    "dist/",
+    "prompts/**/*.md",
+    "lib/knowledge/**/*.md"
   ],
   "scripts": {
-    "eval": "CEP_BACKEND=fake node test/evals/run.js",
-    "eval:agentic": "CEP_BACKEND=fake node test/evals/run.js --category inspection,troubleshooting,mutation,discovery,connectors",
-    "eval:boundary": "CEP_BACKEND=fake node test/evals/run.js --category boundary",
-    "eval:full": "CEP_BACKEND=fake node test/evals/run.js --runs 3 --output results/eval-full.md",
-    "eval:knowledge": "CEP_BACKEND=fake node test/evals/run.js --category knowledge",
-    "eval:licensing": "CEP_BACKEND=fake node test/evals/run.js --category licensing",
-    "eval:prompt": "CEP_BACKEND=fake node test/evals/run.js --category prompt",
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "eval": "CEP_BACKEND=fake tsx test/evals/run.ts",
+    "eval:agentic": "CEP_BACKEND=fake tsx test/evals/run.ts --category inspection,troubleshooting,mutation,discovery,connectors",
+    "eval:boundary": "CEP_BACKEND=fake tsx test/evals/run.ts --category boundary",
+    "eval:full": "CEP_BACKEND=fake tsx test/evals/run.ts --runs 3 --output results/eval-full.md",
+    "eval:knowledge": "CEP_BACKEND=fake tsx test/evals/run.ts --category knowledge",
+    "eval:licensing": "CEP_BACKEND=fake tsx test/evals/run.ts --category licensing",
+    "eval:prompt": "CEP_BACKEND=fake tsx test/evals/run.ts --category prompt",
     "format": "prettier --write .",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
-    "mcp-inspector": "npx @modelcontextprotocol/inspector node mcp-server.js",
+    "mcp-inspector": "npx @modelcontextprotocol/inspector node dist/mcp-server.js",
     "postsubmit": "npm run presubmit && npm run test:integration:real",
     "prepare": "husky || true",
     "presubmit": "prettier --check . && npm run lint && npm run test:unit && npm run test:integration:fake && npm run test:smoke",
-    "start": "node mcp-server.js",
-    "test": "node test/run-all.js",
-    "test:integration:fake": "CEP_LOG_LEVEL=SILENT SKIP_SLOW=true EXPERIMENT_DELETE_TOOL_ENABLED=true node test/run-integration.js fake",
-    "test:integration:real": "CEP_LOG_LEVEL=SILENT EXPERIMENT_DELETE_TOOL_ENABLED=true node test/run-integration.js real",
-    "test:smoke": "CEP_LOG_LEVEL=SILENT GCP_STDIO=false node test/local/smoke-test.js",
-    "test:unit": "CEP_LOG_LEVEL=SILENT node test/run-unit.js"
+    "start": "node dist/mcp-server.js",
+    "test": "tsx test/run-all.ts",
+    "test:integration:fake": "CEP_LOG_LEVEL=SILENT SKIP_SLOW=true EXPERIMENT_DELETE_TOOL_ENABLED=true tsx test/run-integration.ts fake",
+    "test:integration:real": "CEP_LOG_LEVEL=SILENT EXPERIMENT_DELETE_TOOL_ENABLED=true tsx test/run-integration.ts real",
+    "test:smoke": "CEP_LOG_LEVEL=SILENT GCP_STDIO=false tsx test/local/smoke-test.ts",
+    "test:unit": "CEP_LOG_LEVEL=SILENT tsx test/run-unit.ts"
   },
   "lint-staged": {
     "*.{js,ts}": "eslint --fix",
@@ -65,6 +65,8 @@
     "eslint-config-prettier": "^9.1.2",
     "eslint-plugin-jsdoc": "^50.8.0",
     "eslint-plugin-n": "^17.24.0",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.6.2",
     "eslint-plugin-notice": "^1.0.0",
     "eslint-plugin-prettier": "^5.5.5",
     "esmock": "^2.7.4",
@@ -72,7 +74,11 @@
     "js-yaml": "^4.1.1",
     "lint-staged": "^16.4.0",
     "prettier": "^3.8.3",
-    "prettier-plugin-packagejson": "^3.0.2"
+    "prettier-plugin-packagejson": "^3.0.2",
+    "ts-migrate": "^0.1.35",
+    "tsx": "^4.21.0",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.59.2"
   },
   "engines": {
     "node": ">=18.0.0"

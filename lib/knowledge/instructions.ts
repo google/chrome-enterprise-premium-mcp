@@ -20,14 +20,14 @@ limitations under the License.
 
 import fs from 'fs'
 import path from 'path'
-import { fileURLToPath } from 'url'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+import { getProjectRoot } from '../util/helpers.js'
 
-const SYSTEM_PROMPT_PATH = path.resolve(__dirname, '../../prompts/system-prompt.md')
-const CAPABILITIES_PATH = path.resolve(__dirname, './0-agent-capabilities.md')
-const ADDENDUM_PATH = path.resolve(__dirname, './98-agent-knowledge-addendum.md')
+const rootDir = getProjectRoot(import.meta.url)
+
+const SYSTEM_PROMPT_PATH = path.join(rootDir, 'prompts/system-prompt.md')
+const CAPABILITIES_PATH = path.join(rootDir, 'lib/knowledge/0-agent-capabilities.md')
+const ADDENDUM_PATH = path.join(rootDir, 'lib/knowledge/98-agent-knowledge-addendum.md')
 
 let cachedPayload: string | null = null
 

@@ -75,11 +75,20 @@ const triggerKeys = [
   'ON_SECURITY_EVENT',
 ] as const
 
+const TRIGGER_KEY_MAPPING: Record<(typeof triggerKeys)[number], keyof typeof CHROME_TRIGGERS | null> = {
+  ON_FILE_ATTACHED: 'FILE_UPLOAD',
+  ON_FILE_DOWNLOAD: 'FILE_DOWNLOAD',
+  ON_BULK_TEXT_ENTRY: 'WEB_CONTENT_UPLOAD',
+  ON_PRINT: 'PRINT',
+  ON_REALTIME_URL_NAVIGATION: 'URL_NAVIGATION',
+  ON_SECURITY_EVENT: null,
+}
+
 const actionValues = ['BLOCK', 'WARN', 'AUDIT'] as const
 
 const stateValues = ['ACTIVE', 'INACTIVE'] as const
 
-const maskTypeValues = ['LAST_4_CHARS', 'FIRST_4_CHARS', 'ALL_CHARS'] as const
+const maskTypeValues = ['MASK_TYPE_LIGHT_OBFUSCATION', 'MASK_TYPE_HARD_OBFUSCATION', 'MASK_TYPE_REDACT'] as const
 
 const CreateDlpRuleSchema = z.object({
   customerId: z.string().optional(),
@@ -217,7 +226,6 @@ To ensure technical accuracy and verify trigger compatibility, you should retrie
           return { ...params, displayName: newDisplayName }
         },
         handler: async (params: Record<string, unknown>, { authToken }): Promise<McpToolResponse> => {
-          // Strictly parse and narrow using Zod, achieving absolute cast-free typing!
           const safeParams: CreateDlpRuleParams = CreateDlpRuleSchema.parse(params)
 
           const {
@@ -242,10 +250,11 @@ To ensure technical accuracy and verify trigger compatibility, you should retrie
           }
 
           const fullTriggers = triggers.map(t => {
-            const triggerObj = CHROME_TRIGGERS[t as keyof typeof CHROME_TRIGGERS]
-            if (!triggerObj) {
-              throw new Error(`Unknown trigger key: ${t}`)
+            const legacyKey = TRIGGER_KEY_MAPPING[t]
+            if (!legacyKey) {
+              throw new Error(`Trigger ${t} is not compatible with Chrome DLP content scanning rules.`)
             }
+            const triggerObj = CHROME_TRIGGERS[legacyKey]
             return triggerObj.value
           })
 

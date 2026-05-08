@@ -204,19 +204,23 @@ Rules included:
                 success: true,
               })
             } catch (error) {
-              if (isApiError(error)) {
-                const status = error.response?.status
-                const errorMessage = error.message || ''
-                const isAuthError =
-                  status === 401 ||
-                  status === 403 ||
-                  errorMessage.includes('UNAUTHENTICATED') ||
-                  errorMessage.includes('PERMISSION_DENIED') ||
-                  errorMessage.includes('invalid_grant')
+              const errorMessage = error instanceof Error ? error.message || '' : String(error)
+              const status =
+                isObject(error) && typeof error['status'] === 'number'
+                  ? error['status']
+                  : isApiError(error)
+                    ? error.response?.status
+                    : undefined
 
-                if (isAuthError) {
-                  throw error
-                }
+              const isAuthError =
+                status === 401 ||
+                status === 403 ||
+                errorMessage.includes('UNAUTHENTICATED') ||
+                errorMessage.includes('PERMISSION_DENIED') ||
+                errorMessage.includes('invalid_grant')
+
+              if (isAuthError) {
+                throw error
               }
 
               let errorMsg = ''

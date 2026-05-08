@@ -27,29 +27,30 @@ import { ERROR_MESSAGES, SCOPES } from '../constants.js'
 const GCLOUD_CALL_TIMEOUT_MS = 1000
 const GCLOUD_TOTAL_BUDGET_MS = 5000
 
-let cachedIsGcloudInstalled = /** @type {boolean|null} */ null
-let gcloudCheckPromise = /** @type {Promise<boolean>|null} */ null
+let cachedIsGcloudInstalled: boolean | null = null
+let gcloudCheckPromise: Promise<boolean> | null = null
 
 /**
  * Runs a gcloud command with a per-call timeout. Returns stdout or null on error/timeout.
- * @param {string[]} args - Arguments to pass to gcloud.
- * @returns {Promise<string|null>} The stdout output, or null if the call fails or times out.
+ * @param args Arguments to pass to gcloud.
+ * @returns The stdout output, or null if the call fails or times out.
  */
-function runGcloud(args) {
-  return new Promise(resolve => {
+function runGcloud(args: string[]): Promise<string | null> {
+  return new Promise<string | null>(resolve => {
     const timer = setTimeout(() => resolve(null), GCLOUD_CALL_TIMEOUT_MS)
-    execFile('gcloud', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }, (err, stdout) => {
+    const options = { encoding: 'utf8' as const, stdio: ['ignore', 'pipe', 'ignore'] as const }
+    execFile('gcloud', args, options, (err, stdout) => {
       clearTimeout(timer)
-      resolve(err ? null : stdout)
+      resolve(err ? null : typeof stdout === 'string' ? stdout : null)
     })
   })
 }
 
 /**
  * Checks if the Google Cloud SDK (gcloud) is installed on the system.
- * @returns {Promise<boolean>} True if gcloud is installed, false otherwise.
+ * @returns True if gcloud is installed, false otherwise.
  */
-function isGcloudInstalled() {
+function isGcloudInstalled(): Promise<boolean> {
   if (cachedIsGcloudInstalled !== null) {
     return Promise.resolve(cachedIsGcloudInstalled)
   }
@@ -64,10 +65,10 @@ function isGcloudInstalled() {
 
 /**
  * Attempts to suggest a suitable quota project ID using gcloud.
- * @param {string} errorMessage - The error message to parse for the API name.
- * @returns {Promise<string|null>} A project ID if found, or null.
+ * @param errorMessage The error message to parse for the API name.
+ * @returns A project ID if found, or null.
  */
-async function suggestQuotaProject(errorMessage) {
+async function suggestQuotaProject(errorMessage: string): Promise<string | null> {
   if (!(await isGcloudInstalled())) {
     return null
   }
@@ -135,10 +136,10 @@ async function suggestQuotaProject(errorMessage) {
  *
  * Identifies specific error conditions (e.g., insufficient scopes, missing credentials)
  * and provides actionable instructions based on whether `gcloud` is installed.
- * @param {Error} error - The original error object thrown during authentication.
- * @returns {string} A formatted error message with instructions.
+ * @param error The original error object thrown during authentication.
+ * @returns A formatted error message with instructions.
  */
-export async function getAuthErrorMessage(error) {
+export async function getAuthErrorMessage(error: Error): Promise<string> {
   const gcloudInstalled = await isGcloudInstalled()
   const errorMessage = error.message || ''
   const isInsufficientScopes = errorMessage.toLowerCase().includes(ERROR_MESSAGES.INSUFFICIENT_SCOPES.toLowerCase())

@@ -14,32 +14,63 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { readFileSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-
+import { dirname, join } from 'node:path'
 import { LOGO } from './banner-logo.js'
 
-const pkg = JSON.parse(readFileSync(fileURLToPath(new URL('../../package.json', import.meta.url)), 'utf8'))
+interface PackageJson {
+  version: string
+}
+
+function findPackageJson(startDir: string): string {
+  let current = startDir
+  while (true) {
+    const p = join(current, 'package.json')
+    if (existsSync(p)) {
+      return p
+    }
+    const parent = dirname(current)
+    if (parent === current) {
+      throw new Error('Could not find package.json.')
+    }
+    current = parent
+  }
+}
+
+const startDir = dirname(fileURLToPath(import.meta.url))
+const pkg = JSON.parse(readFileSync(findPackageJson(startDir), 'utf8')) as PackageJson
 
 // eslint-disable-next-line no-control-regex
 const ANSI_RE = /\x1b\[[0-9;]*m/g
-const visibleLen = s => s.replace(ANSI_RE, '').length
+const visibleLen = (s: string): number => s.replace(ANSI_RE, '').length
 
-const colorize = process.env.NO_COLOR ? s => s.replace(ANSI_RE, '') : s => s
+const colorize = process.env.NO_COLOR ? (s: string): string => s.replace(ANSI_RE, '') : (s: string): string => s
 
 const RENDERED_LOGO = LOGO.map(colorize)
 const LOGO_WIDTH = Math.max(...RENDERED_LOGO.map(visibleLen))
 const GUTTER = '    '
 
-const red = s => colorize(`\x1b[31m${s}\x1b[0m`)
-const yellow = s => colorize(`\x1b[33m${s}\x1b[0m`)
-export const dim = s => colorize(`\x1b[38;2;204;204;0m${s}\x1b[0m`)
+const red = (s: string): string => colorize(`\x1b[31m${s}\x1b[0m`)
+const yellow = (s: string): string => colorize(`\x1b[33m${s}\x1b[0m`)
+export const dim = (s: string): string => colorize(`\x1b[38;2;204;204;0m${s}\x1b[0m`)
 
-const padLogo = line => line + ' '.repeat(Math.max(0, LOGO_WIDTH - visibleLen(line)))
+const padLogo = (line: string): string => line + ' '.repeat(Math.max(0, LOGO_WIDTH - visibleLen(line)))
+
+export type BannerFieldValue = string | string[]
+
+export interface BannerStatus {
+  transport: BannerFieldValue
+  auth: BannerFieldValue
+  apiCreds: BannerFieldValue
+  scopes: BannerFieldValue
+  dataAccess: BannerFieldValue
+  knowledge: BannerFieldValue
+}
 
 // String → yellow value. Array → first element yellow, remainder dimmed
 // (e.g. ['OAuth', '(Enforced)'] → "OAuth (Enforced)" with parens dimmed).
-const fmtField = v => {
+const fmtField = (v: BannerFieldValue): string => {
   if (Array.isArray(v)) {
     const [head, ...rest] = v
     return rest.length ? `${yellow(head)} ${dim(rest.join(' '))}` : yellow(head)
@@ -49,16 +80,10 @@ const fmtField = v => {
 
 /**
  * Print the startup banner: ANSI logo on the left, status fields on the right.
- * @param {object} status                Status fields shown alongside the logo.
- * @param {string|string[]} status.transport    Transport mode label.
- * @param {string|string[]} status.auth         Auth strategy label.
- * @param {string|string[]} status.apiCreds     API credential source label.
- * @param {string|string[]} status.scopes       OAuth scope status label.
- * @param {string|string[]} status.dataAccess   "Production" or "Fake".
- * @param {string|string[]} status.knowledge    Knowledge DB summary.
+ * @param status Status fields shown alongside the logo.
  */
-export function printBanner({ transport, auth, apiCreds, scopes, dataAccess, knowledge }) {
-  const rows = [
+export function printBanner({ transport, auth, apiCreds, scopes, dataAccess, knowledge }: BannerStatus): void {
+  const rows: string[] = [
     red('Chrome Enterprise Premium'),
     `MCP Server v${pkg.version}`,
     '',

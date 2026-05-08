@@ -305,7 +305,7 @@ export function validateActionParameters(
 ): ValidationResult {
   const errors: string[] = []
   const { customMessage, watermarkMessage, blockScreenshot, dataMasking } = params
-  const isUrlNavigationSelected = triggers.includes('URL_NAVIGATION')
+  const isUrlNavigationSelected = triggers.includes('URL_NAVIGATION') || triggers.includes('ON_REALTIME_URL_NAVIGATION')
 
   if (action === CHROME_ACTION_TYPES.AUDIT.value && customMessage) {
     errors.push(ACTION_PARAMETER_CONSTRAINTS.CUSTOM_MESSAGE_SUPPORT)

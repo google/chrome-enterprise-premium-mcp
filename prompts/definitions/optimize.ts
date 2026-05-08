@@ -20,7 +20,7 @@ limitations under the License.
 
 import fs from 'fs/promises'
 import path from 'path'
-import { fileURLToPath } from 'url'
+
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 
 /**
@@ -28,8 +28,10 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
  */
 export const OPTIMIZE_PROMPT_NAME = 'cep:optimize'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const guidelinesPath = path.resolve(__dirname, '../../lib/knowledge/15-rule-quality-guidelines.md')
+import { getProjectRoot } from '../../lib/util/helpers.js'
+
+const rootDir = getProjectRoot(import.meta.url)
+const guidelinesPath = path.join(rootDir, 'lib/knowledge/15-rule-quality-guidelines.md')
 
 /**
  * Registers the '/cep:optimize' prompt with the MCP server.

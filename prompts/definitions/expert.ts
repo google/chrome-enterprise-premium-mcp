@@ -20,7 +20,7 @@ limitations under the License.
 
 import fs from 'fs'
 import path from 'path'
-import { fileURLToPath } from 'url'
+
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 
 /**
@@ -28,8 +28,10 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
  */
 export const EXPERT_PROMPT_NAME = 'cep:expert'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const systemPromptPath = path.resolve(__dirname, '../system-prompt.md')
+import { getProjectRoot } from '../../lib/util/helpers.js'
+
+const rootDir = getProjectRoot(import.meta.url)
+const systemPromptPath = path.join(rootDir, 'prompts/system-prompt.md')
 
 /**
  * Registers the 'cep:expert' prompt with the MCP server.

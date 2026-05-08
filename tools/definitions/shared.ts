@@ -27,7 +27,7 @@ import { WORKSPACE_RULE_LIMITS } from '../../lib/util/chrome_dlp_constants.js'
 /**
  * Shared input schemas for MCP tools.
  */
-export const commonInputSchemas: Record<string, z.ZodTypeAny> = {
+export const commonInputSchemas = {
   customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345)'),
   orgUnitId: z.string().describe('The ID of the organizational unit.'),
   userId: z.string().describe("The user's primary email address or unique ID."),
@@ -46,7 +46,7 @@ export const commonInputSchemas: Record<string, z.ZodTypeAny> = {
  * Shared output schemas for MCP tools.
  * All use z.object().passthrough() to satisfy MCP SDK normalizeObjectSchema().
  */
-export const commonOutputSchemas: Record<string, z.ZodTypeAny> = {
+export const commonOutputSchemas = {
   orgUnit: z
     .object({
       name: z.string().optional(),

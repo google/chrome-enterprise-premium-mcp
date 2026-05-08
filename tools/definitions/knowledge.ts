@@ -21,7 +21,7 @@ limitations under the License.
 import { z } from 'zod'
 import fs from 'fs'
 import path from 'path'
-import { fileURLToPath } from 'url'
+
 import matter from 'gray-matter'
 import axios from 'axios'
 import * as cheerio from 'cheerio'
@@ -39,9 +39,10 @@ import { TAGS } from '../../lib/constants.js'
 import { FLAGS, FeatureFlags } from '../../lib/util/feature_flags.js'
 import { getString, getNumber } from '../../lib/util/helpers.js'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-const DB_DIR = path.resolve(__dirname, '../../lib/knowledge')
+import { getProjectRoot } from '../../lib/util/helpers.js'
+
+const rootDir = getProjectRoot(import.meta.url)
+const DB_DIR = path.join(rootDir, 'lib/knowledge')
 
 const NON_PUBLIC_KNOWLEDGE_FILES = new Set(['README.md', '0-agent-capabilities.md'])
 

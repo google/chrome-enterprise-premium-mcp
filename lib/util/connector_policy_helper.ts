@@ -22,7 +22,7 @@ limitations under the License.
  */
 
 import { EVENT_NAME_MAPPING } from '../constants.js'
-import { formatStatus, isObject, getString, getObject, getStringArray } from './helpers.js'
+import { formatStatus, isObject, getString, getObject, getStringArray, getObjectArray } from './helpers.js'
 import { chromepolicy_v1 } from 'googleapis'
 
 /**
@@ -92,7 +92,7 @@ export function analyzeConnectorPolicy(
           : null
 
       const events = eventCfg ? getStringArray(eventCfg, 'enabledEventNames') || [] : []
-      const explicitlyEmpty = eventCfg ? getStringArray(eventCfg, 'explicitlyEmptyEventNames') : null
+      const explicitlyEmpty = eventCfg ? eventCfg['explicitlyEmptyEventNames'] : null
       const coreEvents = [
         'contentTransferEvent',
         'unscannedFileEvent',
@@ -109,7 +109,7 @@ export function analyzeConnectorPolicy(
         let missingCoreEvents: string[] = []
         if (events.length > 0) {
           missingCoreEvents = coreEvents.filter(e => !events.includes(e))
-        } else if (explicitlyEmpty) {
+        } else if (explicitlyEmpty === true || explicitlyEmpty === 'true') {
           missingCoreEvents = coreEvents
         }
 
@@ -127,8 +127,9 @@ export function analyzeConnectorPolicy(
         }
       }
     } else if (policyType === 'ON_REALTIME_URL_NAVIGATION') {
-      const checkEnabled = getString(v, 'realtimeUrlCheckEnabled')
+      const checkEnabled = v['realtimeUrlCheckEnabled']
       if (
+        checkEnabled === false ||
         checkEnabled === 'false' ||
         checkEnabled === 'REALTIME_URL_CHECK_MODE_ENUM_DISABLED' ||
         checkEnabled === 'ENTERPRISE_REAL_TIME_URL_CHECK_MODE_ENUM_DISABLED' ||
@@ -147,7 +148,7 @@ export function analyzeConnectorPolicy(
       const fileDownloaded = getObject(v, 'onFileDownloadedAnalysisConnectorConfiguration')
       const bulkText = getObject(v, 'onBulkTextEntryAnalysisConnectorConfiguration')
       const printAnalysis = getObject(v, 'onPrintAnalysisConnectorConfiguration')
-      const printConfigs = printAnalysis ? getStringArray(printAnalysis, 'printConfigurations') : null
+      const printConfigs = printAnalysis ? getObjectArray(printAnalysis, 'printConfigurations') : null
 
       const cfg =
         (fileAttached && getObject(fileAttached, 'fileAttachedConfiguration')) ||
@@ -165,8 +166,10 @@ export function analyzeConnectorPolicy(
 
       if (isCEP) {
         const delayDelivery =
-          getString(cfg, 'delayDeliveryUntilVerdict') || getString(cfg, 'delay_delivery_until_verdict')
-        if (delayDelivery === 'false' || !delayDelivery) {
+          cfg['delayDeliveryUntilVerdict'] !== undefined
+            ? cfg['delayDeliveryUntilVerdict']
+            : cfg['delay_delivery_until_verdict']
+        if (delayDelivery === false || delayDelivery === 'false' || !delayDelivery) {
           findings.push({
             message: 'Delay enforcement is disabled. Users are unprotected during content analysis',
             remediationType: 'manual',
@@ -196,24 +199,25 @@ export function analyzeConnectorPolicy(
         const sensitiveUrl = getObject(cfg, 'sensitiveUrlPatterns')
 
         if (malwareUrl) {
-          checkGaps('Malware', getString(malwareUrl, 'onByDefault'), getStringArray(malwareUrl, 'urlPatterns'))
-        } else if (getString(cfg, 'malwareOnByDefault') !== undefined) {
-          checkGaps('Malware', getString(cfg, 'malwareOnByDefault'), getStringArray(cfg, 'malwareUrlPatterns'))
+          checkGaps('Malware', malwareUrl['onByDefault'], getStringArray(malwareUrl, 'urlPatterns'))
+        } else if (cfg['malwareOnByDefault'] !== undefined) {
+          checkGaps('Malware', cfg['malwareOnByDefault'], getStringArray(cfg, 'malwareUrlPatterns'))
         }
 
         if (sensitiveUrl) {
-          checkGaps('Sensitive', getString(sensitiveUrl, 'onByDefault'), getStringArray(sensitiveUrl, 'urlPatterns'))
-        } else if (getString(cfg, 'sensitiveOnByDefault') !== undefined) {
-          checkGaps('Sensitive', getString(cfg, 'sensitiveOnByDefault'), getStringArray(cfg, 'sensitiveUrlPatterns'))
+          checkGaps('Sensitive', sensitiveUrl['onByDefault'], getStringArray(sensitiveUrl, 'urlPatterns'))
+        } else if (cfg['sensitiveOnByDefault'] !== undefined) {
+          checkGaps('Sensitive', cfg['sensitiveOnByDefault'], getStringArray(cfg, 'sensitiveUrlPatterns'))
         }
 
         // Fallback for connectors that don't use the new prefixed fields yet
         const malwareList = getStringArray(cfg, 'malwareUrlPatterns') || []
         const sensitiveList = getStringArray(cfg, 'sensitiveUrlPatterns') || []
+
         if (
-          getString(cfg, 'malwareOnByDefault') === undefined &&
+          cfg['malwareOnByDefault'] === undefined &&
           !malwareUrl &&
-          getString(cfg, 'sensitiveOnByDefault') === undefined &&
+          cfg['sensitiveOnByDefault'] === undefined &&
           !sensitiveUrl
         ) {
           if (malwareList.length > 0 || sensitiveList.length > 0) {

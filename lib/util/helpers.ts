@@ -21,6 +21,9 @@ limitations under the License.
  * - Execute API calls with retry logic.
  */
 
+import { fileURLToPath } from 'node:url'
+import { dirname, join } from 'node:path'
+import { existsSync } from 'node:fs'
 import { getAuthErrorMessage } from './auth.js'
 import { ERROR_MESSAGES } from '../constants.js'
 import { logger } from './logger.js'
@@ -61,14 +64,9 @@ export function isApiError(err: unknown): err is ApiError {
     if (typeof response !== 'object' || response === null) {
       return false
     }
-    if ('data' in response && response.data !== undefined) {
-      const data = response.data
-      if (typeof data !== 'object' || data === null) {
-        return false
-      }
-    }
+    return true
   }
-  return true
+  return false
 }
 
 /**
@@ -235,7 +233,26 @@ export function parseDlpRule(policy: cloudidentity_v1.Schema$Policy): ParsedDlpR
  * @returns True if the value is an object and not null.
  */
 export function isObject(val: unknown): val is Record<string, unknown> {
-  return typeof val === 'object' && val !== null
+  return typeof val === 'object' && val !== null && !Array.isArray(val)
+}
+
+/**
+ * Finds the project root directory dynamically by traversing up parent folders.
+ * @param startUrl The import.meta.url of the calling file.
+ * @returns The absolute path to the project root directory.
+ */
+export function getProjectRoot(startUrl: string): string {
+  let current = dirname(fileURLToPath(startUrl))
+  while (true) {
+    if (existsSync(join(current, 'package.json'))) {
+      return current
+    }
+    const parent = dirname(current)
+    if (parent === current) {
+      throw new Error('Could not locate project root directory.')
+    }
+    current = parent
+  }
 }
 
 function isStringArray(val: unknown): val is string[] {
@@ -296,10 +313,28 @@ export function getNumber(obj: unknown, key: string): number | undefined {
  * @param key The property key.
  * @returns The array of strings, or undefined if not an array of strings or missing.
  */
-export function getStringArray(obj: Record<string, unknown>, key: string): string[] | undefined {
-  const val = obj[key]
-  if (isStringArray(val)) {
-    return val
+export function getStringArray(obj: unknown, key: string): string[] | undefined {
+  if (isObject(obj)) {
+    const val = obj[key]
+    if (isStringArray(val)) {
+      return val
+    }
+  }
+  return undefined
+}
+
+/**
+ * Safely extracts an object array property from an object.
+ * @param obj The source object.
+ * @param key The property key.
+ * @returns The array of objects, or undefined if not an array of objects or missing.
+ */
+export function getObjectArray(obj: unknown, key: string): Array<Record<string, unknown>> | undefined {
+  if (isObject(obj)) {
+    const val = obj[key]
+    if (Array.isArray(val) && val.every(isObject)) {
+      return val
+    }
   }
   return undefined
 }

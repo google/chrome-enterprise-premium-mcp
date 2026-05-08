@@ -94,7 +94,7 @@ export class AdminSdkClient {
    * @returns The customer object containing the ID.
    * @throws {Error} If the API call fails.
    */
-  async getCustomerId(authToken: string): Promise<admin_directory_v1.Schema$Customer> {
+  async getCustomerId(authToken: string, _apiOptions?: ApiOptions): Promise<admin_directory_v1.Schema$Customer> {
     logger.debug(`${TAGS.API} getCustomerId called`)
     const service = await this.getAdminService(
       API_VERSIONS.ADMIN_DIRECTORY,

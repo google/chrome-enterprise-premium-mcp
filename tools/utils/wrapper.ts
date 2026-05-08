@@ -261,7 +261,7 @@ export function guardedToolCall(
   return async (params: Record<string, unknown>, context: McpContext) => {
     const authToken = getAuthToken(context?.requestInfo)
     try {
-      const { apiClients } = options
+      const { apiClients, apiOptions } = options
       const currentParams = { ...params }
       const pCustomerId = getString(currentParams, 'customerId')
       if (sessionState && pCustomerId) {
@@ -274,7 +274,7 @@ export function guardedToolCall(
         } else {
           try {
             if (apiClients && apiClients.adminSdk && typeof apiClients.adminSdk.getCustomerId === 'function') {
-              const customer = await apiClients.adminSdk.getCustomerId(authToken || '')
+              const customer = await apiClients.adminSdk.getCustomerId(authToken || '', apiOptions)
               if (customer && customer.id) {
                 if (sessionState) {
                   sessionState.customerId = customer.id
@@ -336,7 +336,12 @@ export function guardedToolCall(
         errorMessage = String(error)
       }
 
-      const status = isApiError(error) ? error.response?.status : undefined
+      const status =
+        isObject(error) && typeof error['status'] === 'number'
+          ? error['status']
+          : isApiError(error)
+            ? error.response?.status
+            : undefined
       const isAuthError =
         status === 401 ||
         status === 403 ||

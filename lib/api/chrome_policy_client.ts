@@ -20,7 +20,7 @@ limitations under the License.
 
 import { google, chromepolicy_v1 } from 'googleapis'
 import { createApiClient, ApiOptions } from '../util/api-client.js'
-import { callWithRetry, handleApiError, isApiError } from '../util/helpers.js'
+import { callWithRetry, handleApiError, isApiError, isObject } from '../util/helpers.js'
 import { SCOPES, API_VERSIONS, TAGS } from '../constants.js'
 import { logger } from '../util/logger.js'
 
@@ -114,10 +114,14 @@ export class ChromePolicyClient {
       const response = await callWithRetry(() => client.customers.policies.resolve(request), 'policies.resolve')
       return response.data.resolvedPolicies || []
     } catch (error) {
-      if (isApiError(error)) {
-        if (error.response?.status === 404) {
-          return []
-        }
+      const status =
+        isObject(error) && typeof error['status'] === 'number'
+          ? error['status']
+          : isApiError(error)
+            ? error.response?.status
+            : undefined
+      if (status === 404) {
+        return []
       }
       handleApiError(error, TAGS.API, 'resolving policy')
     }

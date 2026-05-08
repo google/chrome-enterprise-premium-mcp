@@ -31,14 +31,31 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { SetLevelRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import fs from 'node:fs/promises'
-import { readFileSync } from 'node:fs'
+import { readFileSync, existsSync } from 'node:fs'
 import { fileURLToPath, pathToFileURL } from 'node:url'
+import { dirname, join } from 'node:path'
 
 interface PackageJson {
   version: string
 }
 
-const pkg = JSON.parse(readFileSync(fileURLToPath(new URL('./package.json', import.meta.url)), 'utf8')) as PackageJson
+function findPackageJson(startDir: string): string {
+  let current = startDir
+  while (true) {
+    const p = join(current, 'package.json')
+    if (existsSync(p)) {
+      return p
+    }
+    const parent = dirname(current)
+    if (parent === current) {
+      throw new Error('Could not find package.json.')
+    }
+    current = parent
+  }
+}
+
+const startDir = dirname(fileURLToPath(import.meta.url))
+const pkg = JSON.parse(readFileSync(findPackageJson(startDir), 'utf8')) as PackageJson
 
 import { buildServerInstructions } from './lib/knowledge/instructions.js'
 import { registerTools } from './tools/index.js'
@@ -52,7 +69,7 @@ import { verifyIdToken, parseExpectedAudience } from './lib/util/credential/jwt_
 import { TAGS, SCOPES } from './lib/constants.js'
 import { adcCredential } from './lib/util/credential/adc.js'
 import { SessionState } from './tools/utils/wrapper.js'
-import { isObject } from './lib/util/helpers.js'
+import { isObject, getProjectRoot } from './lib/util/helpers.js'
 
 // Import Clients
 import { AdminSdkClient } from './lib/api/admin_sdk_client.js'
@@ -280,7 +297,8 @@ export async function runServer(): Promise<void> {
     // Calculate Knowledge DB articles. Resolve the default path relative to
     // this module so `npx` invocations from arbitrary CWDs still find the
     // bundled corpus.
-    const knowledgeDir = process.env.KNOWLEDGE_DB_PATH || fileURLToPath(new URL('./lib/knowledge', import.meta.url))
+    const rootDir = getProjectRoot(import.meta.url)
+    const knowledgeDir = process.env.KNOWLEDGE_DB_PATH || join(rootDir, 'lib/knowledge')
     let articleCount = 0
     try {
       const files = await fs.readdir(knowledgeDir)

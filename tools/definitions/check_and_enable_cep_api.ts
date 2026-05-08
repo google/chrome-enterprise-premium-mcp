@@ -29,7 +29,7 @@ import {
 } from '../utils/wrapper.js'
 import { TAGS, SERVICE_NAMES } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
-import { isApiError } from '../../lib/util/helpers.js'
+import { isApiError, isObject } from '../../lib/util/helpers.js'
 
 const SERVICE_NAMES_VALUES = Object.values(SERVICE_NAMES) as [string, ...string[]]
 
@@ -49,7 +49,7 @@ interface ApiStatusResult {
   errorMessage?: string
   consoleLink?: string
   operationName?: string
-  error?: boolean
+  error?: string | boolean
 }
 
 /**
@@ -131,7 +131,13 @@ This is a PREREQUISITE tool. Many other tools will fail if necessary APIs are di
                 if (enableResponse?.error) {
                   const errMessage = enableResponse.error.message || JSON.stringify(enableResponse.error)
                   results.push(`- **${api}** — FAILED (project: \`${projectId}\`): ${errMessage}`)
-                  apiStatuses.push({ apiName: api, status: 'FAILED', projectId, errorMessage: errMessage })
+                  apiStatuses.push({
+                    apiName: api,
+                    status: 'FAILED',
+                    projectId,
+                    errorMessage: errMessage,
+                    error: errMessage,
+                  })
                 } else if (enableResponse?.done === true) {
                   results.push(`- **${api}** — NEWLY_ENABLED (project: \`${projectId}\`)`)
                   apiStatuses.push({ apiName: api, status: 'ENABLED', projectId })
@@ -156,40 +162,41 @@ This is a PREREQUISITE tool. Many other tools will fail if necessary APIs are di
                 apiStatuses.push({ apiName: api, status: 'DISABLED', projectId, consoleLink })
               }
             } catch (error) {
-              if (isApiError(error)) {
-                const errorMessage = error.message || ''
-                const status = error.response?.status
-                const isAuthError =
-                  status === 401 ||
-                  status === 403 ||
-                  errorMessage.includes('UNAUTHENTICATED') ||
-                  errorMessage.includes('PERMISSION_DENIED') ||
-                  errorMessage.includes('invalid_grant')
+              const errorMessage = error instanceof Error ? error.message || '' : String(error)
+              const status =
+                isObject(error) && typeof error['status'] === 'number'
+                  ? error['status']
+                  : isApiError(error)
+                    ? error.response?.status
+                    : undefined
 
-                const mentionsServiceUsage =
-                  errorMessage.includes('Service Usage API') || /\bserviceusage\.googleapis\.com\b/.test(errorMessage)
+              const isAuthError =
+                status === 401 ||
+                status === 403 ||
+                errorMessage.includes('UNAUTHENTICATED') ||
+                errorMessage.includes('PERMISSION_DENIED') ||
+                errorMessage.includes('invalid_grant')
 
-                if (isAuthError && !mentionsServiceUsage) {
-                  throw error
-                }
+              const mentionsServiceUsage =
+                errorMessage.includes('Service Usage API') || /\bserviceusage\.googleapis\.com\b/.test(errorMessage)
 
-                const isServiceUsageError = status === 403 || mentionsServiceUsage
+              if (isAuthError && !mentionsServiceUsage) {
+                throw error
+              }
 
-                if (isServiceUsageError) {
-                  serviceUsageDisabled = true
-                  const consoleLink = `https://console.cloud.google.com/apis/library/serviceusage.googleapis.com?project=${projectId}`
-                  results.push(
-                    `- **${api}** — ERROR: Service Usage API is disabled. This is a prerequisite. [Enable Service Usage API](${consoleLink})`,
-                  )
-                  apiStatuses.push({ apiName: api, status: 'ERROR', projectId, errorMessage, consoleLink })
-                  break
-                } else {
-                  results.push(`- **${api}** — ERROR: ${errorMessage} (project: \`${projectId}\`)`)
-                  apiStatuses.push({ apiName: api, status: 'ERROR', projectId, errorMessage })
-                }
-              } else if (error instanceof Error) {
-                results.push(`- **${api}** — ERROR: ${error.message} (project: \`${projectId}\`)`)
-                apiStatuses.push({ apiName: api, status: 'ERROR', projectId, errorMessage: error.message })
+              const isServiceUsageError = status === 403 || mentionsServiceUsage
+
+              if (isServiceUsageError) {
+                serviceUsageDisabled = true
+                const consoleLink = `https://console.cloud.google.com/apis/library/serviceusage.googleapis.com?project=${projectId}`
+                results.push(
+                  `- **${api}** — ERROR: Service Usage API is disabled. This is a prerequisite. [Enable Service Usage API](${consoleLink})`,
+                )
+                apiStatuses.push({ apiName: api, status: 'ERROR', projectId, errorMessage, consoleLink })
+                break
+              } else {
+                results.push(`- **${api}** — ERROR: ${errorMessage} (project: \`${projectId}\`)`)
+                apiStatuses.push({ apiName: api, status: 'ERROR', projectId, errorMessage })
               }
             }
           }

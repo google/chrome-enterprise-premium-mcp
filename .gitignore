@@ -33,3 +33,6 @@ session.db
 .adk/
 
 .DS_Store
+
+# Distribution Build Artifacts
+dist/
