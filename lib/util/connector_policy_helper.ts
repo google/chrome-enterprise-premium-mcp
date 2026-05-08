@@ -22,14 +22,15 @@ limitations under the License.
  */
 
 import { EVENT_NAME_MAPPING } from '../constants.js'
-import { formatStatus } from './helpers.js'
+import { formatStatus, isObject, getString, getObject, getStringArray } from './helpers.js'
+import { chromepolicy_v1 } from 'googleapis'
 
 /**
  * Normalizes an API value to a human-readable string for comparison.
- * @param {any} val - The raw value from the API.
- * @returns {string} The formatted string.
+ * @param val The raw value from the API.
+ * @returns The formatted string.
  */
-export function humanize(val) {
+export function humanize(val: unknown): string {
   if (typeof val === 'boolean') {
     return val ? 'Yes' : 'No'
   }
@@ -39,19 +40,33 @@ export function humanize(val) {
   if (typeof val !== 'string') {
     return String(val)
   }
-  if (EVENT_NAME_MAPPING[val]) {
-    return EVENT_NAME_MAPPING[val]
+  if (val in EVENT_NAME_MAPPING) {
+    return EVENT_NAME_MAPPING[val as keyof typeof EVENT_NAME_MAPPING]
   }
   return formatStatus(val.replace(/^[A-Z_]+_ENUM_/, '').replace(/^SERVICE_PROVIDER_/, ''))
 }
 
+export interface PolicyFinding {
+  message: string
+  remediationType: 'manual' | (string & {})
+}
+
+export interface PolicyAnalysisResult {
+  isConfigured: boolean
+  isEnabled: boolean
+  findings: PolicyFinding[]
+}
+
 /**
  * Analyzes the health and protection state of a Chrome Enterprise connector policy.
- * @param {string} policyType - The enum key (e.g., 'ON_PRINT', 'ON_SECURITY_EVENT').
- * @param {Array<object>} resolvedPolicies - The raw resolved policies from the API.
- * @returns {object} Analysis result containing isConfigured, isEnabled, and findings.
+ * @param policyType The enum key (e.g., 'ON_PRINT', 'ON_SECURITY_EVENT').
+ * @param resolvedPolicies The raw resolved policies from the API.
+ * @returns Analysis result containing isConfigured, isEnabled, and findings.
  */
-export function analyzeConnectorPolicy(policyType, resolvedPolicies) {
+export function analyzeConnectorPolicy(
+  policyType: string,
+  resolvedPolicies: chromepolicy_v1.Schema$GoogleChromePolicyVersionsV1ResolvedPolicy[] | undefined,
+): PolicyAnalysisResult {
   if (!resolvedPolicies || resolvedPolicies.length === 0) {
     return {
       isConfigured: false,
@@ -62,14 +77,22 @@ export function analyzeConnectorPolicy(policyType, resolvedPolicies) {
 
   // Aggregate results across all resolved policies (usually there is only one)
   const results = resolvedPolicies.map(p => {
-    const v = p.value?.value || {}
-    const findings = []
+    const valObj = p.value?.value
+    const v = isObject(valObj) ? valObj : {}
+    const findings: PolicyFinding[] = []
     let isEnabled = true
 
     if (policyType === 'ON_SECURITY_EVENT') {
-      const eventCfg = v.reportingConnector?.setting?.eventConfiguration || v.reportingConnector?.eventConfiguration
-      const events = eventCfg?.enabledEventNames || []
-      const explicitlyEmpty = eventCfg?.explicitlyEmptyEventNames
+      const reportingConnector = getObject(v, 'reportingConnector')
+      const setting = reportingConnector ? getObject(reportingConnector, 'setting') : null
+      const eventCfg = setting
+        ? getObject(setting, 'eventConfiguration')
+        : reportingConnector
+          ? getObject(reportingConnector, 'eventConfiguration')
+          : null
+
+      const events = eventCfg ? getStringArray(eventCfg, 'enabledEventNames') || [] : []
+      const explicitlyEmpty = eventCfg ? getStringArray(eventCfg, 'explicitlyEmptyEventNames') : null
       const coreEvents = [
         'contentTransferEvent',
         'unscannedFileEvent',
@@ -83,7 +106,7 @@ export function analyzeConnectorPolicy(policyType, resolvedPolicies) {
       if (!eventCfg) {
         isEnabled = false
       } else {
-        let missingCoreEvents = []
+        let missingCoreEvents: string[] = []
         if (events.length > 0) {
           missingCoreEvents = coreEvents.filter(e => !events.includes(e))
         } else if (explicitlyEmpty) {
@@ -91,7 +114,12 @@ export function analyzeConnectorPolicy(policyType, resolvedPolicies) {
         }
 
         if (missingCoreEvents.length > 0) {
-          const mappedMissing = missingCoreEvents.map(e => EVENT_NAME_MAPPING[e] || e)
+          const mappedMissing = missingCoreEvents.map(e => {
+            if (e in EVENT_NAME_MAPPING) {
+              return EVENT_NAME_MAPPING[e as keyof typeof EVENT_NAME_MAPPING]
+            }
+            return e
+          })
           findings.push({
             message: `Missing core DLP events: ${mappedMissing.join(', ')}`,
             remediationType: 'manual',
@@ -99,9 +127,9 @@ export function analyzeConnectorPolicy(policyType, resolvedPolicies) {
         }
       }
     } else if (policyType === 'ON_REALTIME_URL_NAVIGATION') {
-      const checkEnabled = v.realtimeUrlCheckEnabled
+      const checkEnabled = getString(v, 'realtimeUrlCheckEnabled')
       if (
-        checkEnabled === false ||
+        checkEnabled === 'false' ||
         checkEnabled === 'REALTIME_URL_CHECK_MODE_ENUM_DISABLED' ||
         checkEnabled === 'ENTERPRISE_REAL_TIME_URL_CHECK_MODE_ENUM_DISABLED' ||
         checkEnabled === 'REALTIME_URL_CHECK_MODE_ENUM_UNSPECIFIED' ||
@@ -115,21 +143,30 @@ export function analyzeConnectorPolicy(policyType, resolvedPolicies) {
       }
     } else {
       // Non-Reporting Connectors (Upload, Download, Paste, Print)
+      const fileAttached = getObject(v, 'onFileAttachedAnalysisConnectorConfiguration')
+      const fileDownloaded = getObject(v, 'onFileDownloadedAnalysisConnectorConfiguration')
+      const bulkText = getObject(v, 'onBulkTextEntryAnalysisConnectorConfiguration')
+      const printAnalysis = getObject(v, 'onPrintAnalysisConnectorConfiguration')
+      const printConfigs = printAnalysis ? getStringArray(printAnalysis, 'printConfigurations') : null
+
       const cfg =
-        v.onFileAttachedAnalysisConnectorConfiguration?.fileAttachedConfiguration ||
-        v.onFileDownloadedAnalysisConnectorConfiguration?.fileDownloadedConfiguration ||
-        v.onBulkTextEntryAnalysisConnectorConfiguration?.bulkTextEntryConfiguration ||
-        v.onPrintAnalysisConnectorConfiguration?.printConfigurations?.[0] ||
+        (fileAttached && getObject(fileAttached, 'fileAttachedConfiguration')) ||
+        (fileDownloaded && getObject(fileDownloaded, 'fileDownloadedConfiguration')) ||
+        (bulkText && getObject(bulkText, 'bulkTextEntryConfiguration')) ||
+        (printConfigs && printConfigs.length > 0 && isObject(printConfigs[0]) ? printConfigs[0] : null) ||
         v
 
-      const isCEP = cfg.serviceProvider === 'SERVICE_PROVIDER_CHROME_ENTERPRISE_PREMIUM'
+      const serviceProvider = getString(cfg, 'serviceProvider')
+      const isCEP = serviceProvider === 'SERVICE_PROVIDER_CHROME_ENTERPRISE_PREMIUM'
       const isNone =
-        !cfg.serviceProvider ||
-        cfg.serviceProvider === 'SERVICE_PROVIDER_NONE' ||
-        cfg.serviceProvider === 'SERVICE_PROVIDER_UNSPECIFIED'
+        !serviceProvider ||
+        serviceProvider === 'SERVICE_PROVIDER_NONE' ||
+        serviceProvider === 'SERVICE_PROVIDER_UNSPECIFIED'
 
       if (isCEP) {
-        if (!cfg.delayDeliveryUntilVerdict && !cfg.delay_delivery_until_verdict) {
+        const delayDelivery =
+          getString(cfg, 'delayDeliveryUntilVerdict') || getString(cfg, 'delay_delivery_until_verdict')
+        if (delayDelivery === 'false' || !delayDelivery) {
           findings.push({
             message: 'Delay enforcement is disabled. Users are unprotected during content analysis',
             remediationType: 'manual',
@@ -137,16 +174,17 @@ export function analyzeConnectorPolicy(policyType, resolvedPolicies) {
         }
 
         // URL Gaps (Malware/Sensitive)
-        const checkGaps = (type, onByDefault, patterns) => {
+        const checkGaps = (type: string, onByDefault: unknown, patterns: unknown) => {
           const humanized = humanize(onByDefault)
+          const patternsList = Array.isArray(patterns) ? patterns : []
           if (humanized === 'No') {
             const patternMsg =
-              patterns && patterns.length > 0 ? 'ONLY enabled for specific URL patterns' : 'NOT enabled for all files'
+              patternsList.length > 0 ? 'ONLY enabled for specific URL patterns' : 'NOT enabled for all files'
             findings.push({
               message: `⚠️ ${type} Analysis is restricted. Scanning is ${patternMsg}`,
               remediationType: 'manual',
             })
-          } else if (patterns && patterns.length > 0) {
+          } else if (patternsList.length > 0) {
             findings.push({
               message: `⚠️ ${type} Analysis is restricted. Scanning is DISABLED for specific URL patterns`,
               remediationType: 'manual',
@@ -154,27 +192,31 @@ export function analyzeConnectorPolicy(policyType, resolvedPolicies) {
           }
         }
 
-        // Need to check specific fields as original code did
-        if (cfg.malwareUrlPatterns?.onByDefault !== undefined) {
-          checkGaps('Malware', cfg.malwareUrlPatterns.onByDefault, cfg.malwareUrlPatterns.urlPatterns)
-        } else if (cfg.malwareOnByDefault !== undefined) {
-          checkGaps('Malware', cfg.malwareOnByDefault, cfg.malwareUrlPatterns)
+        const malwareUrl = getObject(cfg, 'malwareUrlPatterns')
+        const sensitiveUrl = getObject(cfg, 'sensitiveUrlPatterns')
+
+        if (malwareUrl) {
+          checkGaps('Malware', getString(malwareUrl, 'onByDefault'), getStringArray(malwareUrl, 'urlPatterns'))
+        } else if (getString(cfg, 'malwareOnByDefault') !== undefined) {
+          checkGaps('Malware', getString(cfg, 'malwareOnByDefault'), getStringArray(cfg, 'malwareUrlPatterns'))
         }
 
-        if (cfg.sensitiveUrlPatterns?.onByDefault !== undefined) {
-          checkGaps('Sensitive', cfg.sensitiveUrlPatterns.onByDefault, cfg.sensitiveUrlPatterns.urlPatterns)
-        } else if (cfg.sensitiveOnByDefault !== undefined) {
-          checkGaps('Sensitive', cfg.sensitiveOnByDefault, cfg.sensitiveUrlPatterns)
+        if (sensitiveUrl) {
+          checkGaps('Sensitive', getString(sensitiveUrl, 'onByDefault'), getStringArray(sensitiveUrl, 'urlPatterns'))
+        } else if (getString(cfg, 'sensitiveOnByDefault') !== undefined) {
+          checkGaps('Sensitive', getString(cfg, 'sensitiveOnByDefault'), getStringArray(cfg, 'sensitiveUrlPatterns'))
         }
 
         // Fallback for connectors that don't use the new prefixed fields yet
+        const malwareList = getStringArray(cfg, 'malwareUrlPatterns') || []
+        const sensitiveList = getStringArray(cfg, 'sensitiveUrlPatterns') || []
         if (
-          cfg.malwareOnByDefault === undefined &&
-          cfg.malwareUrlPatterns?.onByDefault === undefined &&
-          cfg.sensitiveOnByDefault === undefined &&
-          cfg.sensitiveUrlPatterns?.onByDefault === undefined
+          getString(cfg, 'malwareOnByDefault') === undefined &&
+          !malwareUrl &&
+          getString(cfg, 'sensitiveOnByDefault') === undefined &&
+          !sensitiveUrl
         ) {
-          if (cfg.malwareUrlPatterns?.length > 0 || cfg.sensitiveUrlPatterns?.length > 0) {
+          if (malwareList.length > 0 || sensitiveList.length > 0) {
             findings.push({
               message: 'Security posture is limited due to URL allowlisting',
               remediationType: 'manual',
@@ -185,8 +227,7 @@ export function analyzeConnectorPolicy(policyType, resolvedPolicies) {
         isEnabled = false
       } else {
         const is3p =
-          cfg.serviceProvider === 'SERVICE_PROVIDER_SYMANTEC_ENDPOINT_DLP' ||
-          cfg.serviceProvider === 'SERVICE_PROVIDER_TRELLIX'
+          serviceProvider === 'SERVICE_PROVIDER_SYMANTEC_ENDPOINT_DLP' || serviceProvider === 'SERVICE_PROVIDER_TRELLIX'
         if (is3p) {
           findings.push({
             message: '3rd party provider detected. Integrated CEP features may be bypassed',
@@ -201,8 +242,8 @@ export function analyzeConnectorPolicy(policyType, resolvedPolicies) {
 
   // Deduplicate and aggregate findings
   const allFindings = results.flatMap(r => r.findings)
-  const uniqueMessages = new Set()
-  const uniqueFindings = []
+  const uniqueMessages = new Set<string>()
+  const uniqueFindings: PolicyFinding[] = []
 
   for (const f of allFindings) {
     if (!uniqueMessages.has(f.message)) {
