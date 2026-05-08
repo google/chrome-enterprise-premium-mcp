@@ -59,6 +59,9 @@ const migratedFiles = [
   'tools/utils/wrapper.ts',
   'tools/definitions/get_customer_id.ts',
   'tools/definitions/get_dlp_rule.ts',
+  'tools/definitions/list_dlp_rules.ts',
+  'tools/definitions/list_detectors.ts',
+  'tools/definitions/delete_agent_dlp_rule.ts',
 ]
 
 // Map the recommended type-checked rules to apply ONLY to fully migrated files.
