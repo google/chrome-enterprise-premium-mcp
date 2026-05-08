@@ -90,6 +90,10 @@ const migratedFiles = [
   'test/helpers/integration/tools/harness.ts',
   'test/helpers/integration/tools/tool_utils.ts',
   'test/helpers/integration/tools/client_factory.ts',
+  'test/run-utils.ts',
+  'test/run-unit.ts',
+  'test/run-integration.ts',
+  'test/run-all.ts',
 ]
 
 // Map the recommended type-checked rules to apply ONLY to fully migrated files.
