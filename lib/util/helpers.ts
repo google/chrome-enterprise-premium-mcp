@@ -248,10 +248,12 @@ function isStringArray(val: unknown): val is string[] {
  * @param key The property key.
  * @returns The nested object, or undefined if not an object or missing.
  */
-export function getObject(obj: Record<string, unknown>, key: string): Record<string, unknown> | undefined {
-  const val = obj[key]
-  if (isObject(val)) {
-    return val
+export function getObject(obj: unknown, key: string): Record<string, unknown> | undefined {
+  if (isObject(obj)) {
+    const val = obj[key]
+    if (isObject(val)) {
+      return val
+    }
   }
   return undefined
 }
@@ -262,10 +264,12 @@ export function getObject(obj: Record<string, unknown>, key: string): Record<str
  * @param key The property key.
  * @returns The string value, or undefined if not a string or missing.
  */
-export function getString(obj: Record<string, unknown>, key: string): string | undefined {
-  const val = obj[key]
-  if (typeof val === 'string') {
-    return val
+export function getString(obj: unknown, key: string): string | undefined {
+  if (isObject(obj)) {
+    const val = obj[key]
+    if (typeof val === 'string') {
+      return val
+    }
   }
   return undefined
 }
@@ -276,10 +280,12 @@ export function getString(obj: Record<string, unknown>, key: string): string | u
  * @param key The property key.
  * @returns The number value, or undefined if not a number or missing.
  */
-export function getNumber(obj: Record<string, unknown>, key: string): number | undefined {
-  const val = obj[key]
-  if (typeof val === 'number') {
-    return val
+export function getNumber(obj: unknown, key: string): number | undefined {
+  if (isObject(obj)) {
+    const val = obj[key]
+    if (typeof val === 'number') {
+      return val
+    }
   }
   return undefined
 }

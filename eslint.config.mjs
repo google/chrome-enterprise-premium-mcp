@@ -87,6 +87,9 @@ const migratedFiles = [
   'tools/definitions/list_org_units.ts',
   'tools/definitions/diagnose_environment.ts',
   'tools/index.ts',
+  'test/helpers/integration/tools/harness.ts',
+  'test/helpers/integration/tools/tool_utils.ts',
+  'test/helpers/integration/tools/client_factory.ts',
 ]
 
 // Map the recommended type-checked rules to apply ONLY to fully migrated files.
