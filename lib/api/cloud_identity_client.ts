@@ -168,6 +168,24 @@ export class CloudIdentityClient {
   }
 
   /**
+   * Deletes a DLP rule without re-fetching for validation. The caller is
+   * responsible for confirming the policy is a Chrome DLP rule before invoking.
+   * @param policyName The resource name of the policy to delete.
+   * @param authToken Optional authentication token.
+   * @returns The API response data.
+   */
+  async deleteDlpRulePreValidated(policyName: string, authToken?: string): Promise<unknown> {
+    logger.debug(`${TAGS.API} deleteDlpRulePreValidated called with policyName: ${policyName}`)
+    const client = await this.getPolicyClient(authToken)
+    try {
+      const deleteResponse = await callWithRetry(() => client.policies.delete({ name: policyName }), 'policies.delete')
+      return deleteResponse.data
+    } catch (error) {
+      handleApiError(error, TAGS.API, 'deleting Chrome DLP rule')
+    }
+  }
+
+  /**
    * Gets a specific Chrome DLP rule.
    * @param policyName The resource name of the policy to retrieve.
    * @param authToken Optional authentication token.

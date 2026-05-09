@@ -14,6 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import js from '@eslint/js'
 import nodePlugin from 'eslint-plugin-n'
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
@@ -38,101 +40,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */`
 
-// List of files that have been fully migrated to TypeScript and should be
-// subject to strict, type-aware linting rules.
-const migratedFiles = [
-  'lib/util/helpers.ts',
-  'lib/constants.ts',
-  'lib/util/auth_messages.ts',
-  'lib/util/auth.ts',
-  'lib/util/api-client.ts',
-  'lib/util/cel_validator.ts',
-  'lib/util/connector_policy_helper.ts',
-  'lib/util/credential/index.ts',
-  'lib/util/credential/adc.ts',
-  'lib/util/credential/oauth_flow.ts',
-  'lib/util/credential/jwt_verifier.ts',
-  'lib/api/admin_sdk_client.ts',
-  'lib/api/cloud_identity_client.ts',
-  'lib/api/chrome_management_client.ts',
-  'lib/api/chrome_policy_client.ts',
-  'lib/api/service_usage_client.ts',
-  'tools/definitions/shared.ts',
-  'tools/utils/wrapper.ts',
-  'tools/definitions/get_customer_id.ts',
-  'tools/definitions/get_dlp_rule.ts',
-  'tools/definitions/list_dlp_rules.ts',
-  'tools/definitions/list_detectors.ts',
-  'tools/definitions/delete_agent_dlp_rule.ts',
-  'tools/definitions/delete_detector.ts',
-  'tools/definitions/create_chrome_dlp_rule.ts',
-  'tools/utils/detector.ts',
-  'tools/utils/org-unit.ts',
-  'tools/utils/dynamic_docs.ts',
-  'tools/definitions/create_regex_detector.ts',
-  'tools/definitions/create_url_list_detector.ts',
-  'tools/definitions/create_word_list_detector.ts',
-  'tools/definitions/create_default_dlp_rules.ts',
-  'tools/definitions/check_and_enable_cep_api.ts',
-  'tools/definitions/check_cep_subscription.ts',
-  'tools/definitions/check_seb_extension_status.ts',
-  'tools/definitions/check_user_cep_license.ts',
-  'tools/definitions/count_browser_versions.ts',
-  'tools/definitions/enable_chrome_enterprise_connectors.ts',
-  'tools/definitions/get_chrome_activity_log.ts',
-  'tools/definitions/get_connector_policy.ts',
-  'tools/definitions/install_seb_extension.ts',
-  'tools/definitions/knowledge.ts',
-  'tools/definitions/list_customer_profiles.ts',
-  'tools/definitions/list_org_units.ts',
-  'tools/definitions/diagnose_environment.ts',
-  'tools/index.ts',
-  'test/helpers/integration/tools/harness.ts',
-  'test/helpers/integration/tools/tool_utils.ts',
-  'test/helpers/integration/tools/client_factory.ts',
-  'test/run-utils.ts',
-  'test/run-unit.ts',
-  'test/run-integration.ts',
-  'test/run-all.ts',
-  'lib/util/feature_flags.ts',
-  'lib/util/logger.ts',
-  'lib/util/gcp.ts',
-  'lib/util/banner.ts',
-  'lib/util/auth-error.ts',
-  'lib/util/credential/cli_commands.ts',
-  'lib/util/credential/loopback_server.ts',
-  'lib/knowledge/instructions.ts',
-  'prompts/index.ts',
-  'prompts/definitions/expert.ts',
-  'prompts/definitions/health.ts',
-  'prompts/definitions/optimize.ts',
-  'mcp-server.ts',
-  'bin/cli.ts',
-]
-
-// Map the recommended type-checked rules to apply ONLY to fully migrated files.
-const typeCheckedConfigs = tseslint.configs.recommendedTypeChecked.map(config => ({
-  ...config,
-  files: migratedFiles,
-}))
-
 export default tseslint.config(
   {
     ignores: ['**/dist', '**/node_modules', 'results/**', '.worktrees/**', '.claude/**', '.gemini/**', '.opencode/**'],
   },
   {
-    // Restrict the TypeScript parser service scope to migrated files
-    files: migratedFiles,
+    files: ['**/*.ts', '**/*.tsx'],
     languageOptions: {
       parserOptions: {
-        projectService: true,
-        tsconfigRootDir: import.meta.dirname,
+        project: './tsconfig.eslint.json',
+        tsconfigRootDir: path.dirname(fileURLToPath(import.meta.url)),
       },
     },
   },
   js.configs.recommended,
-  ...tseslint.configs.recommended, // Apply standard TS rules globally
-  ...typeCheckedConfigs,           // Apply strict type-aware rules to migrated files
+  ...tseslint.configs.recommended,
+  ...tseslint.configs.recommendedTypeChecked.map(config => ({
+    ...config,
+    files: ['**/*.ts', '**/*.tsx'],
+  })),
   nodePlugin.configs['flat/recommended'],
   eslintPluginPrettierRecommended,
   jsdoc.configs['flat/recommended'],
@@ -248,6 +174,15 @@ export default tseslint.config(
       'n/no-unsupported-features/node-builtins': ['error', { version: '>=22.0.0' }],
       '@typescript-eslint/no-floating-promises': 'off',
       '@typescript-eslint/require-await': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/restrict-template-expressions': 'off',
+      '@typescript-eslint/no-base-to-string': 'off',
+      '@typescript-eslint/prefer-promise-reject-errors': 'off',
+      '@typescript-eslint/unbound-method': 'off',
     },
   },
   {

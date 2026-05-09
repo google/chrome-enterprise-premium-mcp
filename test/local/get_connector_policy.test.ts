@@ -596,11 +596,11 @@ describe('get_connector_policy Tool', () => {
       })
 
       const chromePolicyClient = { getConnectorPolicy: mockGetConnectorPolicy }
-      registerGetConnectorPolicyTool(server, { chromePolicyClient }, {})
+      registerGetConnectorPolicyTool(server, { apiClients: { chromePolicy: chromePolicyClient } }, {})
       const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_connector_policy')
         .arguments[2]
 
-      const result = await handler({ customerId: 'C0123', orgUnitId: 'ou123', policy: 'ALL' }, { requestInfo: {} })
+      const result = await handler({ customerId: 'C0123', orgUnitId: 'ou123' }, { requestInfo: {} })
 
       // Verify call counts (6 calls, one for each policy schema)
       assert.strictEqual(mockGetConnectorPolicy.mock.callCount(), 6)
@@ -677,11 +677,11 @@ describe('get_connector_policy Tool', () => {
       })
 
       const chromePolicyClient = { getConnectorPolicy: mockGetConnectorPolicy }
-      registerGetConnectorPolicyTool(server, { chromePolicyClient }, {})
+      registerGetConnectorPolicyTool(server, { apiClients: { chromePolicy: chromePolicyClient } }, {})
       const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_connector_policy')
         .arguments[2]
 
-      const result = await handler({ customerId: 'C0123', orgUnitId: 'ou123', policy: 'ALL' }, { requestInfo: {} })
+      const result = await handler({ customerId: 'C0123', orgUnitId: 'ou123' }, { requestInfo: {} })
 
       const text = result.content[0].text
       assert.ok(text.includes('Chrome Enterprise Connector Policies (OU: `ou123`)'))
@@ -706,7 +706,7 @@ describe('get_connector_policy Tool', () => {
       })
 
       const chromePolicyClient = { getConnectorPolicy: mockGetConnectorPolicy }
-      registerGetConnectorPolicyTool(server, { chromePolicyClient }, {})
+      registerGetConnectorPolicyTool(server, { apiClients: { chromePolicy: chromePolicyClient } }, {})
       const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'get_connector_policy')
         .arguments[2]
 

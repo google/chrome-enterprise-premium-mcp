@@ -4,7 +4,7 @@ on:
     paths:
       - 'package.json'
       - '.github/expected-tarball.txt'
-      - 'mcp-server.js'
+      - 'mcp-server.ts'
       - 'tools/**'
       - 'lib/**'
       - 'prompts/**'
@@ -30,7 +30,7 @@ jobs:
           if ! diff -u .github/expected-tarball.txt /tmp/actual-tarball.txt; then
             echo
             echo "::error::Tarball file list does not match the snapshot at .github/expected-tarball.txt."
-            echo "If the change is intentional (you added or removed a shippable file under mcp-server.js, tools/, lib/, or prompts/), regenerate the snapshot:"
+            echo "If the change is intentional (you added or removed a shippable file under mcp-server.ts, tools/, lib/, or prompts/), regenerate the snapshot:"
             echo "  npm pack --dry-run --json | jq -r '.[0].files[].path' | LC_ALL=C sort > .github/expected-tarball.txt"
             echo "Commit the regenerated file alongside your change."
             exit 1

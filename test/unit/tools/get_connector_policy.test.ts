@@ -1182,7 +1182,7 @@ describe('get_connector_policy tool handler', () => {
 
     const handler = getHandler(mockChromePolicyClient)
 
-    const result = await handler({ customerId: 'C123', orgUnitId: 'OU123', policy: 'ALL' }, { requestInfo: {} })
+    const result = await handler({ customerId: 'C123', orgUnitId: 'OU123' }, { requestInfo: {} })
 
     assert.strictEqual(result.isError, true)
     assert.match(result.content[0].text, /Database network failure/)
@@ -1286,7 +1286,7 @@ describe('get_connector_policy tool handler', () => {
 
     const handler = getHandler(mockChromePolicyClient)
 
-    const result = await handler({ customerId: 'C123', orgUnitId: 'OU123', policy: 'ALL' }, { requestInfo: {} })
+    const result = await handler({ customerId: 'C123', orgUnitId: 'OU123' }, { requestInfo: {} })
 
     const summary = result.content[0].text
 
@@ -1384,7 +1384,7 @@ describe('get_connector_policy tool handler', () => {
 
     const handler = getHandler(mockChromePolicyClient)
 
-    const result = await handler({ customerId: 'C123', orgUnitId: 'OU123', policy: 'ALL' }, { requestInfo: {} })
+    const result = await handler({ customerId: 'C123', orgUnitId: 'OU123' }, { requestInfo: {} })
 
     const summary = result.content[0].text
 
