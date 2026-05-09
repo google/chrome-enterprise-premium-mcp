@@ -22,6 +22,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '20', cache: 'npm' }
       - run: npm ci
+      - run: npm run build
       - name: Snapshot tarball file list
         run: |
           # LC_ALL=C forces a byte-wise sort so the snapshot matches across machines
