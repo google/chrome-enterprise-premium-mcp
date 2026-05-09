@@ -1,0 +1,103 @@
+/*
+Copyright 2026 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+/**
+ * @file Tool definition for checking a specific user's CEP license.
+ */
+
+import { z } from 'zod'
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import {
+  guardedToolCall,
+  formatToolResponse,
+  GuardedToolOptions,
+  SessionState,
+  McpToolResponse,
+} from '../utils/wrapper.js'
+import { TAGS } from '../../lib/constants.js'
+import { logger } from '../../lib/util/logger.js'
+
+const CheckUserCepLicenseSchema = z.object({
+  userId: z.string(),
+})
+
+type CheckUserCepLicenseParams = z.infer<typeof CheckUserCepLicenseSchema>
+
+/**
+ * Registers the 'check_user_cep_license' tool with the MCP server.
+ * @param server The MCP server instance.
+ * @param options Configuration options for the tool.
+ * @param sessionState The session state object for caching.
+ */
+export function registerCheckUserCepLicenseTool(
+  server: McpServer,
+  options: GuardedToolOptions,
+  sessionState: SessionState,
+): void {
+  const { apiClients } = options
+  const adminSdkClient = apiClients?.adminSdk
+  logger.debug(`${TAGS.MCP} Registering 'check_user_cep_license' tool...`)
+
+  server.registerTool(
+    'check_user_cep_license',
+    {
+      description: `Checks if a specific user has a Chrome Enterprise Premium (CEP) license assigned.
+Use this to verify if an individual user (by email or unique ID) is licensed for CEP features.`,
+      inputSchema: {
+        userId: z.string().describe("The user's primary email address or unique ID."),
+      },
+      outputSchema: z
+        .object({
+          hasLicense: z.boolean(),
+          license: z.record(z.unknown()).nullable(),
+        })
+        .passthrough(),
+    },
+    guardedToolCall(
+      {
+        handler: async (params: Record<string, unknown>, { authToken }): Promise<McpToolResponse> => {
+          if (!adminSdkClient) {
+            throw new Error('adminSdkClient is required for check_user_cep_license')
+          }
+
+          // Strictly parse using Zod
+          const safeParams: CheckUserCepLicenseParams = CheckUserCepLicenseSchema.parse(params)
+          const { userId } = safeParams
+
+          logger.debug(`${TAGS.MCP} Calling 'check_user_cep_license' for user: ${userId}`)
+          const result = await adminSdkClient.checkUserCepLicense(userId, authToken || '')
+
+          if (result) {
+            return formatToolResponse({
+              summary: `User ${userId} has a Chrome Enterprise Premium license.`,
+              data: { hasLicense: true, license: result },
+              structuredContent: { hasLicense: true, license: result },
+            })
+          } else {
+            return formatToolResponse({
+              summary: `User ${userId} does not have a Chrome Enterprise Premium license.`,
+              data: { hasLicense: false, license: null },
+              structuredContent: { hasLicense: false, license: null },
+            })
+          }
+        },
+        skipAutoResolve: true,
+      },
+      options,
+      sessionState,
+    ),
+  )
+}

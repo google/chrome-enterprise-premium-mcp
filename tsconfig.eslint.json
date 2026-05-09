@@ -1,0 +1,4 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["lib/**/*", "tools/**/*", "prompts/**/*", "mcp-server.ts", "bin/**/*", "test/**/*"]
+}

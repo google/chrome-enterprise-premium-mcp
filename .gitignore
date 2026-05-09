@@ -26,6 +26,7 @@ results*.json
 .claude/
 .gemini/
 .opencode/
+.jetskicli/
 
 # ADK
 __pycache__/
@@ -33,3 +34,6 @@ session.db
 .adk/
 
 .DS_Store
+
+# Distribution Build Artifacts
+dist/

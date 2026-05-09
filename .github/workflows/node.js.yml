@@ -43,6 +43,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - run: npm run build
       - run: npm run test:unit
         env:
           NODE_OPTIONS: --test-reporter=spec
@@ -57,6 +58,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - run: npm run build
       - run: npm run test:integration:fake
 
   test-smoke:
@@ -69,6 +71,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - run: npm run build
       - run: npm run test:smoke
 
   test-budget-tripwires:
@@ -87,7 +90,7 @@ jobs:
           # `|| true`: grep exits 1 on no-match, which under `bash -e` would
           # incorrectly fail the step. We want the empty-result case to fall
           # through to the `[ -n "$hits" ]` check below.
-          hits=$(find test/local test/unit -name '*.test.js' -exec grep -lE 'from .node:child_process|from .child_process|StdioClientTransport' {} + 2>/dev/null || true)
+          hits=$(find test/local test/unit -name '*.test.ts' -exec grep -lE 'from .node:child_process|from .child_process|StdioClientTransport' {} + 2>/dev/null || true)
           if [ -n "$hits" ]; then
             echo "::error::The following unit-suite test files spawn subprocesses or import StdioClientTransport. Move them under test/integration/server/:"
             echo "$hits"

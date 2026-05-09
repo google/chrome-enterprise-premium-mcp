@@ -12,11 +12,16 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-*/ import js from '@eslint/js'
+*/
+
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+import js from '@eslint/js'
 import nodePlugin from 'eslint-plugin-n'
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import jsdoc from 'eslint-plugin-jsdoc'
 import notice from 'eslint-plugin-notice'
+import tseslint from 'typescript-eslint'
 
 const currentYear = new Date().getFullYear()
 const copyrightHeader = `/*
@@ -35,11 +40,25 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */`
 
-export default [
+export default tseslint.config(
   {
     ignores: ['**/dist', '**/node_modules', 'results/**', '.worktrees/**', '.claude/**', '.gemini/**', '.opencode/**'],
   },
+  {
+    files: ['**/*.ts', '**/*.tsx'],
+    languageOptions: {
+      parserOptions: {
+        project: './tsconfig.eslint.json',
+        tsconfigRootDir: path.dirname(fileURLToPath(import.meta.url)),
+      },
+    },
+  },
   js.configs.recommended,
+  ...tseslint.configs.recommended,
+  ...tseslint.configs.recommendedTypeChecked.map(config => ({
+    ...config,
+    files: ['**/*.ts', '**/*.tsx'],
+  })),
   nodePlugin.configs['flat/recommended'],
   eslintPluginPrettierRecommended,
   jsdoc.configs['flat/recommended'],
@@ -58,11 +77,10 @@ export default [
       ],
 
       // -- JSDoc --
-
       'jsdoc/require-jsdoc': [
         'error',
         {
-          publicOnly: false,
+          publicOnly: true,
           require: {
             FunctionDeclaration: true,
             MethodDefinition: true,
@@ -92,7 +110,8 @@ export default [
       'no-extra-semi': 'off',
 
       // -- Variable hygiene --
-      'no-unused-vars': [
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': [
         'error',
         {
           argsIgnorePattern: '^_',
@@ -136,7 +155,7 @@ export default [
     },
   },
   {
-    files: ['test/**/*.js', '**/*.test.js'],
+    files: ['test/**/*.js', '**/*.test.js', 'test/**/*.ts', '**/*.test.ts'],
     rules: {
       'jsdoc/require-jsdoc': 'off',
       'jsdoc/require-description': 'off',
@@ -153,6 +172,31 @@ export default [
       'jsdoc/check-types': 'off',
       'jsdoc/valid-types': 'off',
       'n/no-unsupported-features/node-builtins': ['error', { version: '>=22.0.0' }],
+      '@typescript-eslint/no-floating-promises': 'off',
+      '@typescript-eslint/require-await': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/restrict-template-expressions': 'off',
+      '@typescript-eslint/no-base-to-string': 'off',
+      '@typescript-eslint/prefer-promise-reject-errors': 'off',
+      '@typescript-eslint/unbound-method': 'off',
     },
   },
-]
+  {
+    // TypeScript specific overrides: JSDoc types are redundant in TS
+    files: ['**/*.ts'],
+    rules: {
+      'jsdoc/require-param-type': 'off',
+      'jsdoc/require-returns-type': 'off',
+      'jsdoc/check-types': 'off',
+      'jsdoc/valid-types': 'off',
+      'jsdoc/require-param': 'off',
+      'jsdoc/require-returns': 'off',
+      'jsdoc/check-param-names': 'off',
+      '@typescript-eslint/require-await': 'off',
+    },
+  },
+)

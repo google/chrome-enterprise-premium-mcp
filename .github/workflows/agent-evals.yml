@@ -30,6 +30,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - run: npm run build
 
       # The runner exits 1 on any FAIL. We let it; the diff step is what
       # decides whether the workflow goes red, so the runner's own exit code
@@ -38,7 +39,7 @@ jobs:
         continue-on-error: true
         run: |
           mkdir -p results
-          node test/evals/run.js --output results/eval-latest.json
+          node dist/test/evals/run.js --output results/eval-latest.json
 
       - name: Upload eval results
         if: always()
@@ -55,7 +56,7 @@ jobs:
         if: hashFiles('test/evals/baseline.json') != ''
         run: |
           set +e
-          node test/evals/diff.js test/evals/baseline.json results/eval-latest.json \
+          node dist/test/evals/diff.js test/evals/baseline.json results/eval-latest.json \
             | tee diff-output.txt \
             | tee -a "$GITHUB_STEP_SUMMARY"
           echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
