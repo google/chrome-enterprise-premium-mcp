@@ -276,7 +276,7 @@ function handleLicensingError(error: unknown, operationDescription: string): nev
         }
       }
       throw new Error(
-        `Access denied to Licensing API. The account may not have permission to access licensing information.`,
+        `PERMISSION_DENIED: Access denied to Licensing API. The account may not have permission to access licensing information.`,
       )
     }
   }

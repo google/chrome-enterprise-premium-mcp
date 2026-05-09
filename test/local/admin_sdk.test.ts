@@ -313,10 +313,10 @@ describe('Admin SDK API', () => {
       )
     })
 
-    test('When access is denied to Licensing API, then it returns a descriptive error message', async () => {
+    test('When access is denied to Licensing API, then it returns proactive auth remediation instructions', async () => {
       const mockCheckUserCepLicense = mock.fn(async () => {
         throw new Error(
-          'Access denied to Licensing API. The account may not have permission to access licensing information.',
+          'PERMISSION_DENIED: Access denied to Licensing API. The account may not have permission to access licensing information.',
         )
       })
 
@@ -346,7 +346,8 @@ describe('Admin SDK API', () => {
       const result = await handler({ userId: 'user@example.com' }, {})
 
       assert.strictEqual(mockCheckUserCepLicense.mock.callCount(), 1)
-      assert.match(result.content[0].text, /Error: Access denied to Licensing API/)
+      assert.match(result.content[0].text, /Permission denied\. Your account lacks/)
+      assert.match(result.content[0].text, /gcloud auth application-default login/)
     })
   })
 })

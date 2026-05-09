@@ -144,10 +144,10 @@ describe('check_cep_subscription Tool', () => {
     )
   })
 
-  test('When access is denied, then it returns error message', async () => {
+  test('When access is denied, then it returns proactive auth remediation instructions', async () => {
     const mockCheckCepSubscription = mock.fn(async () => {
       throw new Error(
-        'Access denied to Licensing API. The account may not have permission to access licensing information.',
+        'PERMISSION_DENIED: Access denied to Licensing API. The account may not have permission to access licensing information.',
       )
     })
 
@@ -177,7 +177,8 @@ describe('check_cep_subscription Tool', () => {
     const result = await handler({ customerId: 'C0123' }, {})
 
     assert.strictEqual(mockCheckCepSubscription.mock.callCount(), 1)
-    assert.match(result.content[0].text, /Error: Access denied to Licensing API/)
+    assert.match(result.content[0].text, /Permission denied\. Your account lacks/)
+    assert.match(result.content[0].text, /gcloud auth application-default login/)
   })
 })
 
