@@ -59,7 +59,7 @@ describe('Admin SDK API', () => {
       assert.strictEqual(mockGetCustomerId.mock.callCount(), 1)
       assert.ok(result.content[0].text.includes('Customer ID: `C0123`'))
       assert.ok(result.content[1].text.includes('```json'))
-      assert.ok(result.content[1].text.includes('"id": "C0123"'))
+      assert.ok(result.content[1].text.includes('"customerId": "C0123"'))
     })
 
     test('When getCustomerId API call fails, then it returns an error message', async () => {

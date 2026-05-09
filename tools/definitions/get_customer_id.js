@@ -27,7 +27,7 @@ import { logger } from '../../lib/util/logger.js'
  * Registers the 'get_customer_id' tool with the MCP server.
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tool.
- * @param {import('../../lib/api/admin_sdk_client.js').AdminSdkClient} options.adminSdkClient - The Admin SDK client instance.
+ * @param {import('../../lib/api/interfaces/admin_sdk_client.js').AdminSdkClient} options.adminSdkClient - The Admin SDK client instance.
  * @param {object} sessionState - The session state object for caching.
  * @returns {void}
  */
@@ -43,6 +43,8 @@ This ID (often starting with 'C') is required as a parameter for many other Chro
       inputSchema: {},
       outputSchema: z.looseObject({
         customerId: z.string().nullable().describe('The unique customer ID.'),
+        customerDomain: z.string().optional().nullable().describe('The primary domain of the customer.'),
+        language: z.string().optional().nullable().describe('The default language for the customer.'),
       }),
     },
     guardedToolCall(
@@ -62,7 +64,7 @@ This ID (often starting with 'C') is required as a parameter for many other Chro
 
           if (!customer) {
             logger.error(`${TAGS.MCP} get_customer_id tool: Could not retrieve customer ID.`)
-            const sc = { customerId: null }
+            const sc = { customerId: null, customerDomain: null, language: null }
             return formatToolResponse({
               summary: 'Could not retrieve customer ID.',
               data: sc,
@@ -70,7 +72,11 @@ This ID (often starting with 'C') is required as a parameter for many other Chro
             })
           }
           logger.debug(`${TAGS.MCP} Successfully retrieved customer ID: ${customer.id}`)
-          const sc = { customerId: customer.id, ...customer }
+          const sc = {
+            customerId: customer.id,
+            customerDomain: customer.customerDomain,
+            language: customer.language,
+          }
           return formatToolResponse({
             summary: `Customer ID: \`${customer.id}\`
 
