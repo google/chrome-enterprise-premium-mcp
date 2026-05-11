@@ -16,7 +16,7 @@ limitations under the License.
 
 import assert from 'node:assert/strict'
 import { describe, test, mock } from 'node:test'
-import esmock from 'esmock'
+import { esmock } from '../helpers/mock-utils.js'
 import { WORKSPACE_RULE_LIMITS, AGENT_DISPLAY_NAME_PREFIX } from '../../lib/util/chrome_dlp_constants.js'
 
 describe('Tool Input Validation', () => {

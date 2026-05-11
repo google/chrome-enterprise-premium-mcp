@@ -16,7 +16,7 @@ limitations under the License.
 
 import assert from 'node:assert/strict'
 import { describe, test, mock } from 'node:test'
-import esmock from 'esmock'
+import { esmock } from '../helpers/mock-utils.js'
 
 describe('ChromePolicyClient', () => {
   test('When resolvePolicy is called, then it returns resolved policies from the API', async () => {
