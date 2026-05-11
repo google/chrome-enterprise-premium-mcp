@@ -27,8 +27,8 @@ import { ERROR_MESSAGES, SCOPES } from '../constants.js'
 const GCLOUD_CALL_TIMEOUT_MS = 1000
 const GCLOUD_TOTAL_BUDGET_MS = 5000
 
-let cachedIsGcloudInstalled = /** @type {boolean|null} */ (null)
-let gcloudCheckPromise = /** @type {Promise<boolean>|null} */ (null)
+let cachedIsGcloudInstalled = /** @type {boolean|null} */ null
+let gcloudCheckPromise = /** @type {Promise<boolean>|null} */ null
 
 /**
  * Runs a gcloud command with a per-call timeout. Returns stdout or null on error/timeout.
