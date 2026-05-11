@@ -16,8 +16,8 @@ limitations under the License.
 
 import assert from 'node:assert/strict'
 import { describe, test, mock, beforeEach } from 'node:test'
-import { registerTools } from '../../../tools/index.js'
-import { FeatureFlags } from '../../../lib/util/feature_flags.js'
+import { registerTools } from '../../../tools/index'
+import { FeatureFlags } from '../../../lib/util/feature_flags'
 
 describe('Experiment: KNOWLEDGE_SEARCH_ENABLED', () => {
   let server

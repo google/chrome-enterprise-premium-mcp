@@ -19,8 +19,8 @@ limitations under the License.
  */
 
 import { GoogleAuth } from 'google-auth-library'
-import { SCOPES } from '../../constants.js'
-import { buildAuthRemediationLines } from '../auth_messages.js'
+import { SCOPES } from '../../constants'
+import { buildAuthRemediationLines } from '../auth_messages'
 
 /** Cap the two-network-call probe so a slow or offline environment does not stall boot. */
 const PROBE_TIMEOUT_MS = 8000

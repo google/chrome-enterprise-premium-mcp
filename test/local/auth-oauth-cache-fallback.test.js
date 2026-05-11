@@ -22,7 +22,7 @@ limitations under the License.
 
 import { describe, test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { esmock } from '../helpers/mock-utils.js'
+import { esmock } from '../helpers/mock-utils'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import os from 'node:os'
@@ -66,7 +66,7 @@ describe('getAuthClient OAuth-cache fallback', () => {
   })
 
   test('returns OAuth2Client populated from token cache when ADC throws', async () => {
-    const { getAuthClient } = await esmock('../../lib/util/auth.js', {
+    const { getAuthClient } = await esmock('../../lib/util/auth', {
       'google-auth-library': {
         GoogleAuth: class {
           async getClient() {
@@ -99,7 +99,7 @@ describe('getAuthClient OAuth-cache fallback', () => {
     }
     await fs.chmod(CACHE_PATH, 0o644)
     try {
-      const { getAuthClient } = await esmock('../../lib/util/auth.js', {
+      const { getAuthClient } = await esmock('../../lib/util/auth', {
         'google-auth-library': {
           GoogleAuth: class {
             async getClient() {

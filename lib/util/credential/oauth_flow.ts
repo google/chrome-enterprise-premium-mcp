@@ -21,14 +21,14 @@ limitations under the License.
 import { spawn } from 'node:child_process'
 import readline from 'node:readline'
 import { OAuth2Client } from 'google-auth-library'
-import { TokenCache } from './token_cache.js'
-import { startLoopbackServer } from './loopback_server.js'
+import { TokenCache } from './token_cache'
+import { startLoopbackServer } from './loopback_server'
 import {
   OAUTH_SCOPES,
   MANAGED_OAUTH_CLIENT_ID,
   MANAGED_OAUTH_CLIENT_SECRET,
   MANAGED_OAUTH_CLIENT_PLACEHOLDER,
-} from '../../constants.js'
+} from '../../constants'
 
 /**
  * Opens the given URL in the user's default browser. Respects BROWSER env var.

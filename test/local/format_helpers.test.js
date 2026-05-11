@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */ import { describe, test } from 'node:test'
 import assert from 'node:assert'
-import { formatToolResponse, safeFormatResponse } from '../../tools/utils/wrapper.js'
+import { formatToolResponse, safeFormatResponse } from '../../tools/utils/wrapper'
 
 describe('formatToolResponse', () => {
   test('When data is provided, then it returns two content blocks: summary and fenced JSON', () => {

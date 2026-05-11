@@ -16,7 +16,7 @@ limitations under the License.
 
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { FeatureFlags, FLAGS } from '../../lib/util/feature_flags.js'
+import { FeatureFlags, FLAGS } from '../../lib/util/feature_flags'
 
 describe('FeatureFlags', () => {
   test('When flag is not set, then it returns false by default', () => {

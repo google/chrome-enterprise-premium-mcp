@@ -29,11 +29,11 @@ import { runServer } from '../mcp-server.ts'
 async function main() {
   const sub = process.argv[2]
   if (sub === 'auth-status') {
-    const { runAuthStatusCommand } = await import('../lib/util/credential/cli_commands.js')
+    const { runAuthStatusCommand } = await import('../lib/util/credential/cli_commands')
     return runAuthStatusCommand()
   }
   if (sub === 'login') {
-    const { runLoginCommand } = await import('../lib/util/credential/cli_commands.js')
+    const { runLoginCommand } = await import('../lib/util/credential/cli_commands')
     return runLoginCommand()
   }
   return runServer()

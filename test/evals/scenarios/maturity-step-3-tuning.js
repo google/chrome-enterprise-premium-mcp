@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { CEP_CONSTANTS } from '../../../lib/constants.js'
+import { CEP_CONSTANTS } from '../../../lib/constants'
 
 /**
  * @file Scenario: all prerequisites met, audit rules active, and logs populated.

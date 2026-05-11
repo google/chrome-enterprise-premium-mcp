@@ -16,7 +16,7 @@ limitations under the License.
 
 import assert from 'node:assert/strict'
 import { describe, test, mock } from 'node:test'
-import { esmock } from '../helpers/mock-utils.js'
+import { esmock } from '../helpers/mock-utils'
 
 describe('ChromePolicyClient', () => {
   test('When resolvePolicy is called, then it returns resolved policies from the API', async () => {
@@ -26,7 +26,7 @@ describe('ChromePolicyClient', () => {
       },
     }))
 
-    const { ChromePolicyClient: MockedClient } = await esmock('../../lib/api/chrome_policy_client.js', {
+    const { ChromePolicyClient: MockedClient } = await esmock('../../lib/api/chrome_policy_client', {
       googleapis: {
         google: {
           chromepolicy: () => ({
@@ -58,7 +58,7 @@ describe('ChromePolicyClient', () => {
       throw error
     })
 
-    const { ChromePolicyClient: MockedClient } = await esmock('../../lib/api/chrome_policy_client.js', {
+    const { ChromePolicyClient: MockedClient } = await esmock('../../lib/api/chrome_policy_client', {
       googleapis: {
         google: {
           chromepolicy: () => ({
@@ -83,7 +83,7 @@ describe('ChromePolicyClient', () => {
       data: { status: 'success' },
     }))
 
-    const { ChromePolicyClient: MockedClient } = await esmock('../../lib/api/chrome_policy_client.js', {
+    const { ChromePolicyClient: MockedClient } = await esmock('../../lib/api/chrome_policy_client', {
       googleapis: {
         google: {
           chromepolicy: () => ({

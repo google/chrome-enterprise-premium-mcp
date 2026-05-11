@@ -24,7 +24,7 @@ import {
   MANAGED_OAUTH_CLIENT_ID,
   MANAGED_OAUTH_CLIENT_SECRET,
   MANAGED_OAUTH_CLIENT_PLACEHOLDER,
-} from '../../constants.js'
+} from '../../constants'
 
 /**
  * @typedef {object} OAuthClientConfig

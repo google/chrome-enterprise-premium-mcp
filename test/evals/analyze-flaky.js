@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */ import fs from 'fs'
-import { Status } from './lib/transient.js'
+import { Status } from './lib/transient'
 
 const data = JSON.parse(fs.readFileSync('results/stability-check.json', 'utf-8'))
 const flaky = data.evaluations.filter(e => !e.isStable)

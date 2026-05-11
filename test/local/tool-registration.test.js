@@ -20,8 +20,8 @@ limitations under the License.
 
 import assert from 'node:assert/strict'
 import { describe, test, mock, beforeEach } from 'node:test'
-import { registerTools } from '../../tools/index.js'
-import { FLAGS } from '../../lib/util/feature_flags.js'
+import { registerTools } from '../../tools/index'
+import { FLAGS } from '../../lib/util/feature_flags'
 
 const CORE_TOOLS = [
   'check_and_enable_cep_api',

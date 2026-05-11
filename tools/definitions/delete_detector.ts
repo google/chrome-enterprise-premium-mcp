@@ -19,9 +19,9 @@ limitations under the License.
  */
 
 import { z } from 'zod'
-import { guardedToolCall, formatToolResponse, safeFormatResponse } from '../utils/wrapper.js'
-import { logger } from '../../lib/util/logger.js'
-import { TAGS } from '../../lib/constants.js'
+import { guardedToolCall, formatToolResponse, safeFormatResponse } from '../utils/wrapper'
+import { logger } from '../../lib/util/logger'
+import { TAGS } from '../../lib/constants'
 
 /**
  * Registers the 'delete_detector' tool with the MCP server.

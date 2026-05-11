@@ -16,20 +16,20 @@ limitations under the License.
 
 import { describe, test, before } from 'node:test'
 import assert from 'node:assert/strict'
-import { esmock } from '../helpers/mock-utils.js'
-import { logger, LogLevel } from '../../lib/util/logger.js'
+import { esmock } from '../helpers/mock-utils'
+import { logger, LogLevel } from '../../lib/util/logger'
 
 describe('Helpers', () => {
   describe('callWithRetry', () => {
     let callWithRetry
 
     before(async () => {
-      const helpersModule = await esmock('../../lib/util/helpers.js', {
-        '../../lib/util/auth.js': {
+      const helpersModule = await esmock('../../lib/util/helpers', {
+        '../../lib/util/auth': {
           getAuthErrorMessage: () =>
             'The API requires a quota project. gcloud auth application-default set-quota-project. Your credentials have insufficient scopes',
         },
-        '../../lib/constants.js': {
+        '../../lib/constants': {
           DEFAULT_CONFIG: {
             MAX_RETRIES: 3,
             INITIAL_BACKOFF_MS: 1,

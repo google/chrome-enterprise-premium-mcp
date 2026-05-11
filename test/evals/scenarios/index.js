@@ -28,7 +28,7 @@ limitations under the License.
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { getBaseState } from './base-state.js'
+import { getBaseState } from './base-state'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const SKIP_FILES = new Set(['index.js', 'base-state.js'])

@@ -16,7 +16,7 @@ limitations under the License.
 
 import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
-import { checkForbidden, checkRequired, checkTools, runChecks } from '../evals/lib/assertions.js'
+import { checkForbidden, checkRequired, checkTools, runChecks } from '../evals/lib/assertions'
 
 describe('Eval Assertions', () => {
   describe('checkForbidden', () => {

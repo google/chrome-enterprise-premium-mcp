@@ -23,7 +23,7 @@ limitations under the License.
  */
 
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { buildServerInstructions } from '../../../lib/knowledge/instructions.js'
+import { buildServerInstructions } from '../../../lib/knowledge/instructions'
 
 const MODEL_NAME = 'gemini-2.5-flash'
 const MAX_TURNS = 15

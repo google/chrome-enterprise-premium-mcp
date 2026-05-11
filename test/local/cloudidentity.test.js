@@ -20,9 +20,9 @@ limitations under the License.
 
 import assert from 'node:assert/strict'
 import { describe, test, mock, beforeEach } from 'node:test'
-import { esmock } from '../helpers/mock-utils.js'
-import { setupCloudIdentityHandler } from './mock-utils.js'
-import { FeatureFlags } from '../../lib/util/feature_flags.js'
+import { esmock } from '../helpers/mock-utils'
+import { setupCloudIdentityHandler } from './mock-utils'
+import { FeatureFlags } from '../../lib/util/feature_flags'
 
 describe('Cloud Identity API', () => {
   let server
@@ -216,13 +216,13 @@ describe('Cloud Identity API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/index.js',
+        '../../tools/index',
         {},
         {
-          '../../lib/api/cloud_identity_client.js': {
+          '../../lib/api/cloud_identity_client': {
             CloudIdentityClient: MockCloudIdentityClient,
           },
-          '../../lib/api/admin_sdk_client.js': {
+          '../../lib/api/admin_sdk_client': {
             AdminSdkClient: MockAdminSdkClient,
           },
         },
@@ -283,13 +283,13 @@ describe('Cloud Identity API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/index.js',
+        '../../tools/index',
         {},
         {
-          '../../lib/api/cloud_identity_client.js': {
+          '../../lib/api/cloud_identity_client': {
             CloudIdentityClient: MockCloudIdentityClient,
           },
-          '../../lib/api/admin_sdk_client.js': {
+          '../../lib/api/admin_sdk_client': {
             AdminSdkClient: MockAdminSdkClient,
           },
         },
@@ -350,13 +350,13 @@ describe('Cloud Identity API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/index.js',
+        '../../tools/index',
         {},
         {
-          '../../lib/api/cloud_identity_client.js': {
+          '../../lib/api/cloud_identity_client': {
             CloudIdentityClient: MockCloudIdentityClient,
           },
-          '../../lib/api/admin_sdk_client.js': {
+          '../../lib/api/admin_sdk_client': {
             AdminSdkClient: MockAdminSdkClient,
           },
         },
@@ -413,13 +413,13 @@ describe('Cloud Identity API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/index.js',
+        '../../tools/index',
         {},
         {
-          '../../lib/api/cloud_identity_client.js': {
+          '../../lib/api/cloud_identity_client': {
             CloudIdentityClient: MockCloudIdentityClient,
           },
-          '../../lib/api/admin_sdk_client.js': {
+          '../../lib/api/admin_sdk_client': {
             AdminSdkClient: MockAdminSdkClient,
           },
         },
@@ -464,10 +464,10 @@ describe('Cloud Identity API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/index.js',
+        '../../tools/index',
         {},
         {
-          '../../lib/api/cloud_identity_client.js': {
+          '../../lib/api/cloud_identity_client': {
             CloudIdentityClient: MockCloudIdentityClient,
           },
         },
@@ -505,10 +505,10 @@ describe('Cloud Identity API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/index.js',
+        '../../tools/index',
         {},
         {
-          '../../lib/api/cloud_identity_client.js': {
+          '../../lib/api/cloud_identity_client': {
             CloudIdentityClient: MockCloudIdentityClient,
           },
         },

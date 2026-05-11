@@ -19,13 +19,13 @@ limitations under the License.
  */
 import { z } from 'zod'
 
-import { guardedToolCall } from '../utils/wrapper.js'
-import { createDetectorAndFormatResponse } from '../utils/detector.js'
-import { logger } from '../../lib/util/logger.js'
-import { TAGS } from '../../lib/constants.js'
-import { WORKSPACE_RULE_LIMITS } from '../../lib/util/chrome_dlp_constants.js'
+import { guardedToolCall } from '../utils/wrapper'
+import { createDetectorAndFormatResponse } from '../utils/detector'
+import { logger } from '../../lib/util/logger'
+import { TAGS } from '../../lib/constants'
+import { WORKSPACE_RULE_LIMITS } from '../../lib/util/chrome_dlp_constants'
 
-import { commonInputSchemas, commonOutputSchemas } from './shared.js'
+import { commonInputSchemas, commonOutputSchemas } from './shared'
 
 /**
  * Registers the 'create_word_list_detector' tool with the MCP server.

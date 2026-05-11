@@ -21,8 +21,8 @@ limitations under the License.
  * "does the policy just exist?".
  */
 
-import { EVENT_NAME_MAPPING } from '../constants.js'
-import { formatStatus } from './helpers.js'
+import { EVENT_NAME_MAPPING } from '../constants'
+import { formatStatus } from './helpers'
 
 /**
  * Normalizes an API value to a human-readable string for comparison.

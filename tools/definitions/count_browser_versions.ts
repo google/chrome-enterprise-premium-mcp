@@ -19,10 +19,10 @@ limitations under the License.
  */
 
 import { z } from 'zod'
-import { guardedToolCall, formatToolResponse, safeFormatResponse } from '../utils/wrapper.js'
-import { commonOutputSchemas } from './shared.js'
-import { TAGS } from '../../lib/constants.js'
-import { logger } from '../../lib/util/logger.js'
+import { guardedToolCall, formatToolResponse, safeFormatResponse } from '../utils/wrapper'
+import { commonOutputSchemas } from './shared'
+import { TAGS } from '../../lib/constants'
+import { logger } from '../../lib/util/logger'
 
 /**
  * Registers the 'count_browser_versions' tool with the MCP server.

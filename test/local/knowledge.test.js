@@ -16,7 +16,7 @@ limitations under the License.
 
 import { describe, test, beforeEach, mock } from 'node:test'
 import assert from 'node:assert/strict'
-import { registerKnowledgeTools } from '../../tools/definitions/knowledge.js'
+import { registerKnowledgeTools } from '../../tools/definitions/knowledge'
 
 const MOCK_DOC_PASSWORD_POLICY = 'password-policy'
 const MOCK_DOC_PASSWORD_COMPLEXITY = 'Password complexity'

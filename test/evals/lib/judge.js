@@ -22,7 +22,7 @@ limitations under the License.
  */
 
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { isTransient } from './transient.js'
+import { isTransient } from './transient'
 
 const MODEL_NAME = 'gemini-3.1-flash-lite-preview'
 

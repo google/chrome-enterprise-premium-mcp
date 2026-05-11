@@ -16,12 +16,12 @@ limitations under the License.
 
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { resolveOAuthClientConfig, managedClientIsPlaceholder } from '../../lib/util/credential/oauth_client_config.js'
+import { resolveOAuthClientConfig, managedClientIsPlaceholder } from '../../lib/util/credential/oauth_client_config'
 import {
   MANAGED_OAUTH_CLIENT_ID,
   MANAGED_OAUTH_CLIENT_SECRET,
   MANAGED_OAUTH_CLIENT_PLACEHOLDER,
-} from '../../lib/constants.js'
+} from '../../lib/constants'
 
 describe('managed OAuth client placeholder', () => {
   it('Both managed constants reference the shared TODO placeholder', () => {

@@ -20,12 +20,12 @@ limitations under the License.
 
 import path from 'node:path'
 import fs from 'node:fs/promises'
-import { adcCredential } from './adc.js'
-import { oauthFlowCredential } from './oauth_flow.js'
-import { buildScopesField } from '../auth_messages.js'
-import { SCOPES } from '../../constants.js'
-import { resolveOAuthClientConfig } from './oauth_client_config.js'
-import { TokenCache } from './token_cache.js'
+import { adcCredential } from './adc'
+import { oauthFlowCredential } from './oauth_flow'
+import { buildScopesField } from '../auth_messages'
+import { SCOPES } from '../../constants'
+import { resolveOAuthClientConfig } from './oauth_client_config'
+import { TokenCache } from './token_cache'
 
 /**
  * Probes the ADC and OAuth-flow credential factories and prints a two-line

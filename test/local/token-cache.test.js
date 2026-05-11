@@ -19,7 +19,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import os from 'node:os'
-import { TokenCache } from '../../lib/util/credential/token_cache.js'
+import { TokenCache } from '../../lib/util/credential/token_cache'
 
 describe('TokenCache', () => {
   it('When write is called, then the file has mode 0600', async () => {

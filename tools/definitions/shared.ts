@@ -22,7 +22,7 @@ limitations under the License.
  */
 
 import { z } from 'zod'
-import { WORKSPACE_RULE_LIMITS } from '../../lib/util/chrome_dlp_constants.js'
+import { WORKSPACE_RULE_LIMITS } from '../../lib/util/chrome_dlp_constants'
 
 /**
  * Shared input schemas for MCP tools.

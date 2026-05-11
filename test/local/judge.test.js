@@ -16,7 +16,7 @@ limitations under the License.
 
 import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
-import { parseJudgeResult } from '../evals/lib/judge.js'
+import { parseJudgeResult } from '../evals/lib/judge'
 
 describe('parseJudgeResult', () => {
   test('When RESULT: PASS begins a line followed by reasoning, then it returns true', () => {

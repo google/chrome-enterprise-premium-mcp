@@ -21,9 +21,9 @@ limitations under the License.
 
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { esmock } from '../helpers/mock-utils.js'
+import { esmock } from '../helpers/mock-utils'
 
-import { parseExpectedAudience } from '../../lib/util/credential/jwt_verifier.js'
+import { parseExpectedAudience } from '../../lib/util/credential/jwt_verifier'
 
 describe('parseExpectedAudience', () => {
   it('When env var is undefined, then result is undefined', () => {
@@ -53,17 +53,17 @@ describe('parseExpectedAudience', () => {
 
 describe('verifyIdToken', () => {
   it('When token is missing, then it throws', async () => {
-    const { verifyIdToken } = await esmock('../../lib/util/credential/jwt_verifier.js', {})
+    const { verifyIdToken } = await esmock('../../lib/util/credential/jwt_verifier', {})
     await assert.rejects(() => verifyIdToken('', { expectedAudience: 'aud' }), /token is required/)
   })
 
   it('When expectedAudience is missing, then it throws', async () => {
-    const { verifyIdToken } = await esmock('../../lib/util/credential/jwt_verifier.js', {})
+    const { verifyIdToken } = await esmock('../../lib/util/credential/jwt_verifier', {})
     await assert.rejects(() => verifyIdToken('eyJhbGciOi...', { expectedAudience: '' }), /expectedAudience is required/)
   })
 
   it('When verifyIdToken succeeds with a valid payload, then it returns the principal', async () => {
-    const { verifyIdToken } = await esmock('../../lib/util/credential/jwt_verifier.js', {
+    const { verifyIdToken } = await esmock('../../lib/util/credential/jwt_verifier', {
       'google-auth-library': {
         OAuth2Client: class {
           async verifyIdToken({ idToken, audience }) {
@@ -91,7 +91,7 @@ describe('verifyIdToken', () => {
   })
 
   it('When the underlying verifier throws, then verifyIdToken propagates the error', async () => {
-    const { verifyIdToken } = await esmock('../../lib/util/credential/jwt_verifier.js', {
+    const { verifyIdToken } = await esmock('../../lib/util/credential/jwt_verifier', {
       'google-auth-library': {
         OAuth2Client: class {
           async verifyIdToken() {
@@ -104,7 +104,7 @@ describe('verifyIdToken', () => {
   })
 
   it('When the payload has no email, then verifyIdToken throws', async () => {
-    const { verifyIdToken } = await esmock('../../lib/util/credential/jwt_verifier.js', {
+    const { verifyIdToken } = await esmock('../../lib/util/credential/jwt_verifier', {
       'google-auth-library': {
         OAuth2Client: class {
           async verifyIdToken() {

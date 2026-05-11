@@ -59,7 +59,7 @@ describe('bin/cli.ts', () => {
 
 describe('runLoginCommand', () => {
   it('When login is invoked and runLoginFlow succeeds, then it prints the cached message and exits 0', async () => {
-    const { runLoginCommand } = await import('../../../lib/util/credential/cli_commands.js')
+    const { runLoginCommand } = await import('../../../lib/util/credential/cli_commands')
 
     const runLoginFlow = mock.fn(async () => {})
     const credentialFactory = mock.fn(() => ({ runLoginFlow }))
@@ -77,7 +77,7 @@ describe('runLoginCommand', () => {
 
 describe('runLoginCommand BYO notice', () => {
   it('When source is managed, then no notice prints', async () => {
-    const { runLoginCommand } = await import('../../../lib/util/credential/cli_commands.js')
+    const { runLoginCommand } = await import('../../../lib/util/credential/cli_commands')
 
     const runLoginFlow = mock.fn(async () => {})
     const credentialFactory = mock.fn(() => ({ runLoginFlow }))
@@ -96,7 +96,7 @@ describe('runLoginCommand BYO notice', () => {
   })
 
   it('When source is custom and no marker exists, then notice prints and marker is created', async () => {
-    const { runLoginCommand } = await import('../../../lib/util/credential/cli_commands.js')
+    const { runLoginCommand } = await import('../../../lib/util/credential/cli_commands')
     const fs = await import('node:fs/promises')
     const os = await import('node:os')
     const path = await import('node:path')
@@ -125,7 +125,7 @@ describe('runLoginCommand BYO notice', () => {
   })
 
   it('When source is custom and marker exists, then notice does not print', async () => {
-    const { runLoginCommand } = await import('../../../lib/util/credential/cli_commands.js')
+    const { runLoginCommand } = await import('../../../lib/util/credential/cli_commands')
     const fs = await import('node:fs/promises')
     const os = await import('node:os')
     const path = await import('node:path')

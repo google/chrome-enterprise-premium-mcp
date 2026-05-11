@@ -16,7 +16,7 @@ limitations under the License.
 
 import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
-import { buildServerInstructions } from '../../lib/knowledge/instructions.js'
+import { buildServerInstructions } from '../../lib/knowledge/instructions'
 
 describe('Server Instructions', () => {
   test('When server instructions are built, then they contain the core grounding rules', () => {

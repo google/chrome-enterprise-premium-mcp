@@ -16,7 +16,7 @@ limitations under the License.
 
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { startLoopbackServer } from '../../lib/util/credential/loopback_server.js'
+import { startLoopbackServer } from '../../lib/util/credential/loopback_server'
 
 describe('startLoopbackServer', () => {
   it('When start is called, then it binds to 127.0.0.1 with a random port', async () => {

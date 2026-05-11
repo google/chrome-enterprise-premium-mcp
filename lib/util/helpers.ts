@@ -21,10 +21,10 @@ limitations under the License.
  * - Execute API calls with retry logic.
  */
 
-import { getAuthErrorMessage } from './auth.js'
-import { ERROR_MESSAGES } from '../constants.js'
-import { logger } from './logger.js'
-import { CHROME_ACTION_TYPES } from './chrome_dlp_constants.js'
+import { getAuthErrorMessage } from './auth'
+import { ERROR_MESSAGES } from '../constants'
+import { logger } from './logger'
+import { CHROME_ACTION_TYPES } from './chrome_dlp_constants'
 
 /**
  * Handles API errors by logging them and throwing a formatted error.

@@ -16,7 +16,7 @@ limitations under the License.
 
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
-import { analyzeConnectorPolicy } from '../../../../lib/util/connector_policy_helper.js'
+import { analyzeConnectorPolicy } from '../../../../lib/util/connector_policy_helper'
 
 describe('Connector Policy Helper', () => {
   describe('analyzeConnectorPolicy', () => {

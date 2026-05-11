@@ -28,7 +28,7 @@ limitations under the License.
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { execFileSync } from 'node:child_process'
-import { findTestFiles } from './run-utils.js'
+import { findTestFiles } from './run-utils'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const root = resolve(__dirname, '..')

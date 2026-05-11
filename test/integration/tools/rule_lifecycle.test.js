@@ -16,9 +16,9 @@ limitations under the License.
 
 import { test, describe, before, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { createIntegrationHarness, teardownIntegrationHarness } from '../../helpers/integration/tools/harness.js'
-import { assertObjectMatches, parseToolOutput } from '../../helpers/integration/tools/tool_utils.js'
-import { validateAndGetOrgUnitId } from '../../../tools/utils/org-unit.js'
+import { createIntegrationHarness, teardownIntegrationHarness } from '../../helpers/integration/tools/harness'
+import { assertObjectMatches, parseToolOutput } from '../../helpers/integration/tools/tool_utils'
+import { validateAndGetOrgUnitId } from '../../../tools/utils/org-unit'
 
 describe('Rule Lifecycle Integration', () => {
   let harness

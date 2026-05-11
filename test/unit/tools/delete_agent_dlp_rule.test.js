@@ -16,7 +16,7 @@ limitations under the License.
 
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
-import { registerDeleteAgentDlpRuleTool } from '../../../tools/definitions/delete_agent_dlp_rule.js'
+import { registerDeleteAgentDlpRuleTool } from '../../../tools/definitions/delete_agent_dlp_rule'
 
 describe('delete_agent_dlp_rule tool handler', () => {
   const getHandler = mockCloudIdentityClient => {

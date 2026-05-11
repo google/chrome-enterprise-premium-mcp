@@ -16,8 +16,8 @@ limitations under the License.
 
 import { describe, test, mock, beforeEach } from 'node:test'
 import assert from 'node:assert'
-import { esmock } from '../helpers/mock-utils.js'
-import { SERVICE_NAMES } from '../../lib/constants.js'
+import { esmock } from '../helpers/mock-utils'
+import { SERVICE_NAMES } from '../../lib/constants'
 
 describe('check_and_enable_cep_api tool', () => {
   let server
@@ -30,10 +30,10 @@ describe('check_and_enable_cep_api tool', () => {
 
   async function setupTool(mockServiceUsageClient) {
     const { registerCheckAndEnableCepApiTool } = await esmock(
-      '../../tools/definitions/check_and_enable_cep_api.js',
+      '../../tools/definitions/check_and_enable_cep_api',
       {},
       {
-        '../../lib/api/service_usage_client.js': {
+        '../../lib/api/service_usage_client': {
           ServiceUsageClient: class {
             constructor() {
               Object.assign(this, mockServiceUsageClient)

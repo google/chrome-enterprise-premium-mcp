@@ -17,7 +17,7 @@ limitations under the License.
 import { describe, test, before } from 'node:test'
 import assert from 'node:assert/strict'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
-import { registerTools } from '../../tools/index.js'
+import { registerTools } from '../../tools/index'
 
 describe('Output Schema Validation', () => {
   let server

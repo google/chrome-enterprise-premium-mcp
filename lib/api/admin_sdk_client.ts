@@ -18,10 +18,10 @@ limitations under the License.
  * @file Admin SDK API client wrapper using googleapis.
  */
 import { google } from 'googleapis'
-import { createApiClient } from '../util/api-client.js'
-import { callWithRetry, handleApiError } from '../util/helpers.js'
-import { API_VERSIONS, SCOPES, TAGS, CEP_CONSTANTS, SERVICE_NAMES, CURRENT_CUSTOMER } from '../constants.js'
-import { logger } from '../util/logger.js'
+import { createApiClient } from '../util/api-client'
+import { callWithRetry, handleApiError } from '../util/helpers'
+import { API_VERSIONS, SCOPES, TAGS, CEP_CONSTANTS, SERVICE_NAMES, CURRENT_CUSTOMER } from '../constants'
+import { logger } from '../util/logger'
 
 /**
  * Admin SDK API client wrapper using googleapis.

@@ -18,11 +18,11 @@ limitations under the License.
  * @file Cloud Identity API client wrapper using googleapis.
  */
 import { google } from 'googleapis'
-import { createApiClient } from '../util/api-client.js'
-import { callWithRetry, handleApiError } from '../util/helpers.js'
-import { SCOPES, API_VERSIONS, TAGS, CLOUD_IDENTITY_SETTING_TYPES, CLOUD_IDENTITY_FILTERS } from '../constants.js'
-import { CHROME_TRIGGERS } from '../util/chrome_dlp_constants.js'
-import { logger } from '../util/logger.js'
+import { createApiClient } from '../util/api-client'
+import { callWithRetry, handleApiError } from '../util/helpers'
+import { SCOPES, API_VERSIONS, TAGS, CLOUD_IDENTITY_SETTING_TYPES, CLOUD_IDENTITY_FILTERS } from '../constants'
+import { CHROME_TRIGGERS } from '../util/chrome_dlp_constants'
+import { logger } from '../util/logger'
 
 /**
  * Cloud Identity API client wrapper using googleapis.

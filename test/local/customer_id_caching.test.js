@@ -16,7 +16,7 @@ limitations under the License.
 
 import assert from 'node:assert/strict'
 import { describe, test, mock, beforeEach } from 'node:test'
-import { guardedToolCall } from '../../tools/utils/wrapper.js'
+import { guardedToolCall } from '../../tools/utils/wrapper'
 
 describe('Customer ID Caching and Auto-Resolution', () => {
   beforeEach(() => {})

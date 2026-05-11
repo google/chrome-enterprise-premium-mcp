@@ -16,8 +16,8 @@ limitations under the License.
 
 import assert from 'node:assert/strict'
 import { describe, test, mock } from 'node:test'
-import { esmock } from '../helpers/mock-utils.js'
-import { WORKSPACE_RULE_LIMITS, AGENT_DISPLAY_NAME_PREFIX } from '../../lib/util/chrome_dlp_constants.js'
+import { esmock } from '../helpers/mock-utils'
+import { WORKSPACE_RULE_LIMITS, AGENT_DISPLAY_NAME_PREFIX } from '../../lib/util/chrome_dlp_constants'
 
 describe('Tool Input Validation', () => {
   const mockServer = {
@@ -33,9 +33,9 @@ describe('Tool Input Validation', () => {
 
   describe('create_word_list_detector', async () => {
     const { registerCreateWordListDetectorTool } = await esmock(
-      '../../tools/definitions/create_word_list_detector.js',
+      '../../tools/definitions/create_word_list_detector',
       {
-        '../../tools/utils/wrapper.js': {
+        '../../tools/utils/wrapper': {
           guardedToolCall: t => t,
           getAuthToken: () => 'token',
           resolveRootOrgUnitId: () => 'root',
@@ -72,8 +72,8 @@ describe('Tool Input Validation', () => {
   })
 
   describe('create_chrome_dlp_rule', async () => {
-    const { registerCreateChromeDlpRuleTool } = await esmock('../../tools/definitions/create_chrome_dlp_rule.js', {
-      '../../tools/utils/wrapper.js': {
+    const { registerCreateChromeDlpRuleTool } = await esmock('../../tools/definitions/create_chrome_dlp_rule', {
+      '../../tools/utils/wrapper': {
         guardedToolCall: t => t,
         getAuthToken: () => 'token',
         inputSchemas: { customerId: {}, orgUnitId: { describe: () => ({}) } },

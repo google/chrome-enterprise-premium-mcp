@@ -16,7 +16,7 @@ limitations under the License.
 
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
-import { registerGetConnectorPolicyTool } from '../../../tools/definitions/get_connector_policy.js'
+import { registerGetConnectorPolicyTool } from '../../../tools/definitions/get_connector_policy'
 
 describe('get_connector_policy tool handler', () => {
   const getHandler = mockChromePolicyClient => {

@@ -20,15 +20,15 @@ limitations under the License.
 
 import { z } from 'zod'
 
-import { guardedToolCall, formatToolResponse, safeFormatResponse } from '../utils/wrapper.js'
-import { commonOutputSchemas } from './shared.js'
-import { TAGS } from '../../lib/constants.js'
-import { logger } from '../../lib/util/logger.js'
+import { guardedToolCall, formatToolResponse, safeFormatResponse } from '../utils/wrapper'
+import { commonOutputSchemas } from './shared'
+import { TAGS } from '../../lib/constants'
+import { logger } from '../../lib/util/logger'
 import {
   validateCelCondition,
   validateActionParameters,
   validateMcpSafetyConstraints,
-} from '../../lib/util/cel_validator.js'
+} from '../../lib/util/cel_validator'
 import {
   CHROME_TRIGGERS,
   CHROME_ACTION_TYPES,
@@ -38,7 +38,7 @@ import {
   MCP_SAFETY_CONSTRAINTS,
   POLICY_STATES,
   MASK_TYPES,
-} from '../../lib/util/chrome_dlp_constants.js'
+} from '../../lib/util/chrome_dlp_constants'
 
 const triggerList = Object.entries(CHROME_TRIGGERS)
   .map(([key, obj]) => `- ${key}: ${obj.description}`)

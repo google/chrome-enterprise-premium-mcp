@@ -18,8 +18,8 @@ limitations under the License.
  * @file Organizational Unit utilities for MCP tools.
  */
 
-import { TAGS } from '../../lib/constants.js'
-import { logger } from '../../lib/util/logger.js'
+import { TAGS } from '../../lib/constants'
+import { logger } from '../../lib/util/logger'
 
 /**
  * Resolves the root organizational unit ID for the given customer.

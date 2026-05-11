@@ -16,7 +16,7 @@ limitations under the License.
 
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
-import { formatStatus } from '../../../lib/util/helpers.js'
+import { formatStatus } from '../../../lib/util/helpers'
 
 describe('Tool Utils - formatStatus', () => {
   test('When input is null or undefined, then it returns "Unknown"', () => {

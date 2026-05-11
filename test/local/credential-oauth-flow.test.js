@@ -19,7 +19,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import os from 'node:os'
-import { oauthFlowCredential } from '../../lib/util/credential/oauth_flow.js'
+import { oauthFlowCredential } from '../../lib/util/credential/oauth_flow'
 
 async function tmpCachePath(name) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'cep-mcp-oauth-test-'))

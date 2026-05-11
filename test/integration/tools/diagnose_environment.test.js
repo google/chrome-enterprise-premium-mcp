@@ -23,7 +23,7 @@ limitations under the License.
 
 import { describe, test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { createIntegrationHarness, teardownIntegrationHarness } from '../../helpers/integration/tools/harness.js'
+import { createIntegrationHarness, teardownIntegrationHarness } from '../../helpers/integration/tools/harness'
 
 const EXPECTED_CONNECTOR_COUNT = 6
 

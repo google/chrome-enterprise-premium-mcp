@@ -18,9 +18,9 @@ limitations under the License.
  * @file Wrapper utilities to guard and transform MCP tool calls.
  */
 
-import { TAGS, SCOPES } from '../../lib/constants.js'
-import { logger } from '../../lib/util/logger.js'
-import { validateAndGetOrgUnitId } from './org-unit.js'
+import { TAGS, SCOPES } from '../../lib/constants'
+import { logger } from '../../lib/util/logger'
+import { validateAndGetOrgUnitId } from './org-unit'
 
 /**
  * Generates a proactive remediation message for authentication errors.

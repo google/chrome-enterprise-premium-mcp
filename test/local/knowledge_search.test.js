@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */ import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
-import { registerKnowledgeTools } from '../../tools/definitions/knowledge.js'
+import { registerKnowledgeTools } from '../../tools/definitions/knowledge'
 
 describe('Knowledge Tools Real Database Integration', () => {
   const handlers = {}

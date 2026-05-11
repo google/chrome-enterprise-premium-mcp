@@ -16,7 +16,7 @@ limitations under the License.
 
 import { describe, test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { startFakeServer } from '../helpers/fake-api-server.js'
+import { startFakeServer } from '../helpers/fake-api-server'
 
 describe('Fake API Server', () => {
   let server

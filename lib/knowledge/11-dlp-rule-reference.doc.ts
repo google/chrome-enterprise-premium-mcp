@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { generateDlpCelReference } from '../util/chrome_dlp_constants.js'
+import { generateDlpCelReference } from '../util/chrome_dlp_constants'
 
 export const doc = {
   title: 'Chrome DLP Rule Configuration Reference',

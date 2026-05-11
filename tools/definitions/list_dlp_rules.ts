@@ -19,11 +19,11 @@ limitations under the License.
  */
 
 import { z } from 'zod'
-import { guardedToolCall, formatToolResponse, safeFormatResponse } from '../utils/wrapper.js'
-import { parseDlpRule } from '../../lib/util/helpers.js'
-import { commonOutputSchemas } from './shared.js'
-import { TAGS } from '../../lib/constants.js'
-import { logger } from '../../lib/util/logger.js'
+import { guardedToolCall, formatToolResponse, safeFormatResponse } from '../utils/wrapper'
+import { parseDlpRule } from '../../lib/util/helpers'
+import { commonOutputSchemas } from './shared'
+import { TAGS } from '../../lib/constants'
+import { logger } from '../../lib/util/logger'
 
 /**
  * Registers the 'list_dlp_rules' tool with the MCP server.

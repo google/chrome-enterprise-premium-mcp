@@ -18,10 +18,10 @@ limitations under the License.
  * @file Service Usage API client wrapper using googleapis.
  */
 import { google } from 'googleapis'
-import { createApiClient } from '../util/api-client.js'
-import { callWithRetry, handleApiError } from '../util/helpers.js'
-import { API_VERSIONS, SCOPES, TAGS } from '../constants.js'
-import { logger } from '../util/logger.js'
+import { createApiClient } from '../util/api-client'
+import { callWithRetry, handleApiError } from '../util/helpers'
+import { API_VERSIONS, SCOPES, TAGS } from '../constants'
+import { logger } from '../util/logger'
 
 /**
  * Service Usage API client wrapper using googleapis.

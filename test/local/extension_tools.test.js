@@ -16,7 +16,7 @@ limitations under the License.
 
 import assert from 'node:assert/strict'
 import { describe, test, mock, beforeEach } from 'node:test'
-import { esmock } from '../helpers/mock-utils.js'
+import { esmock } from '../helpers/mock-utils'
 
 const SEB_EXTENSION_ID = 'ekajlcmdfcigmdbphhifahdfjbkciflj'
 const INSTALL_TYPE_SCHEMA = 'chrome.users.apps.InstallType'
@@ -52,10 +52,10 @@ describe('Extension Tools', () => {
     }
 
     const { registerTools } = await esmock(
-      '../../tools/index.js',
+      '../../tools/index',
       {},
       {
-        '../../lib/api/chrome_policy_client.js': {
+        '../../lib/api/chrome_policy_client': {
           ChromePolicyClient: MockChromePolicyClient,
         },
       },
@@ -84,10 +84,10 @@ describe('Extension Tools', () => {
     }
 
     const { registerTools } = await esmock(
-      '../../tools/index.js',
+      '../../tools/index',
       {},
       {
-        '../../lib/api/chrome_policy_client.js': {
+        '../../lib/api/chrome_policy_client': {
           ChromePolicyClient: MockChromePolicyClient,
         },
       },
@@ -129,10 +129,10 @@ describe('Extension Tools', () => {
     }
 
     const { registerTools } = await esmock(
-      '../../tools/index.js',
+      '../../tools/index',
       {},
       {
-        '../../lib/api/chrome_policy_client.js': {
+        '../../lib/api/chrome_policy_client': {
           ChromePolicyClient: MockChromePolicyClient,
         },
       },
@@ -163,10 +163,10 @@ describe('Extension Tools', () => {
     }
 
     const { registerTools } = await esmock(
-      '../../tools/index.js',
+      '../../tools/index',
       {},
       {
-        '../../lib/api/chrome_policy_client.js': {
+        '../../lib/api/chrome_policy_client': {
           ChromePolicyClient: MockChromePolicyClient,
         },
       },

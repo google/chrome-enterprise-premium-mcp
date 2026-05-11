@@ -16,8 +16,8 @@ limitations under the License.
 
 import assert from 'node:assert/strict'
 import { describe, test, mock, beforeEach } from 'node:test'
-import { esmock } from '../helpers/mock-utils.js'
-import { AdminSdkClient } from '../../lib/api/admin_sdk_client.js'
+import { esmock } from '../helpers/mock-utils'
+import { AdminSdkClient } from '../../lib/api/admin_sdk_client'
 
 describe('check_cep_subscription Tool', () => {
   let server
@@ -40,10 +40,10 @@ describe('check_cep_subscription Tool', () => {
     }
 
     const { registerTools } = await esmock(
-      '../../tools/index.js',
+      '../../tools/index',
       {},
       {
-        '../../lib/api/admin_sdk_client.js': {
+        '../../lib/api/admin_sdk_client': {
           AdminSdkClient: MockAdminSdkClient,
         },
       },
@@ -77,10 +77,10 @@ describe('check_cep_subscription Tool', () => {
     }
 
     const { registerTools } = await esmock(
-      '../../tools/index.js',
+      '../../tools/index',
       {},
       {
-        '../../lib/api/admin_sdk_client.js': {
+        '../../lib/api/admin_sdk_client': {
           AdminSdkClient: MockAdminSdkClient,
         },
       },
@@ -118,10 +118,10 @@ describe('check_cep_subscription Tool', () => {
     }
 
     const { registerTools } = await esmock(
-      '../../tools/index.js',
+      '../../tools/index',
       {},
       {
-        '../../lib/api/admin_sdk_client.js': {
+        '../../lib/api/admin_sdk_client': {
           AdminSdkClient: MockAdminSdkClient,
         },
       },
@@ -158,10 +158,10 @@ describe('check_cep_subscription Tool', () => {
     }
 
     const { registerTools } = await esmock(
-      '../../tools/index.js',
+      '../../tools/index',
       {},
       {
-        '../../lib/api/admin_sdk_client.js': {
+        '../../lib/api/admin_sdk_client': {
           AdminSdkClient: MockAdminSdkClient,
         },
       },

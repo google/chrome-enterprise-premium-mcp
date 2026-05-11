@@ -16,7 +16,7 @@ limitations under the License.
 
 import assert from 'node:assert/strict'
 import { describe, test, mock, beforeEach } from 'node:test'
-import { registerCheckAndEnableCepApiTool } from '../../tools/definitions/check_and_enable_cep_api.js'
+import { registerCheckAndEnableCepApiTool } from '../../tools/definitions/check_and_enable_cep_api'
 
 describe('check_and_enable_cep_api Tool', () => {
   let server

@@ -16,8 +16,8 @@ limitations under the License.
 
 import { test, describe, before, after } from 'node:test'
 import assert from 'node:assert/strict'
-import { createIntegrationHarness, teardownIntegrationHarness } from '../../helpers/integration/tools/harness.js'
-import { parseToolOutput } from '../../helpers/integration/tools/tool_utils.js'
+import { createIntegrationHarness, teardownIntegrationHarness } from '../../helpers/integration/tools/harness'
+import { parseToolOutput } from '../../helpers/integration/tools/tool_utils'
 
 describe('Connector Enablement Integration', () => {
   let harness

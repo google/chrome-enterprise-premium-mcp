@@ -22,8 +22,8 @@ import {
   buildQuotaProjectWarning,
   buildOAuthClientField,
   shellTokenize,
-} from '../../lib/util/auth_messages.js'
-import { SCOPES } from '../../lib/constants.js'
+} from '../../lib/util/auth_messages'
+import { SCOPES } from '../../lib/constants'
 
 const REQUIRED = Object.values(SCOPES)
 

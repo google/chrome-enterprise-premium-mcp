@@ -19,10 +19,10 @@ limitations under the License.
  */
 
 import { z } from 'zod'
-import { guardedToolCall, formatToolResponse, safeFormatResponse } from '../utils/wrapper.js'
-import { TAGS } from '../../lib/constants.js'
-import { logger } from '../../lib/util/logger.js'
-import { AGENT_DISPLAY_NAME_PREFIX, ADMIN_CONSOLE_DLP_RULE_LINK_TEMPLATE } from '../../lib/util/chrome_dlp_constants.js'
+import { guardedToolCall, formatToolResponse, safeFormatResponse } from '../utils/wrapper'
+import { TAGS } from '../../lib/constants'
+import { logger } from '../../lib/util/logger'
+import { AGENT_DISPLAY_NAME_PREFIX, ADMIN_CONSOLE_DLP_RULE_LINK_TEMPLATE } from '../../lib/util/chrome_dlp_constants'
 
 /**
  * Registers the 'delete_agent_dlp_rule' tool with the MCP server.

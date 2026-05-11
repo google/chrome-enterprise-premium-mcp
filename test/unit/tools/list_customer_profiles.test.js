@@ -16,7 +16,7 @@ limitations under the License.
 
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
-import { registerCustomerProfileTool } from '../../../tools/definitions/list_customer_profiles.js'
+import { registerCustomerProfileTool } from '../../../tools/definitions/list_customer_profiles'
 
 describe('list_customer_profiles tool handler', () => {
   const getHandler = mockChromeManagementClient => {

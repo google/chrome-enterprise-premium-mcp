@@ -18,10 +18,10 @@ limitations under the License.
  * @file Chrome Policy API client wrapper using googleapis.
  */
 import { google } from 'googleapis'
-import { createApiClient } from '../util/api-client.js'
-import { callWithRetry, handleApiError } from '../util/helpers.js'
-import { SCOPES, API_VERSIONS, TAGS } from '../constants.js'
-import { logger } from '../util/logger.js'
+import { createApiClient } from '../util/api-client'
+import { callWithRetry, handleApiError } from '../util/helpers'
+import { SCOPES, API_VERSIONS, TAGS } from '../constants'
+import { logger } from '../util/logger'
 
 export const ConnectorPolicyFilter = {
   ON_FILE_ATTACHED: 'chrome.users.OnFileAttachedConnectorPolicy',

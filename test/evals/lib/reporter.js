@@ -20,7 +20,7 @@ limitations under the License.
 
 import fs from 'node:fs'
 import path from 'node:path'
-import { Status } from './transient.js'
+import { Status } from './transient'
 
 const ANSI = Object.freeze({
   reset: '\x1b[0m',

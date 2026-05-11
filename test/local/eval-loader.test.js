@@ -20,7 +20,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { loadGlobalConfig, loadAllEvals, loadEvalAsCodeFromFile } from '../evals/lib/loader.js'
+import { loadGlobalConfig, loadAllEvals, loadEvalAsCodeFromFile } from '../evals/lib/loader'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const evalsDir = path.resolve(__dirname, '..', 'evals')

@@ -18,7 +18,7 @@ limitations under the License.
  * @file Prompt definition for the '/cep:health' command.
  */
 
-import { SHARED_DIAGNOSTIC_RULES } from './shared.js'
+import { SHARED_DIAGNOSTIC_RULES } from './shared'
 
 /**
  * MCP prompt name for the environment health-check command.

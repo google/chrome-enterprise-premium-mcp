@@ -17,11 +17,11 @@ limitations under the License.
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { Client } from '@modelcontextprotocol/sdk/client/index.js'
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
-import { registerTools } from '../../../../tools/index.js'
-import { registerPrompts } from '../../../../prompts/index.js'
-import { getApiClients } from './client_factory.js'
-import { parseToolOutput } from './tool_utils.js'
-import { startFakeServer } from '../../fake-api-server.js'
+import { registerTools } from '../../../../tools/index'
+import { registerPrompts } from '../../../../prompts/index'
+import { getApiClients } from './client_factory'
+import { parseToolOutput } from './tool_utils'
+import { startFakeServer } from '../../fake-api-server'
 
 const SEPARATOR_LENGTH = 80
 

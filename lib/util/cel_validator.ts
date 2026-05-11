@@ -34,7 +34,7 @@ import {
   WORKSPACE_RULE_LIMITS,
   POLICY_STATES,
   MCP_SAFETY_CONSTRAINTS,
-} from './chrome_dlp_constants.js'
+} from './chrome_dlp_constants'
 
 /**
  * Validates that the requested action and state comply with MCP-specific safety constraints.

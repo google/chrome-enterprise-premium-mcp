@@ -15,11 +15,11 @@ limitations under the License.
 */
 
 import { OAuth2Client } from 'google-auth-library'
-import { AdminSdkClient } from '../../../../lib/api/admin_sdk_client.js'
-import { CloudIdentityClient } from '../../../../lib/api/cloud_identity_client.js'
-import { ChromePolicyClient } from '../../../../lib/api/chrome_policy_client.js'
-import { ChromeManagementClient } from '../../../../lib/api/chrome_management_client.js'
-import { ServiceUsageClient } from '../../../../lib/api/service_usage_client.js'
+import { AdminSdkClient } from '../../../../lib/api/admin_sdk_client'
+import { CloudIdentityClient } from '../../../../lib/api/cloud_identity_client'
+import { ChromePolicyClient } from '../../../../lib/api/chrome_policy_client'
+import { ChromeManagementClient } from '../../../../lib/api/chrome_management_client'
+import { ServiceUsageClient } from '../../../../lib/api/service_usage_client'
 
 export function getApiClients(options = {}) {
   const backend = options.backend || process.env.CEP_BACKEND || (process.env.GOOGLE_API_ROOT_URL ? 'fake' : 'real')

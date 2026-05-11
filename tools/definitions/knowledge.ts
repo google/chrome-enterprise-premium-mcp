@@ -18,18 +18,18 @@ limitations under the License.
  * @file Tool definitions for content search and document retrieval.
  */
 
-import { guardedToolCall, formatToolResponse } from '../utils/wrapper.js'
-import { loadDynamicDocs } from '../utils/dynamic_docs.js'
+import { guardedToolCall, formatToolResponse } from '../utils/wrapper'
+import { loadDynamicDocs } from '../utils/dynamic_docs'
 import { z } from 'zod'
 import fs from 'fs'
-import { logger } from '../../lib/util/logger.js'
-import { TAGS } from '../../lib/constants.js'
+import { logger } from '../../lib/util/logger'
+import { TAGS } from '../../lib/constants'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import matter from 'gray-matter'
 import axios from 'axios'
 import * as cheerio from 'cheerio'
-import { FLAGS } from '../../lib/util/feature_flags.js'
+import { FLAGS } from '../../lib/util/feature_flags'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)

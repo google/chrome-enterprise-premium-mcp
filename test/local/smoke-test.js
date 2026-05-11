@@ -20,7 +20,7 @@ process.env.GCP_STDIO ??= 'false'
 
 import { spawn } from 'child_process'
 import http from 'http'
-import { logger } from '../../lib/util/logger.js'
+import { logger } from '../../lib/util/logger'
 
 // Run the stdio-transport initialize check first (async IIFE), before spinning up
 // the HTTP server for the remaining smoke tests. stdio is cmcp's primary

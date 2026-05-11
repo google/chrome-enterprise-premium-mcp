@@ -17,8 +17,8 @@ limitations under the License.
 import fs from 'fs'
 import path from 'path'
 import { pathToFileURL } from 'url'
-import { logger } from '../../lib/util/logger.js'
-import { TAGS } from '../../lib/constants.js'
+import { logger } from '../../lib/util/logger'
+import { TAGS } from '../../lib/constants'
 
 /**
  * Automatically discovers and loads dynamic documentation modules (*.doc.js).

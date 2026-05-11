@@ -34,7 +34,7 @@ limitations under the License.
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { execFileSync } from 'node:child_process'
-import { findTestFiles } from './run-utils.js'
+import { findTestFiles } from './run-utils'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const root = resolve(__dirname, '..')
@@ -64,7 +64,9 @@ if (testFiles.length === 0) {
 console.log(`Running ${testFiles.length} integration test file(s) with CEP_BACKEND=${backend}...\n`)
 
 try {
-  execFileSync(process.execPath, ['--test', '--test-reporter', 'spec', ...testFiles], {
+  // Use npx tsx to ensure we have the TypeScript loader even when running
+  // via node's built-in test runner.
+  execFileSync('npx', ['tsx', '--test', '--test-reporter', 'spec', ...testFiles], {
     cwd: root,
     stdio: 'inherit',
     env: process.env,

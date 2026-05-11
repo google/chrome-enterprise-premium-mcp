@@ -25,12 +25,12 @@ limitations under the License.
  */
 
 import { z } from 'zod'
-import { guardedToolCall, formatToolResponse } from '../utils/wrapper.js'
-import { TAGS, CONNECTOR_DISPLAY_NAMES } from '../../lib/constants.js'
-import { logger } from '../../lib/util/logger.js'
-import { ConnectorPolicyFilter } from '../../lib/api/chrome_policy_client.js'
-import { CHROME_ACTION_TYPES } from '../../lib/util/chrome_dlp_constants.js'
-import { analyzeConnectorPolicy } from '../../lib/util/connector_policy_helper.js'
+import { guardedToolCall, formatToolResponse } from '../utils/wrapper'
+import { TAGS, CONNECTOR_DISPLAY_NAMES } from '../../lib/constants'
+import { logger } from '../../lib/util/logger'
+import { ConnectorPolicyFilter } from '../../lib/api/chrome_policy_client'
+import { CHROME_ACTION_TYPES } from '../../lib/util/chrome_dlp_constants'
+import { analyzeConnectorPolicy } from '../../lib/util/connector_policy_helper'
 
 const CONNECTOR_TYPES = {
   uploadAnalysis: 'ON_FILE_ATTACHED',

@@ -20,9 +20,9 @@ limitations under the License.
  * Provides functions to register all available prompts with the MCP server.
  */
 
-import { registerHealthPrompt } from './definitions/health.js'
-import { registerOptimizePrompt } from './definitions/optimize.js'
-import { registerExpertPrompt } from './definitions/expert.js'
+import { registerHealthPrompt } from './definitions/health'
+import { registerOptimizePrompt } from './definitions/optimize'
+import { registerExpertPrompt } from './definitions/expert'
 
 /**
  * Registers all prompts with the MCP server.

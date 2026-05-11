@@ -36,24 +36,24 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const pkg = JSON.parse(readFileSync(fileURLToPath(new URL('./package.json', import.meta.url)), 'utf8'))
 
-import { buildServerInstructions } from './lib/knowledge/instructions.js'
-import { registerTools } from './tools/index.js'
-import { registerPrompts } from './prompts/index.js'
-import { checkGCP } from './lib/util/gcp.js'
-import { featureFlags, FLAGS } from './lib/util/feature_flags.js'
-import { logger } from './lib/util/logger.js'
-import { printBanner, dim } from './lib/util/banner.js'
-import { buildScopesField, buildAuthRemediationLines, buildQuotaProjectWarning } from './lib/util/auth_messages.js'
-import { verifyIdToken, parseExpectedAudience } from './lib/util/credential/jwt_verifier.js'
-import { TAGS, SCOPES } from './lib/constants.js'
-import { adcCredential } from './lib/util/credential/adc.js'
+import { buildServerInstructions } from './lib/knowledge/instructions'
+import { registerTools } from './tools/index'
+import { registerPrompts } from './prompts/index'
+import { checkGCP } from './lib/util/gcp'
+import { featureFlags, FLAGS } from './lib/util/feature_flags'
+import { logger } from './lib/util/logger'
+import { printBanner, dim } from './lib/util/banner'
+import { buildScopesField, buildAuthRemediationLines, buildQuotaProjectWarning } from './lib/util/auth_messages'
+import { verifyIdToken, parseExpectedAudience } from './lib/util/credential/jwt_verifier'
+import { TAGS, SCOPES } from './lib/constants'
+import { adcCredential } from './lib/util/credential/adc'
 
 // Import Clients
-import { AdminSdkClient } from './lib/api/admin_sdk_client.js'
-import { CloudIdentityClient } from './lib/api/cloud_identity_client.js'
-import { ChromePolicyClient } from './lib/api/chrome_policy_client.js'
-import { ChromeManagementClient } from './lib/api/chrome_management_client.js'
-import { ServiceUsageClient } from './lib/api/service_usage_client.js'
+import { AdminSdkClient } from './lib/api/admin_sdk_client'
+import { CloudIdentityClient } from './lib/api/cloud_identity_client'
+import { ChromePolicyClient } from './lib/api/chrome_policy_client'
+import { ChromeManagementClient } from './lib/api/chrome_management_client'
+import { ServiceUsageClient } from './lib/api/service_usage_client'
 
 /**
  * Redirects console.log to console.error for compatibility with Stdio transport.

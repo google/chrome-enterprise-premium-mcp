@@ -16,7 +16,7 @@ limitations under the License.
 
 import assert from 'node:assert/strict'
 import { describe, test, mock } from 'node:test'
-import { esmock } from '../helpers/mock-utils.js'
+import { esmock } from '../helpers/mock-utils'
 
 function createMockExecFile(...handlers) {
   return mock.fn((cmd, args, opts, cb) => {
@@ -34,7 +34,7 @@ function createMockExecFile(...handlers) {
 
 describe('Auth', () => {
   test('When an auth token is provided, then it returns an OAuth2 client', async () => {
-    const { getAuthClient } = await esmock('../../lib/util/auth.js', {
+    const { getAuthClient } = await esmock('../../lib/util/auth', {
       'google-auth-library': {
         OAuth2Client: class {
           setCredentials(credentials) {
@@ -49,7 +49,7 @@ describe('Auth', () => {
 
   test('When no auth token is provided, then it returns a GoogleAuth client', async () => {
     let getClientCalled = false
-    const { getAuthClient } = await esmock('../../lib/util/auth.js', {
+    const { getAuthClient } = await esmock('../../lib/util/auth', {
       'google-auth-library': {
         GoogleAuth: class {
           async getClient() {
@@ -72,7 +72,7 @@ describe('Auth', () => {
     const consoleLogMock = mock.method(console, 'log', () => {})
     const consoleErrorMock = mock.method(console, 'error', () => {})
 
-    const { ensureADCCredentials } = await esmock('../../lib/util/auth.js', {
+    const { ensureADCCredentials } = await esmock('../../lib/util/auth', {
       'google-auth-library': {
         GoogleAuth: class {
           async getClient() {
@@ -96,7 +96,7 @@ describe('Auth', () => {
     // Mock console.error to suppress output during test
     const consoleErrorMock = mock.method(console, 'error', () => {})
 
-    const { ensureADCCredentials } = await esmock('../../lib/util/auth.js', {
+    const { ensureADCCredentials } = await esmock('../../lib/util/auth', {
       'google-auth-library': {
         GoogleAuth: class {
           async getClient() {
@@ -142,7 +142,7 @@ describe('Auth', () => {
         },
       )
 
-      const { getAuthErrorMessage } = await esmock('../../lib/util/auth-error.js', {
+      const { getAuthErrorMessage } = await esmock('../../lib/util/auth-error', {
         'node:child_process': {
           execFile: mockExecFile,
         },
@@ -174,7 +174,7 @@ describe('Auth', () => {
         },
       )
 
-      const { getAuthErrorMessage } = await esmock('../../lib/util/auth-error.js', {
+      const { getAuthErrorMessage } = await esmock('../../lib/util/auth-error', {
         'node:child_process': {
           execFile: mockExecFile,
         },
@@ -200,7 +200,7 @@ describe('Auth', () => {
         },
       )
 
-      const { getAuthErrorMessage } = await esmock('../../lib/util/auth-error.js', {
+      const { getAuthErrorMessage } = await esmock('../../lib/util/auth-error', {
         'node:child_process': {
           execFile: mockExecFile,
         },
@@ -228,7 +228,7 @@ describe('Auth', () => {
         },
       )
 
-      const { getAuthErrorMessage } = await esmock('../../lib/util/auth-error.js', {
+      const { getAuthErrorMessage } = await esmock('../../lib/util/auth-error', {
         'node:child_process': {
           execFile: mockExecFile,
         },

@@ -16,7 +16,7 @@ limitations under the License.
 
 import assert from 'node:assert/strict'
 import { describe, test, mock, beforeEach } from 'node:test'
-import { esmock } from '../helpers/mock-utils.js'
+import { esmock } from '../helpers/mock-utils'
 
 describe('Chrome Management API', () => {
   let server
@@ -40,10 +40,10 @@ describe('Chrome Management API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/index.js',
+        '../../tools/index',
         {},
         {
-          '../../lib/api/chrome_management_client.js': {
+          '../../lib/api/chrome_management_client': {
             ChromeManagementClient: MockChromeManagementClient,
           },
         },
@@ -78,10 +78,10 @@ describe('Chrome Management API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/index.js',
+        '../../tools/index',
         {},
         {
-          '../../lib/api/chrome_management_client.js': {
+          '../../lib/api/chrome_management_client': {
             ChromeManagementClient: MockChromeManagementClient,
           },
         },
@@ -114,10 +114,10 @@ describe('Chrome Management API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/index.js',
+        '../../tools/index',
         {},
         {
-          '../../lib/api/chrome_management_client.js': {
+          '../../lib/api/chrome_management_client': {
             ChromeManagementClient: MockChromeManagementClient,
           },
         },
@@ -148,10 +148,10 @@ describe('Chrome Management API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/index.js',
+        '../../tools/index',
         {},
         {
-          '../../lib/api/chrome_management_client.js': {
+          '../../lib/api/chrome_management_client': {
             ChromeManagementClient: MockChromeManagementClient,
           },
         },
@@ -171,7 +171,7 @@ describe('Chrome Management API', () => {
 
   describe('ChromeManagementClient authToken threading', () => {
     test('When countBrowserVersions is called with an authToken, then it is forwarded to getClient', async () => {
-      const { ChromeManagementClient } = await import('../../lib/api/chrome_management_client.js')
+      const { ChromeManagementClient } = await import('../../lib/api/chrome_management_client')
       const client = new ChromeManagementClient()
       let observedAuth = 'sentinel-not-set'
       client.getClient = async authToken => {
@@ -189,7 +189,7 @@ describe('Chrome Management API', () => {
     })
 
     test('When listCustomerProfiles is called with an authToken, then it is forwarded to getClient', async () => {
-      const { ChromeManagementClient } = await import('../../lib/api/chrome_management_client.js')
+      const { ChromeManagementClient } = await import('../../lib/api/chrome_management_client')
       const client = new ChromeManagementClient()
       let observedAuth = 'sentinel-not-set'
       client.getClient = async authToken => {

@@ -16,8 +16,8 @@ limitations under the License.
 
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { adcCredential } from '../../lib/util/credential/adc.js'
-import { SCOPES } from '../../lib/constants.js'
+import { adcCredential } from '../../lib/util/credential/adc'
+import { SCOPES } from '../../lib/constants'
 
 describe('adcCredential', () => {
   describe('probe', () => {

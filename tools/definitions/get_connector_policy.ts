@@ -19,10 +19,10 @@ limitations under the License.
  */
 
 import { z } from 'zod'
-import { guardedToolCall, formatToolResponse, safeFormatResponse } from '../utils/wrapper.js'
-import { CONNECTOR_KEY_MAPPING, POLICY_DISPLAY_NAMES } from '../../lib/constants.js'
-import { ConnectorPolicyFilter } from '../../lib/api/chrome_policy_client.js'
-import { analyzeConnectorPolicy, humanize } from '../../lib/util/connector_policy_helper.js'
+import { guardedToolCall, formatToolResponse, safeFormatResponse } from '../utils/wrapper'
+import { CONNECTOR_KEY_MAPPING, POLICY_DISPLAY_NAMES } from '../../lib/constants'
+import { ConnectorPolicyFilter } from '../../lib/api/chrome_policy_client'
+import { analyzeConnectorPolicy, humanize } from '../../lib/util/connector_policy_helper'
 
 /**
  * Processes raw policy entries for a specific connector, flattening and analyzing them.

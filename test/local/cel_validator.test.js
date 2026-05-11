@@ -16,8 +16,8 @@ limitations under the License.
 
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { validateCelCondition, validateActionParameters } from '../../lib/util/cel_validator.js'
-import { CHROME_ACTION_TYPES } from '../../lib/util/chrome_dlp_constants.js'
+import { validateCelCondition, validateActionParameters } from '../../lib/util/cel_validator'
+import { CHROME_ACTION_TYPES } from '../../lib/util/chrome_dlp_constants'
 
 describe('CEL Validator', () => {
   test('When a simple valid condition is provided, then it validates correctly', () => {

@@ -22,7 +22,7 @@ limitations under the License.
  */
 
 import { execFile } from 'node:child_process'
-import { ERROR_MESSAGES, SCOPES } from '../constants.js'
+import { ERROR_MESSAGES, SCOPES } from '../constants'
 
 const GCLOUD_CALL_TIMEOUT_MS = 1000
 const GCLOUD_TOTAL_BUDGET_MS = 5000

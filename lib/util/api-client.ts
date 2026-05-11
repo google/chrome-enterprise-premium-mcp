@@ -18,7 +18,7 @@ limitations under the License.
  * @file Factory for creating authenticated Google API client instances.
  */
 
-import { getAuthClient } from './auth.js'
+import { getAuthClient } from './auth'
 
 /**
  * Creates a Google API client instance.

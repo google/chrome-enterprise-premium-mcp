@@ -20,8 +20,8 @@ limitations under the License.
 
 import assert from 'node:assert/strict'
 import { describe, test, mock, beforeEach } from 'node:test'
-import { esmock } from '../helpers/mock-utils.js'
-import { setupCloudIdentityHandler } from './mock-utils.js'
+import { esmock } from '../helpers/mock-utils'
+import { setupCloudIdentityHandler } from './mock-utils'
 
 describe('create_default_dlp_rules Tool', () => {
   let server
@@ -80,10 +80,10 @@ describe('create_default_dlp_rules Tool', () => {
     }
 
     const { registerTools } = await esmock(
-      '../../tools/index.js',
+      '../../tools/index',
       {},
       {
-        '../../lib/api/cloud_identity_client.js': {
+        '../../lib/api/cloud_identity_client': {
           CloudIdentityClient: MockCloudIdentityClient,
         },
       },
@@ -125,10 +125,10 @@ describe('create_default_dlp_rules Tool', () => {
     }
 
     const { registerTools } = await esmock(
-      '../../tools/index.js',
+      '../../tools/index',
       {},
       {
-        '../../lib/api/cloud_identity_client.js': {
+        '../../lib/api/cloud_identity_client': {
           CloudIdentityClient: MockCloudIdentityClient,
         },
       },
@@ -168,10 +168,10 @@ describe('create_default_dlp_rules Tool', () => {
     }
 
     const { registerTools } = await esmock(
-      '../../tools/index.js',
+      '../../tools/index',
       {},
       {
-        '../../lib/api/cloud_identity_client.js': {
+        '../../lib/api/cloud_identity_client': {
           CloudIdentityClient: MockCloudIdentityClient,
         },
       },

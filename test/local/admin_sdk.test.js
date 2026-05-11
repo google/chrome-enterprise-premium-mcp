@@ -16,7 +16,7 @@ limitations under the License.
 
 import assert from 'node:assert/strict'
 import { describe, test, mock, beforeEach } from 'node:test'
-import { esmock } from '../helpers/mock-utils.js'
+import { esmock } from '../helpers/mock-utils'
 
 describe('Admin SDK API', () => {
   let server
@@ -37,10 +37,10 @@ describe('Admin SDK API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/index.js',
+        '../../tools/index',
         {},
         {
-          '../../lib/api/admin_sdk_client.js': {
+          '../../lib/api/admin_sdk_client': {
             AdminSdkClient: MockAdminSdkClient,
           },
         },
@@ -73,10 +73,10 @@ describe('Admin SDK API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/index.js',
+        '../../tools/index',
         {},
         {
-          '../../lib/api/admin_sdk_client.js': {
+          '../../lib/api/admin_sdk_client': {
             AdminSdkClient: MockAdminSdkClient,
           },
         },
@@ -110,10 +110,10 @@ describe('Admin SDK API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/index.js',
+        '../../tools/index',
         {},
         {
-          '../../lib/api/admin_sdk_client.js': {
+          '../../lib/api/admin_sdk_client': {
             AdminSdkClient: MockAdminSdkClient,
           },
         },
@@ -147,10 +147,10 @@ describe('Admin SDK API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/index.js',
+        '../../tools/index',
         {},
         {
-          '../../lib/api/admin_sdk_client.js': {
+          '../../lib/api/admin_sdk_client': {
             AdminSdkClient: MockAdminSdkClient,
           },
         },
@@ -177,10 +177,10 @@ describe('Admin SDK API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/index.js',
+        '../../tools/index',
         {},
         {
-          '../../lib/api/admin_sdk_client.js': {
+          '../../lib/api/admin_sdk_client': {
             AdminSdkClient: MockAdminSdkClient,
           },
         },
@@ -214,10 +214,10 @@ describe('Admin SDK API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/index.js',
+        '../../tools/index',
         {},
         {
-          '../../lib/api/admin_sdk_client.js': {
+          '../../lib/api/admin_sdk_client': {
             AdminSdkClient: MockAdminSdkClient,
           },
         },
@@ -252,10 +252,10 @@ describe('Admin SDK API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/index.js',
+        '../../tools/index',
         {},
         {
-          '../../lib/api/admin_sdk_client.js': {
+          '../../lib/api/admin_sdk_client': {
             AdminSdkClient: MockAdminSdkClient,
           },
         },
@@ -287,10 +287,10 @@ describe('Admin SDK API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/index.js',
+        '../../tools/index',
         {},
         {
-          '../../lib/api/admin_sdk_client.js': {
+          '../../lib/api/admin_sdk_client': {
             AdminSdkClient: MockAdminSdkClient,
           },
         },
@@ -327,10 +327,10 @@ describe('Admin SDK API', () => {
       }
 
       const { registerTools } = await esmock(
-        '../../tools/index.js',
+        '../../tools/index',
         {},
         {
-          '../../lib/api/admin_sdk_client.js': {
+          '../../lib/api/admin_sdk_client': {
             AdminSdkClient: MockAdminSdkClient,
           },
         },

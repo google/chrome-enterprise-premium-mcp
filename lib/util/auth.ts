@@ -22,8 +22,8 @@ limitations under the License.
  */
 
 import { GoogleAuth, OAuth2Client } from 'google-auth-library'
-import { getAuthErrorMessage } from './auth-error.js'
-import { TokenCache } from './credential/token_cache.js'
+import { getAuthErrorMessage } from './auth-error'
+import { TokenCache } from './credential/token_cache'
 
 /**
  * Retrieves an authenticated Google Cloud client.

@@ -19,10 +19,10 @@ limitations under the License.
  */
 
 import { z } from 'zod'
-import { guardedToolCall, formatToolResponse, safeFormatResponse } from '../utils/wrapper.js'
-import { TAGS } from '../../lib/constants.js'
-import { logger } from '../../lib/util/logger.js'
-import { CHROME_TRIGGERS, POLICY_STATES } from '../../lib/util/chrome_dlp_constants.js'
+import { guardedToolCall, formatToolResponse, safeFormatResponse } from '../utils/wrapper'
+import { TAGS } from '../../lib/constants'
+import { logger } from '../../lib/util/logger'
+import { CHROME_TRIGGERS, POLICY_STATES } from '../../lib/util/chrome_dlp_constants'
 
 const DEFAULT_RULES = {
   AUDIT_GEN_AI_VISITS: {

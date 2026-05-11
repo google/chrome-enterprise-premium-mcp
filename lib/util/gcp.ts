@@ -22,9 +22,9 @@ limitations under the License.
  * - Check and enable required GCP APIs.
  */
 
-import { callWithRetry } from './helpers.js'
-import { TAGS } from '../constants.js'
-import { logger } from './logger.js'
+import { callWithRetry } from './helpers'
+import { TAGS } from '../constants'
+import { logger } from './logger'
 import axios from 'axios'
 
 /**

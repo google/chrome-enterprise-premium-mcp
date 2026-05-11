@@ -16,7 +16,7 @@ limitations under the License.
 
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
-import { registerEnableChromeEnterpriseConnectorsTool } from '../../tools/definitions/enable_chrome_enterprise_connectors.js'
+import { registerEnableChromeEnterpriseConnectorsTool } from '../../tools/definitions/enable_chrome_enterprise_connectors'
 
 describe('enable_chrome_enterprise_connectors unit tests', () => {
   // Mock MCP Server

@@ -18,8 +18,8 @@ limitations under the License.
  * @file Shared utilities for DLP detectors.
  */
 
-import { resolveRootOrgUnitId } from './org-unit.js'
-import { formatToolResponse } from './wrapper.js'
+import { resolveRootOrgUnitId } from './org-unit'
+import { formatToolResponse } from './wrapper'
 
 /**
  * Helper to create a detector and format the response.

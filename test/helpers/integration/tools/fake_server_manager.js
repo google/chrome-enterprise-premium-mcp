@@ -20,7 +20,7 @@ import { spawn } from 'node:child_process'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import axios from 'axios'
-import { TAGS } from '../../../../lib/constants.js'
+import { TAGS } from '../../../../lib/constants'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 

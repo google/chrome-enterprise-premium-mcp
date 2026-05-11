@@ -23,7 +23,7 @@ limitations under the License.
 
 import { test, describe, mock } from 'node:test'
 import assert from 'node:assert/strict'
-import { registerDiagnoseEnvironmentTool } from '../../tools/definitions/diagnose_environment.js'
+import { registerDiagnoseEnvironmentTool } from '../../tools/definitions/diagnose_environment'
 
 /**
  * Creates mock API clients that return configurable test data.

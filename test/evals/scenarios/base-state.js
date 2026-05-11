@@ -22,7 +22,7 @@ limitations under the License.
  * Scenario mutations in sibling files introduce targeted misconfigurations.
  */
 
-import { SERVICE_NAMES } from '../../../lib/constants.js'
+import { SERVICE_NAMES } from '../../../lib/constants'
 
 /**
  * Returns a fully-configured "healthy" CEP deployment state.

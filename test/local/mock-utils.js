@@ -22,10 +22,10 @@ export async function setupCloudIdentityHandler(server, toolName, clientMethods)
   }
 
   const { registerTools } = await esmock(
-    '../../tools/index.js',
+    '../../tools/index',
     {},
     {
-      '../../lib/api/cloud_identity_client.js': {
+      '../../lib/api/cloud_identity_client': {
         CloudIdentityClient: MockCloudIdentityClient,
       },
     },

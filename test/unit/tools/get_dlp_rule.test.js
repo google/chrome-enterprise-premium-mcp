@@ -16,7 +16,7 @@ limitations under the License.
 
 import { test, describe } from 'node:test'
 import assert from 'node:assert/strict'
-import { registerGetDlpRuleTool } from '../../../tools/definitions/get_dlp_rule.js'
+import { registerGetDlpRuleTool } from '../../../tools/definitions/get_dlp_rule'
 
 describe('get_dlp_rule tool handler', () => {
   const getHandler = mockCloudIdentityClient => {

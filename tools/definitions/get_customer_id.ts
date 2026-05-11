@@ -19,9 +19,9 @@ limitations under the License.
  */
 
 import { z } from 'zod'
-import { guardedToolCall, formatToolResponse } from '../utils/wrapper.js'
-import { TAGS } from '../../lib/constants.js'
-import { logger } from '../../lib/util/logger.js'
+import { guardedToolCall, formatToolResponse } from '../utils/wrapper'
+import { TAGS } from '../../lib/constants'
+import { logger } from '../../lib/util/logger'
 
 /**
  * Registers the 'get_customer_id' tool with the MCP server.

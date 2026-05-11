@@ -17,8 +17,8 @@ limitations under the License.
 import assert from 'node:assert/strict'
 import { describe, test, mock, beforeEach } from 'node:test'
 import esmock from 'esmock'
-import { registerTools } from '../../../tools/index.js'
-import { FeatureFlags } from '../../../lib/util/feature_flags.js'
+import { registerTools } from '../../../tools/index'
+import { FeatureFlags } from '../../../lib/util/feature_flags'
 
 describe('Experiment: DELETE_TOOL_ENABLED', () => {
   let server
@@ -75,10 +75,10 @@ describe('Experiment: DELETE_TOOL_ENABLED', () => {
       }
 
       const { registerTools: registerToolsMocked } = await esmock(
-        '../../../tools/index.js',
+        '../../../tools/index',
         {},
         {
-          '../../../lib/api/cloud_identity_client.js': {
+          '../../../lib/api/cloud_identity_client': {
             CloudIdentityClient: MockCloudIdentityClient,
           },
         },
@@ -112,10 +112,10 @@ describe('Experiment: DELETE_TOOL_ENABLED', () => {
       }
 
       const { registerTools: registerToolsMocked } = await esmock(
-        '../../../tools/index.js',
+        '../../../tools/index',
         {},
         {
-          '../../../lib/api/cloud_identity_client.js': {
+          '../../../lib/api/cloud_identity_client': {
             CloudIdentityClient: MockCloudIdentityClient,
           },
         },
