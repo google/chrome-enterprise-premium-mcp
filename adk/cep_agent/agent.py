@@ -31,8 +31,8 @@ from .auth_utils import get_auth_instructions
 # Get the directory of the current Python file
 current_file_dir = os.path.dirname(os.path.abspath(__file__))
 
-# Construct the path to mcp-server.js relative to this file
-mcp_server_path = os.path.join(current_file_dir, '../../mcp-server.js')
+# Construct the path to mcp-server.ts relative to this file
+mcp_server_path = os.path.join(current_file_dir, '../../mcp-server.ts')
 
 AI_MODEL_NAME = 'gemini-2.5-flash'
 

@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @file Verifies that the /mcp and /sse handler factories in mcp-server.js
+ * @file Verifies that the /mcp and /sse handler factories in mcp-server.ts
  * construct a fresh sessionState per request and pass distinct references
  * to getServer — the regression this PR fixes. Uses dependency injection on
  * getServer so we observe the actual handler code path without needing the
@@ -25,7 +25,7 @@ limitations under the License.
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 
-import { createSessionState, createMcpPostHandler, createSseHandler } from '../../mcp-server.js'
+import { createSessionState, createMcpPostHandler, createSseHandler } from '../../mcp-server.ts'
 
 const fakeMcpServer = {
   connect: async () => {},

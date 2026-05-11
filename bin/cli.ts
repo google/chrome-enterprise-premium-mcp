@@ -20,7 +20,7 @@ limitations under the License.
 
 /* eslint-disable n/no-process-exit */
 
-import { runServer } from '../mcp-server.js'
+import { runServer } from '../mcp-server.ts'
 
 /**
  * Dispatches the CLI subcommand.

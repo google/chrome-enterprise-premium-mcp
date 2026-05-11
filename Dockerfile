@@ -16,4 +16,4 @@ RUN npm install --production
 COPY . .
 
 # Run the web service on container startup.
-CMD [ "node", "mcp-server.js" ]
+CMD [ "npx", "tsx", "mcp-server.ts" ]

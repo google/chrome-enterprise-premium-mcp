@@ -37,8 +37,8 @@ describe('MCP Server in stdio mode', () => {
 
   before(async () => {
     transport = new StdioClientTransport({
-      command: 'node',
-      args: ['mcp-server.js'],
+      command: 'npx',
+      args: ['tsx', 'mcp-server.ts'],
       env: {
         ...process.env,
         GCP_STDIO: 'true',
@@ -111,8 +111,8 @@ describe('MCP Server in stdio mode', () => {
     const NO_ADC_PROBE = 'http://localhost:1'
 
     test('When server starts with custom PORT, then it logs the correct port', () => {
-      const serverPath = path.resolve(__dirname, '../../../mcp-server.js')
-      const result = spawnSync(process.execPath, [serverPath], {
+      const serverPath = path.resolve(__dirname, '../../../mcp-server.ts')
+      const result = spawnSync('npx', ['tsx', serverPath], {
         env: {
           ...process.env,
           PORT: '4000',
@@ -129,8 +129,8 @@ describe('MCP Server in stdio mode', () => {
     })
 
     test('When server starts without PORT, then it assigns a random port', () => {
-      const serverPath = path.resolve(__dirname, '../../../mcp-server.js')
-      const result = spawnSync(process.execPath, [serverPath], {
+      const serverPath = path.resolve(__dirname, '../../../mcp-server.ts')
+      const result = spawnSync('npx', ['tsx', serverPath], {
         env: { ...process.env, GCP_STDIO: 'false', CEP_LOG_LEVEL: 'info', GOOGLE_API_ROOT_URL: NO_ADC_PROBE },
         timeout: 12000,
       })
@@ -140,7 +140,7 @@ describe('MCP Server in stdio mode', () => {
     })
 
     test('When server starts with a port that is already in use, then it logs an explicit error and exits', async () => {
-      const serverPath = path.resolve(__dirname, '../../../mcp-server.js')
+      const serverPath = path.resolve(__dirname, '../../../mcp-server.ts')
       const net = await import('node:net')
 
       const server = net.createServer()
@@ -151,7 +151,7 @@ describe('MCP Server in stdio mode', () => {
 
       let result
       try {
-        result = spawnSync(process.execPath, [serverPath], {
+        result = spawnSync('npx', ['tsx', serverPath], {
           env: {
             ...process.env,
             PORT: port.toString(),
@@ -170,8 +170,8 @@ describe('MCP Server in stdio mode', () => {
     })
 
     test('When server starts with Fake Data URL, then it logs Data Access: Fake Data', () => {
-      const serverPath = path.resolve(__dirname, '../../../mcp-server.js')
-      const result = spawnSync(process.execPath, [serverPath], {
+      const serverPath = path.resolve(__dirname, '../../../mcp-server.ts')
+      const result = spawnSync('npx', ['tsx', serverPath], {
         env: { ...process.env, GOOGLE_API_ROOT_URL: 'http://localhost:8080', GCP_STDIO: 'true', CEP_LOG_LEVEL: 'info' },
         timeout: 12000,
       })

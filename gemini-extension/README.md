@@ -30,7 +30,7 @@ manifest path below, not via the workspace scanner.
 
 The extension manifest at the repo root
 ([`gemini-extension.json`](../gemini-extension.json)) points at it and
-tells Gemini CLI to launch `mcp-server.js` as the MCP backend.
+tells Gemini CLI to launch `mcp-server.ts` as the MCP backend.
 
 `lib/constants.js` defines two OAuth scope sets:
 

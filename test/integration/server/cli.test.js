@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 /**
- * @file Tests for bin/cli.js subcommand dispatch and runLoginCommand.
+ * @file Tests for bin/cli.ts subcommand dispatch and runLoginCommand.
  */
 
 import { describe, it, mock } from 'node:test'
@@ -25,7 +25,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const CLI = path.resolve(__dirname, '../../../bin/cli.js')
+const CLI = path.resolve(__dirname, '../../../bin/cli.ts')
 
 async function captureConsoleLogs(fn) {
   const lines = []
@@ -42,10 +42,10 @@ async function captureConsoleLogs(fn) {
   return lines
 }
 
-describe('bin/cli.js', () => {
+describe('bin/cli.ts', () => {
   describe('auth-status', () => {
     it('When invoked with auth-status and ADC absent, then it prints the ADC line and an OAuth flow line', () => {
-      const result = spawnSync('node', [CLI, 'auth-status'], {
+      const result = spawnSync('npx', ['tsx', CLI, 'auth-status'], {
         encoding: 'utf8',
         env: { ...process.env, GOOGLE_APPLICATION_CREDENTIALS: '/nonexistent' },
       })

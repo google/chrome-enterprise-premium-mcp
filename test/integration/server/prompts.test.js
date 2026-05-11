@@ -23,7 +23,7 @@ import { dirname, resolve } from 'path'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
-const SERVER_PATH = resolve(__dirname, '../../../mcp-server.js')
+const SERVER_PATH = resolve(__dirname, '../../../mcp-server.ts')
 
 describe('MCP Prompts', () => {
   let client
@@ -31,8 +31,8 @@ describe('MCP Prompts', () => {
 
   before(async () => {
     transport = new StdioClientTransport({
-      command: 'node',
-      args: [SERVER_PATH],
+      command: 'npx',
+      args: ['tsx', SERVER_PATH],
       env: { ...process.env, GCP_STDIO: 'true' },
     })
     client = new Client(

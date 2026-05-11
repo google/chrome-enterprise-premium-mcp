@@ -42,7 +42,7 @@ new AdminSdkClient()
 new AdminSdkClient({ rootUrl, auth: fakeAuth })
 ```
 
-`mcp-server.js` uses the same trick: when `GOOGLE_API_ROOT_URL` is set, it
+`mcp-server.ts` uses the same trick: when `GOOGLE_API_ROOT_URL` is set, it
 passes `rootUrl` into each client.
 
 ## API domains
@@ -60,7 +60,7 @@ passes `rootUrl` into each client.
 1. Create `new_client.js` that implements the client using `googleapis`
    or `@google-cloud/*`. Take an optional `apiOptions` argument and pass it
    through to your client constructor so `rootUrl` and `auth` overrides work.
-2. Wire the new client into `mcp-server.js` (both the
+2. Wire the new client into `mcp-server.ts` (both the
    `GOOGLE_API_ROOT_URL`-set and unset branches construct the same
    clients).
 3. Add the new client to `getApiClients()` in

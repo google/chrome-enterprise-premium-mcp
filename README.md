@@ -200,7 +200,7 @@ Add to `~/.gemini/settings.json`:
 
 </details>
 
-> Optional: If you are running from a local checkout instead of npx, replace the command with `node` and args with the absolute path to `mcp-server.js`. Relative paths might not resolve correctly depending on the client.
+> Optional: If you are running from a local checkout instead of npx, replace the command with `npx` and args with `["tsx", "/absolute/path/to/mcp-server.ts"]`. Relative paths might not resolve correctly depending on the client.
 
 ### 4. Verify
 
@@ -264,7 +264,7 @@ The server exposes tools for reading and managing Chrome Enterprise resources:
 
 The codebase has three layers: API clients in `lib/api/` (one interface +
 real implementation per Google API), MCP tools and prompts in `tools/` and
-`prompts/`, and the server entry point in `mcp-server.js`. Integration tests
+`prompts/`, and the server entry point in `mcp-server.ts`. Integration tests
 redirect the real API clients at an in-process Express fake under
 `test/helpers/`. For the directory layout, design patterns, and how the test
 backends are wired, see [`docs/architecture.md`](docs/architecture.md).

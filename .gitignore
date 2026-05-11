@@ -33,3 +33,4 @@ session.db
 .adk/
 
 .DS_Store
+dist/

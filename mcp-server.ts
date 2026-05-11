@@ -439,7 +439,7 @@ const shutdown = async () => {
 process.on('SIGINT', shutdown)
 process.on('SIGTERM', shutdown)
 
-// Only auto-start when invoked directly; tests and bin/cli.js import this
+// Only auto-start when invoked directly; tests and bin/cli.ts import this
 // module without triggering the server.
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   runServer()

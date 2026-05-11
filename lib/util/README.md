@@ -62,7 +62,7 @@ logging, retry, GCP detection, CEL validation, and feature flags.
   the `mcp auth-status` and `mcp auth login` CLI subcommands.
 
 - `jwt_verifier.js`: `verifyIdToken` plus `parseExpectedAudience`. Used
-  by `mcp-server.js` middleware in HTTP mode when `CEP_BEARER_AUDIENCE`
+  by `mcp-server.ts` middleware in HTTP mode when `CEP_BEARER_AUDIENCE`
   is set.
 
 **API plumbing**

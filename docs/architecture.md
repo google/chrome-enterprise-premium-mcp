@@ -30,7 +30,7 @@ limitations under the License.
 │   ├── utils/            # Tool-specific utilities
 │   └── index.js          # Tool registration entry point
 ├── test/                 # Unit, integration, and eval tests
-└── mcp-server.js         # Server entry point
+└── mcp-server.ts         # Server entry point
 ```
 
 ## Key design patterns

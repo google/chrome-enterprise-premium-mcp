@@ -72,7 +72,7 @@ describe('Tool Utils', () => {
         }
         const apiOptions = { rootUrl: 'http://fake-api' }
 
-        // Register tools as it's done in mcp-server.js
+        // Register tools as it's done in mcp-server.ts
         registerTools(server, { apiClients, apiOptions })
 
         // Find the count_browser_versions tool handler

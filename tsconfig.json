@@ -15,6 +15,6 @@
     "checkJs": false,
     "maxNodeModuleJsDepth": 0
   },
-  "include": ["lib/**/*", "tools/**/*", "prompts/**/*", "mcp-server.js", "bin/**/*", "test/**/*"],
+  "include": ["lib/**/*", "tools/**/*", "prompts/**/*", "mcp-server.ts", "bin/**/*", "test/**/*"],
   "exclude": ["node_modules", "dist"]
 }
