@@ -32,17 +32,17 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const root = resolve(__dirname, '..')
 
 const suites = [
-  { name: 'UNIT TESTS', cmd: 'tsx test/run-unit.js' },
+  { name: 'UNIT TESTS', cmd: 'tsx test/run-unit.ts' },
   {
     name: 'INTEGRATION TESTS',
-    cmd: 'tsx test/run-integration.js fake',
+    cmd: 'tsx test/run-integration.ts fake',
     env: {
       CEP_LOG_LEVEL: 'SILENT',
       SKIP_SLOW: 'true',
       EXPERIMENT_DELETE_TOOL_ENABLED: 'true',
     },
   },
-  { name: 'SMOKE TESTS', cmd: 'tsx test/local/smoke-test.js', env: { GCP_STDIO: 'false' } },
+  { name: 'SMOKE TESTS', cmd: 'tsx test/local/smoke-test.ts', env: { GCP_STDIO: 'false' } },
 ]
 
 const results = []

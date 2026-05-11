@@ -23,7 +23,7 @@ export function findTestFiles(dir) {
     const full = join(dir, entry.name)
     if (entry.isDirectory()) {
       results.push(...findTestFiles(full))
-    } else if (entry.name.endsWith('.test.js')) {
+    } else if (entry.name.endsWith('.test.js') || entry.name.endsWith('.test.ts')) {
       results.push(full)
     }
   }
