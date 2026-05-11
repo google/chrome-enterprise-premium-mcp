@@ -57,7 +57,9 @@ if (testFiles.length === 0) {
 console.log(`Running ${testFiles.length} unit test file(s)...\n`)
 
 try {
-  execFileSync(process.execPath, ['--test', ...testFiles], {
+  // Use npx tsx to ensure we have the TypeScript loader even when running
+  // via node's built-in test runner.
+  execFileSync('npx', ['tsx', '--test', ...testFiles], {
     cwd: root,
     stdio: 'inherit',
   })

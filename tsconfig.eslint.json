@@ -1,0 +1,8 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true
+  },
+  "include": ["lib/**/*", "tools/**/*", "prompts/**/*", "mcp-server.js", "bin/**/*", "test/**/*", "*.js", "*.mjs"]
+}

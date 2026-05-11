@@ -1,3 +1,4 @@
+dist/
 test/evals/cases/**/*.md
 CHANGELOG.md
 results.json

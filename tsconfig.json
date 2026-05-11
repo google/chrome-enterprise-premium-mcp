@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022"],
+    "strict": false,
+    "noImplicitAny": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "outDir": "./dist",
+    "rootDir": "./",
+    "allowJs": true,
+    "checkJs": false,
+    "maxNodeModuleJsDepth": 0
+  },
+  "include": ["lib/**/*", "tools/**/*", "prompts/**/*", "mcp-server.js", "bin/**/*", "test/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
