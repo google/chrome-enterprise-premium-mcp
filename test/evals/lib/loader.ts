@@ -143,7 +143,7 @@ export async function loadAllEvals({ dir, category, tags, ids, priority }) {
       const full = path.join(d, entry.name)
       if (entry.isDirectory()) {
         walk(full)
-      } else if (entry.name.endsWith('.eval.js')) {
+      } else if (entry.name.endsWith('.eval.js') || entry.name.endsWith('.eval.ts')) {
         jsFiles.push(full)
       }
     }

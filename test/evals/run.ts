@@ -19,7 +19,7 @@ limitations under the License.
  * @file CEP MCP Eval runner. Single CLI entry point.
  *
  * Usage:
- *   node test/evals/run.js [options]
+ *   node test/evals/run.ts [options]
  *
  * Options:
  *   --category <name>   Run only evals in this category (comma-separated)
@@ -89,7 +89,7 @@ const { values: args } = parseArgs({
 })
 
 if (args.help) {
-  console.log(`Usage: node test/evals/run.js [options]
+  console.log(`Usage: node test/evals/run.ts [options]
 
 Options:
   --category <name>   Run only evals in this category (comma-separated)
@@ -196,7 +196,7 @@ async function main() {
   const judgeFn = noJudge ? null : createJudge(apiKey, baseUrl || undefined).judge
 
   /**
-   * @param {import('./lib/loader.js').EvalCase} evalCase
+   * @param {import('./lib/loader').EvalCase} evalCase
    * @param {number} _index
    */
   async function runSingleEval(evalCase, _index) {
