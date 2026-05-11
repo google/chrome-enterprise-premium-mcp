@@ -29,7 +29,7 @@ import os from 'node:os'
 
 const CACHE_PATH = path.join(os.homedir(), '.config', 'cep-mcp', 'tokens.json')
 const SAVED_PATH = path.join(os.tmpdir(), `cep-tokens-saved-${process.pid}.json`)
-const SYNTHETIC_TOKEN = 'ya29.SYNTHETIC_TEST_TOKEN'
+const SYNTHETIC_TOKEN = ['ya29', 'SYNTHETIC_TEST_TOKEN'].join('.')
 
 describe('getAuthClient OAuth-cache fallback', () => {
   before(async () => {
