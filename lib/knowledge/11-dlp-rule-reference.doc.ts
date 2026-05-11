@@ -14,10 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * @file TypeScript Migration Exports Shim (Tombstone) for lib/knowledge/11-dlp-rule-reference.doc.js.
- * This file allows existing JavaScript consumers to continue importing from
- * this path while the underlying implementation is migrated to TypeScript.
- */
+import { generateDlpCelReference } from '../util/chrome_dlp_constants.js'
 
-export * from './11-dlp-rule-reference.doc.ts'
+export const doc = {
+  title: 'Chrome DLP Rule Configuration Reference',
+  articleId: '11',
+  summary:
+    'Comprehensive technical reference for authoring Chrome DLP rules. Helps with CEL condition logic and action configuration. Covers 100+ Predefined Detectors, 286+ Web Categories, and trigger compatibility constraints. Keywords: matches_dlp_detector, url_category, CEL syntax, AUDIT/WARN/BLOCK behavior, MIME types.',
+  content: generateDlpCelReference(),
+}

@@ -32,8 +32,15 @@ export async function loadDynamicDocs(directory) {
   }
 
   const files = fs.readdirSync(directory)
+  const seenFilenames = new Set()
+
   for (const file of files) {
-    if (file.endsWith('.doc.js')) {
+    if (file.endsWith('.doc.js') || file.endsWith('.doc.ts')) {
+      const filename = file.replace(/\.doc\.(js|ts)$/, '')
+      if (seenFilenames.has(filename)) {
+        continue
+      }
+
       try {
         const filePath = path.join(directory, file)
         // Use pathToFileURL to ensure compatibility across OS (especially Windows)
@@ -42,9 +49,10 @@ export async function loadDynamicDocs(directory) {
         if (module.doc) {
           docs.push({
             ...module.doc,
-            filename: file.replace('.doc.js', ''),
+            filename,
             kind: module.doc.kind || 'curated',
           })
+          seenFilenames.add(filename)
         }
       } catch (e) {
         logger.error(`${TAGS.MCP} Failed to load dynamic doc ${file}:`, e)
