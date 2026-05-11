@@ -60,7 +60,14 @@ describe('HTTP per-request session state isolation', () => {
     const { fn: recorder, captured } = makeRecorder()
     const handler = createMcpPostHandler({}, recorder)
     const fakeReq = { body: {}, on: () => {} }
-    const fakeRes = { on: () => {}, headersSent: false, status: () => fakeRes, json: () => {} }
+    const fakeRes = {
+      on: () => {},
+      headersSent: false,
+      status: () => fakeRes,
+      json: () => {},
+      writeHead: () => {},
+      end: () => {},
+    }
 
     await handler(fakeReq, fakeRes)
     await handler(fakeReq, fakeRes)
@@ -75,7 +82,14 @@ describe('HTTP per-request session state isolation', () => {
     const { fn: recorder, captured } = makeRecorder()
     const sseTransports = {}
     const handler = createSseHandler({}, sseTransports, recorder)
-    const fakeRes = { on: () => {}, headersSent: false }
+    const fakeRes = {
+      on: () => {},
+      headersSent: false,
+      status: () => fakeRes,
+      json: () => {},
+      writeHead: () => {},
+      end: () => {},
+    }
 
     await handler({}, fakeRes)
     await handler({}, fakeRes)

@@ -16,7 +16,7 @@ limitations under the License.
 
 import assert from 'node:assert/strict'
 import { describe, test, mock, beforeEach } from 'node:test'
-import esmock from 'esmock'
+import { esmock } from '../helpers/mock-utils.js'
 
 const SEB_EXTENSION_ID = 'ekajlcmdfcigmdbphhifahdfjbkciflj'
 const INSTALL_TYPE_SCHEMA = 'chrome.users.apps.InstallType'

@@ -22,7 +22,7 @@ limitations under the License.
 
 import { describe, test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
-import esmock from 'esmock'
+import { esmock } from '../helpers/mock-utils.js'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import os from 'node:os'

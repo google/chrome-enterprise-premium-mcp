@@ -16,7 +16,7 @@ limitations under the License.
 
 import assert from 'node:assert/strict'
 import { describe, test, mock, beforeEach } from 'node:test'
-import esmock from 'esmock'
+import { esmock } from '../helpers/mock-utils.js'
 import { AdminSdkClient } from '../../lib/api/admin_sdk_client.js'
 
 describe('check_cep_subscription Tool', () => {

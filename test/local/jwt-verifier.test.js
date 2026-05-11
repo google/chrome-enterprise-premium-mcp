@@ -21,7 +21,7 @@ limitations under the License.
 
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import esmock from 'esmock'
+import { esmock } from '../helpers/mock-utils.js'
 
 import { parseExpectedAudience } from '../../lib/util/credential/jwt_verifier.js'
 

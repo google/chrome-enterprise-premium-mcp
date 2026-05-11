@@ -16,7 +16,7 @@ limitations under the License.
 
 import { describe, test, mock, beforeEach } from 'node:test'
 import assert from 'node:assert'
-import esmock from 'esmock'
+import { esmock } from '../helpers/mock-utils.js'
 import { SERVICE_NAMES } from '../../lib/constants.js'
 
 describe('check_and_enable_cep_api tool', () => {
