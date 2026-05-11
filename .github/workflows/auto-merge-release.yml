@@ -1,0 +1,47 @@
+name: Scheduled Release Merge
+
+on:
+  schedule:
+    - cron: '0 0 * * 1,3' # Midnight UTC on Mondays and Wednesdays
+  workflow_dispatch: # Allow manual trigger for testing
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  merge-release-pr:
+    name: Auto-merge Release PR
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Find and merge release-please PR
+        env:
+          # Authenticate with a PAT to ensure cascading downstream workflows trigger
+          GH_TOKEN: ${{ secrets.RELEASE_PAT }}
+        run: |
+          # Find open PRs from the standard release-please branch
+          PR_NUMBER=$(gh pr list \
+            --repo "${{ github.repository }}" \
+            --state open \
+            --head "release-please--branches--main" \
+            --json number \
+            --jq '.[0].number')
+
+          if [ -n "$PR_NUMBER" ]; then
+            echo "Found release-please PR #$PR_NUMBER."
+            
+            # Attempt to approve the PR to satisfy potential branch protection rules
+            echo "Approving PR #$PR_NUMBER..."
+            gh pr review "$PR_NUMBER" --approve || true
+
+            # Merge the PR using standard merge commit to preserve history
+            echo "Merging PR #$PR_NUMBER..."
+            gh pr merge "$PR_NUMBER" --merge
+            
+            echo "Successfully processed PR #$PR_NUMBER."
+          else
+            echo "No open release-please PR found. Skipping merge."
+          fi
