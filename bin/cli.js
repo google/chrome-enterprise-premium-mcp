@@ -28,7 +28,13 @@ import { runServer } from '../mcp-server.js'
  * @returns {Promise<void>} Resolves when the chosen command finishes.
  */
 async function main() {
-  const sub = process.argv[2]
+  const args = process.argv.slice(2)
+  let sub = args[0]
+
+  if (sub === 'auth' && args[1]) {
+    sub = args[1]
+  }
+
   if (sub === 'auth-status') {
     const { runAuthStatusCommand } = await import('../lib/util/credential/cli_commands.js')
     return runAuthStatusCommand()
