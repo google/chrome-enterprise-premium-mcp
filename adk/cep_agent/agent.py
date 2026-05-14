@@ -34,7 +34,7 @@ current_file_dir = os.path.dirname(os.path.abspath(__file__))
 # Construct the path to mcp-server.js relative to this file
 mcp_server_path = os.path.join(current_file_dir, '../../mcp-server.js')
 
-AI_MODEL_NAME = 'gemini-2.5-flash'
+AI_MODEL_NAME = 'gemini-3.1-flash-lite-preview'
 
 def check_credentials():
     """Checks for Google Cloud Application Default Credentials."""
