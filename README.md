@@ -75,7 +75,8 @@ gcloud services enable \
   chromepolicy.googleapis.com \
   cloudidentity.googleapis.com \
   licensing.googleapis.com \
-  serviceusage.googleapis.com
+  serviceusage.googleapis.com \
+  servicemanagement.googleapis.com
 ```
 
 Or enable them from the

@@ -36,10 +36,10 @@ A required API is not enabled in the Google Cloud project that owns your OAuth c
 
 If you're using the bundled Google-managed OAuth client, you should never see this error.
 
-If you're using [your own OAuth client](auth-bring-your-own-oauth-client.md), the project where you created the client must enable the same APIs the server uses. The fastest path is to call the `check_and_enable_cep_api` tool against your project, or run:
+If you're using [your own OAuth client](auth-bring-your-own-oauth-client.md), the project where you created the client must enable the same APIs the server uses — see [Enable required APIs](auth-bring-your-own-oauth-client.md#enable-required-apis) for the full list and the gcloud command. The fastest in-session fix is to call the `check_and_enable_cep_api` tool against your project, or run:
 
 ```bash
-gcloud services enable admin.googleapis.com chromemanagement.googleapis.com chromepolicy.googleapis.com cloudidentity.googleapis.com licensing.googleapis.com serviceusage.googleapis.com --project=YOUR_PROJECT_ID
+gcloud services enable admin.googleapis.com chromemanagement.googleapis.com chromepolicy.googleapis.com cloudidentity.googleapis.com licensing.googleapis.com serviceusage.googleapis.com servicemanagement.googleapis.com --project=YOUR_PROJECT_ID
 ```
 
 ### "invalid_grant" or "Token has been revoked"

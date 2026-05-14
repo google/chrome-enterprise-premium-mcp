@@ -36,6 +36,37 @@ Follow these steps to create a Desktop OAuth client and copy its credentials:
 5. Click **Create**.
 6. From the **OAuth client created** dialog, copy the client ID and the client secret.
 
+## Enable required APIs
+
+The project that owns your OAuth client must have every Google API the server calls enabled. If an API is disabled, the first tool call against it returns `SERVICE_DISABLED`. Enable them up front so you don't hit that mid-session.
+
+With gcloud:
+
+```bash
+gcloud services enable \
+  admin.googleapis.com \
+  chromemanagement.googleapis.com \
+  chromepolicy.googleapis.com \
+  cloudidentity.googleapis.com \
+  licensing.googleapis.com \
+  serviceusage.googleapis.com \
+  servicemanagement.googleapis.com \
+  --project=YOUR_PROJECT_ID
+```
+
+Or, from the [API Library](https://console.cloud.google.com/apis/library) in the Cloud Console, enable each of:
+
+- Admin SDK API
+- Chrome Management API
+- Chrome Policy API
+- Cloud Identity API
+- Enterprise License Manager API
+- Service Usage API
+- Service Management API
+
+> [!NOTE]
+> Newly enabled APIs can take 1–5 minutes to propagate. The server retries `PERMISSION_DENIED` automatically with exponential backoff, so wait through any retry messages on first run instead of restarting.
+
 ## Sign in for the first time
 
 Follow these steps to authenticate the CLI with the OAuth client you created:
