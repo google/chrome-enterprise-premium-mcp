@@ -45,6 +45,7 @@ lib/util/banner.js
 lib/util/cel_validator.js
 lib/util/chrome_dlp_constants.js
 lib/util/connector_policy_helper.js
+lib/util/credential/auth_login.js
 lib/util/credential/bearer_verifier.js
 lib/util/credential/cli_commands.js
 lib/util/credential/index.js
@@ -60,6 +61,7 @@ lib/util/logger.js
 mcp-server.js
 package.json
 prompts/README.md
+prompts/definitions/auth.js
 prompts/definitions/expert.js
 prompts/definitions/health.js
 prompts/definitions/optimize.js
@@ -67,6 +69,7 @@ prompts/definitions/shared.js
 prompts/index.js
 prompts/system-prompt.md
 tools/README.md
+tools/definitions/auth.js
 tools/definitions/check_and_enable_cep_api.js
 tools/definitions/check_cep_subscription.js
 tools/definitions/check_seb_extension_status.js

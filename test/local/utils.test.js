@@ -15,10 +15,49 @@ limitations under the License.
 */
 
 import assert from 'node:assert/strict'
-import { describe, test, mock, beforeEach } from 'node:test'
+import { describe, test, mock, beforeEach, afterEach } from 'node:test'
+import fs from 'node:fs/promises'
+import path from 'node:path'
+import os from 'node:os'
 import { validateAndGetOrgUnitId, resolveRootOrgUnitId } from '../../tools/utils/org-unit.js'
 import { commonTransform, guardedToolCall } from '../../tools/utils/wrapper.js'
 import { registerTools } from '../../tools/index.js'
+
+/* The wrapper now runs a local pre-flight against ~/.config/cep-mcp/tokens.json
+   before invoking the handler. Tests that exercise handler-side behavior
+   redirect HOME (or APPDATA on Windows) to a temp dir holding a synthetic
+   valid cache, so the pre-flight passes through. */
+function installSyntheticValidCache() {
+  const homeKey = process.platform === 'win32' ? 'APPDATA' : 'HOME'
+  const saved = process.env[homeKey]
+  const dir = path.join(os.tmpdir(), `cep-mcp-test-home-${process.pid}-${Math.random().toString(16).slice(2)}`)
+  const cacheDir = process.platform === 'win32' ? path.join(dir, 'cep-mcp') : path.join(dir, '.config', 'cep-mcp')
+  const cachePath = path.join(cacheDir, 'tokens.json')
+  return {
+    async setup() {
+      process.env[homeKey] = dir
+      await fs.mkdir(cacheDir, { recursive: true })
+      await fs.writeFile(
+        cachePath,
+        JSON.stringify({
+          access_token: 'synthetic-test-token',
+          token_type: 'Bearer',
+          scope: 'https://www.googleapis.com/auth/userinfo.email',
+          expiry_date: Date.now() + 3_600_000,
+        }),
+        { mode: 0o600 },
+      )
+    },
+    async teardown() {
+      if (saved === undefined) {
+        delete process.env[homeKey]
+      } else {
+        process.env[homeKey] = saved
+      }
+      await fs.rm(dir, { recursive: true, force: true })
+    },
+  }
+}
 
 describe('Tool Utils', () => {
   describe('commonTransform', () => {
@@ -47,11 +86,18 @@ describe('Tool Utils', () => {
 
   describe('guardedToolCall Infrastructure', () => {
     let server
+    let cacheFixture
 
-    beforeEach(() => {
+    beforeEach(async () => {
+      cacheFixture = installSyntheticValidCache()
+      await cacheFixture.setup()
       server = {
         registerTool: mock.fn(),
       }
+    })
+
+    afterEach(async () => {
+      await cacheFixture.teardown()
     })
 
     describe('Registration and Auto-Resolution', () => {
@@ -260,4 +306,114 @@ describe('Tool Utils', () => {
       assert.deepStrictEqual(result, customResponse)
     })
   })
+
+  /* eslint-disable require-atomic-updates */
+  /* The pre-flight tests serialize their own HOME-override setup and teardown
+     inside try/finally blocks; the lint rule's "process.env reassigned after
+     await" warnings are not actual races for these strictly-serial tests. */
+  describe('guardedToolCall Auth Pre-flight', () => {
+    let cacheFixture
+    let handler
+
+    beforeEach(async () => {
+      handler = mock.fn(async () => ({ content: [{ type: 'text', text: 'ok' }] }))
+    })
+
+    afterEach(async () => {
+      if (cacheFixture) {
+        await cacheFixture.teardown()
+        cacheFixture = null
+      }
+    })
+
+    test('When guardedToolCall runs with no inbound Bearer and no cached token, then it returns an authRequired response and does not invoke the handler', async () => {
+      const homeKey = process.platform === 'win32' ? 'APPDATA' : 'HOME'
+      const saved = process.env[homeKey]
+      const emptyHome = path.join(
+        os.tmpdir(),
+        `cep-mcp-empty-home-${process.pid}-${Math.random().toString(16).slice(2)}`,
+      )
+      await fs.mkdir(emptyHome, { recursive: true })
+      process.env[homeKey] = emptyHome
+      try {
+        const tool = guardedToolCall({ handler })
+        const result = await tool({}, {})
+        assert.strictEqual(result.isError, true)
+        assert.match(result.content[0].text, /Sign-in is needed/)
+        assert.match(result.content[0].text, /cep_auth/)
+        assert.strictEqual(result.structuredContent.authRequired.reason, 'missing')
+        assert.strictEqual(result.structuredContent.authRequired.nextAction, 'invoke-cep_auth')
+        assert.match(result.structuredContent.authRequired.docsUrl, /configuration\.md#authenticate-to-google-apis/)
+        assert.strictEqual(handler.mock.callCount(), 0)
+      } finally {
+        if (saved === undefined) {
+          delete process.env[homeKey]
+        } else {
+          process.env[homeKey] = saved
+        }
+        await fs.rm(emptyHome, { recursive: true, force: true })
+      }
+    })
+
+    test('When guardedToolCall runs with no inbound Bearer and an expired cached token, then the authRequired response carries reason=expired and the expiry timestamp', async () => {
+      const homeKey = process.platform === 'win32' ? 'APPDATA' : 'HOME'
+      const saved = process.env[homeKey]
+      const home = path.join(os.tmpdir(), `cep-mcp-expired-home-${process.pid}-${Math.random().toString(16).slice(2)}`)
+      const cacheDir = process.platform === 'win32' ? path.join(home, 'cep-mcp') : path.join(home, '.config', 'cep-mcp')
+      const cachePath = path.join(cacheDir, 'tokens.json')
+      const expiredAt = Date.now() - 60_000
+      await fs.mkdir(cacheDir, { recursive: true })
+      await fs.writeFile(cachePath, JSON.stringify({ access_token: 'stale', expiry_date: expiredAt }), { mode: 0o600 })
+      process.env[homeKey] = home
+      try {
+        const tool = guardedToolCall({ handler })
+        const result = await tool({}, {})
+        assert.strictEqual(result.isError, true)
+        assert.strictEqual(result.structuredContent.authRequired.reason, 'expired')
+        assert.strictEqual(result.structuredContent.authRequired.expiresAt, new Date(expiredAt).toISOString())
+        assert.strictEqual(handler.mock.callCount(), 0)
+      } finally {
+        if (saved === undefined) {
+          delete process.env[homeKey]
+        } else {
+          process.env[homeKey] = saved
+        }
+        await fs.rm(home, { recursive: true, force: true })
+      }
+    })
+
+    test('When guardedToolCall runs with an inbound Bearer token and no cache, then it skips the pre-flight and invokes the handler', async () => {
+      const homeKey = process.platform === 'win32' ? 'APPDATA' : 'HOME'
+      const saved = process.env[homeKey]
+      const emptyHome = path.join(
+        os.tmpdir(),
+        `cep-mcp-bearer-skip-home-${process.pid}-${Math.random().toString(16).slice(2)}`,
+      )
+      await fs.mkdir(emptyHome, { recursive: true })
+      process.env[homeKey] = emptyHome
+      try {
+        const tool = guardedToolCall({ handler })
+        const result = await tool({}, { requestInfo: { headers: { authorization: 'Bearer xyz' } } })
+        assert.strictEqual(handler.mock.callCount(), 1)
+        assert.strictEqual(result.content[0].text, 'ok')
+      } finally {
+        if (saved === undefined) {
+          delete process.env[homeKey]
+        } else {
+          process.env[homeKey] = saved
+        }
+        await fs.rm(emptyHome, { recursive: true, force: true })
+      }
+    })
+
+    test('When guardedToolCall runs with no inbound Bearer and a fresh cached token, then it invokes the handler', async () => {
+      cacheFixture = installSyntheticValidCache()
+      await cacheFixture.setup()
+      const tool = guardedToolCall({ handler })
+      const result = await tool({}, {})
+      assert.strictEqual(handler.mock.callCount(), 1)
+      assert.strictEqual(result.content[0].text, 'ok')
+    })
+  })
+  /* eslint-enable require-atomic-updates */
 })
