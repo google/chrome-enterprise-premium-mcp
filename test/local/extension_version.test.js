@@ -30,6 +30,11 @@ test('gemini-extension.json package version matches package.json version', () =>
   const extensionJson = JSON.parse(fs.readFileSync(extensionJsonPath, 'utf8'))
 
   const currentVersion = packageJson.version
+  assert.strictEqual(
+    extensionJson.version,
+    currentVersion,
+    `gemini-extension.json version (${extensionJson.version}) must exactly match package.json version (${currentVersion})`,
+  )
 
   const args = extensionJson.mcpServers['chrome-enterprise-premium'].args
   assert.ok(Array.isArray(args), 'args must be an array')
