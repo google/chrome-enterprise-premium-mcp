@@ -53,10 +53,11 @@ import { featureFlags, FLAGS } from '../lib/util/feature_flags.js'
  * @param {object} options - Configuration options for the tools.
  * @param {import('../lib/api/api_clients.js').ApiClients} [options.apiClients] - The API clients collection.
  * @param {import('../lib/util/feature_flags.js').FeatureFlags} [options.featureFlags] - The feature flags manager.
+ * @param {boolean} [options.registerEnableApi] - Whether to register `check_and_enable_cep_api`. Defaults to `true`. Skipped in Google-managed OAuth mode where APIs are pre-enabled in the maintainer's project.
  * @param {object} [sessionState] - The session state object for caching.
  */
 export function registerTools(server, options = {}, sessionState) {
-  const { apiClients = {}, featureFlags: flags = featureFlags } = options
+  const { apiClients = {}, featureFlags: flags = featureFlags, registerEnableApi = true } = options
   const {
     adminSdk,
     chromeManagement: chromeManagementClient,
@@ -97,7 +98,9 @@ export function registerTools(server, options = {}, sessionState) {
   registerCreateDefaultDlpRulesTool(server, { ...commonOpts, cloudIdentityClient }, state)
   registerCheckSebExtensionStatusTool(server, { ...commonOpts, chromePolicyClient }, state)
   registerInstallSebExtensionTool(server, { ...commonOpts, chromePolicyClient }, state)
-  registerCheckAndEnableCepApiTool(server, { ...commonOpts, serviceUsageClient }, state)
+  if (registerEnableApi) {
+    registerCheckAndEnableCepApiTool(server, { ...commonOpts, serviceUsageClient }, state)
+  }
   registerEnableChromeEnterpriseConnectorsTool(server, { ...commonOpts, chromePolicyClient }, state)
 
   if (flags.isEnabled(FLAGS.DIAGNOSE_TOOL_ENABLED)) {
