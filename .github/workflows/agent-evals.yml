@@ -48,6 +48,20 @@ jobs:
           path: results/
           retention-days: 30
 
+      # Catastrophic-failure check is independent of drift comparison. The
+      # trigger is zero passing cases. The most likely cause for that is
+      # infrastructure failure (model id removed upstream, expired key, proxy
+      # outage), not a real regression. Runs whether or not a baseline exists.
+      - name: Check for catastrophic failure
+        id: infra
+        if: hashFiles('results/eval-latest.json') != ''
+        run: |
+          set +e
+          node test/evals/infra-check.js results/eval-latest.json \
+            | tee infra-output.txt \
+            | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
+
       # Drift detection only runs once a baseline is checked in. Before then,
       # the workflow just produces and uploads results.
       - name: Diff vs baseline
@@ -104,6 +118,49 @@ jobs:
               --body-file "$BODY_FILE"
           fi
 
-      - name: Fail on regression
-        if: steps.diff.outputs.exit_code == '1'
+      # Separate alarm from drift, with a distinct title so the two issue
+      # streams are independent. Uses the same find-or-create pattern.
+      - name: Open or update infrastructure-failure issue
+        if: steps.infra.outputs.exit_code == '1'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TITLE='Eval infrastructure failure'
+          RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          BODY_FILE=$(mktemp)
+          {
+            echo "The daily Agent Evals cron run had zero passing cases. The most likely cause is an infrastructure failure (model id removed upstream, expired API key, proxy outage), not a real regression."
+            echo
+            echo "**Run:** [${{ github.run_id }}]($RUN_URL)"
+            echo "**Triggered by:** ${{ github.event_name }}"
+            echo
+            echo '```'
+            cat infra-output.txt
+            echo '```'
+            echo
+            echo "Download \`results/eval-latest.json\` from the run's artifacts for the full per-case detail."
+          } > "$BODY_FILE"
+
+          EXISTING=$(gh issue list \
+            --repo "${{ github.repository }}" \
+            --state open \
+            --label auto:evals \
+            --search "\"$TITLE\" in:title" \
+            --json number \
+            --jq '.[0].number')
+
+          if [ -n "$EXISTING" ]; then
+            echo "Updating existing issue #$EXISTING"
+            gh issue comment "$EXISTING" --repo "${{ github.repository }}" --body-file "$BODY_FILE"
+          else
+            echo "Opening new infrastructure-failure issue"
+            gh issue create \
+              --repo "${{ github.repository }}" \
+              --title "$TITLE" \
+              --label auto:evals \
+              --body-file "$BODY_FILE"
+          fi
+
+      - name: Fail on regression or catastrophic failure
+        if: steps.diff.outputs.exit_code == '1' || steps.infra.outputs.exit_code == '1'
         run: exit 1

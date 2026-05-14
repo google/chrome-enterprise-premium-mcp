@@ -62,6 +62,8 @@ npm install
 
 ```bash
 npm start             # Stdio mode (default)
+npm run auth:login    # Run the OAuth flow against the bundled or custom client
+npm run auth:status   # Show OAuth credential status
 npm run mcp-inspector # MCP Inspector (browser-based debugging UI)
 ```
 

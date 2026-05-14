@@ -16,4 +16,9 @@ limitations under the License.
 
 export default {
   extends: ['@commitlint/config-conventional'],
+  rules: {
+    // Dependabot bodies (release-notes URLs, dependency tables) and human
+    // commits that paste stack traces or URLs routinely exceed 100 chars.
+    'body-max-line-length': [0, 'always'],
+  },
 }
