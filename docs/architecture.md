@@ -37,7 +37,7 @@ limitations under the License.
 
 - **Client abstraction.** Each Google API has a client wrapper in `lib/api/*_client.js`. Tool code calls these clients. For tests, the client instance receives a `rootUrl` override and a stub auth client to redirect calls at the in-process fake server. For the full pattern, see [`lib/api/README.md`](../lib/api/README.md).
 - **Structured tool output.** Tools return structured JSON with both machine-readable data and a human-readable summary.
-- **Retry with backoff.** API calls retry on `PERMISSION_DENIED` (gRPC code 7) up to seven times to handle eventual consistency after enabling APIs. The first retry waits 15 seconds; subsequent retries use exponential backoff.
+- **Retry with backoff.** The server retries `PERMISSION_DENIED` (gRPC code 7) up to seven times to handle eventual consistency after enabling APIs, with a 15-second initial delay; subsequent retries use exponential backoff.
 - **CEL validation.** DLP rule conditions are validated offline against the Chrome CEL grammar before submission to Google.
 
 ## Test backends
@@ -45,4 +45,4 @@ limitations under the License.
 Tests and evals run against two backends, controlled by the `CEP_BACKEND` environment variable.
 
 - **Fake** (default for presubmit). An in-process Express server at `test/helpers/fake-api-server.js` mimics the five Google APIs the server uses. The client classes target it through a `rootUrl` override and a stub auth client. The fake backend makes no network calls and needs no credentials.
-- **Real** (postsubmit). The client classes call the live Google APIs using your Application Default Credentials. The real backend requires authentication and the relevant APIs to be enabled.
+- **Real** (postsubmit). The client classes call the live Google APIs using your cached OAuth tokens (run `mcp auth login` first) or a service-account key from `GOOGLE_APPLICATION_CREDENTIALS`. The real backend requires authentication and the relevant APIs to be enabled.

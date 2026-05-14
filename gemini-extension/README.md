@@ -32,9 +32,8 @@ The extension manifest at the repo root
 ([`gemini-extension.json`](../gemini-extension.json)) points at it and
 tells Gemini CLI to launch `mcp-server.js` as the MCP backend.
 
-`lib/constants.js` defines two OAuth scope sets:
-
-- **`SCOPES`:** every scope the server uses via ADC, including
-  `cloud-platform`.
-- **`OAUTH_SCOPES`:** `SCOPES` minus `cloud-platform`. The OAuth-flow
-  login uses this on the consent screen.
+> **`oauth_scopes` is install-time only:**
+>
+> - The list in this manifest drives the consent screen the Gemini CLI extension installer shows during `gemini extension install`.
+> - The server's runtime scope set lives separately in `lib/constants.js#SCOPES`.
+> - Keep the two lists in sync. If they diverge, the install-time consent screen asks for different scopes than the runtime token request, and sign-in fails.

@@ -18,56 +18,46 @@ limitations under the License.
 
 ## Authentication
 
-### "Could not load the default credentials"
+### "No cached OAuth credentials" or "No Google credentials configured"
 
-Your Application Default Credentials are not configured. Run the login command from the [Quick Start](../README.md#1-authenticate-with-google-cloud), then verify the credentials file exists:
+You haven't authorized the server yet. Run `mcp auth login`; a consent page opens in your browser, and on approval the access token is written to `~/.config/cep-mcp/tokens.json`.
 
-```bash
-cat ~/.config/gcloud/application_default_credentials.json
-```
-
-If the file does not exist, the login did not complete; check whether your browser opened a consent tab that you missed.
+If the file does not exist after the login flow, the consent didn't complete; check whether your browser opened a consent tab you missed.
 
 ### "Request had insufficient authentication scopes"
 
-The credentials lack the required scopes. The most common cause is running `gcloud auth application-default login` without the `--scopes` flag; the default scope (`cloud-platform`) does not cover Workspace APIs such as the Admin SDK or Chrome Management. You cannot add scopes to existing ADC credentials, so delete and re-create them:
+The cached OAuth token does not cover one or more required scopes. Re-run `mcp auth login` to re-consent with the full scope set.
+
+Scopes can't be added to an existing token; the cache is replaced on every login.
+
+### "API has not been used in project … before or it is disabled"
+
+A required API is not enabled in the Google Cloud project that owns your OAuth client.
+
+If you're using the bundled Google-managed OAuth client, you should never see this error.
+
+If you're using [your own OAuth client](auth-bring-your-own-oauth-client.md), the project where you created the client must enable the same APIs the server uses — see [Enable required APIs](auth-bring-your-own-oauth-client.md#enable-required-apis) for the full list and the gcloud command. The fastest in-session fix is to call the `check_and_enable_cep_api` tool against your project, or run:
 
 ```bash
-rm ~/.config/gcloud/application_default_credentials.json
+gcloud services enable admin.googleapis.com chromemanagement.googleapis.com chromepolicy.googleapis.com cloudidentity.googleapis.com licensing.googleapis.com serviceusage.googleapis.com servicemanagement.googleapis.com --project=YOUR_PROJECT_ID
 ```
-
-Then re-run the full login command from the [Quick Start](../README.md#1-authenticate-with-google-cloud).
-
-### "API requires a quota project, which is not set by default"
-
-Google needs to know which project's API quotas and enablement to use. The error appears on the first API call, not at login:
-
-```bash
-gcloud auth application-default set-quota-project YOUR_PROJECT_ID
-```
-
-Replace `YOUR_PROJECT_ID` with your Google Cloud project ID. If you do not know which project to use, run `gcloud projects list` and pick the one linked to your Workspace domain.
 
 ### "invalid_grant" or "Token has been revoked"
 
-Cached credentials are stale. Common causes are a password change, an admin revoking access, MFA re-enrollment, or the token expiring after seven days of inactivity. Delete `~/.config/gcloud/application_default_credentials.json` and re-authenticate.
+Cached credentials are stale. Common causes are a password change, an admin revoking access, MFA re-enrollment, or the access token expiring. Delete `~/.config/cep-mcp/tokens.json` and re-run `mcp auth login`.
 
 ### Configure OAuth app for sensitive scopes
 
 This step is required because Chrome Enterprise Premium requests access to
-sensitive scopes, so the gcloud OAuth app needs to be explicitly
+sensitive scopes, so the OAuth app the server uses must be explicitly
 allow-listed.
 
-1.  Go to [App Access Control](https://admin.google.com/ac/owl/list?tab=configuredApps) in the Admin Console. Check that you are logged in with the right account via upper-right account icon.
+1.  Go to [App Access Control](https://admin.google.com/ac/owl/list?tab=configuredApps) in the Admin Console. Check that you are logged in with the right account via the upper-right account icon.
 2.  Click **Configure new app** and select **OAuth App Name Or Client ID**.
-3.  Search for the OAuth app ID: `764086051850-6qr4p6gpi6hn506pt8ejuq83di341hur.apps.googleusercontent.com`.
-4.  Select the **Google Cloud SDK** app from the results.
+3.  Search for the OAuth client ID. For the Google-managed bundled client, look up the value the CLI prints in its banner under "API credentials"; for a [custom OAuth client](auth-bring-your-own-oauth-client.md), use your own client ID.
+4.  Select the matching app from the results.
 5.  Check the box for the **OAuth Client ID** and click **Select**.
 6.  Select **Trusted: Can access all Google services** for Access to Google Data and click **Configure**.
-
-### `gcloud` is installed but `gcloud auth` fails with "command not found"
-
-Your shell can find a `gcloud` binary but the auth subcommand does not run as expected. Check that `which gcloud` points at the binary you intend, and confirm with `gcloud version` that the install is recent. If the install looks broken, reinstall the Cloud SDK from the [official installer](https://docs.cloud.google.com/sdk/docs/install).
 
 ## Permissions
 
@@ -95,7 +85,9 @@ These warnings are harmless. Some Node.js features used by dependencies emit war
 
 ### Wrong Node version
 
-The server requires Node 18 or later. Check with `node --version`. If you use [nvm](https://github.com/nvm-sh/nvm), run `nvm use 18` (or later) in the project directory. MCP clients launch `node` as a subprocess and use whatever `node` is on the system PATH, which can differ from the version your shell's `nvm` selects.
+The server requires Node 18 or later. Check with `node --version`. If you use [nvm](https://github.com/nvm-sh/nvm), run `nvm use 18` (or later) in the project directory.
+
+When an MCP client spawns `node`, it picks up whatever is on the system PATH, which can differ from the version your shell's `nvm` selects.
 
 ## MCP client integration
 

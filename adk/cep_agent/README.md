@@ -57,13 +57,11 @@ Follow these steps to run the agent against a real Google Cloud project.
    https://www.googleapis.com/auth/admin.directory.customer.readonly,\
    https://www.googleapis.com/auth/apps.licensing,\
    https://www.googleapis.com/auth/cloud-identity.policies,\
-   https://www.googleapis.com/auth/service.management,\
-   https://www.googleapis.com/auth/service.management.readonly,\
-   https://www.googleapis.com/auth/cloud-platform \
+   https://www.googleapis.com/auth/service.management \
      --no-launch-browser
    ```
 
-   For an OAuth-flow alternative that does not require `gcloud` (and uses the OAuth-narrow scope set without `cloud-platform`), run `mcp auth login` from the repo root. For the setup walkthrough, see [`docs/auth-bring-your-own-oauth-client.md`](../../docs/auth-bring-your-own-oauth-client.md).
+   For an OAuth-flow alternative that does not require `gcloud`, run `mcp auth login` from the repo root. For the setup walkthrough, see [`docs/auth-bring-your-own-oauth-client.md`](../../docs/auth-bring-your-own-oauth-client.md).
 
 2. Start the ADK server:
 

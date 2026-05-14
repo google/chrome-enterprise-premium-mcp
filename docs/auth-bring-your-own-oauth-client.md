@@ -16,7 +16,12 @@ limitations under the License.
 
 # Bring your own OAuth client
 
-To run `mcp auth login`, you need a Google OAuth client. Until Google provisions a managed client for this project, you must supply your own. Set `CEP_OAUTH_CLIENT_ID` and `CEP_OAUTH_CLIENT_SECRET` in your environment to point at a Desktop OAuth client that you create in your Google Cloud project.
+By default, `mcp auth login` uses a Google-managed Desktop OAuth client that ships with this project. You do not need to supply your own credentials to authenticate.
+
+Set `CEP_OAUTH_CLIENT_ID` and `CEP_OAUTH_CLIENT_SECRET` only if you want to authenticate through a Desktop OAuth client that you have created in a Google Cloud project of your own. With a custom client, the OAuth consent screen and any authorization grants are scoped to your own project rather than to the bundled one.
+
+> [!NOTE]
+> The `client_secret` of a Desktop OAuth client is a public value, not a confidential credential. Per Google's documentation for installed applications, the secret is "embedded in the source code of your application" and "is obviously not treated as a secret." Authorization is bound to the end user's Google consent and to the registered loopback redirect URI (`http://127.0.0.1`), not to the secret. The same property holds for any Desktop OAuth client you create yourself.
 
 When you log in, the CLI writes an access token to `~/.config/cep-mcp/tokens.json` with file mode `0600`. The cache contains the access token only—no refresh token—and the access token expires after about an hour.
 
@@ -31,6 +36,37 @@ Follow these steps to create a Desktop OAuth client and copy its credentials:
 5. Click **Create**.
 6. From the **OAuth client created** dialog, copy the client ID and the client secret.
 
+## Enable required APIs
+
+The project that owns your OAuth client must have every Google API the server calls enabled. If an API is disabled, the first tool call against it returns `SERVICE_DISABLED`. Enable them up front so you don't hit that mid-session.
+
+With gcloud:
+
+```bash
+gcloud services enable \
+  admin.googleapis.com \
+  chromemanagement.googleapis.com \
+  chromepolicy.googleapis.com \
+  cloudidentity.googleapis.com \
+  licensing.googleapis.com \
+  serviceusage.googleapis.com \
+  servicemanagement.googleapis.com \
+  --project=YOUR_PROJECT_ID
+```
+
+Or, from the [API Library](https://console.cloud.google.com/apis/library) in the Cloud Console, enable each of:
+
+- Admin SDK API
+- Chrome Management API
+- Chrome Policy API
+- Cloud Identity API
+- Enterprise License Manager API
+- Service Usage API
+- Service Management API
+
+> [!NOTE]
+> Newly enabled APIs can take 1–5 minutes to propagate. The server retries `PERMISSION_DENIED` automatically with exponential backoff, so wait through any retry messages on first run instead of restarting.
+
 ## Sign in for the first time
 
 Follow these steps to authenticate the CLI with the OAuth client you created:
@@ -44,7 +80,7 @@ Follow these steps to authenticate the CLI with the OAuth client you created:
 
 2. Run `mcp auth login`.
 3. Approve consent in the browser that the CLI opens.
-4. Verify the cache by running `mcp auth-status`.
+4. Verify the cache by running `mcp auth status`.
 
 ## Sign in from a host without a browser
 
@@ -63,7 +99,7 @@ Follow these steps to sign in by pasting the redirect URL from a different machi
 
 ## Scopes
 
-When you log in, the CLI requests every scope listed in `lib/constants.js#OAUTH_SCOPES`. That set is `SCOPES` minus `cloud-platform`, so the consent screen shows the narrower per-API scopes the server actually uses. To see which scopes the cached token actually granted, run `mcp auth-status`.
+When you log in, you'll see a consent screen requesting the full scope set the server needs (defined in `lib/constants.js`). To see which scopes the cached token actually granted, run `mcp auth status`.
 
 ## Refresh expired tokens
 

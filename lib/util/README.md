@@ -46,8 +46,7 @@ logging, retry, GCP detection, CEL validation, and feature flags.
 
 - `oauth_flow.js`: `oauthFlowCredential()`. Managed-OAuth login flow
   through `runLoginFlow()` (loopback callback or headless paste-back) and
-  a probe over the cached token. Default scopes: `OAUTH_SCOPES` (no
-  `cloud-platform`).
+  a probe over the cached token. Default scopes: `Object.values(SCOPES)`.
 
 - `token_cache.js`: `TokenCache`. Read-write access on a path-injected
   file with mode 0600. Refresh tokens are stripped.
@@ -59,7 +58,7 @@ logging, retry, GCP detection, CEL validation, and feature flags.
   bundled placeholder, BYO env vars, or future custom modes).
 
 - `cli_commands.js`: `runAuthStatusCommand` and `runLoginCommand` for
-  the `mcp auth-status` and `mcp auth login` CLI subcommands.
+  the `mcp auth status` and `mcp auth login` CLI subcommands.
 
 - `jwt_verifier.js`: `verifyIdToken` plus `parseExpectedAudience`. Used
   by `mcp-server.js` middleware in HTTP mode when `CEP_BEARER_AUDIENCE`
