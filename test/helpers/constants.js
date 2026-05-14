@@ -12,7 +12,9 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-*/ export const METHOD_TOOLS_CALL = 'tools/call'
+*/
+
+export const METHOD_TOOLS_CALL = 'tools/call'
 export const AUTH_CONSTANTS = {
   STATUS_UNAUTHORIZED: 401,
   ERROR_CODE_AUTH_REQUIRED: -32001,
