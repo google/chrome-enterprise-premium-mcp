@@ -28,6 +28,8 @@ limitations under the License.
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { execFileSync } from 'node:child_process'
+import fs from 'node:fs'
+import os from 'node:os'
 import { findTestFiles } from './run-utils.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -37,6 +39,30 @@ const root = resolve(__dirname, '..')
 if (!process.env.CEP_LOG_LEVEL) {
   process.env.CEP_LOG_LEVEL = 'SILENT'
 }
+
+/* Tool-wrapper pre-flight check (lib/util/credential/auth_login.js#isTokenLocallyValid)
+   reads the OAuth cache before every handler call. Redirect HOME (or APPDATA on
+   Windows) to a temp directory holding a synthetic valid cache so handler-side
+   tests don't depend on the dev's real cache state. Tests that target the
+   pre-flight itself override HOME inside their own setup. */
+const homeKey = process.platform === 'win32' ? 'APPDATA' : 'HOME'
+const fakeHome = fs.mkdtempSync(join(os.tmpdir(), 'cep-mcp-unit-home-'))
+const cacheDir = process.platform === 'win32' ? join(fakeHome, 'cep-mcp') : join(fakeHome, '.config', 'cep-mcp')
+fs.mkdirSync(cacheDir, { recursive: true })
+fs.writeFileSync(
+  join(cacheDir, 'tokens.json'),
+  JSON.stringify({
+    access_token: 'synthetic-unit-test-token',
+    token_type: 'Bearer',
+    scope: 'https://www.googleapis.com/auth/userinfo.email',
+    expiry_date: Date.now() + 3_600_000,
+  }),
+  { mode: 0o600 },
+)
+process.env[homeKey] = fakeHome
+process.on('exit', () => {
+  fs.rmSync(fakeHome, { recursive: true, force: true })
+})
 
 const testDirs = [join(root, 'test', 'local'), join(root, 'test', 'unit')]
 let testFiles = []

@@ -45,6 +45,7 @@ import { registerCheckAndEnableCepApiTool } from './definitions/check_and_enable
 import { registerEnableChromeEnterpriseConnectorsTool } from './definitions/enable_chrome_enterprise_connectors.js'
 import { registerDiagnoseEnvironmentTool } from './definitions/diagnose_environment.js'
 import { registerKnowledgeTools } from './definitions/knowledge.js'
+import { registerAuthTool } from './definitions/auth.js'
 import { featureFlags, FLAGS } from '../lib/util/feature_flags.js'
 
 /**
@@ -113,4 +114,5 @@ export function registerTools(server, options = {}, sessionState) {
   }
 
   registerKnowledgeTools(server, { ...options, featureFlags: flags }, state)
+  registerAuthTool(server)
 }

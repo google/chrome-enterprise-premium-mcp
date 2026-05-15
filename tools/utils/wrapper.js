@@ -21,6 +21,38 @@ limitations under the License.
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 import { validateAndGetOrgUnitId } from './org-unit.js'
+import { isTokenLocallyValid } from '../../lib/util/credential/auth_login.js'
+
+const MANUAL_AUTH_COMMAND = 'npx -y @google/chrome-enterprise-premium-mcp@latest auth login'
+const AUTH_DOCS_URL =
+  'https://github.com/google/chrome-enterprise-premium-mcp/blob/main/docs/configuration.md#authenticate-to-google-apis'
+
+/**
+ * Builds an MCP tool response signalling that sign-in is needed before any tool can run.
+ * @param {{reason: 'missing'|'expired'|'malformed', expiresAt?: Date|null}} validity The reason the pre-flight failed.
+ * @returns {object} MCP tool response with isError: true.
+ */
+function buildAuthRequiredResponse({ reason, expiresAt }) {
+  const reasonLabel = reason === 'expired' ? 'expired' : reason === 'malformed' ? 'unreadable' : 'missing'
+  const expiredAtNote = reason === 'expired' && expiresAt ? ` (expired at ${expiresAt.toISOString()})` : ''
+  const text =
+    `Sign-in is needed before this tool can run. The cached OAuth token is ${reasonLabel}${expiredAtNote}. ` +
+    'I can run the `cep_auth` tool to sign you in, or you can run ' +
+    `\`${MANUAL_AUTH_COMMAND}\` yourself.`
+  return {
+    content: [{ type: 'text', text }],
+    structuredContent: {
+      authRequired: {
+        reason,
+        expiresAt: expiresAt instanceof Date ? expiresAt.toISOString() : undefined,
+        nextAction: 'invoke-cep_auth',
+        manualCommand: MANUAL_AUTH_COMMAND,
+        docsUrl: AUTH_DOCS_URL,
+      },
+    },
+    isError: true,
+  }
+}
 
 /**
  * Generates a proactive remediation message for authentication errors.
@@ -40,12 +72,12 @@ function getAuthRemediationMessage(status, bearerInbound = false) {
   }
 
   if (status === 401) {
-    return 'Authentication required. Run `mcp auth login` to authorize the server (it caches the access token at ~/.config/cep-mcp/tokens.json), or set GOOGLE_APPLICATION_CREDENTIALS to a service-account key file.'
+    return 'Authentication required. Run the `cep_auth` tool to sign in, or run `mcp auth login` at the shell to authorize the server (it caches the access token at ~/.config/cep-mcp/tokens.json). To use a service account, set GOOGLE_APPLICATION_CREDENTIALS to a service-account key file.'
   }
 
   return `Permission denied. Your account lacks the required permissions or the necessary Google Cloud APIs are not enabled.
 
-1. **Re-authenticate with all required scopes:** Run \`mcp auth login\` to re-consent. The required scope set is defined in lib/constants.js#SCOPES.
+1. **Re-authenticate with all required scopes:** Run the \`cep_auth\` tool, or run \`mcp auth login\` at the shell, to re-consent. The required scope set is defined in lib/constants.js#SCOPES.
 2. **Verify APIs are enabled:** Run the \`check_and_enable_cep_api\` tool against your project, or enable the API set listed in lib/constants.js#SERVICE_NAMES.`
 }
 
@@ -132,6 +164,12 @@ export function guardedToolCall(
 ) {
   return async (params, context) => {
     const authToken = getAuthToken(context?.requestInfo)
+    if (!authToken) {
+      const validity = await isTokenLocallyValid()
+      if (!validity.ok) {
+        return buildAuthRequiredResponse(validity)
+      }
+    }
     try {
       const { apiClients, apiOptions } = options
       let currentParams = { ...params }
