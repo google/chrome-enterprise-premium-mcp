@@ -57,6 +57,7 @@ lib/util/feature_flags.js
 lib/util/gcp.js
 lib/util/helpers.js
 lib/util/logger.js
+lib/util/mcp_pretty_errors.js
 mcp-server.js
 package.json
 prompts/README.md
