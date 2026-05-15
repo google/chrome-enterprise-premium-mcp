@@ -45,11 +45,9 @@ Use this for auditing and reporting on the distribution of browser versions acro
         customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345).'),
         orgUnitId: z.string().optional().describe('The ID of the organizational unit to filter results.'),
       },
-      outputSchema: z
-        .object({
-          versions: z.array(commonOutputSchemas.browserVersion),
-        })
-        .passthrough(),
+      outputSchema: z.looseObject({
+        versions: z.array(commonOutputSchemas.browserVersion),
+      }),
     },
     guardedToolCall(
       {

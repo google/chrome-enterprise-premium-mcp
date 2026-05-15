@@ -52,11 +52,9 @@ Detectors are building blocks for DLP rules. After creating a detector, you must
         description: commonInputSchemas.detectorDescription,
         urls: z.array(z.string()).min(1).describe(`A list of URLs to match.`),
       },
-      outputSchema: z
-        .object({
-          detector: commonOutputSchemas.cloudIdentityPolicy,
-        })
-        .passthrough(),
+      outputSchema: z.looseObject({
+        detector: commonOutputSchemas.cloudIdentityPolicy,
+      }),
     },
     guardedToolCall(
       {

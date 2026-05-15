@@ -47,13 +47,11 @@ Note: This will not automatically remove the detector from any DLP rules that re
           .startsWith('policies/')
           .describe('The resource name of the detector (e.g. policies/akajj264apk5psphei)'),
       },
-      outputSchema: z
-        .object({
-          success: z.boolean(),
-          policyName: z.string(),
-          displayName: z.string().optional(),
-        })
-        .passthrough(),
+      outputSchema: z.looseObject({
+        success: z.boolean(),
+        policyName: z.string(),
+        displayName: z.string().optional(),
+      }),
     },
     guardedToolCall(
       {

@@ -46,13 +46,11 @@ export function registerDeleteAgentDlpRuleTool(server, options, sessionState) {
           .startsWith('policies/')
           .describe('The resource name of the DLP rule (e.g. policies/ajjs664skp992kska)'),
       },
-      outputSchema: z
-        .object({
-          success: z.boolean(),
-          policyName: z.string(),
-          displayName: z.string().optional(),
-        })
-        .passthrough(),
+      outputSchema: z.looseObject({
+        success: z.boolean(),
+        policyName: z.string(),
+        displayName: z.string().optional(),
+      }),
     },
     guardedToolCall(
       {

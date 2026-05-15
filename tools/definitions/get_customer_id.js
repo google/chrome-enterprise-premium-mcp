@@ -41,11 +41,9 @@ export function registerGetCustomerIdTool(server, options, sessionState) {
       description: `Retrieves the unique Google customer ID for the authenticated account.
 This ID (often starting with 'C') is required as a parameter for many other Chrome management tools.`,
       inputSchema: {},
-      outputSchema: z
-        .object({
-          customerId: z.string().nullable().describe('The unique customer ID.'),
-        })
-        .passthrough(),
+      outputSchema: z.looseObject({
+        customerId: z.string().nullable().describe('The unique customer ID.'),
+      }),
     },
     guardedToolCall(
       {

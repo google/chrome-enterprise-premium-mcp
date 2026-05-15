@@ -22,13 +22,13 @@ import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js'
 import { z } from 'zod'
 
 describe('SDK Compatibility - Output Schema', () => {
-  test('When z.object().passthrough() is used for output schema, then it successfully returns structuredContent', async () => {
+  test('When z.looseObject() is used for output schema, then it successfully returns structuredContent', async () => {
     const server = new McpServer({ name: 'test-server', version: '1.0.0' })
     server.registerTool(
       'test_tool',
       {
         inputSchema: z.object({}),
-        outputSchema: z.object({ foo: z.string() }).passthrough(),
+        outputSchema: z.looseObject({ foo: z.string() }),
       },
       async () => ({
         content: [{ type: 'text', text: 'hello' }],
@@ -58,6 +58,6 @@ describe('SDK Compatibility - Output Schema', () => {
     // often results in it being normalized to undefined, which then causes
     // validateToolOutput to throw when it tries to use it.
     // We can't easily assert on "internal SDK crash" without a lot of mocking,
-    // but our architectural requirement for z.object().passthrough() avoids this.
+    // but our architectural requirement for z.looseObject() avoids this.
   })
 })

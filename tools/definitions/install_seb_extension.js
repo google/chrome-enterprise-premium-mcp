@@ -49,13 +49,11 @@ The SEB extension is REQUIRED for advanced Chrome Enterprise Premium features li
           .string()
           .describe('The ID of the organizational unit where the extension will be force-installed.'),
       },
-      outputSchema: z
-        .object({
-          success: z.boolean(),
-          alreadyInstalled: z.boolean(),
-          newlyInstalled: z.boolean(),
-        })
-        .passthrough(),
+      outputSchema: z.looseObject({
+        success: z.boolean(),
+        alreadyInstalled: z.boolean(),
+        newlyInstalled: z.boolean(),
+      }),
     },
     guardedToolCall(
       {

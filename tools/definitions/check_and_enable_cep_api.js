@@ -49,21 +49,17 @@ This is a PREREQUISITE tool. Many other tools will fail if necessary APIs are di
         enable: z.boolean().optional().describe('Whether to enable the API if it is disabled.'),
         checkAll: z.boolean().optional().describe('Whether to check all required APIs and enable the missing ones.'),
       },
-      outputSchema: z
-        .object({
-          apiStatuses: z.array(
-            z
-              .object({
-                apiName: z.string(),
-                status: z.string(),
-                projectId: z.string(),
-                errorMessage: z.string().optional(),
-                consoleLink: z.string().optional(),
-              })
-              .passthrough(),
-          ),
-        })
-        .passthrough(),
+      outputSchema: z.looseObject({
+        apiStatuses: z.array(
+          z.looseObject({
+            apiName: z.string(),
+            status: z.string(),
+            projectId: z.string(),
+            errorMessage: z.string().optional(),
+            consoleLink: z.string().optional(),
+          }),
+        ),
+      }),
     },
     guardedToolCall(
       {

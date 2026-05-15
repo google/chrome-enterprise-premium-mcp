@@ -99,14 +99,12 @@ Rules included:
         customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345).'),
         orgUnitId: z.string().describe('The target Organizational Unit ID'),
       },
-      outputSchema: z
-        .object({
-          createdRules: z.array(z.object({ displayName: z.string(), name: z.string() }).passthrough()),
-          failedRules: z.array(z.object({ displayName: z.string(), error: z.string() }).passthrough()),
-          successCount: z.number(),
-          failureCount: z.number(),
-        })
-        .passthrough(),
+      outputSchema: z.looseObject({
+        createdRules: z.array(z.looseObject({ displayName: z.string(), name: z.string() })),
+        failedRules: z.array(z.looseObject({ displayName: z.string(), error: z.string() })),
+        successCount: z.number(),
+        failureCount: z.number(),
+      }),
     },
 
     guardedToolCall(

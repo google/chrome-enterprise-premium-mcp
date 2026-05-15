@@ -45,42 +45,34 @@ export const commonInputSchemas = {
 
 /**
  * Shared output schemas for MCP tools.
- * All use z.object().passthrough() to satisfy MCP SDK normalizeObjectSchema().
+ * All use z.looseObject() to satisfy MCP SDK normalizeObjectSchema().
  * @type {Record<string, import('zod').ZodTypeAny>}
  */
 export const commonOutputSchemas = {
-  orgUnit: z
-    .object({
-      name: z.string().optional(),
-      orgUnitId: z.string().optional(),
-      orgUnitPath: z.string().optional(),
-    })
-    .passthrough(),
+  orgUnit: z.looseObject({
+    name: z.string().optional(),
+    orgUnitId: z.string().optional(),
+    orgUnitPath: z.string().optional(),
+  }),
 
-  cloudIdentityPolicy: z.object({ name: z.string().optional() }).passthrough(),
+  cloudIdentityPolicy: z.looseObject({ name: z.string().optional() }),
 
-  resolvedChromePolicy: z
-    .object({
-      targetKey: z.record(z.unknown()).optional(),
-      value: z.record(z.unknown()).optional(),
-    })
-    .passthrough(),
+  resolvedChromePolicy: z.looseObject({
+    targetKey: z.record(z.string(), z.unknown()).optional(),
+    value: z.record(z.string(), z.unknown()).optional(),
+  }),
 
-  browserProfile: z
-    .object({
-      displayName: z.string().optional(),
-      name: z.string().optional(),
-    })
-    .passthrough(),
+  browserProfile: z.looseObject({
+    displayName: z.string().optional(),
+    name: z.string().optional(),
+  }),
 
-  browserVersion: z
-    .object({
-      version: z.string().optional(),
-      count: z.number().optional(),
-    })
-    .passthrough(),
+  browserVersion: z.looseObject({
+    version: z.string().optional(),
+    count: z.number().optional(),
+  }),
 
-  activity: z.object({}).passthrough(),
+  activity: z.looseObject({}),
 
-  licenseAssignment: z.object({}).passthrough(),
+  licenseAssignment: z.looseObject({}),
 }

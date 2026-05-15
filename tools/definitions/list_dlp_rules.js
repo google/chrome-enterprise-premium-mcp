@@ -43,11 +43,9 @@ export function registerListDlpRulesTool(server, options, sessionState) {
       description:
         'Lists all Chrome DLP rules currently configured in the organization. These rules protect sensitive data by monitoring browser actions like uploads, printing, and screenshots.',
       inputSchema: {},
-      outputSchema: z
-        .object({
-          dlpRules: z.array(commonOutputSchemas.cloudIdentityPolicy),
-        })
-        .passthrough(),
+      outputSchema: z.looseObject({
+        dlpRules: z.array(commonOutputSchemas.cloudIdentityPolicy),
+      }),
     },
     guardedToolCall(
       {

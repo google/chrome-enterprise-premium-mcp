@@ -306,7 +306,7 @@ Use 'limit' and 'offset' for pagination on large datasets.`,
         limit: z.number().int().min(1).max(200).optional().describe('Page size for detail sections (default 50).'),
         offset: z.number().int().min(0).optional().describe('Pagination offset for detail sections (default 0).'),
       }),
-      outputSchema: z.object({}).passthrough(),
+      outputSchema: z.looseObject({}),
     },
     guardedToolCall(
       {

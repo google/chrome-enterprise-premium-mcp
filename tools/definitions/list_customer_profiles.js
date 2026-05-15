@@ -44,12 +44,10 @@ These profiles represent managed browser instances and provide details like OS v
       inputSchema: {
         customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345).'),
       },
-      outputSchema: z
-        .object({
-          profiles: z.array(commonOutputSchemas.browserProfile),
-          totalCount: z.number(),
-        })
-        .passthrough(),
+      outputSchema: z.looseObject({
+        profiles: z.array(commonOutputSchemas.browserProfile),
+        totalCount: z.number(),
+      }),
     },
     guardedToolCall(
       {

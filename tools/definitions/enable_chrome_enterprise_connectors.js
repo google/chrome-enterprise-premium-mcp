@@ -269,20 +269,16 @@ Use this tool to ACTIVATE security protections. It will ONLY apply changes to co
           .min(1)
           .describe('List of connectors to enable.'),
       },
-      outputSchema: z
-        .object({
-          connectors: z.array(
-            z
-              .object({
-                name: z.string(),
-                displayName: z.string(),
-                status: z.string(),
-                wasModified: z.boolean(),
-              })
-              .passthrough(),
-          ),
-        })
-        .passthrough(),
+      outputSchema: z.looseObject({
+        connectors: z.array(
+          z.looseObject({
+            name: z.string(),
+            displayName: z.string(),
+            status: z.string(),
+            wasModified: z.boolean(),
+          }),
+        ),
+      }),
     },
     guardedToolCall(
       {

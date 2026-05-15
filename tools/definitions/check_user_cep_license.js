@@ -43,12 +43,10 @@ Use this to verify if an individual user (by email or unique ID) is licensed for
       inputSchema: {
         userId: z.string().describe("The user's primary email address or unique ID."),
       },
-      outputSchema: z
-        .object({
-          hasLicense: z.boolean(),
-          license: z.record(z.unknown()).nullable(),
-        })
-        .passthrough(),
+      outputSchema: z.looseObject({
+        hasLicense: z.boolean(),
+        license: z.record(z.string(), z.unknown()).nullable(),
+      }),
     },
     guardedToolCall(
       {

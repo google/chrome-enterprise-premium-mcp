@@ -43,13 +43,11 @@ export function registerCheckCepSubscriptionTool(server, options, sessionState) 
       inputSchema: {
         customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345).'),
       },
-      outputSchema: z
-        .object({
-          isActive: z.boolean(),
-          assignmentCount: z.number(),
-          assignments: z.array(z.object({}).passthrough()).optional(),
-        })
-        .passthrough(),
+      outputSchema: z.looseObject({
+        isActive: z.boolean(),
+        assignmentCount: z.number(),
+        assignments: z.array(z.looseObject({})).optional(),
+      }),
     },
     guardedToolCall(
       {

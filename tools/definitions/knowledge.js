@@ -261,25 +261,21 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
             .optional()
             .describe('Maximum number of results to return (default 10).'),
         }),
-        outputSchema: z
-          .object({
-            documents: z.array(
-              z
-                .object({
-                  id: z.string(),
-                  title: z.string(),
-                  filename: z.string(),
-                  relevanceScore: z.number(),
-                  get_document_arguments: z.object({
-                    filename: z.string(),
-                  }),
-                  snippet: z.string(),
-                  summary: z.string().optional(),
-                })
-                .passthrough(),
-            ),
-          })
-          .passthrough(),
+        outputSchema: z.looseObject({
+          documents: z.array(
+            z.looseObject({
+              id: z.string(),
+              title: z.string(),
+              filename: z.string(),
+              relevanceScore: z.number(),
+              get_document_arguments: z.object({
+                filename: z.string(),
+              }),
+              snippet: z.string(),
+              summary: z.string().optional(),
+            }),
+          ),
+        }),
       },
       guardedToolCall(
         {
@@ -444,14 +440,12 @@ ${knowledgeIndex}`,
             'A single filename/articleId, or an array of them (up to 20). Numeric articleIds are coerced to strings.',
           ),
       }),
-      outputSchema: z
-        .object({
-          documents: z.array(
-            z.object({ id: z.string(), filename: z.string(), title: z.string(), content: z.string() }).passthrough(),
-          ),
-          missing: z.array(z.string()),
-        })
-        .passthrough(),
+      outputSchema: z.looseObject({
+        documents: z.array(
+          z.looseObject({ id: z.string(), filename: z.string(), title: z.string(), content: z.string() }),
+        ),
+        missing: z.array(z.string()),
+      }),
     },
     guardedToolCall(
       {
@@ -570,20 +564,16 @@ ${knowledgeIndex}`,
             .describe('Maximum number of documents to list (default 50).'),
           offset: z.number().int().min(0).optional().describe('Pagination offset to skip records (default 0).'),
         }),
-        outputSchema: z
-          .object({
-            documents: z.array(
-              z
-                .object({
-                  title: z.string(),
-                  get_document_arguments: z.object({
-                    filename: z.string(),
-                  }),
-                })
-                .passthrough(),
-            ),
-          })
-          .passthrough(),
+        outputSchema: z.looseObject({
+          documents: z.array(
+            z.looseObject({
+              title: z.string(),
+              get_document_arguments: z.object({
+                filename: z.string(),
+              }),
+            }),
+          ),
+        }),
       },
       guardedToolCall(
         {

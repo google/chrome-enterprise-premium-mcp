@@ -58,11 +58,9 @@ Use this for security investigations, auditing user actions, and to help tune DL
         maxResults: z.number().optional().describe(`The maximum number of results to return.`),
         customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345).'),
       },
-      outputSchema: z
-        .object({
-          activities: z.array(commonOutputSchemas.activity),
-        })
-        .passthrough(),
+      outputSchema: z.looseObject({
+        activities: z.array(commonOutputSchemas.activity),
+      }),
     },
     guardedToolCall(
       {

@@ -43,24 +43,25 @@ describe('Output Schema Validation', () => {
     })
   })
 
-  test('When tools are registered, then every tool has a valid top-level z.object().passthrough() outputSchema', () => {
+  test('When tools are registered, then every object outputSchema preserves unknown keys', () => {
+    // Behavioral check: parsing a probe with an unknown field should keep that
+    // field. zod v4 represents loose objects via a catchall; checking behavior
+    // is more robust than poking at internals.
+    const PROBE_KEY = '__cep_unknown_probe__'
     for (const [name, tool] of registeredTools) {
       const schema = tool.schema.outputSchema
-      if (!schema) {
+      if (!schema || schema.def?.type !== 'object') {
         continue
       }
-      if (schema._def.typeName !== 'ZodObject') {
-        continue
-      }
+      const probe = { [PROBE_KEY]: 'sentinel' }
+      const parsed = schema.safeParse(probe)
+      // The schema may reject the probe (required fields missing); we only care
+      // about the unknown-key behavior when parse succeeds with extras.
+      const result = parsed.success ? parsed.data : schema.partial().parse(probe)
       assert.strictEqual(
-        schema._def.typeName,
-        'ZodObject',
-        `Tool "${name}" outputSchema must be a ZodObject. Found: ${schema._def.typeName}`,
-      )
-      assert.strictEqual(
-        schema._def.unknownKeys,
-        'passthrough',
-        `Tool "${name}" outputSchema must be .passthrough() for forward compatibility.`,
+        result[PROBE_KEY],
+        'sentinel',
+        `Tool "${name}" outputSchema must preserve unknown keys (use z.looseObject for forward compatibility).`,
       )
     }
   })

@@ -58,11 +58,9 @@ Detectors are building blocks for DLP rules. After creating a detector, you must
             `A list of words to match. Total character count across all words must be ${WORKSPACE_RULE_LIMITS.MAX_WORD_LIST_CHARS} or less.`,
           ),
       },
-      outputSchema: z
-        .object({
-          detector: commonOutputSchemas.cloudIdentityPolicy,
-        })
-        .passthrough(),
+      outputSchema: z.looseObject({
+        detector: commonOutputSchemas.cloudIdentityPolicy,
+      }),
     },
     guardedToolCall(
       {

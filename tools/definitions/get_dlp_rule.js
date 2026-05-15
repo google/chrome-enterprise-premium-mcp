@@ -45,11 +45,9 @@ export function registerGetDlpRuleTool(server, options, sessionState) {
       inputSchema: {
         resourceName: z.string().describe('The full resource name of the rule (e.g., policies/akajj264apk5psphei).'),
       },
-      outputSchema: z
-        .object({
-          dlpRule: commonOutputSchemas.cloudIdentityPolicy,
-        })
-        .passthrough(),
+      outputSchema: z.looseObject({
+        dlpRule: commonOutputSchemas.cloudIdentityPolicy,
+      }),
     },
     guardedToolCall(
       {

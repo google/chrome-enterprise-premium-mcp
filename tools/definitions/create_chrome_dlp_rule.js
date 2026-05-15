@@ -146,11 +146,9 @@ To ensure technical accuracy and verify trigger compatibility, you should retrie
             `Data masking configurations (currently only regex detectors are supported). ${ACTION_PARAMETER_CONSTRAINTS.DATA_MASKING_SUPPORT}`,
           ),
       },
-      outputSchema: z
-        .object({
-          dlpRule: commonOutputSchemas.cloudIdentityPolicy,
-        })
-        .passthrough(),
+      outputSchema: z.looseObject({
+        dlpRule: commonOutputSchemas.cloudIdentityPolicy,
+      }),
     },
 
     guardedToolCall(

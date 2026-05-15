@@ -44,11 +44,9 @@ Use this tool to find the 'orgUnitId' required by most other Chrome management a
       inputSchema: {
         customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345).'),
       },
-      outputSchema: z
-        .object({
-          orgUnits: z.array(commonOutputSchemas.orgUnit),
-        })
-        .passthrough(),
+      outputSchema: z.looseObject({
+        orgUnits: z.array(commonOutputSchemas.orgUnit),
+      }),
     },
     guardedToolCall(
       {

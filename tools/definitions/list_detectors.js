@@ -42,11 +42,9 @@ export function registerListDetectorsTool(server, options, sessionState) {
       description: `Lists all custom Chrome DLP detectors (URL lists, word lists, or regular expressions).
 Detectors are used within DLP rules to identify sensitive content. Use this to find the 'policyName' of a detector to include in a rule.`,
       inputSchema: {},
-      outputSchema: z
-        .object({
-          detectors: z.array(commonOutputSchemas.cloudIdentityPolicy),
-        })
-        .passthrough(),
+      outputSchema: z.looseObject({
+        detectors: z.array(commonOutputSchemas.cloudIdentityPolicy),
+      }),
     },
     guardedToolCall(
       {

@@ -180,38 +180,35 @@ Note: The 'enable_chrome_enterprise_connectors' tool can only ACTIVATE connector
           .default('ALL')
           .describe('The connector type to retrieve (or "ALL" to get all connectors in one call).'),
       },
-      outputSchema: z
-        .object({
-          connectorPolicies: z.array(
-            z
-              .object({
-                isEnabled: z.boolean().describe('Whether the connector is currently enabled.'),
-                warnings: z
-                  .string()
-                  .optional()
-                  .describe('Semicolon-joined warnings for this policy entry, when present.'),
-              })
-              .passthrough()
-              .describe(
-                'Flattened, human-readable view of the resolved policy. Keys are humanized (for example "serviceProvider (describe to user as \'Provider\')") and values are humanized strings; the original Chrome Policy targetKey/value fields are not preserved.',
-              ),
-          ),
-          connectorType: z.string(),
-          orgUnitId: z.string(),
-          configured: z.boolean().describe('True when at least one policy entry exists and any entry is enabled.'),
-          connectors: z
-            .record(
-              z.string(),
-              z.object({
-                connectorPolicies: z.array(z.any()),
-                configured: z.boolean(),
-                warnings: z.array(z.string()),
-              }),
-            )
-            .optional()
-            .describe('Mapping of all connector types to their individual results. Only present when policy is ALL.'),
-        })
-        .passthrough(),
+      outputSchema: z.looseObject({
+        connectorPolicies: z.array(
+          z
+            .looseObject({
+              isEnabled: z.boolean().describe('Whether the connector is currently enabled.'),
+              warnings: z
+                .string()
+                .optional()
+                .describe('Semicolon-joined warnings for this policy entry, when present.'),
+            })
+            .describe(
+              'Flattened, human-readable view of the resolved policy. Keys are humanized (for example "serviceProvider (describe to user as \'Provider\')") and values are humanized strings; the original Chrome Policy targetKey/value fields are not preserved.',
+            ),
+        ),
+        connectorType: z.string(),
+        orgUnitId: z.string(),
+        configured: z.boolean().describe('True when at least one policy entry exists and any entry is enabled.'),
+        connectors: z
+          .record(
+            z.string(),
+            z.object({
+              connectorPolicies: z.array(z.any()),
+              configured: z.boolean(),
+              warnings: z.array(z.string()),
+            }),
+          )
+          .optional()
+          .describe('Mapping of all connector types to their individual results. Only present when policy is ALL.'),
+      }),
     },
     guardedToolCall(
       {
