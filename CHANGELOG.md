@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.5.0](https://github.com/google/chrome-enterprise-premium-mcp/compare/chrome-enterprise-premium-mcp-v1.4.0...chrome-enterprise-premium-mcp-v1.5.0) (2026-05-15)
+
+
+### Features
+
+* **ci:** configure Kokoro CI testing and enable central release-please bot ([a56d114](https://github.com/google/chrome-enterprise-premium-mcp/commit/a56d1144c9f6ef495c93a752bcabada8d90f1397))
+* **ci:** configure Kokoro CI testing and enable central release-please bot ([bf8baef](https://github.com/google/chrome-enterprise-premium-mcp/commit/bf8baef1b21ba100074e99991ada90218dc70b6a))
+* **http:** plumb verified principal through getServer; add CEP_BEARER_PRINCIPAL_SUB lock ([1ea5904](https://github.com/google/chrome-enterprise-premium-mcp/commit/1ea5904f698045980f4f6e2e0d9bf46c11944fdd))
+* **scripts:** add npm run auth:login and auth:status ([31dcd71](https://github.com/google/chrome-enterprise-premium-mcp/commit/31dcd7152fc0704d9743527800af7b1cd7199eff))
+* **scripts:** add npm run auth:login and auth:status ([ab33a0c](https://github.com/google/chrome-enterprise-premium-mcp/commit/ab33a0c770ad293f78ba1853626de4139f4dba73))
+* **server:** conditional enable_api tool registration by OAuth client source ([7027710](https://github.com/google/chrome-enterprise-premium-mcp/commit/702771018b067ec14912c6526a037c57119efdde))
+* **server:** conditional enable_api tool registration by OAuth client source ([a8afeb2](https://github.com/google/chrome-enterprise-premium-mcp/commit/a8afeb218c36f16a2568bfc3d75e434776edc19b))
+
+
+### Bug Fixes
+
+* add configurable timeouts deep scanning guidance ([cc1e74f](https://github.com/google/chrome-enterprise-premium-mcp/commit/cc1e74f9787b71f90deebabd7ee6a16a32cc667f))
+* add configurable timeouts deep scanning guidance ([c7cdfee](https://github.com/google/chrome-enterprise-premium-mcp/commit/c7cdfee940bf84cd3d1aece47274beeb5a0410e7))
+* **api:** resolve Licensing API auth remediation bypass ([81ec908](https://github.com/google/chrome-enterprise-premium-mcp/commit/81ec908dd5c835414c063f2b001381244517e37c))
+* **api:** resolve Licensing API auth remediation bypass ([9f29e46](https://github.com/google/chrome-enterprise-premium-mcp/commit/9f29e46a43109b97259265404976753f1d529a92))
+* **auth:** trim CEP_IMPERSONATE_SUBJECT; document jwtCache mutation assumption ([59ac1f3](https://github.com/google/chrome-enterprise-premium-mcp/commit/59ac1f3aa7906fa4ddb46c30780337c8566a14db))
+* **commitlint:** disable body-max-line-length ([1283a79](https://github.com/google/chrome-enterprise-premium-mcp/commit/1283a79dd423a1acfc1ebdde9cf2cae0ea264375))
+* **commitlint:** disable body-max-line-length ([be2b980](https://github.com/google/chrome-enterprise-premium-mcp/commit/be2b9802fafca02e344b91b7bfc22063cdbf8f7b))
+* **evals:** update agent model and add catastrophic-failure alarm ([b2e6f63](https://github.com/google/chrome-enterprise-premium-mcp/commit/b2e6f63e17b9f0d38520209f2fa946725672c55e))
+* **evals:** update agent model and add catastrophic-failure alarm ([a85fe47](https://github.com/google/chrome-enterprise-premium-mcp/commit/a85fe4790f8e06f54e75bff8c37d574c8ace7a70))
+* **tools:** drop regex check for service-management host (CodeQL js/incomplete-hostname-regexp) ([9db53fd](https://github.com/google/chrome-enterprise-premium-mcp/commit/9db53fd7f93be3eb3bf88b8baade92b1b6ed0d1a))
+
 ## [1.4.0](https://github.com/google/chrome-enterprise-premium-mcp/compare/chrome-enterprise-premium-mcp-v1.3.0...chrome-enterprise-premium-mcp-v1.4.0) (2026-05-08)
 
 
