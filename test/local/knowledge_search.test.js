@@ -14,21 +14,42 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-import { describe, test } from 'node:test'
+import { describe, test, before } from 'node:test'
 import assert from 'node:assert/strict'
-import { registerKnowledgeTools } from '../../tools/definitions/knowledge.js'
+import esmock from 'esmock'
 
 describe('Knowledge Tools Real Database Integration', () => {
   const handlers = {}
-  const server = {
-    registerTool: (name, description, handler) => {
-      handlers[name] = handler
-    },
-  }
+  const fetched = []
 
-  // Register tools using the default construction path (lib/knowledge directory)
-  // Enable search tools experiment flag for these tests.
-  registerKnowledgeTools(server, { featureFlags: { isEnabled: () => true } }, {})
+  // Stub axios so get_document never reaches Helpcenter — that hop is slow,
+  // racy, and dominates the unit-suite budget. The HTML we return is the
+  // smallest payload that includes the substrings the assertions probe for.
+  const stubHtml = `
+    <html><body>
+      <h1>Chrome Enterprise Premium</h1>
+      <p>Deep scanning protection settings live under Chrome Enterprise Security Services.</p>
+    </body></html>
+  `
+
+  before(async () => {
+    const { registerKnowledgeTools } = await esmock('../../tools/definitions/knowledge.js', {
+      axios: {
+        default: {
+          get: async url => {
+            fetched.push(url)
+            return { data: stubHtml }
+          },
+        },
+      },
+    })
+    const server = {
+      registerTool: (name, description, handler) => {
+        handlers[name] = handler
+      },
+    }
+    registerKnowledgeTools(server, { featureFlags: { isEnabled: () => true } }, {})
+  })
 
   test('When searched for Licensing, then search_content finds the overview document', async () => {
     const handler = handlers['search_content']
