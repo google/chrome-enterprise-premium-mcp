@@ -22,6 +22,7 @@ import { registerPrompts } from '../../../../prompts/index.js'
 import { getApiClients } from './client_factory.js'
 import { parseToolOutput } from './tool_utils.js'
 import { startFakeServer } from '../../fake-api-server.js'
+import { installPrettyValidationErrors } from '../../../../lib/util/mcp_pretty_errors.js'
 
 const SEPARATOR_LENGTH = 80
 
@@ -122,6 +123,7 @@ export async function createIntegrationHarness(options = {}) {
     { name: 'test-server', version: '1.0.0' },
     { capabilities: { logging: {}, prompts: {} } },
   )
+  installPrettyValidationErrors(server)
 
   const harnessOptions = { ...options, rootUrl, usingManager }
   const apiClients = getApiClients(harnessOptions)

@@ -48,6 +48,7 @@ import { verifyIdToken, parseExpectedAudience } from './lib/util/credential/jwt_
 import { resolveOAuthClientConfig } from './lib/util/credential/oauth_client_config.js'
 import { oauthFlowCredential } from './lib/util/credential/oauth_flow.js'
 import { verifyBearerToken } from './lib/util/credential/bearer_verifier.js'
+import { installPrettyValidationErrors } from './lib/util/mcp_pretty_errors.js'
 import { TAGS, SCOPES } from './lib/constants.js'
 
 // Import Clients
@@ -231,6 +232,8 @@ export async function getServer(gcpInfo, sharedSessionState, principal = null) {
       instructions: buildServerInstructions(),
     },
   )
+
+  installPrettyValidationErrors(server)
 
   // No-op handler for setting log level (required for mcp-inspector)
   server.server.setRequestHandler(SetLevelRequestSchema, request => {
