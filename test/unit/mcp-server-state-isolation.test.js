@@ -119,7 +119,7 @@ describe('HTTP per-request session state isolation', () => {
     const sseTransports = {}
     const handler = createSseHandler({}, sseTransports, recorder)
     const principal = { email: 'admin@example.com', sub: '12345', aud: 'a', iss: 'https://accounts.google.com' }
-    const fakeReq = { verifiedPrincipal: principal }
+    const fakeReq = { on: () => {}, verifiedPrincipal: principal }
     const fakeRes = { on: () => {}, headersSent: false }
 
     await handler(fakeReq, fakeRes)

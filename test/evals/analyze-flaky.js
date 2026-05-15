@@ -12,7 +12,9 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-*/ import fs from 'fs'
+*/
+
+import fs from 'fs'
 import { Status } from './lib/transient.js'
 
 const data = JSON.parse(fs.readFileSync('results/stability-check.json', 'utf-8'))

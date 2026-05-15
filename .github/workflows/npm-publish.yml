@@ -10,12 +10,19 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
+      # Install from the public npm registry. The Wombat Dressing Room only
+      # proxies packages this org has explicitly allowlisted, so using it for
+      # `npm ci` 404s on common dev deps (e.g. zod-to-json-schema).
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          registry-url: 'https://wombat-dressing-room.appspot.com/'
+          node-version: '24'
           cache: 'npm'
       - run: npm ci
+      # Re-run setup-node to point auth at Wombat for `npm publish` only.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          registry-url: 'https://wombat-dressing-room.appspot.com/'
       - run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.WOMBAT_NPM_PACKAGE_TOKEN }}

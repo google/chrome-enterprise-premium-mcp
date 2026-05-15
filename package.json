@@ -1,6 +1,6 @@
 {
   "name": "@google/chrome-enterprise-premium-mcp",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Chrome Enterprise Premium MCP server",
   "repository": {
     "type": "git",
@@ -20,6 +20,8 @@
     "prompts/"
   ],
   "scripts": {
+    "auth:login": "node bin/cli.js auth login",
+    "auth:status": "node bin/cli.js auth status",
     "eval": "CEP_BACKEND=fake node test/evals/run.js",
     "eval:agentic": "CEP_BACKEND=fake node test/evals/run.js --category inspection,troubleshooting,mutation,discovery,connectors",
     "eval:boundary": "CEP_BACKEND=fake node test/evals/run.js --category boundary",
@@ -43,31 +45,31 @@
   },
   "lint-staged": {
     "*.{js,ts}": "eslint --fix",
-    "*.md": "prettier --write"
+    "*.{json,md,yml,yaml}": "prettier --write"
   },
   "dependencies": {
-    "@dotenvx/dotenvx": "^1.64.0",
+    "@dotenvx/dotenvx": "^1.66.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "axios": "^1.16.0",
+    "axios": "^1.16.1",
     "cheerio": "^1.2.0",
     "express": "^5.2.1",
     "google-auth-library": "^10.6.2",
-    "googleapis": "^166.0.0",
+    "googleapis": "^171.4.0",
     "gray-matter": "^4.0.3",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@commitlint/cli": "^20.5.3",
-    "@commitlint/config-conventional": "^20.5.3",
-    "@eslint/js": "^9.39.4",
+    "@commitlint/cli": "^21.0.1",
+    "@commitlint/config-conventional": "^21.0.1",
+    "@eslint/js": "^10.0.1",
     "@google/generative-ai": "^0.24.1",
-    "eslint": "^9.39.4",
-    "eslint-config-prettier": "^9.1.2",
-    "eslint-plugin-jsdoc": "^50.8.0",
-    "eslint-plugin-n": "^17.24.0",
-    "eslint-plugin-notice": "^1.0.0",
+    "eslint": "^10.3.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-jsdoc": "^62.9.0",
+    "eslint-plugin-license-header": "^0.9.0",
+    "eslint-plugin-n": "^18.0.1",
     "eslint-plugin-prettier": "^5.5.5",
-    "esmock": "^2.7.4",
+    "esmock": "^2.7.5",
     "husky": "^9.1.7",
     "js-yaml": "^4.1.1",
     "lint-staged": "^16.4.0",

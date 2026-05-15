@@ -12,7 +12,9 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-*/ import esmock from 'esmock'
+*/
+
+import esmock from 'esmock'
 
 export async function setupCloudIdentityHandler(server, toolName, clientMethods) {
   const MockCloudIdentityClient = class {

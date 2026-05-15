@@ -12,28 +12,32 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-*/ import js from '@eslint/js'
+*/
+
+import js from '@eslint/js'
 import nodePlugin from 'eslint-plugin-n'
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import jsdoc from 'eslint-plugin-jsdoc'
-import notice from 'eslint-plugin-notice'
+import licenseHeader from 'eslint-plugin-license-header'
 
 const currentYear = new Date().getFullYear()
-const copyrightHeader = `/*
-Copyright ${currentYear} Google LLC
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    https://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/`
+const copyrightHeader = [
+  '/*',
+  `Copyright ${currentYear} Google LLC`,
+  '',
+  'Licensed under the Apache License, Version 2.0 (the "License");',
+  'you may not use this file except in compliance with the License.',
+  'You may obtain a copy of the License at',
+  '',
+  '    https://www.apache.org/licenses/LICENSE-2.0',
+  '',
+  'Unless required by applicable law or agreed to in writing, software',
+  'distributed under the License is distributed on an "AS IS" BASIS,',
+  'WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.',
+  'See the License for the specific language governing permissions and',
+  'limitations under the License.',
+  '*/',
+]
 
 export default [
   {
@@ -45,17 +49,11 @@ export default [
   jsdoc.configs['flat/recommended'],
   {
     plugins: {
-      notice,
+      'license-header': licenseHeader,
     },
     rules: {
       // -- Google Standards --
-      'notice/notice': [
-        'error',
-        {
-          template: copyrightHeader,
-          onNonMatching: 'replace',
-        },
-      ],
+      'license-header/header': ['error', copyrightHeader],
 
       // -- JSDoc --
 
@@ -113,6 +111,12 @@ export default [
       'no-unused-private-class-members': 'error',
       'no-throw-literal': 'error',
       'no-implied-eval': 'error',
+      // New in eslint 10's recommended; deferred so this upgrade is a
+      // pure version bump. Re-enable + fix occurrences in a follow-up.
+      'no-useless-assignment': 'off',
+      'preserve-caught-error': 'off',
+      // New plugin-jsdoc 62 warning; revisit when JSDoc types are tightened.
+      'jsdoc/reject-any-type': 'off',
 
       // -- Async/Promise safety --
       'no-async-promise-executor': 'error',

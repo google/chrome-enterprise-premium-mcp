@@ -1,4 +1,3 @@
-/* eslint-disable n/no-process-exit */
 /*
 Copyright 2026 Google LLC
 
@@ -14,6 +13,8 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
+/* eslint-disable n/no-process-exit */
 
 /**
  * @file CEP MCP Eval runner. Single CLI entry point.
@@ -272,7 +273,10 @@ async function main() {
           transient = { source: TransientSource.AGENT, message: agentOutcome.error.message }
         }
       } catch (err) {
-        responseText = `Agent error: ${err.message}`
+        // A non-retryable upstream error (404, auth, bad request) is an
+        // infrastructure failure, not an eval result. Pass-rate is over
+        // PASS+FAIL only; with transient set, the case is not counted.
+        transient = { source: TransientSource.AGENT, message: `Agent error: ${err.message}` }
       }
 
       const actualToolNames = toolCalls.map(tc => tc.name)
