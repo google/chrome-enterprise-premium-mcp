@@ -45,7 +45,7 @@ import { registerCheckAndEnableCepApiTool } from './definitions/check_and_enable
 import { registerEnableChromeEnterpriseConnectorsTool } from './definitions/enable_chrome_enterprise_connectors.js'
 import { registerDiagnoseEnvironmentTool } from './definitions/diagnose_environment.js'
 import { registerKnowledgeTools } from './definitions/knowledge.js'
-import { registerAuthTool } from './definitions/auth.js'
+import { registerAuthTools } from './definitions/auth.js'
 import { featureFlags, FLAGS } from '../lib/util/feature_flags.js'
 
 /**
@@ -58,6 +58,18 @@ import { featureFlags, FLAGS } from '../lib/util/feature_flags.js'
  * @param {object} [sessionState] - The session state object for caching.
  */
 export function registerTools(server, options = {}, sessionState) {
+  if (options.apiOptions && !options.apiOptions.onStatusUpdate) {
+    options.apiOptions.onStatusUpdate = msg => {
+      try {
+        if (typeof server?.sendLoggingMessage === 'function') {
+          server.sendLoggingMessage({ level: 'info', data: msg }).catch(() => {})
+        }
+      } catch {
+        // ignore
+      }
+    }
+  }
+
   const { apiClients = {}, featureFlags: flags = featureFlags, registerEnableApi = true } = options
   const {
     adminSdk,
@@ -68,7 +80,7 @@ export function registerTools(server, options = {}, sessionState) {
   } = apiClients
 
   const apiOptions = options.apiOptions || {}
-  const commonOpts = { adminSdkClient: adminSdk, apiOptions, apiClients }
+  const commonOpts = { adminSdkClient: adminSdk, apiOptions, apiClients, server }
 
   logger.debug(`${TAGS.MCP} Registering all tools...`)
 
@@ -114,5 +126,5 @@ export function registerTools(server, options = {}, sessionState) {
   }
 
   registerKnowledgeTools(server, { ...options, featureFlags: flags }, state)
-  registerAuthTool(server)
+  registerAuthTools(server, commonOpts, state)
 }

@@ -128,7 +128,10 @@ describe('Connector Enablement Integration', () => {
     })
 
     assert.ok(result.isError, 'Tool result should indicate error for empty list')
-    assert.match(result.content[0].text, /Too small: expected array to have >=1 items/)
+    assert.match(
+      result.content[0].text,
+      /Too small: expected array to have >=1 items|Array must contain at least 1 element\(s\)/,
+    )
     assert.match(result.content[0].text, /at connectors/)
   })
 
@@ -145,6 +148,6 @@ describe('Connector Enablement Integration', () => {
     })
 
     assert.ok(result.isError, 'Tool result should indicate error for invalid enum')
-    assert.match(result.content[0].text, /Invalid option: expected one of/)
+    assert.match(result.content[0].text, /Invalid option: expected one of|Invalid enum value/)
   })
 })

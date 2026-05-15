@@ -75,6 +75,8 @@ describe('MCP Server in stdio mode', () => {
     assert.deepStrictEqual(
       toolNames.sort(),
       [
+        'auth_clear',
+        'auth_status',
         'cep_auth',
         'check_cep_subscription',
         'check_seb_extension_status',

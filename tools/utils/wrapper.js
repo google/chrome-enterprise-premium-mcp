@@ -21,7 +21,7 @@ limitations under the License.
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 import { validateAndGetOrgUnitId } from './org-unit.js'
-import { isTokenLocallyValid } from '../../lib/util/credential/auth_login.js'
+import { isTokenLocallyValid, canLaunchBrowser } from '../../lib/util/credential/auth_login.js'
 
 const MANUAL_AUTH_COMMAND = 'npx -y @google/chrome-enterprise-premium-mcp@latest auth login'
 const AUTH_DOCS_URL =
@@ -56,9 +56,9 @@ function buildAuthRequiredResponse({ reason, expiresAt }) {
 
 /**
  * Generates a proactive remediation message for authentication errors.
- * @param {number} status - The HTTP status code.
- * @param {boolean} [bearerInbound] - Whether the request arrived with an inbound Bearer token (HTTP transport).
- * @returns {string} The remediation message.
+ * @param {number} status - HTTP status code (401 or 403)
+ * @param {boolean} bearerInbound - True if request used inbound Bearer auth
+ * @returns {string} Human-readable remediation instructions
  */
 function getAuthRemediationMessage(status, bearerInbound = false) {
   if (bearerInbound) {
@@ -78,13 +78,14 @@ function getAuthRemediationMessage(status, bearerInbound = false) {
   return `Permission denied. Your account lacks the required permissions or the necessary Google Cloud APIs are not enabled.
 
 1. **Re-authenticate with all required scopes:** Run the \`cep_auth\` tool, or run \`mcp auth login\` at the shell, to re-consent. The required scope set is defined in lib/constants.js#SCOPES.
-2. **Verify APIs are enabled:** Run the \`check_and_enable_cep_api\` tool against your project, or enable the API set listed in lib/constants.js#SERVICE_NAMES.`
+2. **Verify APIs are enabled:** Run the \`check_and_enable_cep_api\` tool against your project, or enable the API set listed in lib/constants.js#SERVICE_NAMES.
+`
 }
 
 /**
- * Extracts the authentication token from the request headers.
- * @param {object} requestInfo - The request context object
- * @returns {string|null} The Bearer token if present, otherwise null
+ * Extracts bearer token from request info if present
+ * @param {object} [requestInfo] - Inbound MCP request metadata
+ * @returns {string|null} Bearer token string or null
  */
 function getAuthToken(requestInfo) {
   return requestInfo?.headers?.authorization ? requestInfo.headers.authorization.split(' ')[1] : null
@@ -166,11 +167,24 @@ export function guardedToolCall(
     const authToken = getAuthToken(context?.requestInfo)
     if (!authToken) {
       const validity = await isTokenLocallyValid()
-      if (!validity.ok) {
+      if (!validity.ok && !canLaunchBrowser()) {
         return buildAuthRequiredResponse(validity)
       }
     }
     try {
+      if (options.server && (!options.apiOptions || !options.apiOptions.onStatusUpdate)) {
+        const server = options.server
+        const onStatusUpdate = msg => {
+          try {
+            if (typeof server?.sendLoggingMessage === 'function') {
+              server.sendLoggingMessage({ level: 'info', data: msg }).catch(() => {})
+            }
+          } catch {
+            // ignore
+          }
+        }
+        options.apiOptions = { ...(options.apiOptions || {}), onStatusUpdate }
+      }
       const { apiClients, apiOptions } = options
       let currentParams = { ...params }
       if (sessionState && currentParams.customerId) {

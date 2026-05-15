@@ -15,17 +15,18 @@ limitations under the License.
 */
 
 /**
- * @file Tool definition for the agent-initiated sign-in flow (`cep_auth`).
- *
- * Not wrapped with `guardedToolCall` — that wrapper performs the auth
- * pre-flight check and would refuse to invoke this tool when the cache is
- * empty, which is exactly when this tool is needed.
+ * @file Tool definitions for the agent-initiated sign-in flow (`cep_auth`),
+ * status checking (`auth_status`), and cache clearing (`auth_clear`).
  */
 
 import { z } from 'zod'
 import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 import { startToolAuth, completeToolAuth } from '../../lib/util/credential/auth_login.js'
+import { TokenCache } from '../../lib/util/credential/token_cache.js'
+import { oauthFlowCredential } from '../../lib/util/credential/oauth_flow.js'
+import { SCOPES } from '../../lib/constants.js'
+import { guardedToolCall, formatToolResponse } from '../utils/wrapper.js'
 
 const TOOL_NAME = 'cep_auth'
 
@@ -36,11 +37,22 @@ const AGENT_HINT =
   'the redirectUrl argument.'
 
 /**
- * Registers the `cep_auth` tool with the MCP server.
- * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server The MCP server instance.
+ * Registers the authentication tools with the MCP server (alias for registerAuthTools).
+ * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
+ * @param {object} options - Configuration options for the tools.
+ * @param {object} sessionState - The session state object for caching.
  */
-export function registerAuthTool(server) {
-  logger.debug(`${TAGS.MCP} Registering '${TOOL_NAME}' tool...`)
+export const registerAuthTool = registerAuthTools
+
+/**
+ * Registers the authentication tools with the MCP server.
+ * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
+ * @param {object} options - Configuration options for the tools.
+ * @param {object} sessionState - The session state object for caching.
+ */
+export function registerAuthTools(server, options, sessionState) {
+  logger.debug(`${TAGS.MCP} Registering auth tools...`)
+
   server.registerTool(
     TOOL_NAME,
     {
@@ -95,6 +107,55 @@ export function registerAuthTool(server) {
         }
       }
     },
+  )
+
+  server.registerTool(
+    'auth_status',
+    {
+      description: 'Checks the current OAuth credential status and cached scopes.',
+      inputSchema: z.object({}).passthrough(),
+    },
+    guardedToolCall(
+      {
+        handler: async () => {
+          const requiredScopes = Object.values(SCOPES)
+          const cred = oauthFlowCredential({ requiredScopes })
+          const probe = await cred.probe()
+          return formatToolResponse({
+            summary: probe.ok ? 'OAuth credentials valid and active.' : 'OAuth credentials missing or incomplete.',
+            data: { status: probe },
+            structuredContent: { status: probe },
+          })
+        },
+        skipAutoResolve: true,
+      },
+      options,
+      sessionState,
+    ),
+  )
+
+  server.registerTool(
+    'auth_clear',
+    {
+      description: 'Clears cached OAuth credentials, requiring re-authentication on the next call.',
+      inputSchema: z.object({}).passthrough(),
+    },
+    guardedToolCall(
+      {
+        handler: async () => {
+          const cache = new TokenCache(TokenCache.defaultPath())
+          await cache.clear()
+          return formatToolResponse({
+            summary: 'OAuth credentials cleared.',
+            data: { cleared: true },
+            structuredContent: { cleared: true },
+          })
+        },
+        skipAutoResolve: true,
+      },
+      options,
+      sessionState,
+    ),
   )
 }
 
