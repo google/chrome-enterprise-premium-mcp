@@ -6,10 +6,7 @@
   "mcpServers": {
     "chrome-enterprise-premium": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@google/chrome-enterprise-premium-mcp@^1.4.0"
-      ]
+      "args": ["-y", "@google/chrome-enterprise-premium-mcp@^1.4.0"]
     }
   }
 }

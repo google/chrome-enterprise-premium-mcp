@@ -45,7 +45,7 @@
   },
   "lint-staged": {
     "*.{js,ts}": "eslint --fix",
-    "*.md": "prettier --write"
+    "*.{json,md,yml,yaml}": "prettier --write"
   },
   "dependencies": {
     "@dotenvx/dotenvx": "^1.66.0",
