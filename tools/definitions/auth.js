@@ -56,15 +56,13 @@ export function registerAuthTool(server) {
             'The full URL the browser was redirected to after consent (looks like http://127.0.0.1:PORT/?code=...&state=...). Omit to start a fresh sign-in.',
           ),
       },
-      outputSchema: z
-        .object({
-          status: z.enum(['completed', 'awaiting', 'error']),
-          authUrl: z.string().optional(),
-          nextAction: z.string().optional(),
-          message: z.string().optional(),
-          expiresAt: z.string().optional(),
-        })
-        .passthrough(),
+      outputSchema: z.looseObject({
+        status: z.enum(['completed', 'awaiting', 'error']),
+        authUrl: z.string().optional(),
+        nextAction: z.string().optional(),
+        message: z.string().optional(),
+        expiresAt: z.string().optional(),
+      }),
     },
     async ({ redirectUrl }, context) => {
       if (context?.requestInfo?.headers?.authorization) {
