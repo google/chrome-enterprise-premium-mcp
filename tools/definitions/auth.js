@@ -57,9 +57,11 @@ export function registerAuthTools(server, options, sessionState) {
     TOOL_NAME,
     {
       description:
-        'Sign in to Google so the server can call the Workspace APIs. Call with no arguments to start. ' +
-        'If the response says nextAction is "paste-redirect-url", ask the user to paste the URL the ' +
-        'browser was redirected to, then call cep_auth again with that string as the redirectUrl argument.',
+        'Sign in to Google for the Chrome Enterprise Premium (CEP) MCP server. ' +
+        'Use this tool ONLY for the CEP MCP server. The Google Workspace MCP server has its own separate auth tool — do not use this one for that. ' +
+        'Requests the CEP scope set: Chrome browser management, Chrome policy, Cloud Identity (DLP), Admin SDK reports, and Service Usage. ' +
+        'Call with no arguments to start the sign-in. ' +
+        'If the response sets `nextAction` to `paste-redirect-url`, ask the user to paste the URL the browser was redirected to, then call `cep_auth` again with that string as the `redirectUrl` argument.',
       inputSchema: {
         redirectUrl: z
           .string()
