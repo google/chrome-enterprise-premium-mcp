@@ -16,7 +16,6 @@
     "bin/",
     "mcp-server.js",
     "tools/",
-    "!tools/sync-extension-version.js",
     "lib/",
     "prompts/"
   ],
@@ -30,7 +29,7 @@
     "eval:knowledge": "CEP_BACKEND=fake node test/evals/run.js --category knowledge",
     "eval:licensing": "CEP_BACKEND=fake node test/evals/run.js --category licensing",
     "eval:prompt": "CEP_BACKEND=fake node test/evals/run.js --category prompt",
-    "format": "node tools/sync-extension-version.js && prettier --write .",
+    "format": "node -e \"const p=JSON.parse(require('fs').readFileSync('package.json','utf8')); const e=JSON.parse(require('fs').readFileSync('gemini-extension.json','utf8')); e.mcpServers['chrome-enterprise-premium'].args[1]='@google/chrome-enterprise-premium-mcp@^'+p.version; require('fs').writeFileSync('gemini-extension.json',JSON.stringify(e,null,2)+'\\n','utf8')\" && prettier --write .",
     "lint": "eslint .",
     "lint:fix": "eslint --fix .",
     "mcp-inspector": "npx @modelcontextprotocol/inspector node mcp-server.js",
