@@ -16,6 +16,7 @@
     "bin/",
     "mcp-server.js",
     "tools/",
+    "!tools/sync-extension-version.js",
     "lib/",
     "prompts/"
   ],
