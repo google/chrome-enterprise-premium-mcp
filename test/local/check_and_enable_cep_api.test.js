@@ -69,7 +69,7 @@ describe('check_and_enable_cep_api Tool', () => {
         projectId: 'project1',
         checkAll: false,
       },
-      { requestInfo: {} },
+      { requestInfo: { headers: { authorization: 'Bearer fake' } } },
     )
 
     assert.strictEqual(result.isError, true)

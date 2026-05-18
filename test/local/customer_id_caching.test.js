@@ -44,13 +44,13 @@ describe('Customer ID Caching and Auto-Resolution', () => {
     )
 
     // First call
-    await listOrgUnitsHandler({}, { _requestInfo: {} })
+    await listOrgUnitsHandler({}, { requestInfo: { headers: { authorization: 'Bearer fake' } } })
     assert.strictEqual(mockGetCustomerId.mock.callCount(), 1, 'getCustomerId should be called once')
     const firstCallArgs = mockListOrgUnits.mock.calls[0].arguments
     assert.strictEqual(firstCallArgs[0].customerId, 'C_AUTO_RESOLVED', 'First call should use resolved ID')
 
     // Second call
-    await listOrgUnitsHandler({}, { _requestInfo: {} })
+    await listOrgUnitsHandler({}, { requestInfo: { headers: { authorization: 'Bearer fake' } } })
     assert.strictEqual(mockGetCustomerId.mock.callCount(), 1, 'getCustomerId should NOT be called again')
     const secondCallArgs = mockListOrgUnits.mock.calls[1].arguments
     assert.strictEqual(secondCallArgs[0].customerId, 'C_AUTO_RESOLVED', 'Second call should use cached ID')
@@ -79,7 +79,10 @@ describe('Customer ID Caching and Auto-Resolution', () => {
     )
 
     // Call with explicit ID
-    await listOrgUnitsHandler({ customerId: 'C_EXPLICIT' }, { _requestInfo: {} })
+    await listOrgUnitsHandler(
+      { customerId: 'C_EXPLICIT' },
+      { requestInfo: { headers: { authorization: 'Bearer fake' } } },
+    )
     assert.strictEqual(mockGetCustomerId.mock.callCount(), 0)
     assert.strictEqual(mockListOrgUnits.mock.calls[0].arguments[0].customerId, 'C_EXPLICIT')
     assert.strictEqual(sessionState.customerId, 'C_EXPLICIT')
@@ -101,7 +104,7 @@ describe('Customer ID Caching and Auto-Resolution', () => {
       sessionState,
     )
 
-    const result = await tool({}, {})
+    const result = await tool({}, { requestInfo: { headers: { authorization: 'Bearer fake' } } })
 
     assert.strictEqual(result.isError, true, 'Tool should return isError: true when auto-resolve fails')
     assert.strictEqual(

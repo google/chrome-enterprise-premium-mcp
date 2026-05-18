@@ -39,7 +39,7 @@ const pkg = JSON.parse(readFileSync(fileURLToPath(new URL('./package.json', impo
 import { buildServerInstructions } from './lib/knowledge/instructions.js'
 import { registerTools } from './tools/index.js'
 import { registerPrompts } from './prompts/index.js'
-import { checkGCP } from './lib/util/gcp.js'
+import { checkGCP, isStdioMode } from './lib/util/gcp.js'
 import { featureFlags, FLAGS } from './lib/util/feature_flags.js'
 import { logger } from './lib/util/logger.js'
 import { printBanner, dim } from './lib/util/banner.js'
@@ -65,18 +65,6 @@ import { ServiceUsageClient } from './lib/api/service_usage_client.js'
 function makeLoggingCompatibleWithStdio() {
   console.log = console.error
   logger.enableStdioMode()
-}
-
-/**
- * Determines whether to start the server in Stdio mode.
- * @param {object} gcpInfo - The detected GCP environment metadata
- * @returns {boolean} True if Stdio mode should be used, false otherwise
- */
-function shouldStartStdio(gcpInfo) {
-  if (process.env.GCP_STDIO === 'false' || (gcpInfo && gcpInfo.project)) {
-    return false
-  }
-  return true
 }
 
 /**
@@ -272,7 +260,7 @@ export async function getServer(gcpInfo, sharedSessionState, principal = null) {
 
   registerTools(server, toolOptions, sharedSessionState)
   registerPrompts(server)
-  if (shouldStartStdio(gcpInfo)) {
+  if (isStdioMode()) {
     logger.info(`${TAGS.MCP} Stdio mode.`)
   } else {
     logger.info(`${TAGS.MCP} Running on GCP environment.`)
@@ -288,7 +276,7 @@ export async function getServer(gcpInfo, sharedSessionState, principal = null) {
 export async function runServer() {
   try {
     const gcpInfo = await checkGCP()
-    const isStdio = shouldStartStdio(gcpInfo)
+    const isStdio = isStdioMode()
 
     if (isStdio) {
       makeLoggingCompatibleWithStdio()

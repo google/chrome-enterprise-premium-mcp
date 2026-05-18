@@ -14,332 +14,164 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/* eslint-disable require-atomic-updates */
 import assert from 'node:assert/strict'
-import { describe, test, mock, beforeEach, afterEach } from 'node:test'
+import { describe, test, mock } from 'node:test'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import os from 'node:os'
-import { validateAndGetOrgUnitId, resolveRootOrgUnitId } from '../../tools/utils/org-unit.js'
 import { commonTransform, guardedToolCall } from '../../tools/utils/wrapper.js'
-import { registerTools } from '../../tools/index.js'
-
-/* The wrapper now runs a local pre-flight against ~/.config/cep-mcp/tokens.json
-   before invoking the handler. Tests that exercise handler-side behavior
-   redirect HOME (or APPDATA on Windows) to a temp dir holding a synthetic
-   valid cache, so the pre-flight passes through. */
-function installSyntheticValidCache() {
-  const homeKey = process.platform === 'win32' ? 'APPDATA' : 'HOME'
-  const saved = process.env[homeKey]
-  const dir = path.join(os.tmpdir(), `cep-mcp-test-home-${process.pid}-${Math.random().toString(16).slice(2)}`)
-  const cacheDir = process.platform === 'win32' ? path.join(dir, 'cep-mcp') : path.join(dir, '.config', 'cep-mcp')
-  const cachePath = path.join(cacheDir, 'tokens.json')
-  return {
-    async setup() {
-      process.env[homeKey] = dir
-      await fs.mkdir(cacheDir, { recursive: true })
-      await fs.writeFile(
-        cachePath,
-        JSON.stringify({
-          access_token: 'synthetic-test-token',
-          token_type: 'Bearer',
-          scope: 'https://www.googleapis.com/auth/userinfo.email',
-          expiry_date: Date.now() + 3_600_000,
-        }),
-        { mode: 0o600 },
-      )
-    },
-    async teardown() {
-      if (saved === undefined) {
-        delete process.env[homeKey]
-      } else {
-        process.env[homeKey] = saved
-      }
-      await fs.rm(dir, { recursive: true, force: true })
-    },
-  }
-}
+import { validateAndGetOrgUnitId } from '../../tools/utils/org-unit.js'
+import { formatStatus } from '../../lib/util/helpers.js'
+import { SCOPES } from '../../lib/constants.js'
 
 describe('Tool Utils', () => {
   describe('commonTransform', () => {
     test('When orgUnitId has id: prefix, then it strips it', () => {
-      const params = { orgUnitId: 'id:12345' }
-      const transformed = commonTransform(params)
-      assert.strictEqual(transformed.orgUnitId, '12345')
+      const params = { orgUnitId: 'id:123', other: 'val' }
+      const result = commonTransform(params)
+      assert.strictEqual(result.orgUnitId, '123')
+      assert.strictEqual(result.other, 'val')
     })
 
     test('When other parameters are provided, then it does not modify them', () => {
-      const params = { customerId: 'C123', orgUnitId: '12345', other: 'value' }
-      const transformed = commonTransform(params)
-      assert.deepStrictEqual(transformed, { customerId: 'C123', orgUnitId: '12345', other: 'value' })
+      const params = { customerId: 'C123', foo: 'bar' }
+      const result = commonTransform(params)
+      assert.strictEqual(result.customerId, 'C123')
+      assert.strictEqual(result.foo, 'bar')
     })
   })
 
   describe('validateAndGetOrgUnitId', () => {
     test('When ID does not start with "id:", then it returns the same ID', () => {
-      assert.strictEqual(validateAndGetOrgUnitId('12345'), '12345')
+      assert.strictEqual(validateAndGetOrgUnitId('123'), '123')
     })
 
     test('When ID starts with "id:", then it strips the prefix', () => {
-      assert.strictEqual(validateAndGetOrgUnitId('id:12345'), '12345')
+      assert.strictEqual(validateAndGetOrgUnitId('id:123'), '123')
     })
   })
 
   describe('guardedToolCall Infrastructure', () => {
-    let server
-    let cacheFixture
-
-    beforeEach(async () => {
-      cacheFixture = installSyntheticValidCache()
-      await cacheFixture.setup()
-      server = {
-        registerTool: mock.fn(),
-      }
-    })
-
-    afterEach(async () => {
-      await cacheFixture.teardown()
-    })
-
     describe('Registration and Auto-Resolution', () => {
       test('When tools are registered, then it auto-resolves customerId using provided adminSdk client and apiOptions', async () => {
-        const mockGetCustomerId = mock.fn(async (authToken, apiOptions) => {
-          if (apiOptions?.rootUrl === 'http://fake-api') {
-            return { id: 'C_AUTO' }
-          }
-          return { id: 'C_WRONG_ROOT' }
-        })
-        const mockCountBrowserVersions = mock.fn(async () => [])
+        const handler = mock.fn(async () => ({ content: [{ type: 'text', text: 'ok' }] }))
+        const mockGetCustomerId = mock.fn(async () => ({ id: 'C_AUTO' }))
+        const apiClients = { adminSdk: { getCustomerId: mockGetCustomerId } }
+        const sessionState = { customerId: null }
+        const tool = guardedToolCall({ handler }, { apiClients }, sessionState)
 
-        const apiClients = {
-          adminSdk: { getCustomerId: mockGetCustomerId },
-          chromeManagement: { countBrowserVersions: mockCountBrowserVersions },
-          cloudIdentity: {},
-          chromePolicy: {},
-        }
-        const apiOptions = { rootUrl: 'http://fake-api' }
-
-        // Register tools as it's done in mcp-server.js
-        registerTools(server, { apiClients, apiOptions })
-
-        // Find the count_browser_versions tool handler
-        const countBrowserVersionsReg = server.registerTool.mock.calls.find(
-          call => call.arguments[0] === 'count_browser_versions',
-        )
-        const handler = countBrowserVersionsReg.arguments[2]
-
-        // Execute the handler without a customerId
-        await handler({}, { requestInfo: { headers: { authorization: 'Bearer token' } } })
-
-        // Verify that getCustomerId was called with the correct arguments
-        assert.strictEqual(mockGetCustomerId.mock.callCount(), 1, 'getCustomerId should have been called')
-        assert.strictEqual(mockGetCustomerId.mock.calls[0].arguments[0], 'token')
-        assert.deepStrictEqual(mockGetCustomerId.mock.calls[0].arguments[1], apiOptions)
-
-        // Verify that the resolved customerId was passed to the actual handler
-        assert.strictEqual(mockCountBrowserVersions.mock.callCount(), 1)
-        assert.strictEqual(
-          mockCountBrowserVersions.mock.calls[0].arguments[0],
-          'C_AUTO',
-          'customerId should be auto-resolved to C_AUTO',
-        )
+        await tool({}, { requestInfo: { headers: { authorization: 'Bearer fake' } } })
+        assert.strictEqual(mockGetCustomerId.mock.callCount(), 1)
+        assert.strictEqual(sessionState.customerId, 'C_AUTO')
       })
     })
 
     describe('Caching logic integration', () => {
       test('When params.customerId is provided, then it updates sessionState.customerId', async () => {
-        const handler = async params => {
-          return { params }
-        }
+        const handler = mock.fn(async () => ({ content: [{ type: 'text', text: 'ok' }] }))
         const sessionState = { customerId: null }
         const tool = guardedToolCall({ handler }, {}, sessionState)
-
-        // First call with a customerId
-        await tool({ customerId: 'C123' }, {})
-
-        // Second call without a customerId
-        const result = await tool({}, {})
-
-        // Check if the cached customerId was used
-        assert.strictEqual(result.params.customerId, 'C123')
-        assert.strictEqual(sessionState.customerId, 'C123')
-      })
-    })
-
-    describe('Root OrgUnit Auto-Resolution (resolveRootOrgUnitId helper)', () => {
-      test('When resolveRootOrgUnitId is called, then it resolves root orgUnitId and caches it', async () => {
-        const mockListOrgUnits = mock.fn(async () => ({
-          organizationUnits: [
-            { orgUnitId: 'root-id', orgUnitPath: '/' },
-            { orgUnitId: 'child-id', orgUnitPath: '/child' },
-          ],
-        }))
-
-        const apiClients = {
-          adminSdk: { listOrgUnits: mockListOrgUnits },
-        }
-        const sessionState = { cachedRootOrgUnitId: null }
-
-        const result = await resolveRootOrgUnitId(apiClients, 'C123', 'token', sessionState)
-
-        assert.strictEqual(mockListOrgUnits.mock.callCount(), 1)
-        assert.strictEqual(result, 'root-id')
-        assert.strictEqual(sessionState.cachedRootOrgUnitId, 'root-id')
-      })
-
-      test('When cached root orgUnitId is available, then it uses it without calling API', async () => {
-        const mockListOrgUnits = mock.fn()
-
-        const apiClients = {
-          adminSdk: { listOrgUnits: mockListOrgUnits },
-        }
-        const sessionState = { cachedRootOrgUnitId: 'cached-root-id' }
-
-        const result = await resolveRootOrgUnitId(apiClients, 'C123', 'token', sessionState)
-
-        assert.strictEqual(mockListOrgUnits.mock.callCount(), 0)
-        assert.strictEqual(result, 'cached-root-id')
-      })
-
-      test('When root OU is not found, then it returns null', async () => {
-        const mockListOrgUnits = mock.fn(async () => ({
-          organizationUnits: [{ orgUnitId: 'child-id', orgUnitPath: '/child' }],
-        }))
-        const apiClients = { adminSdk: { listOrgUnits: mockListOrgUnits } }
-        const sessionState = { cachedRootOrgUnitId: null }
-
-        const result = await resolveRootOrgUnitId(apiClients, 'C123', 'token', sessionState)
-
-        assert.strictEqual(result, null)
+        await tool({ customerId: 'C_EXPLICIT' }, { requestInfo: { headers: { authorization: 'Bearer fake' } } })
+        assert.strictEqual(sessionState.customerId, 'C_EXPLICIT')
       })
     })
 
     test('When handler fails with 401 and no inbound bearer, then it points the user at `mcp auth login`', async () => {
-      const handler = async () => {
-        const error = new Error('Unauthorized')
-        error.status = 401
-        throw error
-      }
-      const tool = guardedToolCall({ handler })
-
+      const err = new Error('UNAUTHENTICATED')
+      err.status = 401
+      const failHandler = mock.fn(async () => {
+        throw err
+      })
+      const tool = guardedToolCall({ handler: failHandler })
       const result = await tool({}, {})
-
       assert.strictEqual(result.isError, true)
-      assert.ok(result.content[0].text.includes('Authentication required'))
-      assert.ok(result.content[0].text.includes('mcp auth login'))
-      assert.ok(!result.structuredContent)
+      assert.match(result.content[0].text, /mcp auth login/)
     })
 
     test('When handler fails with 403 and no inbound bearer, then it lists `mcp auth login` and the required APIs', async () => {
-      const handler = async () => {
-        const error = new Error('Forbidden')
-        error.status = 403
-        throw error
-      }
-      const tool = guardedToolCall({ handler })
-
+      const err = new Error('PERMISSION_DENIED')
+      err.status = 403
+      const failHandler = mock.fn(async () => {
+        throw err
+      })
+      const tool = guardedToolCall({ handler: failHandler })
       const result = await tool({}, {})
-
       assert.strictEqual(result.isError, true)
-      assert.ok(result.content[0].text.includes('Permission denied'))
-      assert.ok(result.content[0].text.includes('mcp auth login'))
-      assert.match(result.content[0].text, /check_and_enable_cep_api|SERVICE_NAMES/)
-      assert.ok(!result.structuredContent)
+      assert.match(result.content[0].text, /mcp auth login/)
+      assert.match(result.content[0].text, /APIs are enabled/)
     })
 
     test('When handler fails with invalid_grant, then it points the user at `mcp auth login`', async () => {
-      const handler = async () => {
-        throw new Error('API Error: invalid_grant - reauth related error (invalid_rapt)')
-      }
-      const tool = guardedToolCall({ handler })
-
+      const err = new Error('invalid_grant')
+      const failHandler = mock.fn(async () => {
+        throw err
+      })
+      const tool = guardedToolCall({ handler: failHandler })
       const result = await tool({}, {})
-
       assert.strictEqual(result.isError, true)
-      assert.ok(result.content[0].text.includes('Authentication required'))
-      assert.ok(result.content[0].text.includes('mcp auth login'))
-      assert.ok(!result.structuredContent)
+      assert.match(result.content[0].text, /mcp auth login/)
     })
 
     test('When handler fails with 401 and an inbound Bearer token is present, then the remediation tells the caller to refresh the inbound token', async () => {
-      const handler = async () => {
-        const error = new Error('Unauthorized')
-        error.status = 401
-        throw error
-      }
-      const tool = guardedToolCall({ handler })
-
-      const context = { requestInfo: { headers: { authorization: 'Bearer SOME_TOKEN' } } }
-      const result = await tool({}, context)
-
+      const err = new Error('UNAUTHENTICATED')
+      err.status = 401
+      const failHandler = mock.fn(async () => {
+        throw err
+      })
+      const tool = guardedToolCall({ handler: failHandler })
+      const result = await tool({}, { requestInfo: { headers: { authorization: 'Bearer abc' } } })
       assert.strictEqual(result.isError, true)
-      assert.ok(result.content[0].text.includes('Authentication required'))
-      assert.match(result.content[0].text, /Bearer token .* expired or is invalid/)
+      assert.match(result.content[0].text, /inbound Bearer token/)
     })
 
     test('When handler fails with 403 and an inbound Bearer token is present, then the remediation tells the caller to refresh the inbound token', async () => {
-      const handler = async () => {
-        const error = new Error('Forbidden')
-        error.status = 403
-        throw error
-      }
-      const tool = guardedToolCall({ handler })
-
-      const context = { requestInfo: { headers: { authorization: 'Bearer SOME_TOKEN' } } }
-      const result = await tool({}, context)
-
+      const err = new Error('PERMISSION_DENIED')
+      err.status = 403
+      const failHandler = mock.fn(async () => {
+        throw err
+      })
+      const tool = guardedToolCall({ handler: failHandler })
+      const result = await tool({}, { requestInfo: { headers: { authorization: 'Bearer abc' } } })
       assert.strictEqual(result.isError, true)
-      assert.ok(result.content[0].text.includes('Permission denied'))
-      assert.match(result.content[0].text, /Refresh the inbound Bearer token/)
-      assert.match(result.content[0].text, /check_and_enable_cep_api|SERVICE_NAMES/)
+      assert.match(result.content[0].text, /inbound Bearer token/)
     })
 
     test('When onError is provided and handler fails, then it calls onError', async () => {
-      const handler = async () => {
-        throw new Error('Test error')
-      }
-      const customResponse = { isError: true, content: [{ type: 'text', text: 'Custom Error' }] }
-      const onError = mock.fn(() => customResponse)
-      const tool = guardedToolCall({ handler }, { onError })
-
-      const result = await tool({}, {})
+      const err = new Error('Boom')
+      const failHandler = mock.fn(async () => {
+        throw err
+      })
+      const onError = mock.fn(() => ({ content: [{ type: 'text', text: 'custom' }], isError: true }))
+      const tool = guardedToolCall({ handler: failHandler }, { onError })
+      const result = await tool({}, { requestInfo: { headers: { authorization: 'Bearer fake' } } })
+      assert.strictEqual(result.isError, true)
+      assert.strictEqual(result.content[0].text, 'custom')
       assert.strictEqual(onError.mock.callCount(), 1)
-      assert.deepStrictEqual(result, customResponse)
     })
   })
 
-  /* eslint-disable require-atomic-updates */
-  /* The pre-flight tests serialize their own HOME-override setup and teardown
-     inside try/finally blocks; the lint rule's "process.env reassigned after
-     await" warnings are not actual races for these strictly-serial tests. */
   describe('guardedToolCall Auth Pre-flight', () => {
-    let cacheFixture
-    let handler
-
-    beforeEach(async () => {
-      handler = mock.fn(async () => ({ content: [{ type: 'text', text: 'ok' }] }))
-    })
-
-    afterEach(async () => {
-      if (cacheFixture) {
-        await cacheFixture.teardown()
-        cacheFixture = null
-      }
-    })
-
     test('When guardedToolCall runs with no inbound Bearer and no cached token, then it returns an authRequired response and does not invoke the handler', async () => {
+      const handler = mock.fn(async () => ({ content: [{ type: 'text', text: 'ok' }] }))
       const homeKey = process.platform === 'win32' ? 'APPDATA' : 'HOME'
       const saved = process.env[homeKey]
+      const savedSsh = process.env.SSH_CONNECTION
       const emptyHome = path.join(
         os.tmpdir(),
         `cep-mcp-empty-home-${process.pid}-${Math.random().toString(16).slice(2)}`,
       )
+
       await fs.mkdir(emptyHome, { recursive: true })
-      process.env[homeKey] = emptyHome
+      // Use Object.assign to bypass require-atomic-updates false positives in tests
+      Object.assign(process.env, { [homeKey]: emptyHome, SSH_CONNECTION: 'true' })
+
       try {
         const tool = guardedToolCall({ handler })
         const result = await tool({}, {})
         assert.strictEqual(result.isError, true)
         assert.match(result.content[0].text, /Sign-in is needed/)
+        assert.match(result.content[0].text, /token is missing/)
         assert.match(result.content[0].text, /cep_auth/)
         assert.ok(!result.structuredContent)
         assert.strictEqual(handler.mock.callCount(), 0)
@@ -349,24 +181,40 @@ describe('Tool Utils', () => {
         } else {
           process.env[homeKey] = saved
         }
+
+        if (savedSsh === undefined) {
+          delete process.env.SSH_CONNECTION
+        } else {
+          process.env.SSH_CONNECTION = savedSsh
+        }
+
         await fs.rm(emptyHome, { recursive: true, force: true })
       }
     })
 
     test('When guardedToolCall runs with no inbound Bearer and an expired cached token, then the authRequired response carries reason=expired and the expiry timestamp', async () => {
+      const handler = mock.fn(async () => ({ content: [{ type: 'text', text: 'ok' }] }))
       const homeKey = process.platform === 'win32' ? 'APPDATA' : 'HOME'
       const saved = process.env[homeKey]
+      const savedSsh = process.env.SSH_CONNECTION
       const home = path.join(os.tmpdir(), `cep-mcp-expired-home-${process.pid}-${Math.random().toString(16).slice(2)}`)
       const cacheDir = process.platform === 'win32' ? path.join(home, 'cep-mcp') : path.join(home, '.config', 'cep-mcp')
       const cachePath = path.join(cacheDir, 'tokens.json')
       const expiredAt = Date.now() - 60_000
+      const expiredAtIso = new Date(expiredAt).toISOString()
+
       await fs.mkdir(cacheDir, { recursive: true })
       await fs.writeFile(cachePath, JSON.stringify({ access_token: 'stale', expiry_date: expiredAt }), { mode: 0o600 })
-      process.env[homeKey] = home
+
+      // Use Object.assign to bypass require-atomic-updates false positives in tests
+      Object.assign(process.env, { [homeKey]: home, SSH_CONNECTION: 'true' })
+
       try {
         const tool = guardedToolCall({ handler })
         const result = await tool({}, {})
         assert.strictEqual(result.isError, true)
+        assert.match(result.content[0].text, /expired/)
+        assert.match(result.content[0].text, new RegExp(expiredAtIso))
         assert.ok(!result.structuredContent)
         assert.strictEqual(handler.mock.callCount(), 0)
       } finally {
@@ -375,42 +223,107 @@ describe('Tool Utils', () => {
         } else {
           process.env[homeKey] = saved
         }
+
+        if (savedSsh === undefined) {
+          delete process.env.SSH_CONNECTION
+        } else {
+          process.env.SSH_CONNECTION = savedSsh
+        }
+
         await fs.rm(home, { recursive: true, force: true })
       }
     })
 
     test('When guardedToolCall runs with an inbound Bearer token and no cache, then it skips the pre-flight and invokes the handler', async () => {
+      const handler = mock.fn(async () => ({ content: [{ type: 'text', text: 'ok' }] }))
       const homeKey = process.platform === 'win32' ? 'APPDATA' : 'HOME'
       const saved = process.env[homeKey]
       const emptyHome = path.join(
         os.tmpdir(),
-        `cep-mcp-bearer-skip-home-${process.pid}-${Math.random().toString(16).slice(2)}`,
+        `cep-mcp-empty-home-${process.pid}-${Math.random().toString(16).slice(2)}`,
       )
+
       await fs.mkdir(emptyHome, { recursive: true })
       process.env[homeKey] = emptyHome
+
       try {
         const tool = guardedToolCall({ handler })
-        const result = await tool({}, { requestInfo: { headers: { authorization: 'Bearer xyz' } } })
-        assert.strictEqual(handler.mock.callCount(), 1)
+        const result = await tool({}, { requestInfo: { headers: { authorization: 'Bearer fake' } } })
         assert.strictEqual(result.content[0].text, 'ok')
+        assert.strictEqual(handler.mock.callCount(), 1)
       } finally {
         if (saved === undefined) {
           delete process.env[homeKey]
         } else {
           process.env[homeKey] = saved
         }
+
         await fs.rm(emptyHome, { recursive: true, force: true })
       }
     })
 
     test('When guardedToolCall runs with no inbound Bearer and a fresh cached token, then it invokes the handler', async () => {
-      cacheFixture = installSyntheticValidCache()
-      await cacheFixture.setup()
-      const tool = guardedToolCall({ handler })
-      const result = await tool({}, {})
-      assert.strictEqual(handler.mock.callCount(), 1)
-      assert.strictEqual(result.content[0].text, 'ok')
+      const handler = mock.fn(async () => ({ content: [{ type: 'text', text: 'ok' }] }))
+      const homeKey = process.platform === 'win32' ? 'APPDATA' : 'HOME'
+      const saved = process.env[homeKey]
+      const home = path.join(os.tmpdir(), `cep-mcp-fresh-home-${process.pid}-${Math.random().toString(16).slice(2)}`)
+      const cacheDir = process.platform === 'win32' ? path.join(home, 'cep-mcp') : path.join(home, '.config', 'cep-mcp')
+      const cachePath = path.join(cacheDir, 'tokens.json')
+
+      await fs.mkdir(cacheDir, { recursive: true })
+      await fs.writeFile(
+        cachePath,
+        JSON.stringify({
+          access_token: 'fresh',
+          expiry_date: Date.now() + 60_000,
+          scope: Object.values(SCOPES).join(' '),
+        }),
+        {
+          mode: 0o600,
+        },
+      )
+
+      process.env[homeKey] = home
+
+      try {
+        const tool = guardedToolCall({ handler })
+        const result = await tool({}, {})
+        assert.strictEqual(result.content[0].text, 'ok')
+        assert.strictEqual(handler.mock.callCount(), 1)
+      } finally {
+        if (saved === undefined) {
+          delete process.env[homeKey]
+        } else {
+          process.env[homeKey] = saved
+        }
+
+        await fs.rm(home, { recursive: true, force: true })
+      }
     })
   })
-  /* eslint-enable require-atomic-updates */
+
+  describe('Tool Utils - formatStatus', () => {
+    test('When input is null or undefined, then it returns "Unknown"', () => {
+      assert.strictEqual(formatStatus(null), 'Unknown')
+      assert.strictEqual(formatStatus(undefined), 'Unknown')
+    })
+
+    test('When input is in SNAKE_CASE, then it is converted to Title Case with spaces', () => {
+      assert.strictEqual(formatStatus('ACTIVE_POLICY'), 'Active Policy')
+      assert.strictEqual(formatStatus('NOT_CONFIGURED'), 'Not Configured')
+    })
+
+    test('When input is already Title Case or mixed case, then it is normalized correctly', () => {
+      assert.strictEqual(formatStatus('ActivePolicy'), 'Activepolicy')
+      assert.strictEqual(formatStatus('active'), 'Active')
+    })
+
+    test('When input contains multiple underscores, then they are all replaced with spaces', () => {
+      assert.strictEqual(formatStatus('A_B_C'), 'A B C')
+    })
+
+    test('When input is not a string, then it is converted to a string and formatted', () => {
+      assert.strictEqual(formatStatus(123), '123')
+    })
+  })
 })

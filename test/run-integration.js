@@ -37,6 +37,7 @@ import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import { findTestFiles } from './run-utils.js'
+import { SCOPES } from '../lib/constants.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const root = resolve(__dirname, '..')
@@ -58,7 +59,7 @@ fs.writeFileSync(
   JSON.stringify({
     access_token: 'synthetic-integration-test-token',
     token_type: 'Bearer',
-    scope: 'https://www.googleapis.com/auth/userinfo.email',
+    scope: Object.values(SCOPES).join(' '),
     expiry_date: Date.now() + 3_600_000,
   }),
   { mode: 0o600 },

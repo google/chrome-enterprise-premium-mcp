@@ -113,7 +113,10 @@ export function registerAuthTools(server, options, sessionState) {
     'auth_status',
     {
       description: 'Checks the current OAuth credential status and cached scopes.',
-      inputSchema: z.object({}).passthrough(),
+      inputSchema: z.looseObject({}),
+      outputSchema: z.looseObject({
+        status: z.looseObject({}),
+      }),
     },
     guardedToolCall(
       {
@@ -138,7 +141,10 @@ export function registerAuthTools(server, options, sessionState) {
     'auth_clear',
     {
       description: 'Clears cached OAuth credentials, requiring re-authentication on the next call.',
-      inputSchema: z.object({}).passthrough(),
+      inputSchema: z.looseObject({}),
+      outputSchema: z.looseObject({
+        cleared: z.boolean(),
+      }),
     },
     guardedToolCall(
       {
