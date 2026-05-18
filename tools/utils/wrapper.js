@@ -39,17 +39,27 @@ function buildAuthRequiredResponse({ reason, expiresAt }) {
     `Sign-in is needed before this tool can run. The cached OAuth token is ${reasonLabel}${expiredAtNote}. ` +
     'I can run the `cep_auth` tool to sign you in, or you can run ' +
     `\`${MANUAL_AUTH_COMMAND}\` yourself.`
-  return {
-    content: [{ type: 'text', text }],
-    structuredContent: {
-      authRequired: {
-        reason,
-        expiresAt: expiresAt instanceof Date ? expiresAt.toISOString() : undefined,
-        nextAction: 'invoke-cep_auth',
-        manualCommand: MANUAL_AUTH_COMMAND,
-        docsUrl: AUTH_DOCS_URL,
-      },
+
+  const authRequiredData = {
+    authRequired: {
+      reason,
+      expiresAt: expiresAt instanceof Date ? expiresAt.toISOString() : undefined,
+      nextAction: 'invoke-cep_auth',
+      manualCommand: MANUAL_AUTH_COMMAND,
+      docsUrl: AUTH_DOCS_URL,
     },
+  }
+
+  return {
+    content: [
+      { type: 'text', text },
+      // We include the structured data as a "hidden" code block in the content.
+      // This allows the agent (Gemini) to parse the signal if its internal logic needs it,
+      // while bypassing the rigid MCP Client SDK outputSchema validator which would
+      // fail if we returned it in structuredContent (since it doesn't match the tool's schema).
+      { type: 'text', text: '```json\n' + JSON.stringify(authRequiredData, null, 2) + '\n```' },
+    ],
+    // We omit structuredContent entirely to ensure out-of-band error paths never crash the SDK.
     isError: true,
   }
 }

@@ -341,9 +341,7 @@ describe('Tool Utils', () => {
         assert.strictEqual(result.isError, true)
         assert.match(result.content[0].text, /Sign-in is needed/)
         assert.match(result.content[0].text, /cep_auth/)
-        assert.strictEqual(result.structuredContent.authRequired.reason, 'missing')
-        assert.strictEqual(result.structuredContent.authRequired.nextAction, 'invoke-cep_auth')
-        assert.match(result.structuredContent.authRequired.docsUrl, /configuration\.md#authenticate-to-google-apis/)
+        assert.ok(!result.structuredContent)
         assert.strictEqual(handler.mock.callCount(), 0)
       } finally {
         if (saved === undefined) {
@@ -369,8 +367,7 @@ describe('Tool Utils', () => {
         const tool = guardedToolCall({ handler })
         const result = await tool({}, {})
         assert.strictEqual(result.isError, true)
-        assert.strictEqual(result.structuredContent.authRequired.reason, 'expired')
-        assert.strictEqual(result.structuredContent.authRequired.expiresAt, new Date(expiredAt).toISOString())
+        assert.ok(!result.structuredContent)
         assert.strictEqual(handler.mock.callCount(), 0)
       } finally {
         if (saved === undefined) {
