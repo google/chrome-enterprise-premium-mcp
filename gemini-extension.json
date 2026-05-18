@@ -1,12 +1,15 @@
 {
   "name": "chrome-enterprise-premium",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "Bring AI agents to Chrome Enterprise Premium security management.",
   "contextFileName": "gemini-extension/CONTEXT.md",
   "mcpServers": {
     "chrome-enterprise-premium": {
       "command": "npx",
-      "args": ["-y", "@google/chrome-enterprise-premium-mcp@^1.4.0"]
+      "args": [
+        "-y",
+        "@google/chrome-enterprise-premium-mcp@^1.4.0"
+      ]
     }
   }
 }

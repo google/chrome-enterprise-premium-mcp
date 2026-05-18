@@ -1,5 +1,40 @@
 # Changelog
 
+## [1.6.0](https://github.com/google/chrome-enterprise-premium-mcp/compare/chrome-enterprise-premium-mcp-v1.5.0...chrome-enterprise-premium-mcp-v1.6.0) (2026-05-18)
+
+
+### Features
+
+* **auth:** wrapper pre-flight + cep_auth tool for agent-led sign-in ([#211](https://github.com/google/chrome-enterprise-premium-mcp/issues/211)) ([9b75909](https://github.com/google/chrome-enterprise-premium-mcp/commit/9b75909a463185c6744594bd1ddd96c41533358c))
+* proactive inline OAuth login and explicit auth tools ([#228](https://github.com/google/chrome-enterprise-premium-mcp/issues/228)) ([de946b1](https://github.com/google/chrome-enterprise-premium-mcp/commit/de946b18d42e197e13c99d0fcc543f51edcda171))
+
+
+### Bug Fixes
+
+* **ci:** format gemini-extension.json; widen lint-staged to JSON+YAML ([#225](https://github.com/google/chrome-enterprise-premium-mcp/issues/225)) ([e18b04b](https://github.com/google/chrome-enterprise-premium-mcp/commit/e18b04bd4c4e959dc2effb66f1a30b6e9bc55408))
+* **ci:** install from public npm registry; only use Wombat for publish ([#221](https://github.com/google/chrome-enterprise-premium-mcp/issues/221)) ([e08f9fa](https://github.com/google/chrome-enterprise-premium-mcp/commit/e08f9fa6fc83925919494ef9b831fa6ccd86ffb0))
+* **ci:** resolve zod v4 cache mismatch in daily evaluations ([#234](https://github.com/google/chrome-enterprise-premium-mcp/issues/234)) ([db8c5bc](https://github.com/google/chrome-enterprise-premium-mcp/commit/db8c5bce545ebe8f0c57b2a3bc098343a514d02d))
+* reduce excessive output in get_customer_id tool ([#195](https://github.com/google/chrome-enterprise-premium-mcp/issues/195)) ([33b4d58](https://github.com/google/chrome-enterprise-premium-mcp/commit/33b4d58c5db9366e09a9e8a30844115cb79be643))
+
+
+### Miscellaneous Chores
+
+* **deps:** bump non-major deps; eslint 9 -&gt; 10; replace eslint-plugin-notice ([#217](https://github.com/google/chrome-enterprise-premium-mcp/issues/217)) ([c98509e](https://github.com/google/chrome-enterprise-premium-mcp/commit/c98509e9f38fb966b1dc0277b2ff9675206f238a))
+* **deps:** upgrade zod 3 -&gt; 4; migrate to non-deprecated APIs ([#223](https://github.com/google/chrome-enterprise-premium-mcp/issues/223)) ([d69aeaa](https://github.com/google/chrome-enterprise-premium-mcp/commit/d69aeaa317c876e6b471c3597b38d1598f2abe42))
+* **release-please:** include chore/ci/docs/refactor/test in changelog ([#227](https://github.com/google/chrome-enterprise-premium-mcp/issues/227)) ([1b3bdaf](https://github.com/google/chrome-enterprise-premium-mcp/commit/1b3bdafb9f3e9c5ab08898d4718d1dc808aca74f))
+
+
+### Continuous Integration
+
+* opt into Node 24 runner for JavaScript actions to resolve deprecation warning ([#220](https://github.com/google/chrome-enterprise-premium-mcp/issues/220)) ([6baf129](https://github.com/google/chrome-enterprise-premium-mcp/commit/6baf1299c57b4a4c2be5e8ff694ac1f7adf66e91))
+
+
+### Tests
+
+* add exact version matching check for gemini-extension.json ([#212](https://github.com/google/chrome-enterprise-premium-mcp/issues/212)) ([0c20660](https://github.com/google/chrome-enterprise-premium-mcp/commit/0c2066073d4de750d74726cdeba7731ffa4c5509))
+* **knowledge:** stub axios in unit-suite knowledge_search tests ([#224](https://github.com/google/chrome-enterprise-premium-mcp/issues/224)) ([6cc2398](https://github.com/google/chrome-enterprise-premium-mcp/commit/6cc2398156516e6bb00f040813bbe7c11c3939c4))
+* **sse:** stub req.on in createSseHandler principal-forwarding test ([#226](https://github.com/google/chrome-enterprise-premium-mcp/issues/226)) ([8c89c9f](https://github.com/google/chrome-enterprise-premium-mcp/commit/8c89c9f61eddd63161dd7f939ac99df5bdaf5101))
+
 ## [1.5.0](https://github.com/google/chrome-enterprise-premium-mcp/compare/chrome-enterprise-premium-mcp-v1.4.0...chrome-enterprise-premium-mcp-v1.5.0) (2026-05-15)
 
 
