@@ -51,6 +51,9 @@ import { parseArgs } from 'node:util'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import fs from 'node:fs/promises'
+import fsSync from 'node:fs'
+import os from 'node:os'
+import { SCOPES } from '../../lib/constants.js'
 
 import { loadAllEvals, loadGlobalConfig } from './lib/loader.js'
 import { runChecks, checkForbidden, checkRequired } from './lib/assertions.js'
@@ -184,6 +187,36 @@ async function main() {
 
   // Start fake API server if using fake backend
   const backend = process.env.CEP_BACKEND || 'fake'
+
+  let fakeHomeDir = null
+  if (backend === 'fake') {
+    // Tool-wrapper pre-flight reads ~/.config/cep-mcp/tokens.json before every handler call.
+    // Redirect HOME so evals see a synthetic valid cache instead of failing auth checks.
+    const homeKey = process.platform === 'win32' ? 'APPDATA' : 'HOME'
+    fakeHomeDir = fsSync.mkdtempSync(path.join(os.tmpdir(), 'cep-mcp-evals-home-'))
+    const cacheDir =
+      process.platform === 'win32' ? path.join(fakeHomeDir, 'cep-mcp') : path.join(fakeHomeDir, '.config', 'cep-mcp')
+    fsSync.mkdirSync(cacheDir, { recursive: true })
+    fsSync.writeFileSync(
+      path.join(cacheDir, 'tokens.json'),
+      JSON.stringify({
+        access_token: 'synthetic-evals-test-token',
+        token_type: 'Bearer',
+        scope: Object.values(SCOPES).join(' '),
+        expiry_date: Date.now() + 3_600_000,
+      }),
+      { mode: 0o600 },
+    )
+    process.env[homeKey] = fakeHomeDir
+
+    process.on('exit', () => {
+      try {
+        fsSync.rmSync(fakeHomeDir, { recursive: true, force: true })
+      } catch {
+        // ignore
+      }
+    })
+  }
 
   const effectiveConcurrency = Math.min(concurrency, evals.length)
   const mode = noJudge ? 'deterministic only' : 'full (agent + judge)'
