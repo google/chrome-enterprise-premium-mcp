@@ -43,6 +43,7 @@ Set the project once so subsequent commands inherit it:
 ```bash
 export PROJECT_ID="your-project-id"
 export SERVICE_NAME="cep-mcp-redirect"
+export SECRET_NAME="cep-mcp-oauth-client-secret"
 export REGION="us-central1"
 gcloud config set project "$PROJECT_ID"
 ```
@@ -58,21 +59,9 @@ gcloud services enable \
   --project="$PROJECT_ID"
 ```
 
-## Step 1: Create the OAuth client
+## Step 1: Configure the OAuth consent screen
 
-Create a **Web application** OAuth client in the same project that hosts the Cloud Run service. Installed-app (Desktop) clients do not accept `https://*.run.app` or vanity HTTPS redirect URIs, so the client type matters.
-
-1. Open the [Google Cloud console Clients page](https://console.cloud.google.com/auth/clients).
-2. Click **Create client**.
-3. In the **Application type** menu, select **Web application**.
-4. In the **Name** field, enter a descriptive name (for example, `cep-mcp-redirect`).
-5. Leave **Authorized redirect URIs** empty for now. You will return to this screen after deploying the Cloud Run service to fill in the deployed URL.
-6. Click **Create**.
-7. From the **OAuth client created** dialog, copy the client ID and the client secret. You will need both in later steps.
-
-## Step 2: Configure the OAuth consent screen
-
-The consent screen lists the scopes the user is asked to approve and the user types allowed to grant them.
+The consent screen lists the scopes the user is asked to approve and the user types allowed to grant them. The Google Cloud console requires a configured consent screen before a Web-application client is usable, and redirects you to this screen mid-setup if it is missing.
 
 1. Open the [OAuth consent screen](https://console.cloud.google.com/auth/branding) for your project.
 2. Choose **Internal** if every user signs in with a Google Workspace account in the same organization as the project. Choose **External** otherwise. Internal skips the verification process; external requires verification once you exceed the unverified-app user cap.
@@ -92,18 +81,30 @@ The consent screen lists the scopes the user is asked to approve and the user ty
 5. If you chose **External** and are not yet verified, add the Google accounts that will test sign-in under **Test users**.
 6. Save.
 
+## Step 2: Create the OAuth client
+
+Create a **Web application** OAuth client in the same project that hosts the Cloud Run service. Installed-app (Desktop) clients do not accept `https://*.run.app` or vanity HTTPS redirect URIs, so the client type matters.
+
+1. Open the [Google Cloud console Clients page](https://console.cloud.google.com/auth/clients).
+2. Click **Create client**.
+3. In the **Application type** menu, select **Web application**.
+4. In the **Name** field, enter a descriptive name (for example, `cep-mcp-redirect`).
+5. Leave **Authorized redirect URIs** empty for now. You will return to this screen after deploying the Cloud Run service to fill in the deployed URL.
+6. Click **Create**.
+7. From the **OAuth client created** dialog, copy the client ID and the client secret. You will need both in later steps.
+
 ## Step 3: Store the client secret in Secret Manager
 
 The Cloud Run service reads the client secret from Secret Manager at request time. It is never baked into the deployed image.
 
-Create the secret and add the value you copied in Step 1:
+Create the secret and add the value you copied in Step 2:
 
 ```bash
-gcloud secrets create cep-mcp-oauth-client-secret \
+gcloud secrets create "$SECRET_NAME" \
   --replication-policy="automatic" \
   --project="$PROJECT_ID"
 
-printf '%s' "YOUR_CLIENT_SECRET" | gcloud secrets versions add cep-mcp-oauth-client-secret \
+printf '%s' "YOUR_CLIENT_SECRET" | gcloud secrets versions add "$SECRET_NAME" \
   --data-file=- \
   --project="$PROJECT_ID"
 ```
@@ -120,7 +121,7 @@ gcloud run deploy "$SERVICE_NAME" \
   --region="$REGION" \
   --platform=managed \
   --allow-unauthenticated \
-  --set-env-vars="OAUTH_CLIENT_ID=YOUR_CLIENT_ID,OAUTH_CLIENT_SECRET_NAME=cep-mcp-oauth-client-secret" \
+  --set-env-vars="OAUTH_CLIENT_ID=YOUR_CLIENT_ID,OAUTH_CLIENT_SECRET_NAME=$SECRET_NAME" \
   --project="$PROJECT_ID"
 ```
 
@@ -132,9 +133,9 @@ Grant the runtime service account read access to the secret:
 SERVICE_ACCOUNT=$(gcloud run services describe "$SERVICE_NAME" \
   --region="$REGION" \
   --project="$PROJECT_ID" \
-  --format='value(spec.template.spec.serviceAccountName)')
+  --format='value(spec.template.spec.serviceAccount)')
 
-gcloud secrets add-iam-policy-binding cep-mcp-oauth-client-secret \
+gcloud secrets add-iam-policy-binding "$SECRET_NAME" \
   --member="serviceAccount:${SERVICE_ACCOUNT}" \
   --role="roles/secretmanager.secretAccessor" \
   --project="$PROJECT_ID"
@@ -151,7 +152,7 @@ gcloud run services describe "$SERVICE_NAME" \
 
 ## Step 5: Register the deployed URL with the OAuth client
 
-Return to the [Clients page](https://console.cloud.google.com/auth/clients) and open the Web-app client you created in Step 1.
+Return to the [Clients page](https://console.cloud.google.com/auth/clients) and open the Web-app client you created in Step 2.
 
 1. Under **Authorized redirect URIs**, add the Cloud Run URL from Step 4, suffixed with the service's redirect path (for example, `https://cep-mcp-redirect-abc123.run.app/redirect`). If you have mapped a vanity domain, register that URL instead.
 2. Save.
