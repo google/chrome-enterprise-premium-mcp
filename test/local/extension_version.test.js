@@ -42,7 +42,9 @@ test('gemini-extension.json package version matches package.json version', () =>
   const packageArg = args.find(arg => arg.startsWith('@google/chrome-enterprise-premium-mcp@'))
   assert.ok(packageArg, 'Could not find @google/chrome-enterprise-premium-mcp dependency in args')
 
-  const rangeString = packageArg.split('@').pop()
+  const lastAtIndex = packageArg.lastIndexOf('@')
+  assert.ok(lastAtIndex > 0, 'Could not find version delimiter in argument')
+  const rangeString = packageArg.slice(lastAtIndex + 1)
   assert.ok(rangeString, 'Could not extract version range from argument')
 
   assert.ok(rangeString.startsWith('^'), 'Version range must start with ^ for semantic versioning')
