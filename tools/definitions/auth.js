@@ -22,13 +22,12 @@ limitations under the License.
  */
 
 import { z } from 'zod'
-import { TAGS } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 import { startToolAuth, completeToolAuth } from '../../lib/util/credential/auth_login.js'
 import { TokenCache } from '../../lib/util/credential/token_cache.js'
 import { oauthFlowCredential } from '../../lib/util/credential/oauth_flow.js'
 import { resolveOAuthClientConfig } from '../../lib/util/credential/oauth_client_config.js'
-import { SCOPES, getUniqueScopeCategories } from '../../lib/constants.js'
+import { TAGS, SCOPES, OAUTH_SCOPE_REGISTRY, getUniqueScopeCategories } from '../../lib/constants.js'
 import { guardedToolCall, formatToolResponse } from '../utils/wrapper.js'
 
 const TOOL_NAME = 'cep_auth'
@@ -116,6 +115,24 @@ function supportsHyperlinks() {
  */
 function osc8(url, label = url) {
   return `${OSC}${url}${ST}${label}${OSC}${ST}`
+}
+
+/**
+ * Formats the OAuth probe result into a human-friendly summary string.
+ * @param {object} probe The result from oauthFlowCredential().probe().
+ * @returns {string} Human-readable summary.
+ */
+function formatAuthStatusSummary(probe) {
+  if (!probe.ok) {
+    return probe.scopesKnown && probe.missingScopes.length > 0
+      ? 'OAuth credentials missing or incomplete permissions.'
+      : 'OAuth credentials not configured.'
+  }
+
+  const granted = probe.grantedScopes || Object.keys(OAUTH_SCOPE_REGISTRY)
+  const categories = getUniqueScopeCategories(granted)
+
+  return `OAuth credentials valid and active. Authorized for: ${categories.join(', ')}.`
 }
 
 /**
@@ -212,9 +229,17 @@ export function registerAuthTools(server, options, sessionState) {
           const requiredScopes = Object.values(SCOPES)
           const cred = oauthFlowCredential({ requiredScopes })
           const probe = await cred.probe()
+
+          // Enhance the probe data with friendly names for the user/agent
+          const statusReport = {
+            ...probe,
+            granted: (probe.grantedScopes || []).map(url => OAUTH_SCOPE_REGISTRY[url]?.name || url),
+            missing: (probe.missingScopes || []).map(url => OAUTH_SCOPE_REGISTRY[url]?.name || url),
+          }
+
           return formatToolResponse({
-            summary: probe.ok ? 'OAuth credentials valid and active.' : 'OAuth credentials missing or incomplete.',
-            data: { status: probe },
+            summary: formatAuthStatusSummary(probe),
+            data: { status: statusReport },
             structuredContent: { status: probe },
           })
         },
