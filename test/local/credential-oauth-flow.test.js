@@ -19,12 +19,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import os from 'node:os'
-import {
-  oauthFlowCredential,
-  defaultOpenBrowser,
-  printConsentUrl,
-  _resetChromeDetectionCacheForTests,
-} from '../../lib/util/credential/oauth_flow.js'
+import { oauthFlowCredential, defaultOpenBrowser, printConsentUrl } from '../../lib/util/credential/oauth_flow.js'
 
 async function tmpCachePath(name) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'cep-mcp-oauth-test-'))
@@ -233,24 +228,109 @@ describe('oauthFlowCredential runLoginFlow', () => {
   })
 })
 
+/* Fake child process for openImpl injection — tracks calls and exits cleanly. */
+function makeFakeOpen() {
+  const calls = []
+  async function openImpl(url, opts) {
+    calls.push({ url, opts })
+    const listeners = {}
+    const child = {
+      on(event, cb) {
+        listeners[event] = cb
+        if (event === 'exit') {
+          setImmediate(() => cb(0))
+        }
+        return child
+      },
+      unref() {},
+    }
+    return child
+  }
+  return { openImpl, calls }
+}
+
 describe('defaultOpenBrowser', () => {
+  it('When canLaunchBrowser returns false, then defaultOpenBrowser returns false without invoking open', async () => {
+    const { openImpl, calls } = makeFakeOpen()
+    const result = await defaultOpenBrowser('https://example.test/consent', {
+      openImpl,
+      canLaunch: () => false,
+    })
+    assert.equal(result, false)
+    assert.equal(calls.length, 0)
+  })
+
+  it('When canLaunchBrowser returns true, then defaultOpenBrowser calls open with the URL and resolves true', async () => {
+    const { openImpl, calls } = makeFakeOpen()
+    const stream = makeCaptureStream(false)
+    const result = await defaultOpenBrowser('https://example.test/consent', {
+      openImpl,
+      canLaunch: () => true,
+      attentionStream: stream,
+    })
+    assert.equal(result, true)
+    assert.equal(calls.length, 1)
+    assert.equal(calls[0].url, 'https://example.test/consent')
+  })
+
   /* eslint-disable require-atomic-updates */
-  it('When SSH_CONNECTION is set, then defaultOpenBrowser returns false without spawning', async () => {
-    const prev = process.env.SSH_CONNECTION
-    process.env.SSH_CONNECTION = '10.0.0.1 22 10.0.0.2 22'
-    _resetChromeDetectionCacheForTests()
+  it('When $BROWSER is set, then defaultOpenBrowser passes it through as the open app name', async () => {
+    const prev = process.env.BROWSER
+    process.env.BROWSER = 'firefox'
     try {
-      const result = await defaultOpenBrowser('https://example.test/consent')
-      assert.equal(result, false)
+      const { openImpl, calls } = makeFakeOpen()
+      const stream = makeCaptureStream(false)
+      await defaultOpenBrowser('https://example.test/consent', {
+        openImpl,
+        canLaunch: () => true,
+        attentionStream: stream,
+      })
+      assert.equal(calls.length, 1)
+      assert.deepEqual(calls[0].opts, { app: { name: 'firefox' } })
     } finally {
       if (prev === undefined) {
-        delete process.env.SSH_CONNECTION
+        delete process.env.BROWSER
       } else {
-        process.env.SSH_CONNECTION = prev
+        process.env.BROWSER = prev
       }
     }
   })
   /* eslint-enable require-atomic-updates */
+
+  it('When open throws synchronously or rejects, then defaultOpenBrowser resolves false', async () => {
+    async function openImpl() {
+      throw new Error('spawn failed')
+    }
+    const stream = makeCaptureStream(false)
+    const result = await defaultOpenBrowser('https://example.test/consent', {
+      openImpl,
+      canLaunch: () => true,
+      attentionStream: stream,
+    })
+    assert.equal(result, false)
+  })
+
+  it('When stderr is a TTY, then a BEL is written after the launch', async () => {
+    const { openImpl } = makeFakeOpen()
+    const stream = makeCaptureStream(true)
+    await defaultOpenBrowser('https://example.test/consent', {
+      openImpl,
+      canLaunch: () => true,
+      attentionStream: stream,
+    })
+    assert.ok(stream.text.includes('\x07'), 'expected BEL character on TTY')
+  })
+
+  it('When stderr is not a TTY, then no BEL is written', async () => {
+    const { openImpl } = makeFakeOpen()
+    const stream = makeCaptureStream(false)
+    await defaultOpenBrowser('https://example.test/consent', {
+      openImpl,
+      canLaunch: () => true,
+      attentionStream: stream,
+    })
+    assert.equal(stream.text, '')
+  })
 })
 
 /* Captures a write stream's stderr-style output for assertions. */
@@ -295,157 +375,5 @@ describe('printConsentUrl', () => {
     printConsentUrl(url, stream)
     assert.ok(stream.text.includes(`${ESC}]8;;${url}${ESC}\\`), 'expected OSC 8 opener with url target')
     assert.ok(stream.text.includes(`${ESC}]8;;${ESC}\\`), 'expected OSC 8 terminator')
-  })
-})
-
-/* Fake child process for spawn injection — tracks calls and exits cleanly. */
-function makeFakeSpawn() {
-  const calls = []
-  function spawnImpl(cmd, args) {
-    calls.push({ cmd, args })
-    const listeners = {}
-    const child = {
-      on(event, cb) {
-        listeners[event] = cb
-        if (event === 'exit') {
-          setImmediate(() => cb(0))
-        }
-        return child
-      },
-      unref() {},
-    }
-    return child
-  }
-  return { spawnImpl, calls }
-}
-
-describe('defaultOpenBrowser activation', () => {
-  function withoutBrowserEnv(fn) {
-    const prev = process.env.BROWSER
-    delete process.env.BROWSER
-    try {
-      return fn()
-    } finally {
-      if (prev === undefined) {
-        delete process.env.BROWSER
-      } else {
-        process.env.BROWSER = prev
-      }
-    }
-  }
-
-  it('When the platform is darwin, then an osascript activate call targets Google Chrome', async () => {
-    await withoutBrowserEnv(async () => {
-      _resetChromeDetectionCacheForTests()
-      const { spawnImpl, calls } = makeFakeSpawn()
-      const spawnSyncImpl = () => ({ status: 0, stdout: '/Applications/Google Chrome.app' })
-      const stream = makeCaptureStream(false)
-      await defaultOpenBrowser('https://example.test/consent', {
-        spawnImpl,
-        spawnSyncImpl,
-        platform: 'darwin',
-        attentionStream: stream,
-        canLaunch: () => true,
-      })
-      const osascript = calls.find(c => c.cmd === 'osascript')
-      assert.ok(osascript, 'expected an osascript spawn for window activation')
-      assert.ok(
-        osascript.args.some(a => /tell application "Google Chrome" to activate/.test(a)),
-        `expected activate script, got ${JSON.stringify(osascript.args)}`,
-      )
-    })
-  })
-
-  it('When the platform is win32, then a PowerShell AppActivate call targets the Chrome window', async () => {
-    await withoutBrowserEnv(async () => {
-      const { spawnImpl, calls } = makeFakeSpawn()
-      const stream = makeCaptureStream(false)
-      await defaultOpenBrowser('https://example.test/consent', {
-        spawnImpl,
-        spawnSyncImpl: () => ({ status: 1 }),
-        platform: 'win32',
-        attentionStream: stream,
-        canLaunch: () => true,
-      })
-      const ps = calls.find(c => c.cmd === 'powershell')
-      assert.ok(ps, 'expected a powershell spawn for AppActivate')
-      assert.ok(
-        ps.args.some(a => /AppActivate\('Chrome'\)/.test(a)),
-        `expected AppActivate('Chrome'), got ${JSON.stringify(ps.args)}`,
-      )
-    })
-  })
-
-  it('When the platform is linux and wmctrl is on PATH, then a wmctrl -a chrome call fires', async () => {
-    await withoutBrowserEnv(async () => {
-      const { spawnImpl, calls } = makeFakeSpawn()
-      const spawnSyncImpl = (cmd, args) => {
-        if (cmd === 'sh' && args?.[1]?.includes('command -v wmctrl')) {
-          return { status: 0 }
-        }
-        return { status: 1 }
-      }
-      const stream = makeCaptureStream(false)
-      await defaultOpenBrowser('https://example.test/consent', {
-        spawnImpl,
-        spawnSyncImpl,
-        platform: 'linux',
-        attentionStream: stream,
-        canLaunch: () => true,
-      })
-      const wmctrl = calls.find(c => c.cmd === 'wmctrl')
-      assert.ok(wmctrl, 'expected a wmctrl spawn for window activation')
-      assert.deepEqual(wmctrl.args, ['-a', 'chrome'])
-    })
-  })
-
-  it('When the platform is linux and wmctrl is missing, then no wmctrl spawn fires', async () => {
-    await withoutBrowserEnv(async () => {
-      const { spawnImpl, calls } = makeFakeSpawn()
-      const spawnSyncImpl = () => ({ status: 1 })
-      const stream = makeCaptureStream(false)
-      await defaultOpenBrowser('https://example.test/consent', {
-        spawnImpl,
-        spawnSyncImpl,
-        platform: 'linux',
-        attentionStream: stream,
-        canLaunch: () => true,
-      })
-      assert.equal(
-        calls.find(c => c.cmd === 'wmctrl'),
-        undefined,
-      )
-    })
-  })
-
-  it('When stderr is a TTY, then a BEL and OSC 9 attention hint are written after the launch', async () => {
-    await withoutBrowserEnv(async () => {
-      const { spawnImpl } = makeFakeSpawn()
-      const stream = makeCaptureStream(true)
-      await defaultOpenBrowser('https://example.test/consent', {
-        spawnImpl,
-        spawnSyncImpl: () => ({ status: 1 }),
-        platform: 'linux',
-        attentionStream: stream,
-        canLaunch: () => true,
-      })
-      assert.ok(stream.text.includes('\x07'), 'expected BEL character on TTY')
-      assert.ok(stream.text.includes('\x1b]9;'), 'expected OSC 9 notification sequence on TTY')
-    })
-  })
-
-  it('When stderr is not a TTY, then no BEL or OSC 9 sequence is written', async () => {
-    await withoutBrowserEnv(async () => {
-      const { spawnImpl } = makeFakeSpawn()
-      const stream = makeCaptureStream(false)
-      await defaultOpenBrowser('https://example.test/consent', {
-        spawnImpl,
-        spawnSyncImpl: () => ({ status: 1 }),
-        platform: 'linux',
-        attentionStream: stream,
-        canLaunch: () => true,
-      })
-      assert.equal(stream.text, '')
-    })
   })
 })
