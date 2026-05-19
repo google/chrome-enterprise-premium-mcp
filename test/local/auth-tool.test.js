@@ -84,6 +84,17 @@ describe('cep_auth Tool', () => {
     assert.ok(result.structuredContent.agentHint?.length > 0)
     assert.match(result.content[0].text, /Open this URL/)
     assert.match(result.content[0].text, /accounts\.google\.com/)
+
+    const lines = result.content[0].text.split('\n')
+    const urlLineIndex = lines.findIndex(l => l.includes('https://accounts.google.com/o/oauth2/v2/auth?state=ABC'))
+    assert.ok(urlLineIndex > 0, 'authUrl should appear in the text block')
+    assert.strictEqual(lines[urlLineIndex - 1], '', 'authUrl should have a blank line above it')
+    assert.strictEqual(lines[urlLineIndex + 1], '', 'authUrl should have a blank line below it')
+
+    const ESC = '\x1b'
+    const url = 'https://accounts.google.com/o/oauth2/v2/auth?state=ABC'
+    const expected = `${ESC}]8;;${url}${ESC}\\${url}${ESC}]8;;${ESC}\\`
+    assert.strictEqual(lines[urlLineIndex], expected, 'authUrl line should be wrapped in OSC 8 hyperlink escapes')
   })
 
   test('When cep_auth is invoked with a valid redirectUrl, then it calls completeToolAuth and returns status=completed', async () => {

@@ -36,6 +36,21 @@ const AGENT_HINT =
   'ask the user to paste that full URL back. Then call cep_auth again with the pasted URL as ' +
   'the redirectUrl argument.'
 
+/* OSC 8 hyperlink: ESC ] 8 ; ; URI ST text ESC ] 8 ; ; ST, where ST is ESC \. */
+const OSC = '\x1b]8;;'
+const ST = '\x1b\x5c'
+
+/**
+ * Wraps a URL in OSC 8 hyperlink escapes. Modern terminals render the visible
+ * text as a clickable link to the same URL; others show the URL bytes plus
+ * a few stray escape chars but the URL itself remains selectable.
+ * @param {string} url The URL to render as a hyperlink.
+ * @returns {string} The OSC 8 wrapped URL.
+ */
+function osc8(url) {
+  return `${OSC}${url}${ST}${url}${OSC}${ST}`
+}
+
 /**
  * Registers the authentication tools with the MCP server (alias for registerAuthTools).
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
@@ -197,7 +212,7 @@ function awaitingResponse(result) {
     lines.push('Open this URL in a browser and complete sign-in:')
   }
   lines.push('')
-  lines.push(result.authUrl)
+  lines.push(osc8(result.authUrl))
   lines.push('')
   lines.push(
     "Then paste the full URL the browser was redirected to (it looks like http://127.0.0.1:PORT/?code=...&state=...; the page may show a connection error — that's expected).",
