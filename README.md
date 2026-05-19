@@ -21,17 +21,26 @@ npm install
 
 ### 1. Sign in
 
-Run `mcp auth login` and approve consent in the browser. The CLI caches
-the access token at `~/.config/cep-mcp/tokens.json`.
+Run the auth CLI and approve consent in your browser:
 
-If a tool call runs and the cached token has expired, the agent will
-offer to sign you in. It does this by calling the `cep_auth` tool, which
-opens a browser tab for consent and stores the new token in the same
-place.
+```bash
+npx @google/chrome-enterprise-premium-mcp auth login
+```
+
+The access token is cached at `~/.config/cep-mcp/tokens.json`. From a
+local checkout you can also run `npm run auth:login`.
+
+Prefer this path for the initial sign-in. The consent URL is printed by
+your shell, so OSC 8 hyperlinks and ordinary URL selection both work.
+
+You can also start sign-in from inside the agent using the `cep_auth`
+MCP tool. Some MCP clients render text inside bordered panels that strip
+terminal escape sequences, which can mangle the consent URL. If that
+happens, fall back to the CLI command above.
 
 To use a custom OAuth client in a Cloud project of your own, set
-`CEP_OAUTH_CLIENT_ID` and `CEP_OAUTH_CLIENT_SECRET` and re-run
-`mcp auth login`. See
+`CEP_OAUTH_CLIENT_ID` and `CEP_OAUTH_CLIENT_SECRET` and re-run the auth
+login command. See
 [Use a custom OAuth client](docs/auth-bring-your-own-oauth-client.md).
 
 For the paste-the-redirect flow on CI runners and SSH sessions without
