@@ -28,7 +28,7 @@ Chrome Enterprise Premium is a paid add-on available with any Google Workspace e
 
 The right path depends on your environment.
 
-- **Workstation (default):** Run `mcp auth login`. To use your own OAuth client instead of the bundled Google-managed one, see [`auth-bring-your-own-oauth-client.md`](auth-bring-your-own-oauth-client.md).
+- **Workstation (default):** Run `npx -y @google/chrome-enterprise-premium-mcp@latest auth login` (or `chrome-enterprise-premium-mcp auth login` from a local checkout). To use your own OAuth client instead of the bundled Google-managed one, see [`auth-bring-your-own-oauth-client.md`](auth-bring-your-own-oauth-client.md).
 - **Hosted on Cloud Run, Vertex AI Agent Engine, or a similar managed environment:** OAuth bearer per request. The caller sets `Authorization: Bearer <id-token>`, and the server verifies the token's `aud` claim against `CEP_BEARER_AUDIENCE`.
 
   A service account with domain-wide delegation is the alternative: set `GOOGLE_APPLICATION_CREDENTIALS` to the key file path, and set `CEP_IMPERSONATE_SUBJECT` to the user the SA should act as.

@@ -17,6 +17,7 @@ limitations under the License.
 import { describe, test } from 'node:test'
 import assert from 'node:assert'
 import { buildApiCredsField, buildScopesField, buildAuthRemediationLines } from '../../lib/util/auth_messages.js'
+import { cliInvocation } from '../../lib/util/cli_invocation.js'
 import { SCOPES } from '../../lib/constants.js'
 
 const REQUIRED = Object.values(SCOPES)
@@ -120,10 +121,10 @@ describe('buildAuthRemediationLines', () => {
     assert.strictEqual(buildAuthRemediationLines(oauthValidAllScopes, REQUIRED), null)
   })
 
-  test('When OAuth tokens are missing, then it instructs the user to authorize with `mcp auth login`', () => {
+  test('When OAuth tokens are missing, then it instructs the user to authorize with the CLI login command', () => {
     const lines = buildAuthRemediationLines(oauthMissing, REQUIRED)
     assert.match(lines[0], /no cached.*authorize/i)
-    assert.strictEqual(lines[1], 'mcp auth login')
+    assert.strictEqual(lines[1], cliInvocation('auth login'))
   })
 
   test('When some scopes are missing, then it explains why and lists the gaps after the command', () => {

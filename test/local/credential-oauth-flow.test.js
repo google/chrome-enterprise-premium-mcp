@@ -33,7 +33,7 @@ describe('oauthFlowCredential probe', () => {
     assert.equal(probe.ok, false)
     assert.equal(probe.source, 'oauth-flow')
     const lines = cred.buildRemediation(probe, [])
-    assert.ok(lines.some(l => /mcp auth login/i.test(l)))
+    assert.ok(lines.some(l => /auth login/i.test(l)))
   })
 
   it('When the cache has a valid access token, then probe returns ok:true with principal', async () => {

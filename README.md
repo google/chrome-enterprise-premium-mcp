@@ -28,7 +28,11 @@ npx @google/chrome-enterprise-premium-mcp auth login
 ```
 
 The access token is cached at `~/.config/cep-mcp/tokens.json`. From a
-local checkout you can also run `npm run auth:login`.
+local checkout you can also run `npm run auth:login`. The rest of the
+docs abbreviates the command as `<cep-mcp> auth login`; substitute
+whichever invocation works for you (the npx form above, the on-PATH
+`chrome-enterprise-premium-mcp` binary after `npm install`, or
+`npm run auth:login`).
 
 Prefer this path for the initial sign-in. The consent URL is printed by
 your shell, so OSC 8 hyperlinks and ordinary URL selection both work.
@@ -39,8 +43,8 @@ terminal escape sequences, which can mangle the consent URL. If that
 happens, fall back to the CLI command above.
 
 To use a custom OAuth client in a Cloud project of your own, set
-`CEP_OAUTH_CLIENT_ID` and `CEP_OAUTH_CLIENT_SECRET` and re-run the auth
-login command. See
+`CEP_OAUTH_CLIENT_ID` and `CEP_OAUTH_CLIENT_SECRET` and re-run
+`<cep-mcp> auth login`. See
 [Use a custom OAuth client](docs/auth-bring-your-own-oauth-client.md).
 
 For the paste-the-redirect flow on CI runners and SSH sessions without

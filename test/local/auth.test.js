@@ -149,12 +149,13 @@ describe('Auth', () => {
       assert.match(message, /auth-bring-your-own-oauth-client\.md/)
     })
 
-    test('When the error reports insufficient scopes, then the remediation points at `mcp auth login`', async () => {
+    test('When the error reports insufficient scopes, then the remediation points at the CLI login command', async () => {
       const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
       const error = new Error('Request had insufficient authentication scopes.')
       const message = getAuthErrorMessage(error)
 
-      assert.match(message, /mcp auth login/)
+      assert.match(message, /auth login/)
+      assert.match(message, /cep_auth/)
     })
   })
 })

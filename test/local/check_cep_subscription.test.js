@@ -178,7 +178,7 @@ describe('check_cep_subscription Tool', () => {
 
     assert.strictEqual(mockCheckCepSubscription.mock.callCount(), 1)
     assert.match(result.content[0].text, /Permission denied\. Your account lacks/)
-    assert.match(result.content[0].text, /mcp auth login/)
+    assert.match(result.content[0].text, /auth login/)
   })
 })
 

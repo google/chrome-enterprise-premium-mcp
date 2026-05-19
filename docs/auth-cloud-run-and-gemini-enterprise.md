@@ -55,4 +55,4 @@ For deployments where Agent Engine is unavailable or OAuth consent is not viable
 
 ## Status
 
-The MCP server's bearer pass-through and ID-token verification are ready in this codebase. Vertex AI Agent Engine's `create-auth` API is in private preview, so production wiring depends on whether the maintainer has access. Until Agent Engine reaches general availability, the loopback OAuth flow (`mcp auth login`) is the workstation-only equivalent and is not a drop-in for hosted deployments.
+The MCP server's bearer pass-through and ID-token verification are ready in this codebase. Vertex AI Agent Engine's `create-auth` API is in private preview, so production wiring depends on whether the maintainer has access. Until Agent Engine reaches general availability, the loopback OAuth flow (the CLI's `auth login` subcommand) is the workstation-only equivalent and is not a drop-in for hosted deployments.
