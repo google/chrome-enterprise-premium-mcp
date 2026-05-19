@@ -33,11 +33,19 @@ import { guardedToolCall, formatToolResponse } from '../utils/wrapper.js'
 const TOOL_NAME = 'cep_auth'
 const NPX_CLI = 'npx @google/chrome-enterprise-premium-mcp auth login'
 
-const AGENT_HINT =
-  'Show the user the authUrl and ask them to open it in a browser. After the browser is ' +
-  'redirected to a 127.0.0.1 URL (the page may show "connection refused" — that is expected), ' +
-  'ask the user to paste that full URL back. Then call cep_auth again with the pasted URL as ' +
-  'the redirectUrl argument.'
+const AGENT_HINT_WORKSTATION =
+  'A browser tab opened automatically. The user needs to sign in with their Google account ' +
+  'in that tab and can close it once they see the "Signed in" success page. No further ' +
+  'action is needed from you unless the user asks for help.'
+
+const AGENT_HINT_HEADLESS =
+  'The browser could not open automatically. Provide the user with these instructions: ' +
+  '1. Open the authUrl in your local browser. ' +
+  '2. Sign in with your Google account. ' +
+  '3. After signing in, your browser will redirect to a 127.0.0.1 address and show a ' +
+  '"Connection Refused" error—tell the user this is expected. ' +
+  '4. Copy that entire new address from the address bar and paste it back here. ' +
+  'Once the user pastes the URL, call cep_auth again with that string as the redirectUrl argument.'
 
 /**
  * Builds the user-facing fallback line suggesting the CLI sign-in command.
@@ -301,16 +309,20 @@ function successResponse(result) {
  */
 function awaitingResponse(result) {
   const lines = []
+  const agentHint = result.browserOpened ? AGENT_HINT_WORKSTATION : AGENT_HINT_HEADLESS
+
   if (result.browserOpened) {
     lines.push('A browser tab should have opened for sign-in.')
     lines.push(
-      "Once the browser is redirected to a 127.0.0.1 URL (the page may show a connection error — that's fine), paste that full URL back so the sign-in can complete.",
+      'Once you sign in and see the "Signed in" success message, you can close that tab and return here to continue.',
     )
     lines.push('')
-    lines.push('If the browser did not open, the consent URL is:')
+    lines.push('If the browser did not open, you can complete sign-in manually:')
   } else {
-    lines.push('Open this URL in a browser and complete sign-in:')
+    lines.push('I cannot open a browser in this environment. Please complete sign-in manually:')
   }
+
+  lines.push('1. Open the URL below in your local browser:')
   lines.push('')
   if (supportsHyperlinks()) {
     lines.push(`🔗 ${osc8(result.authUrl, 'Click here to open the Google Sign-in page in your browser')}`)
@@ -321,8 +333,9 @@ function awaitingResponse(result) {
   lines.push(result.authUrl)
   lines.push('')
   lines.push(
-    "Then paste the full URL the browser was redirected to (it looks like http://127.0.0.1:PORT/?code=...&state=...; the page may show a connection error — that's expected).",
+    '2. Sign in with your Google account. After signing in, your browser will redirect to a 127.0.0.1 address and show a "Connection Refused" error—this is expected.',
   )
+  lines.push("3. Copy that entire new address from your browser's address bar and paste it back here.")
   lines.push('')
   lines.push(cliFallbackLine(resolveOAuthClientConfig().source))
   const expiresAt = result.expiresAt instanceof Date ? result.expiresAt.toISOString() : undefined
@@ -336,7 +349,7 @@ function awaitingResponse(result) {
       browserOpened: result.browserOpened,
       expiresAt,
       source: result.source,
-      agentHint: AGENT_HINT,
+      agentHint,
     },
   }
 }
