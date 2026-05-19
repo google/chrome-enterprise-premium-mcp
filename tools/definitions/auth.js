@@ -16,7 +16,9 @@ limitations under the License.
 
 /**
  * @file Tool definitions for the agent-initiated sign-in flow (`cep_auth`),
- * status checking (`auth_status`), and cache clearing (`auth_clear`).
+ * status checking (`cep_auth_status`), and cache clearing (`cep_auth_clear`).
+ * All tools share the `cep_` prefix so an MCP client hosting multiple servers
+ * (e.g. CEP plus Google Workspace) does not collide on a generic `auth_*` name.
  */
 
 import { z } from 'zod'
@@ -110,9 +112,11 @@ export function registerAuthTools(server, options, sessionState) {
   )
 
   server.registerTool(
-    'auth_status',
+    'cep_auth_status',
     {
-      description: 'Checks the current OAuth credential status and cached scopes.',
+      description:
+        'Reports the current OAuth credential status and cached scopes for the Chrome Enterprise Premium (CEP) MCP server. ' +
+        'Use this tool only for the CEP MCP server; the Google Workspace MCP server has its own separate status tool.',
       inputSchema: z.looseObject({}),
       outputSchema: z.looseObject({
         status: z.looseObject({}),
@@ -138,9 +142,11 @@ export function registerAuthTools(server, options, sessionState) {
   )
 
   server.registerTool(
-    'auth_clear',
+    'cep_auth_clear',
     {
-      description: 'Clears cached OAuth credentials, requiring re-authentication on the next call.',
+      description:
+        'Clears cached OAuth credentials for the Chrome Enterprise Premium (CEP) MCP server, forcing re-authentication on the next call. ' +
+        'Use this tool only for the CEP MCP server; the Google Workspace MCP server has its own separate clear tool.',
       inputSchema: z.looseObject({}),
       outputSchema: z.looseObject({
         cleared: z.boolean(),

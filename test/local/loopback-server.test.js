@@ -53,14 +53,45 @@ describe('startLoopbackServer', () => {
     }
   })
 
-  it('When the loopback receives a request, then the response body is human-readable HTML', async () => {
+  it('When the loopback receives a success callback, then the response is the styled success page', async () => {
     const server = await startLoopbackServer()
     try {
       server.waitForCode()
       const res = await fetch(`${server.redirectUri}?code=test`)
       assert.equal(res.status, 200)
       const body = await res.text()
-      assert.match(body, /You may close this window/i)
+      assert.match(body, /<title>Signed in to CEP MCP<\/title>/)
+      assert.match(body, /Signed in/)
+      assert.ok(Buffer.byteLength(body, 'utf8') < 2048, 'success page should fit under 2 KB')
+    } finally {
+      await server.stop()
+    }
+  })
+
+  it('When the loopback receives an error callback, then the response is the styled error page with the reason', async () => {
+    const server = await startLoopbackServer()
+    try {
+      server.waitForCode()
+      const res = await fetch(`${server.redirectUri}?error=access_denied`)
+      assert.equal(res.status, 200)
+      const body = await res.text()
+      assert.match(body, /<title>Sign-in failed for CEP MCP<\/title>/)
+      assert.match(body, /Sign-in failed/)
+      assert.match(body, /access_denied/)
+      assert.ok(Buffer.byteLength(body, 'utf8') < 2048, 'error page should fit under 2 KB')
+    } finally {
+      await server.stop()
+    }
+  })
+
+  it('When the loopback receives an error with an HTML-injecting reason, then the reason is escaped', async () => {
+    const server = await startLoopbackServer()
+    try {
+      server.waitForCode()
+      const res = await fetch(`${server.redirectUri}?error=${encodeURIComponent('<script>x</script>')}`)
+      const body = await res.text()
+      assert.match(body, /&lt;script&gt;/)
+      assert.doesNotMatch(body, /<script>x<\/script>/)
     } finally {
       await server.stop()
     }

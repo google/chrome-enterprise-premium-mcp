@@ -24,9 +24,9 @@ import { registerTools } from '../../tools/index.js'
 import { FLAGS } from '../../lib/util/feature_flags.js'
 
 const CORE_TOOLS = [
-  'auth_clear',
-  'auth_status',
   'cep_auth',
+  'cep_auth_clear',
+  'cep_auth_status',
   'check_and_enable_cep_api',
   'check_cep_subscription',
   'check_seb_extension_status',
