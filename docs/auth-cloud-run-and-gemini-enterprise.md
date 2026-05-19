@@ -30,6 +30,8 @@ For the full set of HTTP-mode variables, see [`configuration.md`](configuration.
 
 ### Cloud Run setup sketch
 
+This repository includes a `Dockerfile` based on `node:22-slim` that is optimized for Cloud Run. When you deploy using the `--source` flag, the `gcloud` CLI automatically detects this file to build a secure, minimal container image.
+
 ```bash
 gcloud run deploy cep-mcp \
   --source=. \
@@ -39,6 +41,12 @@ gcloud run deploy cep-mcp \
 ```
 
 Replace `YOUR_OAUTH_CLIENT_ID` with the client ID of the OAuth client you registered with Agent Engine.
+
+#### Why use the provided Dockerfile?
+
+- **Security:** The `slim` base image reduces the container's attack surface by excluding unnecessary system packages.
+- **Predictability:** Ensures the server runs on a stable Node.js 22 environment regardless of the deployment platform.
+- **Service Account Auth:** Facilitates using a **Service Account** for long-lived authentication, which is the recommended path for hosted tools (see the [FAQ](./faq.md#can-i-use-a-service-account-instead-of-user-credentials)).
 
 Register the OAuth client with Vertex AI Agent Engine through the Agent Engine console or its CLI. The exact `create-auth` invocation lives in the Agent Engine documentation. For this MCP server, the registration needs the OAuth client ID, the OAuth client secret, Google's standard authorization and token URIs, and a scope list.
 
