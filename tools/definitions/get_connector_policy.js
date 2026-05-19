@@ -106,7 +106,7 @@ function processSinglePolicy(policyKey, raw) {
     // Process findings into tool-specific warning strings with links
     const findingWarnings = analysis.findings.map(f => {
       if (f.remediationType === 'manual') {
-        return `${f.message}. Update settings manually at ${manualUpdateLink}`
+        return `${f.message}. Update settings manually in the [Admin Console](${manualUpdateLink})`
       }
       return f.message
     })
