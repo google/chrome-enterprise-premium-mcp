@@ -22,7 +22,7 @@ import assert from 'node:assert/strict'
 import { describe, test, mock, beforeEach } from 'node:test'
 import { registerTools } from '../../tools/index.js'
 import { FLAGS } from '../../lib/util/feature_flags.js'
-import { SCOPES, OAUTH_SCOPE_REGISTRY } from '../../lib/constants.js'
+import { SCOPES, OAUTH_SCOPE_REGISTRY, SCOPE_CATEGORY_ORDER } from '../../lib/constants.js'
 
 const CORE_TOOLS = [
   'cep_auth',
@@ -172,7 +172,20 @@ describe('SEB Tool Registration', () => {
       }
     })
 
-    test('Every tool registered in the codebase must use scopes that exist in the Registry', () => {
+    test('Every unique category in the registry must have a defined position in SCOPE_CATEGORY_ORDER', () => {
+      const definedCategories = new Set(Object.values(OAUTH_SCOPE_REGISTRY).map(m => m.category))
+      const orderedCategories = new Set(SCOPE_CATEGORY_ORDER)
+
+      for (const cat of definedCategories) {
+        assert.ok(
+          orderedCategories.has(cat),
+          `Category "${cat}" is missing from SCOPE_CATEGORY_ORDER in lib/constants.js. ` +
+            'Explicitly add it to the list to define its presentation priority.',
+        )
+      }
+    })
+
+    test('Every tool registered in the codebase must explicitly declare its scope requirements', () => {
       const server = {
         registerTool: mock.fn(),
       }
@@ -187,7 +200,13 @@ describe('SEB Tool Registration', () => {
       for (const call of registeredTools) {
         const toolName = call.arguments[0]
         const handler = call.arguments[2]
-        const requestedScopes = handler._scopes || Object.values(SCOPES)
+
+        // Require that every tool explicitly declares its scope requirements
+        const requestedScopes = handler._scopes
+        assert.ok(
+          requestedScopes,
+          `Tool "${toolName}" is missing _scopes metadata. Every tool must explicitly declare its required scopes.`,
+        )
 
         for (const url of requestedScopes) {
           assert.ok(
