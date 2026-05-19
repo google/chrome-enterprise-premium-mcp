@@ -28,7 +28,7 @@ import { startToolAuth, completeToolAuth } from '../../lib/util/credential/auth_
 import { TokenCache } from '../../lib/util/credential/token_cache.js'
 import { oauthFlowCredential } from '../../lib/util/credential/oauth_flow.js'
 import { resolveOAuthClientConfig } from '../../lib/util/credential/oauth_client_config.js'
-import { SCOPES } from '../../lib/constants.js'
+import { SCOPES, getUniqueScopeCategories } from '../../lib/constants.js'
 import { guardedToolCall, formatToolResponse } from '../utils/wrapper.js'
 
 const TOOL_NAME = 'cep_auth'
@@ -135,13 +135,15 @@ export const registerAuthTool = registerAuthTools
 export function registerAuthTools(server, options, sessionState) {
   logger.debug(`${TAGS.MCP} Registering auth tools...`)
 
+  const scopeSummary = getUniqueScopeCategories(Object.values(SCOPES)).join(', ')
+
   server.registerTool(
     TOOL_NAME,
     {
       description:
         'Sign in to Google for the Chrome Enterprise Premium (CEP) MCP server. ' +
         'Use this tool ONLY for the CEP MCP server. The Google Workspace MCP server has its own separate auth tool—do not use this one for that. ' +
-        'Requests the CEP scope set: Chrome browser management, Chrome policy, Cloud Identity (DLP), Admin SDK reports, and Service Usage. ' +
+        `Requests the CEP scope set: ${scopeSummary}. ` +
         'Call with no arguments to start the sign-in. ' +
         'If the response sets `nextAction` to `paste-redirect-url`, ask the user to paste the URL the browser was redirected to, then call `cep_auth` again with that string as the `redirectUrl` argument.',
       inputSchema: {
