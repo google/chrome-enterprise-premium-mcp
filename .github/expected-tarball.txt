@@ -50,6 +50,7 @@ lib/util/credential/bearer_verifier.js
 lib/util/credential/cli_commands.js
 lib/util/credential/index.js
 lib/util/credential/jwt_verifier.js
+lib/util/credential/keyring_store.js
 lib/util/credential/loopback_server.js
 lib/util/credential/oauth_client_config.js
 lib/util/credential/oauth_flow.js
