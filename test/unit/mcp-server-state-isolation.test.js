@@ -126,4 +126,16 @@ describe('HTTP per-request session state isolation', () => {
 
     assert.strictEqual(captured[0].principal, principal)
   })
+
+  test('When createSseHandler receives a request with no req.verifiedPrincipal, then it passes null as the principal', async () => {
+    const { fn: recorder, captured } = makeRecorder()
+    const sseTransports = {}
+    const handler = createSseHandler({}, sseTransports, recorder)
+    const fakeReq = { on: () => {} }
+    const fakeRes = { on: () => {}, headersSent: false }
+
+    await handler(fakeReq, fakeRes)
+
+    assert.strictEqual(captured[0].principal, null)
+  })
 })
