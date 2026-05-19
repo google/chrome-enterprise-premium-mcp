@@ -19,7 +19,12 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import os from 'node:os'
-import { oauthFlowCredential } from '../../lib/util/credential/oauth_flow.js'
+import {
+  oauthFlowCredential,
+  defaultOpenBrowser,
+  printConsentUrl,
+  _resetChromeDetectionCacheForTests,
+} from '../../lib/util/credential/oauth_flow.js'
 
 async function tmpCachePath(name) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'cep-mcp-oauth-test-'))
@@ -225,5 +230,62 @@ describe('oauthFlowCredential runLoginFlow', () => {
 
     const stat = await fs.stat(cachePath)
     assert.equal(stat.mode & 0o777, 0o600, `expected cache file mode 0600, got ${(stat.mode & 0o777).toString(8)}`)
+  })
+})
+
+describe('defaultOpenBrowser', () => {
+  /* eslint-disable require-atomic-updates */
+  it('When SSH_CONNECTION is set, then defaultOpenBrowser returns false without spawning', async () => {
+    const prev = process.env.SSH_CONNECTION
+    process.env.SSH_CONNECTION = '10.0.0.1 22 10.0.0.2 22'
+    _resetChromeDetectionCacheForTests()
+    try {
+      const result = await defaultOpenBrowser('https://example.test/consent')
+      assert.equal(result, false)
+    } finally {
+      if (prev === undefined) {
+        delete process.env.SSH_CONNECTION
+      } else {
+        process.env.SSH_CONNECTION = prev
+      }
+    }
+  })
+  /* eslint-enable require-atomic-updates */
+})
+
+/* Captures a write stream's stderr-style output for assertions. */
+function makeCaptureStream(isTTY) {
+  const chunks = []
+  return {
+    isTTY,
+    write(s) {
+      chunks.push(s)
+      return true
+    },
+    get text() {
+      return chunks.join('')
+    },
+  }
+}
+
+describe('printConsentUrl', () => {
+  const ESC = String.fromCharCode(0x1b)
+
+  it('When the output stream is a TTY, then the URL is wrapped in an ANSI-coloured box', () => {
+    const stream = makeCaptureStream(true)
+    printConsentUrl('https://example.test/consent', stream)
+    assert.ok(stream.text.includes(`${ESC}[1;36m`), 'expected bright-cyan ANSI sequence')
+    assert.ok(stream.text.includes('╔'), 'expected box top corner')
+    assert.ok(stream.text.includes('╚'), 'expected box bottom corner')
+    assert.ok(stream.text.includes('https://example.test/consent'))
+  })
+
+  it('When the output stream is not a TTY, then the plain URL block is written without ANSI', () => {
+    const stream = makeCaptureStream(false)
+    printConsentUrl('https://example.test/consent', stream)
+    assert.ok(!stream.text.includes(`${ESC}[`), 'expected no ANSI escape sequences')
+    assert.ok(!stream.text.includes('╔'), 'expected no box drawing characters')
+    assert.ok(stream.text.includes('Open this URL to consent:'))
+    assert.ok(stream.text.includes('https://example.test/consent'))
   })
 })
