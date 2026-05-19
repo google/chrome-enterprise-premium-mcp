@@ -44,6 +44,7 @@ lib/util/banner-logo.js
 lib/util/banner.js
 lib/util/cel_validator.js
 lib/util/chrome_dlp_constants.js
+lib/util/cli_invocation.js
 lib/util/connector_policy_helper.js
 lib/util/credential/auth_login.js
 lib/util/credential/bearer_verifier.js
