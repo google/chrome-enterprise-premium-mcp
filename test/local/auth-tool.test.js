@@ -82,8 +82,25 @@ describe('cep_auth Tool', () => {
     assert.strictEqual(result.structuredContent.nextAction, 'paste-redirect-url')
     assert.strictEqual(result.structuredContent.authUrl, 'https://accounts.google.com/o/oauth2/v2/auth?state=ABC')
     assert.ok(result.structuredContent.agentHint?.length > 0)
+    assert.match(result.structuredContent.agentHint, /restate.*chat/i)
+    assert.match(result.structuredContent.agentHint, /outside.*tool-output box/i)
     assert.match(result.content[0].text, /Open this URL/)
     assert.match(result.content[0].text, /accounts\.google\.com/)
+    assert.ok(
+      result.content[0].text.split('\n').includes('  https://accounts.google.com/o/oauth2/v2/auth?state=ABC  '),
+      'authUrl line should be padded with two leading and two trailing spaces',
+    )
+  })
+
+  test('When cep_auth is registered, then its description tells the agent to restate the authUrl in chat outside the tool-output box', async () => {
+    const startToolAuth = mock.fn()
+    const completeToolAuth = mock.fn()
+    await register({ startToolAuth, completeToolAuth })
+
+    const call = server.registerTool.mock.calls.find(c => c.arguments[0] === 'cep_auth')
+    const { description } = call.arguments[1]
+    assert.match(description, /restate.*chat/i)
+    assert.match(description, /outside.*tool-output box/i)
   })
 
   test('When cep_auth is invoked with a valid redirectUrl, then it calls completeToolAuth and returns status=completed', async () => {

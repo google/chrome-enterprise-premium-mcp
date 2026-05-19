@@ -31,10 +31,11 @@ import { guardedToolCall, formatToolResponse } from '../utils/wrapper.js'
 const TOOL_NAME = 'cep_auth'
 
 const AGENT_HINT =
-  'Show the user the authUrl and ask them to open it in a browser. After the browser is ' +
-  'redirected to a 127.0.0.1 URL (the page may show "connection refused" — that is expected), ' +
-  'ask the user to paste that full URL back. Then call cep_auth again with the pasted URL as ' +
-  'the redirectUrl argument.'
+  'Show the user the authUrl and ask them to open it in a browser. Restate the authUrl in your ' +
+  'chat reply on its own line, outside any tool-output box, because long URLs can clip against ' +
+  'a box border during selection. After the browser is redirected to a 127.0.0.1 URL (the page ' +
+  'may show "connection refused" — that is expected), ask the user to paste that full URL back. ' +
+  'Then call cep_auth again with the pasted URL as the redirectUrl argument.'
 
 /**
  * Registers the authentication tools with the MCP server (alias for registerAuthTools).
@@ -59,7 +60,9 @@ export function registerAuthTools(server, options, sessionState) {
       description:
         'Sign in to Google so the server can call the Workspace APIs. Call with no arguments to start. ' +
         'If the response says nextAction is "paste-redirect-url", ask the user to paste the URL the ' +
-        'browser was redirected to, then call cep_auth again with that string as the redirectUrl argument.',
+        'browser was redirected to, then call cep_auth again with that string as the redirectUrl argument. ' +
+        'When the response includes an authUrl, restate that URL in your chat reply on its own line, ' +
+        'outside any tool-output box, because long URLs can clip against a box border during selection.',
       inputSchema: {
         redirectUrl: z
           .string()
@@ -197,7 +200,7 @@ function awaitingResponse(result) {
     lines.push('Open this URL in a browser and complete sign-in:')
   }
   lines.push('')
-  lines.push(result.authUrl)
+  lines.push(`  ${result.authUrl}  `)
   lines.push('')
   lines.push(
     "Then paste the full URL the browser was redirected to (it looks like http://127.0.0.1:PORT/?code=...&state=...; the page may show a connection error — that's expected).",
