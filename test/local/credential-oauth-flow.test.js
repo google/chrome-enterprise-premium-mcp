@@ -228,8 +228,8 @@ describe('oauthFlowCredential runLoginFlow', () => {
   })
 })
 
-/* Fake child process for openImpl injection — tracks calls and exits cleanly. */
-function makeFakeOpen() {
+/* Fake child process for openImpl injection — tracks calls and exits with the given code. */
+function makeFakeOpen({ exitCode = 0 } = {}) {
   const calls = []
   async function openImpl(url, opts) {
     calls.push({ url, opts })
@@ -238,7 +238,7 @@ function makeFakeOpen() {
       on(event, cb) {
         listeners[event] = cb
         if (event === 'exit') {
-          setImmediate(() => cb(0))
+          setImmediate(() => cb(exitCode))
         }
         return child
       },
@@ -310,15 +310,28 @@ describe('defaultOpenBrowser', () => {
     assert.equal(result, false)
   })
 
-  it('When stderr is a TTY, then a BEL is written after the launch', async () => {
-    const { openImpl } = makeFakeOpen()
+  it('When openBrowser exits with code 0 on TTY, then a BEL is written to stderr', async () => {
+    const { openImpl } = makeFakeOpen({ exitCode: 0 })
     const stream = makeCaptureStream(true)
-    await defaultOpenBrowser('https://example.test/consent', {
+    const result = await defaultOpenBrowser('https://example.test/consent', {
       openImpl,
       canLaunch: () => true,
       attentionStream: stream,
     })
+    assert.equal(result, true)
     assert.ok(stream.text.includes('\x07'), 'expected BEL character on TTY')
+  })
+
+  it('When openBrowser exits with code non-zero on TTY, then no BEL is written', async () => {
+    const { openImpl } = makeFakeOpen({ exitCode: 1 })
+    const stream = makeCaptureStream(true)
+    const result = await defaultOpenBrowser('https://example.test/consent', {
+      openImpl,
+      canLaunch: () => true,
+      attentionStream: stream,
+    })
+    assert.equal(result, false)
+    assert.ok(!stream.text.includes('\x07'), 'expected no BEL when launch exits non-zero')
   })
 
   it('When stderr is not a TTY, then no BEL is written', async () => {
