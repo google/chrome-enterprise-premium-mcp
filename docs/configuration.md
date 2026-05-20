@@ -71,11 +71,11 @@ Most workstation users want the OAuth flow. Most hosted deployments (Cloud Run, 
 
 If you're not sure which path applies to you, see the [Which auth path should I use?](faq.md#which-auth-path-should-i-use) FAQ entry for the common deployment shapes.
 
-| Setup                                | Transport | Credential source                           | Setup walkthrough                                                                               |
-| :----------------------------------- | :-------- | :------------------------------------------ | :---------------------------------------------------------------------------------------------- |
-| `<cep-mcp> auth login` (recommended) | stdio     | OAuth token cache                           | [`auth-bring-your-own-oauth-client.md`](auth-bring-your-own-oauth-client.md)                    |
-| Bearer pass-through                  | HTTP      | per-request `Authorization: Bearer <token>` | The caller sets the header; the server forwards it to Google verbatim.                          |
-| Service account + DWD                | stdio     | Service account with domain-wide delegation | [FAQ entry on service accounts](faq.md#can-i-use-a-service-account-instead-of-user-credentials) |
+| Setup                      | Transport | Credential source                           | Setup walkthrough                                                                               |
+| :------------------------- | :-------- | :------------------------------------------ | :---------------------------------------------------------------------------------------------- |
+| `auth login` (recommended) | stdio     | OAuth token cache                           | [`auth-bring-your-own-oauth-client.md`](auth-bring-your-own-oauth-client.md)                    |
+| Bearer pass-through        | HTTP      | per-request `Authorization: Bearer <token>` | The caller sets the header; the server forwards it to Google verbatim.                          |
+| Service account + DWD      | stdio     | Service account with domain-wide delegation | [FAQ entry on service accounts](faq.md#can-i-use-a-service-account-instead-of-user-credentials) |
 
 > [!IMPORTANT]
 > The HTTP-mode default has no network-layer authentication. Bind the listener to a trusted interface only, or set `CEP_BEARER_AUDIENCE` (HTTP mode only) for per-request ID-token verification.

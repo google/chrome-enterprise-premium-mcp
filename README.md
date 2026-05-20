@@ -21,31 +21,29 @@ npm install
 
 ### 1. Sign in
 
-Run the auth CLI and approve consent in your browser:
+Run the auth CLI once before you connect your MCP client:
 
 ```bash
 npx @google/chrome-enterprise-premium-mcp auth login
 ```
 
-The access token is cached at `~/.config/cep-mcp/tokens.json`. From a
-local checkout you can also run `npm run auth:login`. The rest of the
-docs abbreviates the command as `<cep-mcp> auth login`; substitute
-whichever invocation works for you (the npx form above, the on-PATH
-`chrome-enterprise-premium-mcp` binary after `npm install`, or
-`npm run auth:login`).
+A browser tab opens on Google's consent screen for the Chrome Enterprise Premium scopes.
 
-Prefer this path for the initial sign-in. The consent URL is printed by
-your shell, so OSC 8 hyperlinks and ordinary URL selection both work.
+Once you approve, the CLI catches the authorization code on a short-lived loopback server and trades it with Google for an access token. It writes the token to `~/.config/cep-mcp/tokens.json` at file mode 0600.
 
-You can also start sign-in from inside the agent using the `cep_auth`
-MCP tool. Some MCP clients render text inside bordered panels that strip
-terminal escape sequences, which can mangle the consent URL. If that
-happens, fall back to the CLI command above.
+The MCP server reads that file on every tool call, so you sign in once and the token lasts until it expires.
 
-To use a custom OAuth client in a Cloud project of your own, set
-`CEP_OAUTH_CLIENT_ID` and `CEP_OAUTH_CLIENT_SECRET` and re-run
-`<cep-mcp> auth login`. See
-[Use a custom OAuth client](docs/auth-bring-your-own-oauth-client.md).
+If you cloned this repo and ran `npm install`, the same command is on your PATH as `chrome-enterprise-premium-mcp auth login`. The script `npm run auth:login` is a convenience wrapper for the same flow.
+
+The rest of the docs writes the command as just `auth login`. Use whichever invocation fits how you installed the server.
+
+You can also sign in from inside the agent: ask it to sign you in and it will call the `cep_auth` tool on your behalf.
+
+Some agent UIs wrap or clip long URLs in their text panels, and the consent URL is long enough that copying it sometimes breaks. If that happens, drop to a shell and run `auth login`.
+
+To use an OAuth client you registered in your own Cloud project, export `CEP_OAUTH_CLIENT_ID` and `CEP_OAUTH_CLIENT_SECRET` and run `auth login` again. The consent screen and grants then resolve against your project instead of the bundled Google-managed one.
+
+The end-to-end Cloud console setup is in [Use a custom OAuth client](docs/auth-bring-your-own-oauth-client.md).
 
 For the paste-the-redirect flow on CI runners and SSH sessions without
 a browser, see
