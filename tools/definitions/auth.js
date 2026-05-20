@@ -94,16 +94,16 @@ function osc8(url, label = url) {
 }
 
 /**
- * Mutes/dims a string for terminal output using ANSI dim escape codes, unless
- * NO_COLOR is active.
+ * Mutes/dims and strikes out a string for terminal output using ANSI escape codes,
+ * unless NO_COLOR is active.
  * @param {string} s The text to dim.
- * @returns {string} The dimmed text.
+ * @returns {string} The dimmed and struck-out text.
  */
 function dim(s) {
   if (process.env.NO_COLOR) {
     return s
   }
-  return `\x1b[2m${s}\x1b[0m`
+  return `\x1b[2;9m${s}\x1b[0m`
 }
 
 /**
@@ -268,9 +268,9 @@ function awaitingResponse(result) {
       "Once the browser is redirected to a 127.0.0.1 URL (the page may show a connection error — that's fine), paste that full URL back so the sign-in can complete.",
     )
     lines.push('')
-    lines.push('If the browser did not open, the consent URL is:')
+    lines.push('If the browser did not open, the fallback URL (copy-paste only) is:')
   } else {
-    lines.push('Open this URL in a browser and complete sign-in:')
+    lines.push('Copy and paste this fallback URL into a browser and complete sign-in:')
   }
   lines.push('')
   if (supportsHyperlinks()) {

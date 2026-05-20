@@ -84,7 +84,7 @@ describe('cep_auth Tool', () => {
       assert.strictEqual(result.structuredContent.nextAction, 'paste-redirect-url')
       assert.strictEqual(result.structuredContent.authUrl, 'https://accounts.google.com/o/oauth2/v2/auth?state=ABC')
       assert.ok(result.structuredContent.agentHint?.length > 0)
-      assert.match(result.content[0].text, /Open this URL/)
+      assert.match(result.content[0].text, /fallback URL/)
       assert.match(result.content[0].text, /accounts\.google\.com/)
 
       const lines = result.content[0].text.split('\n')
@@ -123,7 +123,7 @@ describe('cep_auth Tool', () => {
       assert.strictEqual(result.structuredContent.nextAction, 'paste-redirect-url')
       assert.strictEqual(result.structuredContent.authUrl, 'https://accounts.google.com/o/oauth2/v2/auth?state=ABC')
       assert.ok(result.structuredContent.agentHint?.length > 0)
-      assert.match(result.content[0].text, /Open this URL/)
+      assert.match(result.content[0].text, /fallback URL/)
       assert.match(result.content[0].text, /accounts\.google\.com/)
 
       const text = result.content[0].text
