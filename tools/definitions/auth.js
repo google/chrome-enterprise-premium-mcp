@@ -94,19 +94,6 @@ function osc8(url, label = url) {
 }
 
 /**
- * Mutes/dims and strikes out a string for terminal output using ANSI escape codes,
- * unless NO_COLOR is active.
- * @param {string} s The text to dim.
- * @returns {string} The dimmed and struck-out text.
- */
-function dim(s) {
-  if (process.env.NO_COLOR) {
-    return s
-  }
-  return `\x1b[2;9m${s}\x1b[0m`
-}
-
-/**
  * Registers the authentication tools with the MCP server (alias for registerAuthTools).
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
  * @param {object} options - Configuration options for the tools.
@@ -280,7 +267,7 @@ function awaitingResponse(result) {
     lines.push('')
   }
   const fallbackUrl = result.authUrl.replace(/^https?:\/\//, '')
-  lines.push(dim(fallbackUrl))
+  lines.push(fallbackUrl)
   lines.push('')
   lines.push(
     "Then paste the full URL the browser was redirected to (it looks like http://127.0.0.1:PORT/?code=...&state=...; the page may show a connection error — that's expected).",
