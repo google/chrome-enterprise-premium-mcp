@@ -27,13 +27,7 @@ import { startToolAuth, completeToolAuth, canLaunchBrowser } from '../../lib/uti
 import { TokenCache } from '../../lib/util/credential/token_cache.js'
 import { oauthFlowCredential } from '../../lib/util/credential/oauth_flow.js'
 import { resolveOAuthClientConfig } from '../../lib/util/credential/oauth_client_config.js'
-import {
-  TAGS,
-  SCOPES,
-  OAUTH_SCOPE_REGISTRY,
-  getScopeCategoriesList,
-  getScopeNamesList,
-} from '../../lib/constants.js'
+import { TAGS, SCOPES, OAUTH_SCOPE_REGISTRY, getScopeCategoriesList, getScopeNamesList } from '../../lib/constants.js'
 import { guardedToolCall, formatToolResponse } from '../utils/wrapper.js'
 import { cliInvocation } from '../../lib/util/cli_invocation.js'
 
