@@ -79,6 +79,6 @@
     "prettier-plugin-packagejson": "^3.0.2"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   }
 }
