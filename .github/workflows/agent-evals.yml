@@ -161,6 +161,35 @@ jobs:
               --body-file "$BODY_FILE"
           fi
 
+      - name: Check if today is a weekday
+        id: weekday
+        if: always()
+        run: |
+          DAY_OF_WEEK=$(date +%u)
+          if [ "$DAY_OF_WEEK" -le 5 ]; then
+            echo "is_weekday=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_weekday=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Send email on weekday regression
+        if: steps.diff.outputs.exit_code == '1' && steps.weekday.outputs.is_weekday == 'true'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{ secrets.NOTIFICATION_SMTP_USERNAME }}
+          password: ${{ secrets.NOTIFICATION_SMTP_PASSWORD }}
+          subject: '⚠️ Agent Evals Regression Detected'
+          to: ${{ secrets.NOTIFICATION_EMAILS }}
+          from: Agent Evals GHA Runner
+          body: |
+            The daily Agent Evals cron detected a pass-rate regression beyond the 5% threshold.
+
+            Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            Download `results/eval-latest.json` from the run's artifacts for the full per-case detail.
+
       - name: Fail on regression or catastrophic failure
         if: steps.diff.outputs.exit_code == '1' || steps.infra.outputs.exit_code == '1'
         run: exit 1
