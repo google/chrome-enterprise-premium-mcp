@@ -149,6 +149,19 @@ describe('Auth', () => {
       assert.match(message, /auth-bring-your-own-oauth-client\.md/)
     })
 
+    test('When the error reports SERVICE_DISABLED for the default managed OAuth project, then it instructs to reach out to a Chrome Enterprise Premium team member', async () => {
+      const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
+      const error = new Error(
+        'Admin SDK API has not been used in project 947770278602 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/admin.googleapis.com/overview?project=947770278602 then retry.',
+      )
+      const message = getAuthErrorMessage(error)
+
+      assert.match(message, /default Google-managed 1P OAuth project/)
+      assert.match(message, /reach out to a Chrome Enterprise Premium team member/)
+      assert.match(message, /enable the missing API on project 947770278602/)
+      assert.match(message, /check_and_enable_cep_api/)
+    })
+
     test('When the error reports insufficient scopes, then the remediation points at `mcp auth login`', async () => {
       const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
       const error = new Error('Request had insufficient authentication scopes.')
