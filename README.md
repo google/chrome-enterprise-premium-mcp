@@ -21,18 +21,29 @@ npm install
 
 ### 1. Sign in
 
-Run `mcp auth login` and approve consent in the browser. The CLI caches
-the access token at `~/.config/cep-mcp/tokens.json`.
+Run the auth CLI once before you connect your MCP client:
 
-If a tool call runs and the cached token has expired, the agent will
-offer to sign you in. It does this by calling the `cep_auth` tool, which
-opens a browser tab for consent and stores the new token in the same
-place.
+```bash
+npx @google/chrome-enterprise-premium-mcp auth login
+```
 
-To use a custom OAuth client in a Cloud project of your own, set
-`CEP_OAUTH_CLIENT_ID` and `CEP_OAUTH_CLIENT_SECRET` and re-run
-`mcp auth login`. See
-[Use a custom OAuth client](docs/auth-bring-your-own-oauth-client.md).
+A browser tab opens on Google's consent screen for the Chrome Enterprise Premium scopes.
+
+Once you approve, the CLI catches the authorization code on a short-lived loopback server and trades it with Google for an access token. It writes the token to `~/.config/cep-mcp/tokens.json` at file mode 0600.
+
+The MCP server reads that file on every tool call, so you sign in once and the token lasts until it expires.
+
+If you cloned this repo and ran `npm install`, the same command is on your PATH as `chrome-enterprise-premium-mcp auth login`. The script `npm run auth:login` is a convenience wrapper for the same flow.
+
+The rest of the docs writes the command as just `auth login`. Use whichever invocation fits how you installed the server.
+
+You can also sign in from inside the agent: ask it to sign you in and it will call the `cep_auth` tool on your behalf.
+
+Some agent UIs wrap or clip long URLs in their text panels, and the consent URL is long enough that copying it sometimes breaks. If that happens, drop to a shell and run `auth login`.
+
+To use an OAuth client you registered in your own Cloud project, export `CEP_OAUTH_CLIENT_ID` and `CEP_OAUTH_CLIENT_SECRET` and run `auth login` again. The consent screen and grants then resolve against your project instead of the bundled Google-managed one.
+
+The end-to-end Cloud console setup is in [Use a custom OAuth client](docs/auth-bring-your-own-oauth-client.md).
 
 For the paste-the-redirect flow on CI runners and SSH sessions without
 a browser, see

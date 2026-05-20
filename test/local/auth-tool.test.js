@@ -27,6 +27,32 @@ async function loadToolWithMocks({ startToolAuth, completeToolAuth }) {
   })
 }
 
+/* Snapshot the given env-var keys, set the new values (undefined deletes), run fn, then restore. */
+async function withClientEnv(vars, fn) {
+  const snapshot = {}
+  for (const key of Object.keys(vars)) {
+    snapshot[key] = process.env[key]
+    const value = vars[key]
+    if (value === undefined) {
+      delete process.env[key]
+    } else {
+      process.env[key] = value
+    }
+  }
+  try {
+    await fn()
+  } finally {
+    for (const key of Object.keys(snapshot)) {
+      const original = snapshot[key]
+      if (original === undefined) {
+        delete process.env[key]
+      } else {
+        process.env[key] = original
+      }
+    }
+  }
+}
+
 describe('cep_auth Tool', () => {
   let server
   let handler
@@ -183,5 +209,49 @@ describe('cep_auth Tool', () => {
     assert.strictEqual(result.structuredContent.code, 'BEARER_INBOUND')
     assert.strictEqual(startToolAuth.mock.callCount(), 0)
     assert.strictEqual(completeToolAuth.mock.callCount(), 0)
+  })
+
+  test('When cep_auth awaits with the managed OAuth client, then the response suggests the bare npx CLI as fallback', async () => {
+    await withClientEnv({ CEP_OAUTH_CLIENT_ID: undefined, CEP_OAUTH_CLIENT_SECRET: undefined }, async () => {
+      const startToolAuth = mock.fn(async () => ({
+        status: 'awaiting',
+        authUrl: 'https://accounts.google.com/o/oauth2/v2/auth?state=ABC',
+        browserAttempted: false,
+        browserOpened: false,
+        expiresAt: new Date(Date.now() + 300_000),
+        source: 'managed',
+      }))
+      const completeToolAuth = mock.fn()
+      await register({ startToolAuth, completeToolAuth })
+
+      const result = await handler({}, {})
+
+      assert.match(
+        result.content[0].text,
+        /you can also run `npx @google\/chrome-enterprise-premium-mcp auth login` in your shell/,
+      )
+    })
+  })
+
+  test('When cep_auth awaits with a custom OAuth client, then the response tells the user to export the env vars before running the CLI', async () => {
+    await withClientEnv({ CEP_OAUTH_CLIENT_ID: 'custom-id', CEP_OAUTH_CLIENT_SECRET: 'custom-secret' }, async () => {
+      const startToolAuth = mock.fn(async () => ({
+        status: 'awaiting',
+        authUrl: 'https://accounts.google.com/o/oauth2/v2/auth?state=ABC',
+        browserAttempted: false,
+        browserOpened: false,
+        expiresAt: new Date(Date.now() + 300_000),
+        source: 'custom',
+      }))
+      const completeToolAuth = mock.fn()
+      await register({ startToolAuth, completeToolAuth })
+
+      const result = await handler({}, {})
+
+      assert.match(
+        result.content[0].text,
+        /export CEP_OAUTH_CLIENT_ID and CEP_OAUTH_CLIENT_SECRET in your shell and run `npx @google\/chrome-enterprise-premium-mcp auth login`/,
+      )
+    })
   })
 })

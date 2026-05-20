@@ -27,16 +27,41 @@ import { logger } from '../../lib/util/logger.js'
 import { startToolAuth, completeToolAuth } from '../../lib/util/credential/auth_login.js'
 import { TokenCache } from '../../lib/util/credential/token_cache.js'
 import { oauthFlowCredential } from '../../lib/util/credential/oauth_flow.js'
+import { resolveOAuthClientConfig } from '../../lib/util/credential/oauth_client_config.js'
 import { SCOPES } from '../../lib/constants.js'
 import { guardedToolCall, formatToolResponse } from '../utils/wrapper.js'
 
 const TOOL_NAME = 'cep_auth'
+const NPX_CLI = 'npx @google/chrome-enterprise-premium-mcp auth login'
 
 const AGENT_HINT =
   'Show the user the authUrl and ask them to open it in a browser. After the browser is ' +
   'redirected to a 127.0.0.1 URL (the page may show "connection refused" — that is expected), ' +
   'ask the user to paste that full URL back. Then call cep_auth again with the pasted URL as ' +
   'the redirectUrl argument.'
+
+/**
+ * Builds the user-facing fallback line suggesting the CLI sign-in command.
+ * For the managed OAuth client, the bare npx command is enough. For a custom
+ * OAuth client, the env vars must also be exported in the shell, otherwise
+ * the CLI would silently sign in under the bundled managed client.
+ * @param {'managed'|'custom'} source The resolved OAuth client source.
+ * @returns {string} A single line of user-facing prose.
+ */
+function cliFallbackLine(source) {
+  if (source === 'custom') {
+    return (
+      "If the URL above is hard to copy or doesn't render cleanly in your client, " +
+      `export CEP_OAUTH_CLIENT_ID and CEP_OAUTH_CLIENT_SECRET in your shell and run \`${NPX_CLI}\`. ` +
+      'Running that caches a token this server reads on every call.'
+    )
+  }
+  return (
+    "If the URL above is hard to copy or doesn't render cleanly in your client, " +
+    `you can also run \`${NPX_CLI}\` in your shell. ` +
+    'Running that caches a token this server reads on every call.'
+  )
+}
 
 /* OSC 8 hyperlink: ESC ] 8 ; ; URI ST text ESC ] 8 ; ; ST, where ST is ESC \. */
 const OSC = '\x1b]8;;'
@@ -271,6 +296,8 @@ function awaitingResponse(result) {
   lines.push(
     "Then paste the full URL the browser was redirected to (it looks like http://127.0.0.1:PORT/?code=...&state=...; the page may show a connection error — that's expected).",
   )
+  lines.push('')
+  lines.push(cliFallbackLine(resolveOAuthClientConfig().source))
   const expiresAt = result.expiresAt instanceof Date ? result.expiresAt.toISOString() : undefined
   return {
     content: [{ type: 'text', text: lines.join('\n') }],

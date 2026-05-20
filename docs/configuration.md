@@ -65,17 +65,17 @@ The server resolves credentials in `lib/util/auth.js#getAuthClient` and tries ea
 
 2. **Service-account key.** Otherwise, if `GOOGLE_APPLICATION_CREDENTIALS` is set, the server reads the service-account JSON key file and signs requests with a JWT. Set `CEP_IMPERSONATE_SUBJECT` to a user email to enable domain-wide delegation.
 
-3. **Cached OAuth token.** Otherwise, the server reads the access token that `mcp auth login` cached at `~/.config/cep-mcp/tokens.json`.
+3. **Cached OAuth token.** Otherwise, the server reads the access token that the CLI's `auth login` subcommand cached at `~/.config/cep-mcp/tokens.json`. Run it via the npm package as `npx -y @google/chrome-enterprise-premium-mcp@latest auth login`, or as `chrome-enterprise-premium-mcp auth login` from a local checkout.
 
 Most workstation users want the OAuth flow. Most hosted deployments (Cloud Run, Vertex AI Agent Engine) want bearer pass-through. Service accounts cover the cases where neither fits.
 
 If you're not sure which path applies to you, see the [Which auth path should I use?](faq.md#which-auth-path-should-i-use) FAQ entry for the common deployment shapes.
 
-| Setup                          | Transport | Credential source                           | Setup walkthrough                                                                               |
-| :----------------------------- | :-------- | :------------------------------------------ | :---------------------------------------------------------------------------------------------- |
-| `mcp auth login` (recommended) | stdio     | OAuth token cache                           | [`auth-bring-your-own-oauth-client.md`](auth-bring-your-own-oauth-client.md)                    |
-| Bearer pass-through            | HTTP      | per-request `Authorization: Bearer <token>` | The caller sets the header; the server forwards it to Google verbatim.                          |
-| Service account + DWD          | stdio     | Service account with domain-wide delegation | [FAQ entry on service accounts](faq.md#can-i-use-a-service-account-instead-of-user-credentials) |
+| Setup                      | Transport | Credential source                           | Setup walkthrough                                                                               |
+| :------------------------- | :-------- | :------------------------------------------ | :---------------------------------------------------------------------------------------------- |
+| `auth login` (recommended) | stdio     | OAuth token cache                           | [`auth-bring-your-own-oauth-client.md`](auth-bring-your-own-oauth-client.md)                    |
+| Bearer pass-through        | HTTP      | per-request `Authorization: Bearer <token>` | The caller sets the header; the server forwards it to Google verbatim.                          |
+| Service account + DWD      | stdio     | Service account with domain-wide delegation | [FAQ entry on service accounts](faq.md#can-i-use-a-service-account-instead-of-user-credentials) |
 
 > [!IMPORTANT]
 > The HTTP-mode default has no network-layer authentication. Bind the listener to a trusted interface only, or set `CEP_BEARER_AUDIENCE` (HTTP mode only) for per-request ID-token verification.

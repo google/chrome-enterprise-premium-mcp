@@ -22,8 +22,7 @@ import { TAGS, SCOPES } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 import { validateAndGetOrgUnitId } from './org-unit.js'
 import { isTokenLocallyValid, canLaunchBrowser } from '../../lib/util/credential/auth_login.js'
-
-const MANUAL_AUTH_COMMAND = 'npx -y @google/chrome-enterprise-premium-mcp@latest auth login'
+import { cliInvocation } from '../../lib/util/cli_invocation.js'
 
 /**
  * Builds an MCP tool response signalling that sign-in is needed before any tool can run.
@@ -41,7 +40,7 @@ function buildAuthRequiredResponse({ reason, expiresAt }) {
   const text =
     `Sign-in is needed before this tool can run. The cached OAuth token is ${reasonLabel}${expiredAtNote}. ` +
     'I can run the `cep_auth` tool to sign you in, or you can run ' +
-    `\`${MANUAL_AUTH_COMMAND}\` yourself.`
+    `\`${cliInvocation('auth login')}\` yourself.`
 
   return {
     content: [{ type: 'text', text }],
@@ -72,13 +71,14 @@ function getAuthRemediationMessage(status, bearerInbound = false) {
 2. **Verify APIs are enabled:** Run the \`check_and_enable_cep_api\` tool against your project, or enable the API set listed in \`lib/constants.js#SERVICE_NAMES\`.`
   }
 
+  const manualLogin = cliInvocation('auth login')
   if (status === 401) {
-    return 'Authentication required. Run the `cep_auth` tool to sign in, or run `mcp auth login` at the shell to authorize the server (it caches the access token at ~/.config/cep-mcp/tokens.json). To use a service account, set GOOGLE_APPLICATION_CREDENTIALS to a service-account key file.'
+    return `Authentication required. Run the \`cep_auth\` tool to sign in, or run \`${manualLogin}\` at the shell to authorize the server (it caches the access token at ~/.config/cep-mcp/tokens.json). To use a service account, set GOOGLE_APPLICATION_CREDENTIALS to a service-account key file.`
   }
 
   return `Permission denied. Your account lacks the required permissions or the necessary Google Cloud APIs are not enabled.
 
-1. **Re-authenticate with all required scopes:** Run the \`cep_auth\` tool, or run \`mcp auth login\` at the shell, to re-consent. The required scope set is defined in lib/constants.js#SCOPES.
+1. **Re-authenticate with all required scopes:** Run the \`cep_auth\` tool, or run \`${manualLogin}\` at the shell, to re-consent. The required scope set is defined in lib/constants.js#SCOPES.
 2. **Verify APIs are enabled:** Run the \`check_and_enable_cep_api\` tool against your project, or enable the API set listed in lib/constants.js#SERVICE_NAMES.
 `
 }

@@ -20,7 +20,6 @@ import esmock from 'esmock'
 
 describe('Knowledge Tools Real Database Integration', () => {
   const handlers = {}
-  const fetched = []
 
   // Stub axios so get_document never reaches Helpcenter — that hop is slow,
   // racy, and dominates the unit-suite budget. The HTML we return is the
@@ -36,8 +35,7 @@ describe('Knowledge Tools Real Database Integration', () => {
     const { registerKnowledgeTools } = await esmock('../../tools/definitions/knowledge.js', {
       axios: {
         default: {
-          get: async url => {
-            fetched.push(url)
+          get: async () => {
             return { data: stubHtml }
           },
         },

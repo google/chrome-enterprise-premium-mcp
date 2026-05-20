@@ -20,13 +20,13 @@ limitations under the License.
 
 ### "No cached OAuth credentials" or "No Google credentials configured"
 
-You haven't authorized the server yet. Run `mcp auth login`; a consent page opens in your browser, and on approval the access token is written to `~/.config/cep-mcp/tokens.json`.
+You haven't authorized the server yet. Run `npx -y @google/chrome-enterprise-premium-mcp@latest auth login` (or, from a local checkout, `chrome-enterprise-premium-mcp auth login`); a consent page opens in your browser, and on approval the access token is written to `~/.config/cep-mcp/tokens.json`.
 
 If the file does not exist after the login flow, the consent didn't complete; check whether your browser opened a consent tab you missed.
 
 ### "Request had insufficient authentication scopes"
 
-The cached OAuth token does not cover one or more required scopes. Re-run `mcp auth login` to re-consent with the full scope set.
+The cached OAuth token does not cover one or more required scopes. Re-run `npx -y @google/chrome-enterprise-premium-mcp@latest auth login` to re-consent with the full scope set.
 
 Scopes can't be added to an existing token; the cache is replaced on every login.
 
@@ -44,7 +44,7 @@ gcloud services enable admin.googleapis.com chromemanagement.googleapis.com chro
 
 ### "invalid_grant" or "Token has been revoked"
 
-Cached credentials are stale. Common causes are a password change, an admin revoking access, MFA re-enrollment, or the access token expiring. Delete `~/.config/cep-mcp/tokens.json` and re-run `mcp auth login`.
+Cached credentials are stale. Common causes are a password change, an admin revoking access, MFA re-enrollment, or the access token expiring. Delete `~/.config/cep-mcp/tokens.json` and re-run `npx -y @google/chrome-enterprise-premium-mcp@latest auth login`.
 
 ### Configure OAuth app for sensitive scopes
 
@@ -77,7 +77,11 @@ This is normal on first run. The server retries `PERMISSION_DENIED` (gRPC code 7
 
 ### "Cannot find module" or "ERR_MODULE_NOT_FOUND"
 
-Dependencies are missing. Run `npm install` from the project root.
+Dependencies are missing.
+
+From a local checkout, run `npm install` from the project root.
+
+If you're using `npx -y @google/chrome-enterprise-premium-mcp@latest`, the package fetch was interrupted. Clear the npx cache (`rm -rf ~/.npm/_npx`) and rerun the same command.
 
 ### "ExperimentalWarning: ... is an experimental feature"
 

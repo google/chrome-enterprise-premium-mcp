@@ -82,28 +82,65 @@ describe('isTokenLocallyValid', () => {
 })
 
 describe('canLaunchBrowser', () => {
+  /* Default fs stub: no /.dockerenv and no docker/kubepods cgroup. */
+  const fsClean = { existsSync: () => false, readFileSync: () => '' }
+
   test('When SSH_CONNECTION is set, then it returns false', () => {
-    assert.strictEqual(canLaunchBrowser({ env: { SSH_CONNECTION: '10.0.0.1 22' }, platform: 'darwin' }), false)
+    assert.strictEqual(
+      canLaunchBrowser({ env: { SSH_CONNECTION: '10.0.0.1 22' }, platform: 'darwin', fs: fsClean }),
+      false,
+    )
   })
 
   test('When SSH_TTY is set, then it returns false', () => {
-    assert.strictEqual(canLaunchBrowser({ env: { SSH_TTY: '/dev/pts/0' }, platform: 'linux' }), false)
+    assert.strictEqual(canLaunchBrowser({ env: { SSH_TTY: '/dev/pts/0' }, platform: 'linux', fs: fsClean }), false)
   })
 
   test('When the platform is Linux without DISPLAY or WAYLAND_DISPLAY, then it returns false', () => {
-    assert.strictEqual(canLaunchBrowser({ env: {}, platform: 'linux' }), false)
+    assert.strictEqual(canLaunchBrowser({ env: {}, platform: 'linux', fs: fsClean }), false)
   })
 
   test('When the platform is Linux with DISPLAY, then it returns true', () => {
-    assert.strictEqual(canLaunchBrowser({ env: { DISPLAY: ':0' }, platform: 'linux' }), true)
+    assert.strictEqual(canLaunchBrowser({ env: { DISPLAY: ':0' }, platform: 'linux', fs: fsClean }), true)
   })
 
   test('When the platform is darwin without SSH, then it returns true', () => {
-    assert.strictEqual(canLaunchBrowser({ env: {}, platform: 'darwin' }), true)
+    assert.strictEqual(canLaunchBrowser({ env: {}, platform: 'darwin', fs: fsClean }), true)
   })
 
   test('When the platform is win32 without SSH, then it returns true', () => {
-    assert.strictEqual(canLaunchBrowser({ env: {}, platform: 'win32' }), true)
+    assert.strictEqual(canLaunchBrowser({ env: {}, platform: 'win32', fs: fsClean }), true)
+  })
+
+  test('When /.dockerenv exists on Linux, then it returns false', () => {
+    const fs = { existsSync: p => p === '/.dockerenv', readFileSync: () => '' }
+    assert.strictEqual(canLaunchBrowser({ env: { DISPLAY: ':0' }, platform: 'linux', fs }), false)
+  })
+
+  test('When /proc/1/cgroup names docker on Linux, then it returns false', () => {
+    const fs = {
+      existsSync: () => false,
+      readFileSync: () => '12:cpu:/docker/abc123\n11:memory:/docker/abc123\n',
+    }
+    assert.strictEqual(canLaunchBrowser({ env: { DISPLAY: ':0' }, platform: 'linux', fs }), false)
+  })
+
+  test('When /proc/1/cgroup names kubepods on Linux, then it returns false', () => {
+    const fs = {
+      existsSync: () => false,
+      readFileSync: () => '0::/kubepods.slice/kubepods-besteffort.slice\n',
+    }
+    assert.strictEqual(canLaunchBrowser({ env: { DISPLAY: ':0' }, platform: 'linux', fs }), false)
+  })
+
+  test('When /proc/1/cgroup is unreadable on Linux, then container detection is skipped', () => {
+    const fs = {
+      existsSync: () => false,
+      readFileSync: () => {
+        throw new Error('ENOENT')
+      },
+    }
+    assert.strictEqual(canLaunchBrowser({ env: { DISPLAY: ':0' }, platform: 'linux', fs }), true)
   })
 })
 

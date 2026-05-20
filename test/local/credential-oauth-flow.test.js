@@ -19,7 +19,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import os from 'node:os'
-import { oauthFlowCredential } from '../../lib/util/credential/oauth_flow.js'
+import { oauthFlowCredential, defaultOpenBrowser, printConsentUrl } from '../../lib/util/credential/oauth_flow.js'
 
 async function tmpCachePath(name) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'cep-mcp-oauth-test-'))
@@ -33,7 +33,7 @@ describe('oauthFlowCredential probe', () => {
     assert.equal(probe.ok, false)
     assert.equal(probe.source, 'oauth-flow')
     const lines = cred.buildRemediation(probe, [])
-    assert.ok(lines.some(l => /mcp auth login/i.test(l)))
+    assert.ok(lines.some(l => /auth login/i.test(l)))
   })
 
   it('When the cache has a valid access token, then probe returns ok:true with principal', async () => {
@@ -225,5 +225,168 @@ describe('oauthFlowCredential runLoginFlow', () => {
 
     const stat = await fs.stat(cachePath)
     assert.equal(stat.mode & 0o777, 0o600, `expected cache file mode 0600, got ${(stat.mode & 0o777).toString(8)}`)
+  })
+})
+
+/* Fake child process for openImpl injection — tracks calls and exits with the given code. */
+function makeFakeOpen({ exitCode = 0 } = {}) {
+  const calls = []
+  async function openImpl(url, opts) {
+    calls.push({ url, opts })
+    const listeners = {}
+    const child = {
+      on(event, cb) {
+        listeners[event] = cb
+        if (event === 'exit') {
+          setImmediate(() => cb(exitCode))
+        }
+        return child
+      },
+      unref() {},
+    }
+    return child
+  }
+  return { openImpl, calls }
+}
+
+describe('defaultOpenBrowser', () => {
+  it('When canLaunchBrowser returns false, then defaultOpenBrowser returns false without invoking open', async () => {
+    const { openImpl, calls } = makeFakeOpen()
+    const result = await defaultOpenBrowser('https://example.test/consent', {
+      openImpl,
+      canLaunch: () => false,
+    })
+    assert.equal(result, false)
+    assert.equal(calls.length, 0)
+  })
+
+  it('When canLaunchBrowser returns true, then defaultOpenBrowser calls open with the URL and resolves true', async () => {
+    const { openImpl, calls } = makeFakeOpen()
+    const stream = makeCaptureStream(false)
+    const result = await defaultOpenBrowser('https://example.test/consent', {
+      openImpl,
+      canLaunch: () => true,
+      attentionStream: stream,
+    })
+    assert.equal(result, true)
+    assert.equal(calls.length, 1)
+    assert.equal(calls[0].url, 'https://example.test/consent')
+  })
+
+  /* eslint-disable require-atomic-updates */
+  it('When $BROWSER is set, then defaultOpenBrowser passes it through as the open app name', async () => {
+    const prev = process.env.BROWSER
+    process.env.BROWSER = 'firefox'
+    try {
+      const { openImpl, calls } = makeFakeOpen()
+      const stream = makeCaptureStream(false)
+      await defaultOpenBrowser('https://example.test/consent', {
+        openImpl,
+        canLaunch: () => true,
+        attentionStream: stream,
+      })
+      assert.equal(calls.length, 1)
+      assert.deepEqual(calls[0].opts, { app: { name: 'firefox' } })
+    } finally {
+      if (prev === undefined) {
+        delete process.env.BROWSER
+      } else {
+        process.env.BROWSER = prev
+      }
+    }
+  })
+  /* eslint-enable require-atomic-updates */
+
+  it('When open throws synchronously or rejects, then defaultOpenBrowser resolves false', async () => {
+    async function openImpl() {
+      throw new Error('spawn failed')
+    }
+    const stream = makeCaptureStream(false)
+    const result = await defaultOpenBrowser('https://example.test/consent', {
+      openImpl,
+      canLaunch: () => true,
+      attentionStream: stream,
+    })
+    assert.equal(result, false)
+  })
+
+  it('When openBrowser exits with code 0 on TTY, then a BEL is written to stderr', async () => {
+    const { openImpl } = makeFakeOpen({ exitCode: 0 })
+    const stream = makeCaptureStream(true)
+    const result = await defaultOpenBrowser('https://example.test/consent', {
+      openImpl,
+      canLaunch: () => true,
+      attentionStream: stream,
+    })
+    assert.equal(result, true)
+    assert.ok(stream.text.includes('\x07'), 'expected BEL character on TTY')
+  })
+
+  it('When openBrowser exits with code non-zero on TTY, then no BEL is written', async () => {
+    const { openImpl } = makeFakeOpen({ exitCode: 1 })
+    const stream = makeCaptureStream(true)
+    const result = await defaultOpenBrowser('https://example.test/consent', {
+      openImpl,
+      canLaunch: () => true,
+      attentionStream: stream,
+    })
+    assert.equal(result, false)
+    assert.ok(!stream.text.includes('\x07'), 'expected no BEL when launch exits non-zero')
+  })
+
+  it('When stderr is not a TTY, then no BEL is written', async () => {
+    const { openImpl } = makeFakeOpen()
+    const stream = makeCaptureStream(false)
+    await defaultOpenBrowser('https://example.test/consent', {
+      openImpl,
+      canLaunch: () => true,
+      attentionStream: stream,
+    })
+    assert.equal(stream.text, '')
+  })
+})
+
+/* Captures a write stream's stderr-style output for assertions. */
+function makeCaptureStream(isTTY) {
+  const chunks = []
+  return {
+    isTTY,
+    write(s) {
+      chunks.push(s)
+      return true
+    },
+    get text() {
+      return chunks.join('')
+    },
+  }
+}
+
+describe('printConsentUrl', () => {
+  const ESC = String.fromCharCode(0x1b)
+
+  it('When the output stream is a TTY, then the URL is wrapped in an ANSI-coloured box', () => {
+    const stream = makeCaptureStream(true)
+    printConsentUrl('https://example.test/consent', stream)
+    assert.ok(stream.text.includes(`${ESC}[1;36m`), 'expected bright-cyan ANSI sequence')
+    assert.ok(stream.text.includes('╔'), 'expected box top corner')
+    assert.ok(stream.text.includes('╚'), 'expected box bottom corner')
+    assert.ok(stream.text.includes('https://example.test/consent'))
+  })
+
+  it('When the output stream is not a TTY, then the plain URL block is written without ANSI', () => {
+    const stream = makeCaptureStream(false)
+    printConsentUrl('https://example.test/consent', stream)
+    assert.ok(!stream.text.includes(`${ESC}[`), 'expected no ANSI escape sequences')
+    assert.ok(!stream.text.includes('╔'), 'expected no box drawing characters')
+    assert.ok(stream.text.includes('Open this URL to consent:'))
+    assert.ok(stream.text.includes('https://example.test/consent'))
+  })
+
+  it('When the output stream is a TTY, then the URL inside the box is wrapped with an OSC 8 hyperlink', () => {
+    const stream = makeCaptureStream(true)
+    const url = 'https://example.test/consent'
+    printConsentUrl(url, stream)
+    assert.ok(stream.text.includes(`${ESC}]8;;${url}${ESC}\\`), 'expected OSC 8 opener with url target')
+    assert.ok(stream.text.includes(`${ESC}]8;;${ESC}\\`), 'expected OSC 8 terminator')
   })
 })

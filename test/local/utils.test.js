@@ -77,7 +77,7 @@ describe('Tool Utils', () => {
       })
     })
 
-    test('When handler fails with 401 and no inbound bearer, then it points the user at `mcp auth login`', async () => {
+    test('When handler fails with 401 and no inbound bearer, then it points the user at cep_auth and the CLI login command', async () => {
       const err = new Error('UNAUTHENTICATED')
       err.status = 401
       const failHandler = mock.fn(async () => {
@@ -86,10 +86,11 @@ describe('Tool Utils', () => {
       const tool = guardedToolCall({ handler: failHandler })
       const result = await tool({}, {})
       assert.strictEqual(result.isError, true)
-      assert.match(result.content[0].text, /mcp auth login/)
+      assert.match(result.content[0].text, /cep_auth/)
+      assert.match(result.content[0].text, /auth login/)
     })
 
-    test('When handler fails with 403 and no inbound bearer, then it lists `mcp auth login` and the required APIs', async () => {
+    test('When handler fails with 403 and no inbound bearer, then it lists the CLI login command and the required APIs', async () => {
       const err = new Error('PERMISSION_DENIED')
       err.status = 403
       const failHandler = mock.fn(async () => {
@@ -98,11 +99,12 @@ describe('Tool Utils', () => {
       const tool = guardedToolCall({ handler: failHandler })
       const result = await tool({}, {})
       assert.strictEqual(result.isError, true)
-      assert.match(result.content[0].text, /mcp auth login/)
+      assert.match(result.content[0].text, /cep_auth/)
+      assert.match(result.content[0].text, /auth login/)
       assert.match(result.content[0].text, /APIs are enabled/)
     })
 
-    test('When handler fails with invalid_grant, then it points the user at `mcp auth login`', async () => {
+    test('When handler fails with invalid_grant, then it points the user at the CLI login command', async () => {
       const err = new Error('invalid_grant')
       const failHandler = mock.fn(async () => {
         throw err
@@ -110,7 +112,7 @@ describe('Tool Utils', () => {
       const tool = guardedToolCall({ handler: failHandler })
       const result = await tool({}, {})
       assert.strictEqual(result.isError, true)
-      assert.match(result.content[0].text, /mcp auth login/)
+      assert.match(result.content[0].text, /auth login/)
     })
 
     test('When handler fails with 401 and an inbound Bearer token is present, then the remediation tells the caller to refresh the inbound token', async () => {

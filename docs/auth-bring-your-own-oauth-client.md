@@ -16,7 +16,23 @@ limitations under the License.
 
 # Bring your own OAuth client
 
-By default, `mcp auth login` uses a Google-managed Desktop OAuth client that ships with this project. You do not need to supply your own credentials to authenticate.
+By default, the CLI's `auth login` subcommand uses a Google-managed Desktop OAuth client that ships with this project. You do not need to supply your own credentials to authenticate.
+
+The command form depends on how you installed the server.
+
+Via npx:
+
+```bash
+npx -y @google/chrome-enterprise-premium-mcp@latest auth login
+```
+
+From a local checkout after `npm install`, the `chrome-enterprise-premium-mcp` binary is on your PATH:
+
+```bash
+chrome-enterprise-premium-mcp auth login
+```
+
+The rest of this document writes the command as `auth login` for brevity. Prefix it with whichever invocation suits your setup.
 
 Set `CEP_OAUTH_CLIENT_ID` and `CEP_OAUTH_CLIENT_SECRET` only if you want to authenticate through a Desktop OAuth client that you have created in a Google Cloud project of your own. With a custom client, the OAuth consent screen and any authorization grants are scoped to your own project rather than to the bundled one.
 
@@ -78,9 +94,9 @@ Follow these steps to authenticate the CLI with the OAuth client you created:
    export CEP_OAUTH_CLIENT_SECRET="CLIENT_SECRET"
    ```
 
-2. Run `mcp auth login`.
+2. Run `auth login`.
 3. Approve consent in the browser that the CLI opens.
-4. Verify the cache by running `mcp auth status`.
+4. Verify the cache by running `auth status`.
 
 ## Sign in from a host without a browser
 
@@ -88,7 +104,7 @@ Use this path for continuous integration runners, SSH sessions, and containers w
 
 Follow these steps to sign in by pasting the redirect URL from a different machine:
 
-1. Run `mcp auth login`. The CLI prints a consent URL to standard error.
+1. Run `auth login`. The CLI prints a consent URL to standard error.
 2. Copy the consent URL.
 3. Open the URL in a browser on a machine that has one, such as your laptop.
 4. Approve consent on the Google consent screen.
@@ -99,8 +115,8 @@ Follow these steps to sign in by pasting the redirect URL from a different machi
 
 ## Scopes
 
-When you log in, you'll see a consent screen requesting the full scope set the server needs (defined in `lib/constants.js`). To see which scopes the cached token actually granted, run `mcp auth status`.
+When you log in, you'll see a consent screen requesting the full scope set the server needs (defined in `lib/constants.js`). To see which scopes the cached token actually granted, run `auth status`.
 
 ## Refresh expired tokens
 
-The access token expires after about an hour. The cache holds no refresh token, so the next Google API call returns `401 Unauthorized`. Run `mcp auth login` again to mint a new access token.
+The access token expires after about an hour. The cache holds no refresh token, so the next Google API call returns `401 Unauthorized`. Run `auth login` again to mint a new access token.

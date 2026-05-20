@@ -61,7 +61,7 @@ Follow these steps to run the agent against a real Google Cloud project.
      --no-launch-browser
    ```
 
-   For an OAuth-flow alternative that does not require `gcloud`, run `mcp auth login` from the repo root. For the setup walkthrough, see [`docs/auth-bring-your-own-oauth-client.md`](../../docs/auth-bring-your-own-oauth-client.md).
+   For an OAuth-flow alternative that does not require `gcloud`, run `chrome-enterprise-premium-mcp auth login` from a local checkout (or `npx -y @google/chrome-enterprise-premium-mcp@latest auth login`). For the setup walkthrough, see [`docs/auth-bring-your-own-oauth-client.md`](../../docs/auth-bring-your-own-oauth-client.md).
 
 2. Start the ADK server:
 
