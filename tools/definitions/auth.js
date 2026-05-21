@@ -63,61 +63,6 @@ function cliFallbackLine(source) {
   )
 }
 
-/* OSC 8 hyperlink: ESC ] 8 ; ; URI ST text ESC ] 8 ; ; ST, where ST is ESC \. */
-const OSC = '\x1b]8;;'
-const ST = '\x1b\x5c'
-
-/**
- * Detects if the current terminal environment is likely to support OSC 8 hyperlinks.
- * Checks environment variables FORCE_HYPERLINK, DOMTERM, VTE_VERSION, TERM_PROGRAM,
- * TERM, and NO_COLOR.
- * @returns {boolean} True if the terminal likely supports hyperlinks.
- */
-function supportsHyperlinks() {
-  if (process.env.FORCE_HYPERLINK === '1') {
-    return true
-  }
-  if (process.env.FORCE_HYPERLINK === '0') {
-    return false
-  }
-  if (process.env.NO_COLOR) {
-    return false
-  }
-
-  const env = process.env
-  if (env.DOMTERM) {
-    return true
-  }
-  if (env.TERM_PROGRAM) {
-    const program = env.TERM_PROGRAM.toLowerCase()
-    if (['hyper', 'iterm.app', 'wezterm', 'vscode'].includes(program)) {
-      return true
-    }
-  }
-  if (env.TERM === 'xterm-kitty') {
-    return true
-  }
-  if (env.VTE_VERSION) {
-    const version = parseInt(env.VTE_VERSION, 10)
-    if (version >= 4902) {
-      return true
-    }
-  }
-  return false
-}
-
-/**
- * Wraps a URL in OSC 8 hyperlink escapes. Modern terminals render the visible
- * text as a clickable link to the same URL; others show the URL bytes plus
- * a few stray escape chars but the URL itself remains selectable.
- * @param {string} url The URL to render as a hyperlink.
- * @param {string} [label] The visible text label. Defaults to the URL itself.
- * @returns {string} The OSC 8 wrapped URL.
- */
-function osc8(url, label = url) {
-  return `${OSC}${url}${ST}${label}${OSC}${ST}`
-}
-
 /**
  * Registers the authentication tools with the MCP server (alias for registerAuthTools).
  * @param {import('@modelcontextprotocol/sdk/server/mcp.js').McpServer} server - The MCP server instance.
@@ -269,7 +214,7 @@ function successResponse(result) {
 
 /**
  * Builds the "waiting on the user to paste the URL back" response.
- * @param {{authUrl: string, browserOpened: boolean, browserAttempted: boolean, expiresAt?: Date|null, source?: string}} result The awaiting-auth result.
+ * @param {{authUrl: string, tempFilePath: string, browserOpened: boolean, browserAttempted: boolean, expiresAt?: Date|null, source?: string}} result The awaiting-auth result.
  * @returns {object} MCP tool response with status=awaiting and nextAction=paste-redirect-url.
  */
 function awaitingResponse(result) {
@@ -280,18 +225,12 @@ function awaitingResponse(result) {
       "Once the browser is redirected to a 127.0.0.1 URL (the page may show a connection error — that's fine), paste that full URL back so the sign-in can complete.",
     )
     lines.push('')
-    lines.push('If the browser did not open, the consent URL is:')
+    lines.push('If the browser did not open, the consent URL has been written to:')
   } else {
-    lines.push('Open this URL in a browser and complete sign-in:')
+    lines.push('To complete sign-in, please open or read the authorization URL written to:')
   }
   lines.push('')
-  if (supportsHyperlinks()) {
-    lines.push(`🔗 ${osc8(result.authUrl, 'Click here to open the Google Sign-in page in your browser')}`)
-    lines.push('')
-    lines.push('Or copy and paste this URL if the link above does not work:')
-    lines.push('')
-  }
-  lines.push(result.authUrl)
+  lines.push(`  ${result.tempFilePath}`)
   lines.push('')
   lines.push(
     "Then paste the full URL the browser was redirected to (it looks like http://127.0.0.1:PORT/?code=...&state=...; the page may show a connection error — that's expected).",
@@ -304,6 +243,7 @@ function awaitingResponse(result) {
     structuredContent: {
       status: 'awaiting',
       authUrl: result.authUrl,
+      tempFilePath: result.tempFilePath,
       nextAction: 'paste-redirect-url',
       browserAttempted: result.browserAttempted,
       browserOpened: result.browserOpened,

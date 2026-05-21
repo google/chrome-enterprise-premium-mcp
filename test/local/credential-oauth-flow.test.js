@@ -153,6 +153,9 @@ describe('oauthFlowCredential runLoginFlow', () => {
     // Inject an OAuth2Client whose getToken always throws redirect_uri_mismatch.
     function createOAuth2Client(cfg) {
       return {
+        async generateCodeVerifierAsync() {
+          return { codeVerifier: 'verifier', codeChallenge: 'challenge' }
+        },
         generateAuthUrl(params) {
           // Must return a URL that openBrowser can parse, including redirect_uri.
           const u = new URL('https://accounts.google.com/o/oauth2/v2/auth')
@@ -203,6 +206,9 @@ describe('oauthFlowCredential runLoginFlow', () => {
 
     function createOAuth2Client(cfg) {
       return {
+        async generateCodeVerifierAsync() {
+          return { codeVerifier: 'verifier', codeChallenge: 'challenge' }
+        },
         generateAuthUrl(params) {
           const u = new URL('https://accounts.google.com/o/oauth2/v2/auth')
           u.searchParams.set('redirect_uri', cfg.redirectUri)

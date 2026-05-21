@@ -66,12 +66,18 @@ if (testFiles.length === 0) {
 
 console.log(`Running ${testFiles.length} integration test file(s) with CEP_BACKEND=${backend}...\n`)
 
-try {
-  execFileSync(process.execPath, ['--test', '--test-reporter', 'spec', ...testFiles], {
-    cwd: root,
-    stdio: 'inherit',
-    env: process.env,
-  })
-} catch {
+let failed = false
+for (const file of testFiles) {
+  try {
+    execFileSync(process.execPath, ['--test', '--test-reporter', 'spec', file], {
+      cwd: root,
+      stdio: 'inherit',
+      env: process.env,
+    })
+  } catch {
+    failed = true
+  }
+}
+if (failed) {
   process.exit(1)
 }

@@ -41,8 +41,9 @@ const AUTH_HELP = [
  */
 async function runAuth(verb) {
   if (verb === 'login') {
+    const printAuthUrl = process.argv.includes('--print-auth-url')
     const { runLoginCommand } = await import('../lib/util/credential/cli_commands.js')
-    return runLoginCommand()
+    return runLoginCommand({ printAuthUrl })
   }
   if (verb === 'status') {
     const { runAuthStatusCommand } = await import('../lib/util/credential/cli_commands.js')

@@ -61,12 +61,18 @@ if (testFiles.length === 0) {
 
 console.log(`Running ${testFiles.length} unit test file(s)...\n`)
 
-try {
-  execFileSync(process.execPath, ['--test', ...testFiles], {
-    cwd: root,
-    stdio: 'inherit',
-    env: process.env,
-  })
-} catch {
+let failed = false
+for (const file of testFiles) {
+  try {
+    execFileSync(process.execPath, ['--test', file], {
+      cwd: root,
+      stdio: 'inherit',
+      env: process.env,
+    })
+  } catch {
+    failed = true
+  }
+}
+if (failed) {
   process.exit(1)
 }
