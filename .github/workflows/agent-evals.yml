@@ -172,8 +172,20 @@ jobs:
             echo "is_weekday=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Check if notification secrets are configured
+        id: secrets_check
+        if: always()
+        env:
+          SMTP_USER: ${{ secrets.NOTIFICATION_SMTP_USERNAME }}
+        run: |
+          if [ -n "$SMTP_USER" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Send email on weekday regression
-        if: steps.diff.outputs.exit_code == '1' && steps.weekday.outputs.is_weekday == 'true'
+        if: steps.diff.outputs.exit_code == '1' && steps.weekday.outputs.is_weekday == 'true' && steps.secrets_check.outputs.configured == 'true'
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
