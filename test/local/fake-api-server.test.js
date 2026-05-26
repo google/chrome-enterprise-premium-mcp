@@ -230,6 +230,22 @@ describe('Fake API Server', () => {
     })
   })
 
+  describe('Support Help Center Articles', () => {
+    test('When a valid support article ID is requested, then it returns the mock HTML content', async () => {
+      const res = await fetch(`${server.url}/a/answer/1219251`)
+      assert.strictEqual(res.status, 200)
+      const html = await res.text()
+      assert.ok(html.includes('Administrator Privilege Definitions'))
+      assert.ok(html.includes('Security Center Admin'))
+      assert.ok(html.includes('DLP Administrator'))
+    })
+
+    test('When a nonexistent support article ID is requested, then it returns a 404 error', async () => {
+      const res = await fetch(`${server.url}/a/answer/9999999`)
+      assert.strictEqual(res.status, 404)
+    })
+  })
+
   describe('State Reset', () => {
     test('When state reset is triggered, then deleted policies are restored to initial values', async () => {
       // Delete a policy

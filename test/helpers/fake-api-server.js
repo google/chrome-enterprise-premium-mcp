@@ -307,6 +307,23 @@ export function createFakeApp() {
     next()
   })
 
+  // Support Google Help Articles (Proxy Target)
+  app.get('/a/answer/:id', (req, res) => {
+    if (req.params.id === '1219251') {
+      return res.send(`
+        <article>
+          <h1>Administrator Privilege Definitions</h1>
+          <p>Recommended delegated roles for custom admin configurations:</p>
+          <ul>
+            <li><strong>Security Center Admin</strong>: Assign this custom role to view dashboards and security insights.</li>
+            <li><strong>DLP Administrator</strong>: Assign this custom role to adjust, edit, or view DLP rules.</li>
+          </ul>
+        </article>
+      `)
+    }
+    res.status(404).send('Article not found')
+  })
+
   // Admin SDK: Get Customer
   app.get('/admin/directory/v1/customers/:customerKey', (req, res) => {
     if (req.params.customerKey === 'my_customer') {
