@@ -85,7 +85,7 @@ function getInitialState() {
         setting: {
           type: 'settings/rule.dlp',
           value: {
-            displayName: '🤖 Block test123.com',
+            displayName: 'Block test123.com',
             description: 'Prevent upload of sensitive data to test123.com',
             state: 'ACTIVE',
             triggers: ['google.workspace.chrome.file.v1.upload'],
