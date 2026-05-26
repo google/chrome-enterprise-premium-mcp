@@ -88,14 +88,25 @@ describe('Fake API Server', () => {
       assert.strictEqual(body.items.length, 1)
     })
 
-    test('When a specific user license is requested, then it returns the license data', async () => {
+    test('When a specific user license is requested via /licensing/v1 prefix, then it returns the license data', async () => {
       const { status, body } = await get('/licensing/v1/product/101040/sku/1010400001/user/user1@example.com')
       assert.strictEqual(status, 200)
       assert.strictEqual(body.userId, 'user1@example.com')
     })
 
-    test('When an unknown user license is requested, then it returns a 404 error', async () => {
+    test('When a specific user license is requested via /apps/licensing/v1 prefix, then it returns the license data', async () => {
+      const { status, body } = await get('/apps/licensing/v1/product/101040/sku/1010400001/user/user1@example.com')
+      assert.strictEqual(status, 200)
+      assert.strictEqual(body.userId, 'user1@example.com')
+    })
+
+    test('When an unknown user license is requested via /licensing/v1 prefix, then it returns a 404 error', async () => {
       const { status } = await get('/licensing/v1/product/101040/sku/1010400001/user/unknown@example.com')
+      assert.strictEqual(status, 404)
+    })
+
+    test('When an unknown user license is requested via /apps/licensing/v1 prefix, then it returns a 404 error', async () => {
+      const { status } = await get('/apps/licensing/v1/product/101040/sku/1010400001/user/unknown@example.com')
       assert.strictEqual(status, 404)
     })
   })
