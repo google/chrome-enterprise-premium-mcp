@@ -364,26 +364,32 @@ export function createFakeApp() {
   )
 
   // Licensing: Get User License
-  app.get('/licensing/v1/product/:productId/sku/:skuId/user/:userId', (req, res) => {
-    for (const customerLicenses of Object.values(state.licenses)) {
-      const skuLicenses = customerLicenses[req.params.productId]?.[req.params.skuId] || []
-      const license = skuLicenses.find(l => l.userId === req.params.userId)
-      if (license) {
-        // Return a structure matching the real Google Licensing API single response
-        return res.json({
-          kind: 'licensing#licenseAssignment',
-          etag: '"mockEtagSingle"',
-          productId: license.productId,
-          userId: license.userId,
-          selfLink: `https://licensing.googleapis.com/apps/licensing/v1/product/${license.productId}/sku/${license.skuId}/user/${license.userId}`,
-          skuId: license.skuId,
-          skuName: 'Chrome Enterprise Premium',
-          productName: 'Chrome Enterprise Premium',
-        })
+  app.get(
+    [
+      '/licensing/v1/product/:productId/sku/:skuId/user/:userId',
+      '/apps/licensing/v1/product/:productId/sku/:skuId/user/:userId',
+    ],
+    (req, res) => {
+      for (const customerLicenses of Object.values(state.licenses)) {
+        const skuLicenses = customerLicenses[req.params.productId]?.[req.params.skuId] || []
+        const license = skuLicenses.find(l => l.userId === req.params.userId)
+        if (license) {
+          // Return a structure matching the real Google Licensing API single response
+          return res.json({
+            kind: 'licensing#licenseAssignment',
+            etag: '"mockEtagSingle"',
+            productId: license.productId,
+            userId: license.userId,
+            selfLink: `https://licensing.googleapis.com/apps/licensing/v1/product/${license.productId}/sku/${license.skuId}/user/${license.userId}`,
+            skuId: license.skuId,
+            skuName: 'Chrome Enterprise Premium',
+            productName: 'Chrome Enterprise Premium',
+          })
+        }
       }
-    }
-    res.status(404).json({ error: { message: 'User license not found' } })
-  })
+      res.status(404).json({ error: { message: 'User license not found' } })
+    },
+  )
 
   // Chrome Management: Count Browser Versions
   app.get('/v1/customers/:customerId/reports\\:countChromeVersions', (req, res) => {
