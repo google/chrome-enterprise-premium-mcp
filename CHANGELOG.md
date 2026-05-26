@@ -1,5 +1,44 @@
 # Changelog
 
+## [1.7.0](https://github.com/google/chrome-enterprise-premium-mcp/compare/chrome-enterprise-premium-mcp-v1.6.0...chrome-enterprise-premium-mcp-v1.7.0) (2026-05-22)
+
+
+### Features
+
+* **auth:** boxed consent URL and Chrome activation on macOS ([#241](https://github.com/google/chrome-enterprise-premium-mcp/issues/241)) ([2af309e](https://github.com/google/chrome-enterprise-premium-mcp/commit/2af309e8489e5c5341ee846875b13bc14686d41f))
+* **cep_auth:** name CEP MCP explicitly and disambiguate from Workspace MCP ([#231](https://github.com/google/chrome-enterprise-premium-mcp/issues/231)) ([b0436c7](https://github.com/google/chrome-enterprise-premium-mcp/commit/b0436c7c317e07328e3c1fdd24334f07a037b6c9))
+* **constants:** add AUTH_STATUS and AUTH_NEXT_ACTION ([#230](https://github.com/google/chrome-enterprise-premium-mcp/issues/230)) ([52e7986](https://github.com/google/chrome-enterprise-premium-mcp/commit/52e798604cc64ec5ef104a67e2e34f35d1e9ae5f))
+
+
+### Bug Fixes
+
+* **auth:** cep_ prefix on auth_status/auth_clear; styled loopback pages ([#232](https://github.com/google/chrome-enterprise-premium-mcp/issues/232)) ([a1226ed](https://github.com/google/chrome-enterprise-premium-mcp/commit/a1226ed307c9f363da505df1420ddb5c674f4747))
+* **auth:** OSC 8 hyperlink + own-line consent URL ([#244](https://github.com/google/chrome-enterprise-premium-mcp/issues/244)) ([a41b5cb](https://github.com/google/chrome-enterprise-premium-mcp/commit/a41b5cbb7dda8608cb597a6acfeaac8569b71e6b))
+* **auth:** prevent mangled consent URLs by conditionally wrapping in OSC 8 ([#258](https://github.com/google/chrome-enterprise-premium-mcp/issues/258)) ([f7359a7](https://github.com/google/chrome-enterprise-premium-mcp/commit/f7359a7b1486cca8cf160998a4d8493ef12f7027))
+* **auth:** route remediation through cli_invocation helper ([#242](https://github.com/google/chrome-enterprise-premium-mcp/issues/242)) ([7405975](https://github.com/google/chrome-enterprise-premium-mcp/commit/74059753607a689593d452f7e97794449a44121c))
+* distinguish 1P auth project and target project for API enablement ([#267](https://github.com/google/chrome-enterprise-premium-mcp/issues/267)) ([64738f2](https://github.com/google/chrome-enterprise-premium-mcp/commit/64738f27d5c0b44c24b8aabe71b1efdaf3bfd87d))
+* **evals:** seed synthetic valid token in evals runner for fake backend ([#254](https://github.com/google/chrome-enterprise-premium-mcp/issues/254)) ([72b40fd](https://github.com/google/chrome-enterprise-premium-mcp/commit/72b40fd0283396c26690b8fda62fcde54392abe3))
+
+
+### Miscellaneous Chores
+
+* **auth:** say "return to the agent" on loopback success page ([#260](https://github.com/google/chrome-enterprise-premium-mcp/issues/260)) ([17815c2](https://github.com/google/chrome-enterprise-premium-mcp/commit/17815c276d33bc19d23d8620a867fdfee36f2e5d))
+* format gemini-extension.json ([#247](https://github.com/google/chrome-enterprise-premium-mcp/issues/247)) ([5bb9637](https://github.com/google/chrome-enterprise-premium-mcp/commit/5bb9637200fe42bd50982a25912f1d2d6b9aff60))
+* remove unused Dockerfile ([#176](https://github.com/google/chrome-enterprise-premium-mcp/issues/176)) ([6c6c060](https://github.com/google/chrome-enterprise-premium-mcp/commit/6c6c060f65f33165653254ecb70401cef098b8a8))
+* **test:** remove unused fetched URL tracker ([#249](https://github.com/google/chrome-enterprise-premium-mcp/issues/249)) ([e7bf61c](https://github.com/google/chrome-enterprise-premium-mcp/commit/e7bf61cd1f1de862573b2b4f82834c9e75b13722))
+* **test:** use lastIndexOf for version range extraction ([#251](https://github.com/google/chrome-enterprise-premium-mcp/issues/251)) ([dd1e947](https://github.com/google/chrome-enterprise-premium-mcp/commit/dd1e947b6a9fc6453f6bcc4b615260fbd71be6cb))
+
+
+### Code Refactoring
+
+* **test:** extract synthetic-cache setup into a shared helper ([#229](https://github.com/google/chrome-enterprise-premium-mcp/issues/229)) ([a2ee827](https://github.com/google/chrome-enterprise-premium-mcp/commit/a2ee8275cd966cc07398988b2ee491b091cad87e))
+* **test:** use synthetic token cache helper in evals runner ([#255](https://github.com/google/chrome-enterprise-premium-mcp/issues/255)) ([98d391d](https://github.com/google/chrome-enterprise-premium-mcp/commit/98d391d224fd4f5cefcb5cb1e45e2e0507450bc7))
+
+
+### Tests
+
+* cover createSseHandler null-principal path ([#250](https://github.com/google/chrome-enterprise-premium-mcp/issues/250)) ([800e49d](https://github.com/google/chrome-enterprise-premium-mcp/commit/800e49dbf413d5893f4ffc514b9ea45999fcbce1))
+
 ## [1.6.0](https://github.com/google/chrome-enterprise-premium-mcp/compare/chrome-enterprise-premium-mcp-v1.5.0...chrome-enterprise-premium-mcp-v1.6.0) (2026-05-18)
 
 
