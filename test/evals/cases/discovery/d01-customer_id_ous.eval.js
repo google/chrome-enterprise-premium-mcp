@@ -23,5 +23,8 @@ export default {
   forbiddenPatterns: [],
   requiredPatterns: ['C01b1e65b', 'Engineering-Test-07b4581a'],
   prompt: 'What is my customer ID and how are my organizational units structured?',
-  goldenResponse: 'Customer ID is C01b1e65b. Organizational units include Engineering-Test-07b4581a and cep-netnew.cc.',
+  goldenResponse:
+    'Customer ID is C01b1e65b. Organizational units include Engineering-Test-07b4581a (ID: id:03ph8a2z1hiis1t) and cep-netnew.cc (ID: id:03ph8a2z23yjui6).',
+  judgeInstructions:
+    'Verify the agent retrieves the correct Customer ID (C01b1e65b) and OUs (Engineering-Test-07b4581a and cep-netnew.cc). The agent is expected to include the actual OU IDs (such as id:03ph8a2z1hiis1t and id:03ph8a2z23yjui6) returned from the tool call. These IDs are correct and must NOT be treated as hallucinations.',
 }
