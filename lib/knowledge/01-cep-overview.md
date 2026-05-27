@@ -1,5 +1,5 @@
 ---
-summary: 'Comprehensive introduction to Chrome Enterprise Premium. Helps with product evaluation, procurement, and delegated administration. Covers pricing, 60-day trial terms, and manual license assignment. Includes "How to": troubleshoot "Something went wrong" errors using the "Chrome DLP insight setting management" privilege, enable auto-license assignment, and configure specific Helpdesk roles. Keywords: $6/user price, Licensing, Cloud BeyondCorp Admin, license propagation, Workspace vs Cloud roles, Helpdesk permissions.'
+summary: 'Comprehensive introduction to Chrome Enterprise Premium (CEP). Helps with product evaluation and implementation. Walks through the 5-step checklist: setting up Chrome management, configuring connector policies, verifying the CEP service, setting up DLP rules, and configuring activity alerts. Covers trial terms (60 days, 5,000 users) and manual license assignment. Keywords: $6/user price, trial terms, Licensing, 5-step checklist, manual license assignment, Workspace service settings.'
 title: 'Chrome Enterprise Premium Overview and Implementation'
 articleId: 01
 url: 'https://knowledge.workspace.google.com/admin/security/protect-chrome-users-with-chrome-enterprise-premium'
