@@ -280,9 +280,9 @@ function awaitingResponse(result) {
       "Once the browser is redirected to a 127.0.0.1 URL (the page may show a connection error — that's fine), paste that full URL back so the sign-in can complete.",
     )
     lines.push('')
-    lines.push('If the browser did not open, the consent URL is:')
+    lines.push('If the browser did not open, the fallback URL (copy-paste only) is:')
   } else {
-    lines.push('Open this URL in a browser and complete sign-in:')
+    lines.push('Copy and paste this fallback URL into a browser and complete sign-in:')
   }
   lines.push('')
   if (supportsHyperlinks()) {
@@ -291,7 +291,8 @@ function awaitingResponse(result) {
     lines.push('Or copy and paste this URL if the link above does not work:')
     lines.push('')
   }
-  lines.push(result.authUrl)
+  const fallbackUrl = result.authUrl.replace(/^https?:\/\//, '')
+  lines.push(fallbackUrl)
   lines.push('')
   lines.push(
     "Then paste the full URL the browser was redirected to (it looks like http://127.0.0.1:PORT/?code=...&state=...; the page may show a connection error — that's expected).",

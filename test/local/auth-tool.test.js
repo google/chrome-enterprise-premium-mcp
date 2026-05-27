@@ -110,11 +110,11 @@ describe('cep_auth Tool', () => {
       assert.strictEqual(result.structuredContent.nextAction, 'paste-redirect-url')
       assert.strictEqual(result.structuredContent.authUrl, 'https://accounts.google.com/o/oauth2/v2/auth?state=ABC')
       assert.ok(result.structuredContent.agentHint?.length > 0)
-      assert.match(result.content[0].text, /Open this URL/)
+      assert.match(result.content[0].text, /fallback URL/)
       assert.match(result.content[0].text, /accounts\.google\.com/)
 
       const lines = result.content[0].text.split('\n')
-      const plainUrlIndex = lines.findIndex(l => l === 'https://accounts.google.com/o/oauth2/v2/auth?state=ABC')
+      const plainUrlIndex = lines.findIndex(l => l.includes('accounts.google.com/o/oauth2/v2/auth?state=ABC'))
       assert.ok(plainUrlIndex > 0, 'plainUrl should appear in the text block')
       assert.strictEqual(lines[plainUrlIndex - 1], '', 'plainUrl should have a blank line above it')
       assert.strictEqual(lines[plainUrlIndex + 1], '', 'plainUrl should have a blank line below it')
@@ -149,14 +149,14 @@ describe('cep_auth Tool', () => {
       assert.strictEqual(result.structuredContent.nextAction, 'paste-redirect-url')
       assert.strictEqual(result.structuredContent.authUrl, 'https://accounts.google.com/o/oauth2/v2/auth?state=ABC')
       assert.ok(result.structuredContent.agentHint?.length > 0)
-      assert.match(result.content[0].text, /Open this URL/)
+      assert.match(result.content[0].text, /fallback URL/)
       assert.match(result.content[0].text, /accounts\.google\.com/)
 
       const text = result.content[0].text
       assert.ok(!text.includes('\x1b]8;;'), 'Should not contain any OSC 8 hyperlink escapes')
 
       const lines = text.split('\n')
-      const plainUrlIndex = lines.findIndex(l => l === 'https://accounts.google.com/o/oauth2/v2/auth?state=ABC')
+      const plainUrlIndex = lines.findIndex(l => l.includes('accounts.google.com/o/oauth2/v2/auth?state=ABC'))
       assert.ok(plainUrlIndex > 0, 'plainUrl should appear in the text block')
       assert.strictEqual(lines[plainUrlIndex - 1], '', 'plainUrl should have a blank line above it')
       assert.strictEqual(lines[plainUrlIndex + 1], '', 'plainUrl should have a blank line below it')
