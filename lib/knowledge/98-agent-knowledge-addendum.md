@@ -55,3 +55,15 @@ To successfully implement CBA, you **MUST** complete all three steps:
 - **Server-Side:** Use the **Investigation Tool** with the **Rule log events** data source.
 - **Client-Side:** Direct users to `chrome://policy` to verify rule receipt.
 - **SIEM:** Streaming events require the **Chrome Reporting Connector** and OU-level **Event Reporting** policy enablement.
+
+## 8. Chrome Security Insights (1-Click Flow)
+
+The "Monitor data leaks and insider risk" 1-click flow provides visibility into insider risk and data exfiltration with a single action.
+
+- **Automation:** It automatically enables **Chrome Enterprise Connectors**, **Chrome Security event logging**, and activates **50 common DLP detectors** to scan for sensitive content transfer events across Chrome.
+- **Visibility:** Provides visibility into all file transfers, sensitive data detection, and security events.
+- **Insights Reports:** Generates the following specific reports in the **Security Center** (Workspace Admin Console):
+  - **Users with high content transfer**
+  - **Domains with high content transfer**
+  - **Domain categories with high content transfer**
+  - **Most common sensitive data types**
