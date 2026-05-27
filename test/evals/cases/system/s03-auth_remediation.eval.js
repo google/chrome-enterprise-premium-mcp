@@ -19,11 +19,11 @@ export default {
   priority: 'P1',
   tags: ['auth', 'remediation'],
   expectedTools: ['list_org_units'],
-  requiredPatterns: ['gcloud auth application-default login', '--scopes', 'apps.licensing', 'chrome.management.policy'],
+  requiredPatterns: ['auth login', 'cep_auth'],
   prompt:
     "I'm trying to list my organizational units but I keep getting an authentication error. Can you help me fix it?",
   goldenResponse:
-    'Agent should recognize that the user is experiencing authentication issues. It should attempt to call a tool (like `list_org_units`), which will return a remediation message if credentials are missing or under-scoped. The agent must then present the `gcloud auth application-default login` command to the user with the `--scopes` parameter containing all required permissions, including `apps.licensing` and `chrome.management.policy`.',
+    'Agent should recognize that the user is experiencing authentication issues. It should attempt to call a tool (like `list_org_units`), which will return a remediation message if credentials are missing or under-scoped. The agent must then present the `cep_auth` tool or the built-in `auth login` CLI command (e.g. `npx -y @google/chrome-enterprise-premium-mcp@latest auth login`) to the user to re-consent with the updated scope set.',
   judgeInstructions:
-    'Verify the agent provides the correct `gcloud` command for remediation. The response should be helpful and guide the user on how to re-authenticate with the proper scopes. It must not hallucinate a different fix or suggest irrelevant steps.',
+    "Verify the agent provides the correct built-in `cep_auth` or `auth login` command for remediation. The response should be helpful and guide the user on how to re-authenticate with the proper scopes using the server's built-in auth tools. It must not recommend outdated gcloud commands.",
 }
