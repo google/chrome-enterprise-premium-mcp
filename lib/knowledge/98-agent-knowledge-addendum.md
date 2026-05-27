@@ -67,3 +67,4 @@ The "Monitor data leaks and insider risk" 1-click flow provides visibility into 
   - **Domains with high content transfer**
   - **Domain categories with high content transfer**
   - **Most common sensitive data types**
+- **Dashboard vs. Connector Isolation:** Activating connectors (like `ON_SECURITY_EVENT`) and DLP rules does **not** automatically enable the "Security Insights" dashboard, nor is it a guarantee of its state. Only the explicit activation of the Security Insights feature (such as the 1-click flow) will populate the Security Insights dashboard. Never assume "Security Insights" is active solely based on the presence of active connectors or rules.
