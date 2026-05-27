@@ -479,8 +479,18 @@ ${knowledgeIndex}`,
               // Smart Proxy: If the document has a URL, fetch it from the web
               if (doc.url) {
                 try {
-                  logger.info(`${TAGS.MCP} Fetching remote document: ${doc.url}`)
-                  const response = await axios.get(doc.url, {
+                  let fetchUrl = doc.url
+                  // Test/Eval Sandbox redirection:
+                  // If the server was initialized with a local rootUrl (which happens during
+                  // offline unit, integration, and evaluation runs), rewrite 'support.google.com'
+                  // links to target the in-process fake API server. This allows sandbox environments
+                  // to retrieve verified mock HTML documentation without reaching out to the live web,
+                  // while allowing production runs to fetch authentic, live Help Center updates.
+                  if (options.apiOptions?.rootUrl) {
+                    fetchUrl = doc.url.replace('https://support.google.com', options.apiOptions.rootUrl)
+                  }
+                  logger.info(`${TAGS.MCP} Fetching remote document: ${fetchUrl}`)
+                  const response = await axios.get(fetchUrl, {
                     headers: {
                       'User-Agent':
                         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
