@@ -1,5 +1,5 @@
 ---
-summary: 'Mandatory Technical "Golden Facts" for Chrome Enterprise Premium. Helps with troubleshooting and precise configuration. Covers Extension IDs for EV and SEB, Windows Certificate Store requirements (Current User store mandatory), and the URL filtering syntax cheat-sheet. Keywords: callobklhcbilhphinckomhgkigmfocg, ekajlcmdfcigmdbphhifahdfjbkciflj, Windows Store requirements, Sync Now, SafeBrowsingAllowlistDomains.'
+summary: 'Mandatory Technical "Golden Facts" and operational memory for Chrome Enterprise Premium. Covers Extension IDs for EV and SEB, Windows Certificate Store requirements for CBA, URL filtering syntax rules, and troubleshooting "Something went wrong" errors for Security Insights using specific privileges. Keywords: callobklhcbilhphinckomhgkigmfocg, ekajlcmdfcigmdbphhifahdfjbkciflj, Windows Store requirements, Security Insights Error, Chrome DLP insight setting management, SafeBrowsingAllowlistDomains.'
 title: 'CEP Technical Addendum (Agent Memory)'
 articleId: 98
 ---

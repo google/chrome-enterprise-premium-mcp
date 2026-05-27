@@ -1,5 +1,5 @@
 ---
-summary: 'Chrome Reporting Connector and SIEM integration guide. Helps stream security events to Splunk and populate the Security Insights dashboard. Covers how to: enable the "Data Protection Insight Scanning" global setting, resolve empty dashboards by checking chrome://policy on clients, and verify local event generation at chrome://safe-browsing/#tab-reporting.'
+summary: 'Chrome Reporting Connector and SIEM integration guide. Helps search security event logs in the Admin Console and stream events to SIEMs like Splunk. Covers event descriptions for Threat and Data Protection events, and how to verify local event generation and policy receipt on client machines. Keywords: Chrome log events, Audit & investigation, Threat events, Data Protection events, chrome://policy, chrome://safe-browsing, Splunk integration.'
 title: 'Chrome Reporting Connector and SIEM Integration'
 articleId: 09
 url: 'https://knowledge.workspace.google.com/admin/reports/chrome-log-events'

@@ -1,5 +1,5 @@
 ---
-summary: 'Reference for administrator privileges required to manage CEP features. Helps with troubleshooting "Access Denied" errors in the Admin Console. Covers privileges for "Chrome DLP insight setting management", Security Insights, DLP rules, and device management. Keywords: Chrome Security Services, Manage DLP rules, Security insights permissions.'
+summary: 'Reference for administrator privileges required to manage Google Workspace and CEP features in the Admin Console. Helps resolve "Access Denied" errors. Covers privileges for User management, Reports, Security Center, Data Loss Prevention (DLP) rule management, Chrome Management, and Data Security (Context-Aware Access). Keywords: Admin console privileges, Manage DLP rules, Security Center, Service Settings, custom roles.'
 title: 'Administrator Privilege Definitions'
 articleId: 29
 url: 'https://support.google.com/a/answer/1219251'

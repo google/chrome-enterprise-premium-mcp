@@ -1,5 +1,5 @@
 ---
-summary: 'Insider risk and data loss monitoring guide. Helps identify unusual content transfer activity and high-volume exfiltration. Covers how to: enable risky activity reporting and monitor data movements in Chrome. Keywords: Insider risk, high-volume transfer, user activity monitoring.'
+summary: 'Insider risk and data loss monitoring guide. Covers how to turn on insider risk monitoring via the 1-click "Monitor data leaks and insider risk" flow, and how to configure the "Data protection insight scanning and report" setting. Explains how this automatically configures Chrome connectors, event logging, and DLP scanning. Keywords: Insider risk, 1-click enablement, Data protection insight scanning, Chrome security event logging, turn off monitoring.'
 title: 'Monitoring for Insider Risk and Data Loss'
 articleId: 23
 url: 'https://knowledge.workspace.google.com/admin/security/monitoring-for-insider-risk-and-data-loss'
