@@ -24,7 +24,7 @@ limitations under the License.
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { isTransient } from './transient.js'
 
-const MODEL_NAME = 'gemini-3.1-flash-lite-preview'
+const MODEL_NAME = 'gemini-3.1-flash-lite'
 
 /**
  * Creates a judge instance backed by Gemini.
