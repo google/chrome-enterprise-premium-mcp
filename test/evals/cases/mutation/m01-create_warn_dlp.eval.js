@@ -24,8 +24,7 @@ export default {
   prompt:
     'Create a DLP rule that warns users when they try to upload files containing credit card numbers. Apply it to the root organizational unit.',
   goldenResponse:
-    'Agent should identify the root OU, then create a DLP rule with warn action for file upload trigger with a content condition for credit card patterns. Should confirm the rule was created successfully. Resource IDs (policy names, OU IDs) are fine to show.',
-  judgeInstructions: `Verify the agent actually performed the action (tool was called), not just
-described how to do it. Resource IDs (policy names, OU IDs) are fine to show.
-Prefer plain-language confirmation over raw API output.`,
+    'Agent should identify the root OU, then create a DLP rule with warn action for file upload trigger with a content condition for credit card patterns. Should confirm in plain language that the rule was created successfully.',
+  judgeInstructions:
+    'Verify the agent indicated that it successfully created the DLP rule as requested. Do not penalize the agent for omitting policy resource IDs, raw API data, or OU IDs.',
 }
