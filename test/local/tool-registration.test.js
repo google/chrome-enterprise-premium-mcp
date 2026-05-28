@@ -56,8 +56,6 @@ const DELETE_EXPERIMENT_TOOLS = ['delete_agent_dlp_rule', 'delete_detector']
 
 const DIAGNOSE_EXPERIMENT_TOOLS = ['diagnose_environment']
 
-const KNOWLEDGE_SEARCH_EXPERIMENT_TOOLS = ['search_content', 'list_documents']
-
 // Tests for SEB tool registration and individual tool handler logic.
 describe('SEB Tool Registration', () => {
   let server
@@ -74,18 +72,6 @@ describe('SEB Tool Registration', () => {
 
     const registeredToolNames = server.registerTool.mock.calls.map(call => call.arguments[0])
     assert.deepStrictEqual(registeredToolNames.sort(), [...CORE_TOOLS].sort())
-  })
-
-  test('When registerTools is called with KNOWLEDGE_SEARCH_ENABLED, then it registers core + search tools', () => {
-    registerTools(server, {
-      featureFlags: {
-        isEnabled: flag => flag === FLAGS.KNOWLEDGE_SEARCH_ENABLED,
-      },
-    })
-
-    const registeredToolNames = server.registerTool.mock.calls.map(call => call.arguments[0])
-    const expected = [...CORE_TOOLS, ...KNOWLEDGE_SEARCH_EXPERIMENT_TOOLS].sort()
-    assert.deepStrictEqual(registeredToolNames.sort(), expected)
   })
 
   test('When registerTools is called with DELETE_TOOL_ENABLED, then it registers core + delete tools', () => {

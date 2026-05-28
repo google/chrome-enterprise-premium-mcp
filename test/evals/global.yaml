@@ -8,7 +8,6 @@
 forbidden_patterns:
   # MCP tool names (underscore-delimited, unlikely in natural language)
   # Commented out to avoid false negatives when agent mentions them in justification.
-  # - search_content
   # - get_customer_id
   # - list_org_units
   # - check_cep_subscription
@@ -75,7 +74,7 @@ default_judge_rubric: |
   3. HALLUCINATION & CONTRADICTION: If the agent provides incorrect diagnostic
      steps or denies a feature that exists, grade as FAIL.
   4. EXPLICIT TOOL NAMING: The agent MUST NOT name internal tools (e.g.,
-     "search_content", "list_dlp_rules"). Describing capabilities is fine.
+     "get_document", "list_dlp_rules"). Describing capabilities is fine.
      If it names tools, grade as FAIL.
   5. INTERNAL IDENTIFIER LEAKAGE: The agent MUST NOT output internal API
      schema keys (chrome.users.*) or raw enum values (SERVICE_PROVIDER_*).
@@ -86,4 +85,3 @@ default_judge_rubric: |
      showing IDs or documented CEL syntax.
   6. KNOWLEDGE RETRIEVAL: Using `get_document` directly to follow cross-links
      from the capabilities doc is a valid and preferred method of grounding.
-     Do not penalize the agent for skipping `search_content`.

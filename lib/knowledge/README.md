@@ -16,10 +16,9 @@ limitations under the License.
 
 # lib/knowledge
 
-Built-in Chrome Enterprise Premium knowledge base. The `search_content` tool
-searches these articles by keyword; `get_document` returns an article's full
-text by ID. The loader reads articles lazily on the first tool call and
-caches them in memory for the rest of the session.
+Built-in Chrome Enterprise Premium knowledge base. The `get_document` tool
+returns an article's full text by ID. The loader reads articles lazily on the
+first tool call and caches them in memory for the rest of the session.
 
 ## Article format
 
@@ -28,7 +27,7 @@ Each file is a Markdown document with YAML frontmatter:
 ```yaml
 ---
 title: 'Human-readable title'
-summary: 'One-line summary returned by search_content results'
+summary: 'One-line summary of the article'
 articleId: 4
 kind: curated
 url: 'https://support.google.com/...'
@@ -46,7 +45,7 @@ used by `get_document`.
 | Field       | Required | Description                                                                              |
 | :---------- | :------- | :--------------------------------------------------------------------------------------- |
 | `title`     | Yes      | Display title in search results                                                          |
-| `summary`   | Yes      | Brief description returned alongside search hits                                         |
+| `summary`   | Yes      | Brief description of the article                                                         |
 | `articleId` | Yes      | Numeric ID for `get_document` lookup                                                     |
 | `kind`      | No       | Content type (`curated`, `helpcenter`, `cloud-docs`, `policies`). Defaults to `curated`. |
 | `url`       | No       | Link to the canonical source document                                                    |

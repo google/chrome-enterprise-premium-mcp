@@ -89,22 +89,6 @@ describe('Knowledge Tools Native Search Integration', () => {
     registerKnowledgeTools(server, { allDocs, docLookup, idToDoc, featureFlags: { isEnabled: () => true } }, {})
   })
 
-  test('When searched with a keyword, then search_content finds matching text', async () => {
-    const handler = handlers['search_content']
-    assert.ok(handler)
-
-    // Search for 'enforces' -> should match 'enforces'
-    let result = await handler({ query: 'enforces' }, { requestInfo: {} })
-    let rows = result.structuredContent.documents
-    assert.strictEqual(rows.length, 1)
-    assert.strictEqual(rows[0].title, MOCK_DOC_PASSWORD_COMPLEXITY)
-
-    // Search for 'password' -> should match MOCK_DOC_PASSWORD_COMPLEXITY and 'How to reset password'
-    result = await handler({ query: 'password' }, { requestInfo: {} })
-    rows = result.structuredContent.documents
-    assert.strictEqual(rows.length, 2)
-  })
-
   test('When document is requested by filename, then get_document returns full content', async () => {
     const handler = handlers['get_document']
     assert.ok(handler)
@@ -168,24 +152,5 @@ describe('Knowledge Tools Native Search Integration', () => {
     assert.strictEqual(asNumber.filename, '5')
     const asArray = schema.parse({ filename: [4, '6-dlp-troubleshooting'] })
     assert.deepStrictEqual(asArray.filename, ['4', '6-dlp-troubleshooting'])
-  })
-
-  test('When list_documents is called, then it returns all documents', async () => {
-    const handler = handlers['list_documents']
-    assert.ok(handler)
-
-    const result = await handler({}, { requestInfo: {} })
-    const rows = result.structuredContent.documents
-    assert.strictEqual(rows.length, EXPECTED_DOC_COUNT)
-  })
-
-  test('When searched with multi-word query, then search_content finds matching text', async () => {
-    const handler = handlers['search_content']
-    assert.ok(handler)
-
-    const result = await handler({ query: 'complexity requirements' }, { requestInfo: {} })
-    const rows = result.structuredContent.documents
-    assert.ok(rows.length >= 1)
-    assert.strictEqual(rows[0].title, MOCK_DOC_PASSWORD_COMPLEXITY)
   })
 })

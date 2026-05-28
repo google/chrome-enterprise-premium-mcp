@@ -27,10 +27,10 @@ describe('Eval Assertions', () => {
     })
 
     test('When a forbidden pattern is found, then it fails with a case-insensitive match', () => {
-      const result = checkForbidden('You should use search_content to find it', ['search_content'])
+      const result = checkForbidden('You should use get_document to find it', ['get_document'])
       assert.ok(!result.passed)
       assert.strictEqual(result.failures.length, 1)
-      assert.ok(result.failures[0].includes('search_content'))
+      assert.ok(result.failures[0].includes('get_document'))
     })
 
     test('When a forbidden regex pattern is matched, then it fails', () => {
@@ -45,8 +45,8 @@ describe('Eval Assertions', () => {
     })
 
     test('When multiple forbidden patterns are found, then it reports all failures', () => {
-      const result = checkForbidden('Call search_content then list_dlp_rules', [
-        'search_content',
+      const result = checkForbidden('Call get_document then list_dlp_rules', [
+        'get_document',
         'list_dlp_rules',
         'unused_pattern',
       ])
@@ -109,19 +109,19 @@ describe('Eval Assertions', () => {
 
   describe('checkTools', () => {
     test('When all expected tools are called, then it passes', () => {
-      const result = checkTools(['search_content', 'list_dlp_rules'], ['search_content'])
+      const result = checkTools(['get_document', 'list_dlp_rules'], ['get_document'])
       assert.ok(result.passed)
     })
 
     test('When an expected tool is missing from actual calls, then it fails', () => {
-      const result = checkTools(['search_content'], ['search_content', 'list_dlp_rules'])
+      const result = checkTools(['get_document'], ['get_document', 'list_dlp_rules'])
       assert.ok(!result.passed)
       assert.strictEqual(result.failures.length, 1)
       assert.ok(result.failures[0].includes('list_dlp_rules'))
     })
 
     test('When there are no expected tools, then it passes regardless of actual calls', () => {
-      const result = checkTools(['search_content'], [])
+      const result = checkTools(['get_document'], [])
       assert.ok(result.passed)
     })
 
@@ -148,11 +148,11 @@ describe('Eval Assertions', () => {
   describe('runChecks', () => {
     test('When multiple checks fail, then it aggregates all failures', () => {
       const evalCase = {
-        forbiddenPatterns: ['search_content'],
+        forbiddenPatterns: ['get_document'],
         requiredPatterns: ['missing_thing'],
         expectedTools: ['tool_not_called'],
       }
-      const result = runChecks('I used search_content', ['other_tool'], evalCase)
+      const result = runChecks('I used get_document', ['other_tool'], evalCase)
       assert.ok(!result.passed)
       assert.strictEqual(result.failures.length, 3)
     })
@@ -161,9 +161,9 @@ describe('Eval Assertions', () => {
       const evalCase = {
         forbiddenPatterns: ['bad_word'],
         requiredPatterns: ['good_word'],
-        expectedTools: ['search_content'],
+        expectedTools: ['get_document'],
       }
-      const result = runChecks('This has good_word in it', ['search_content'], evalCase)
+      const result = runChecks('This has good_word in it', ['get_document'], evalCase)
       assert.ok(result.passed)
       assert.strictEqual(result.failures.length, 0)
     })

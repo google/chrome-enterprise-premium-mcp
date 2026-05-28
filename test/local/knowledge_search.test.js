@@ -46,70 +46,16 @@ describe('Knowledge Tools Real Database Integration', () => {
         handlers[name] = handler
       },
     }
-    registerKnowledgeTools(server, { featureFlags: { isEnabled: () => true } }, {})
+    registerKnowledgeTools(server, {}, {})
   })
 
-  test('When searched for Licensing, then search_content finds the overview document', async () => {
-    const handler = handlers['search_content']
-    assert.ok(handler, 'search_content handler should be registered')
-
-    const result = await handler({ query: 'Licensing' }, { requestInfo: {} })
-    const documents = result.structuredContent.documents
-
-    assert.ok(documents.length > 0, 'Should return at least one document')
-
-    // Look for Chrome Enterprise Premium Overview and Implementation
-    const policy = documents.find(d => d.title === 'Chrome Enterprise Premium Overview and Implementation')
-    assert.ok(policy, 'Should find Chrome Enterprise Premium Overview and Implementation policy')
-    assert.ok(policy.id, 'Found policy should have an ID')
-  })
-
-  test('When searched for DLP, then search_content finds the integration guide', async () => {
-    const handler = handlers['search_content']
-    const result = await handler({ query: 'DLP' }, { requestInfo: {} })
-    const documents = result.structuredContent.documents
-
-    assert.ok(documents.length > 0, 'Should return hits for DLP')
-    const article = documents.find(d => d.title.includes('Chrome Data Loss Prevention (DLP)'))
-    assert.ok(article, 'Should find the DLP integration guide')
-  })
-
-  test('When ID is resolved via search, then get_document fetches full content', async () => {
-    const searchHandler = handlers['search_content']
+  test('When document is fetched, then get_document fetches real markdown and resolves remote contents', async () => {
     const getDocHandler = handlers['get_document']
+    assert.ok(getDocHandler, 'get_document handler should be registered')
 
-    // Search to resolve ID
-    const searchResult = await searchHandler({ query: 'Licensing' }, { requestInfo: {} })
-    const documents = searchResult.structuredContent.documents
-    const policy = documents.find(d => d.title === 'Chrome Enterprise Premium Overview and Implementation')
-    assert.ok(policy, 'Should fetch match to resolve ID')
-
-    // Fetch full body
-    const docResult = await getDocHandler({ filename: policy.filename }, { requestInfo: {} })
+    const docResult = await getDocHandler({ filename: '01-cep-overview' }, { requestInfo: {} })
     const docText = docResult.content[0].text
 
-    assert.ok(docText.includes('Chrome Enterprise Premium'), 'Full content should include the policy text')
-  })
-
-  test('When searched for configurable timeouts, then search_content finds the dedicated article', async () => {
-    const searchHandler = handlers['search_content']
-    const getDocHandler = handlers['get_document']
-
-    const searchResult = await searchHandler({ query: 'timeout deadline' }, { requestInfo: {} })
-    const documents = searchResult.structuredContent.documents
-    const article = documents.find(d => d.title.includes('Configurable Timeout Deadlines'))
-    assert.ok(article, 'Should find the configurable timeouts article')
-
-    const docResult = await getDocHandler({ filename: article.filename }, { requestInfo: {} })
-    const docText = docResult.content[0].text
-    assert.ok(docText.includes('Deep scanning protection settings'), 'Should include exact UI path grounding')
-  })
-
-  test('When searched for Evidence Locker paste, then search_content finds the evidence locker article', async () => {
-    const searchHandler = handlers['search_content']
-    const searchResult = await searchHandler({ query: 'Evidence Locker paste' }, { requestInfo: {} })
-    const documents = searchResult.structuredContent.documents
-    const article = documents.find(d => d.title.includes('Evidence Locker'))
-    assert.ok(article, 'Should find the Evidence Locker setup guide')
+    assert.ok(docText.includes('Chrome Enterprise Premium'), 'Full content should include policy text')
   })
 })
