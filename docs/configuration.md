@@ -65,7 +65,7 @@ The server resolves credentials in `lib/util/auth.js#getAuthClient` and tries ea
 
 2. **Service-account key.** Otherwise, if `GOOGLE_APPLICATION_CREDENTIALS` is set, the server reads the service-account JSON key file and signs requests with a JWT. Set `CEP_IMPERSONATE_SUBJECT` to a user email to enable domain-wide delegation.
 
-3. **Cached OAuth token.** Otherwise, the server reads the access token that the CLI's `auth login` subcommand cached at `~/.config/cep-mcp/tokens.json`. Run it via the npm package as `npx -y @google/chrome-enterprise-premium-mcp@latest auth login`, or as `chrome-enterprise-premium-mcp auth login` from a local checkout.
+3. **Cached OAuth token.** Otherwise, the server reads the access token that the CLI's `auth login` subcommand cached at `~/.config/cep-mcp/tokens.json`. Run it via the npm package as `npx @google/chrome-enterprise-premium-mcp auth login`.
 
 Most workstation users want the OAuth flow. Most hosted deployments (Cloud Run, Vertex AI Agent Engine) want bearer pass-through. Service accounts cover the cases where neither fits.
 
