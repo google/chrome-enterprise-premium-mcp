@@ -205,5 +205,179 @@ describe('Chrome Management API', () => {
       await client.listCustomerProfiles('C0123', 'TEST_BEARER_TOKEN')
       assert.strictEqual(observedAuth, 'TEST_BEARER_TOKEN')
     })
+
+    test('When checkSecurityInsightsStatus is called with an authToken, then it threads to getClient and resolveCustomerId', async () => {
+      const { ChromeManagementClient } = await import('../../lib/api/chrome_management_client.js')
+      const client = new ChromeManagementClient()
+      let observedAuth = 'sentinel-not-set'
+      client.resolveCustomerId = async (customerId, authToken) => {
+        assert.strictEqual(authToken, 'TEST_BEARER_TOKEN')
+        return 'C0123'
+      }
+      client.getClient = async authToken => {
+        observedAuth = authToken
+        return {
+          context: {
+            _options: {
+              auth: {
+                request: async () => ({ data: { insightsState: 'INSIGHTS_DISABLED' } }),
+              },
+            },
+          },
+        }
+      }
+      const result = await client.checkSecurityInsightsStatus('my_customer', 'TEST_BEARER_TOKEN')
+      assert.strictEqual(observedAuth, 'TEST_BEARER_TOKEN')
+      assert.deepStrictEqual(result, { insightsState: 'INSIGHTS_DISABLED' })
+    })
+
+    test('When enableSecurityInsights is called with an authToken and targetOus, then it threads correctly', async () => {
+      const { ChromeManagementClient } = await import('../../lib/api/chrome_management_client.js')
+      const client = new ChromeManagementClient()
+      let observedAuth = 'sentinel-not-set'
+      let observedData = null
+      client.resolveCustomerId = async (_customerId, _authToken) => {
+        return 'C0123'
+      }
+      client.getClient = async authToken => {
+        observedAuth = authToken
+        return {
+          context: {
+            _options: {
+              auth: {
+                request: async req => {
+                  observedData = req.data
+                  return { data: { insightsState: 'INSIGHTS_ENABLED' } }
+                },
+              },
+            },
+          },
+        }
+      }
+      const result = await client.enableSecurityInsights('my_customer', ['/corp'], 'TEST_BEARER_TOKEN')
+      assert.strictEqual(observedAuth, 'TEST_BEARER_TOKEN')
+      assert.deepStrictEqual(observedData, { targetOus: ['/corp'] })
+      assert.deepStrictEqual(result, { insightsState: 'INSIGHTS_ENABLED' })
+    })
+
+    test('When disableSecurityInsights is called with an authToken, then it threads correctly', async () => {
+      const { ChromeManagementClient } = await import('../../lib/api/chrome_management_client.js')
+      const client = new ChromeManagementClient()
+      let observedAuth = 'sentinel-not-set'
+      client.resolveCustomerId = async (_customerId, _authToken) => {
+        return 'C0123'
+      }
+      client.getClient = async authToken => {
+        observedAuth = authToken
+        return {
+          context: {
+            _options: {
+              auth: {
+                request: async () => ({ data: { insightsState: 'INSIGHTS_DISABLED' } }),
+              },
+            },
+          },
+        }
+      }
+      const result = await client.disableSecurityInsights('my_customer', 'TEST_BEARER_TOKEN')
+      assert.strictEqual(observedAuth, 'TEST_BEARER_TOKEN')
+      assert.deepStrictEqual(result, { insightsState: 'INSIGHTS_DISABLED' })
+    })
+  })
+
+  describe('security_insights Tool', () => {
+    test('When action is check, then it calls checkSecurityInsightsStatus and returns formatted status', async () => {
+      const mockCheck = mock.fn(async () => ({ insightsState: 'INSIGHTS_DISABLED' }))
+      const MockChromeManagementClient = class {
+        constructor() {
+          this.checkSecurityInsightsStatus = mockCheck
+        }
+      }
+
+      const { registerTools } = await esmock(
+        '../../tools/index.js',
+        {},
+        {
+          '../../lib/api/chrome_management_client.js': {
+            ChromeManagementClient: MockChromeManagementClient,
+          },
+        },
+      )
+      registerTools(server, {
+        apiClients: { chromeManagement: new MockChromeManagementClient() },
+      })
+
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'security_insights')
+        .arguments[2]
+
+      const result = await handler({ action: 'check', customerId: 'my_customer' }, {})
+
+      assert.strictEqual(mockCheck.mock.callCount(), 1)
+      assert.strictEqual(mockCheck.mock.calls[0].arguments[0], 'my_customer')
+      assert.ok(result.content[0].text.includes('Chrome Security Insights status is now: `INSIGHTS_DISABLED`'))
+      assert.strictEqual(result.structuredContent.insightsState, 'INSIGHTS_DISABLED')
+    })
+
+    test('When action is enable with targetOus, then it calls enableSecurityInsights and returns status', async () => {
+      const mockEnable = mock.fn(async () => ({ insightsState: 'INSIGHTS_ENABLED' }))
+      const MockChromeManagementClient = class {
+        constructor() {
+          this.enableSecurityInsights = mockEnable
+        }
+      }
+
+      const { registerTools } = await esmock(
+        '../../tools/index.js',
+        {},
+        {
+          '../../lib/api/chrome_management_client.js': {
+            ChromeManagementClient: MockChromeManagementClient,
+          },
+        },
+      )
+      registerTools(server, {
+        apiClients: { chromeManagement: new MockChromeManagementClient() },
+      })
+
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'security_insights')
+        .arguments[2]
+
+      const result = await handler({ action: 'enable', targetOus: ['/corp'], customerId: 'my_customer' }, {})
+
+      assert.strictEqual(mockEnable.mock.callCount(), 1)
+      assert.strictEqual(mockEnable.mock.calls[0].arguments[0], 'my_customer')
+      assert.deepStrictEqual(mockEnable.mock.calls[0].arguments[1], ['/corp'])
+      assert.ok(result.content[0].text.includes('status is now: `INSIGHTS_ENABLED`'))
+    })
+
+    test('When action is disable, then it calls disableSecurityInsights and returns status', async () => {
+      const mockDisable = mock.fn(async () => ({ insightsState: 'INSIGHTS_DISABLED' }))
+      const MockChromeManagementClient = class {
+        constructor() {
+          this.disableSecurityInsights = mockDisable
+        }
+      }
+
+      const { registerTools } = await esmock(
+        '../../tools/index.js',
+        {},
+        {
+          '../../lib/api/chrome_management_client.js': {
+            ChromeManagementClient: MockChromeManagementClient,
+          },
+        },
+      )
+      registerTools(server, {
+        apiClients: { chromeManagement: new MockChromeManagementClient() },
+      })
+
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'security_insights')
+        .arguments[2]
+
+      const result = await handler({ action: 'disable', customerId: 'my_customer' }, {})
+
+      assert.strictEqual(mockDisable.mock.callCount(), 1)
+      assert.ok(result.content[0].text.includes('status is now: `INSIGHTS_DISABLED`'))
+    })
   })
 })
