@@ -129,6 +129,20 @@ describe('Eval Assertions', () => {
       const result = checkTools(['a', 'b', 'c'], ['a', 'b', 'c'])
       assert.ok(result.passed)
     })
+
+    test('When optional tools are specified, then calling any one of them passes', () => {
+      const result1 = checkTools(['diagnose_environment'], ['count_browser_versions|diagnose_environment'])
+      const result2 = checkTools(['count_browser_versions'], ['count_browser_versions|diagnose_environment'])
+      assert.ok(result1.passed)
+      assert.ok(result2.passed)
+    })
+
+    test('When optional tools are specified and none are called, then it fails', () => {
+      const result = checkTools(['get_customer_id'], ['count_browser_versions|diagnose_environment'])
+      assert.ok(!result.passed)
+      assert.strictEqual(result.failures.length, 1)
+      assert.ok(result.failures[0].includes('expected one of these tools to be called'))
+    })
   })
 
   describe('runChecks', () => {
