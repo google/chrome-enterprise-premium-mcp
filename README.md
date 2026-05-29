@@ -167,76 +167,6 @@ redirect the real API clients at an in-process Express fake under
 `test/helpers/`. For the directory layout, design patterns, and how the test
 backends are wired, see [`docs/architecture.md`](docs/architecture.md).
 
-## Development
-
-### Local Development Setup
-
-If you want to contribute to the codebase or run the server from a local clone instead of `npx`:
-
-1.  **Clone & Install:**
-
-    ```bash
-    git clone https://github.com/google/chrome-enterprise-premium-mcp.git
-    cd chrome-enterprise-premium-mcp
-    npm install
-    ```
-
-2.  **Sign In Locally:**
-    Run the auth CLI using the local package script:
-
-    ```bash
-    npm run auth:login
-    ```
-
-3.  **Connect Local Server:**
-    In your MCP client configuration, replace the `npx` command with `node` and point the arguments to your absolute path of `mcp-server.js`:
-    ```json
-    {
-      "mcpServers": {
-        "cep": {
-          "command": "node",
-          "args": ["/absolute/path/to/chrome-enterprise-premium-mcp/mcp-server.js"],
-          "env": { "GCP_STDIO": "true" }
-        }
-      }
-    }
-    ```
-
-### Contributor Workflow
-
-Run `npm run presubmit` before every PR. It runs unit tests, fake-backend
-integration tests, and a smoke test against the in-process fake API server;
-no credentials needed. After merge, `npm run postsubmit` re-runs the full
-presubmit suite plus a real-API integration pass.
-
-Presubmit is **read-only**. If formatting or lint fails, run
-`npm run format` and `npm run lint:fix` to fix, then re-run. The husky
-pre-commit hook auto-fixes staged files through lint-staged, so commits from a
-clean working tree usually pass without manual fixup.
-
-GitHub Actions runs the same checks on every pull request as four parallel
-jobs (`lint`, `test-unit`, `test-integration-fake`, `test-smoke`); each
-failure shows up as a separate PR check. The workflow is at
-[`.github/workflows/node.js.yml`](.github/workflows/node.js.yml).
-
-```bash
-npm run presubmit               # Required before every PR
-npm run postsubmit              # After merge (real API credentials)
-npm run test:unit               # Unit tests only
-npm run test:integration:fake   # Integration tests against the fake
-npm run test:smoke              # Server starts and responds
-npm run mcp-inspector           # Browser UI for invoking tools and prompts
-npm run lint                    # Check formatting and lint
-npm run lint -- --fix           # Auto-fix
-npm run format                  # Prettier on everything
-```
-
-For evaluations (Gemini agent against fake backend, graded by deterministic
-checks and an LLM judge), see [`test/evals/README.md`](test/evals/README.md).
-For the test runner layout and how to add a test, see
-[`test/README.md`](test/README.md). For contributing, see
-[`CONTRIBUTING.md`](CONTRIBUTING.md).
-
 ## Troubleshooting
 
 For known issues with auth, permissions, Node.js setup, and MCP client
@@ -263,7 +193,7 @@ If something isn't working:
 
 ## Contributing
 
-Contributions are welcome. For details on how to contribute, see [CONTRIBUTING.md](CONTRIBUTING.md).
+Contributions are welcome! For local development setup, building, testing, and contributor guidelines, please see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Legal
 
