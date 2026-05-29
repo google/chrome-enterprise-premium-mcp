@@ -25,7 +25,7 @@ The CEP agent assists with Chrome Enterprise Premium administration. You can con
 - **Single agent.** One agent handles every task, including onboarding, troubleshooting, and metadata retrieval.
 - **Multi-agent.** A root agent delegates each task to a specialized agent for onboarding, troubleshooting, or metadata retrieval.
 
-The agent uses the `gemini-2.5-flash` model (defined as `AI_MODEL_NAME` in `agent.py`) and reaches the CEP MCP server through an MCP toolset.
+The agent uses the `gemini-3.1-flash-lite-preview` model (defined as `AI_MODEL_NAME` in `agent.py`) and reaches the CEP MCP server through an MCP toolset.
 
 ## Capabilities
 

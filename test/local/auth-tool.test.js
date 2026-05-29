@@ -17,6 +17,7 @@ limitations under the License.
 import assert from 'node:assert/strict'
 import { describe, test, mock, beforeEach } from 'node:test'
 import esmock from 'esmock'
+import { cliInvocation } from '../../lib/util/cli_invocation.js'
 
 async function loadToolWithMocks({ startToolAuth, completeToolAuth }) {
   return esmock('../../tools/definitions/auth.js', {
@@ -110,7 +111,7 @@ describe('cep_auth Tool', () => {
       assert.strictEqual(result.structuredContent.nextAction, 'paste-redirect-url')
       assert.strictEqual(result.structuredContent.authUrl, 'https://accounts.google.com/o/oauth2/v2/auth?state=ABC')
       assert.ok(result.structuredContent.agentHint?.length > 0)
-      assert.match(result.content[0].text, /Open this URL/)
+      assert.match(result.content[0].text, /Open the URL below/)
       assert.match(result.content[0].text, /accounts\.google\.com/)
 
       const lines = result.content[0].text.split('\n')
@@ -149,7 +150,7 @@ describe('cep_auth Tool', () => {
       assert.strictEqual(result.structuredContent.nextAction, 'paste-redirect-url')
       assert.strictEqual(result.structuredContent.authUrl, 'https://accounts.google.com/o/oauth2/v2/auth?state=ABC')
       assert.ok(result.structuredContent.agentHint?.length > 0)
-      assert.match(result.content[0].text, /Open this URL/)
+      assert.match(result.content[0].text, /Open the URL below/)
       assert.match(result.content[0].text, /accounts\.google\.com/)
 
       const text = result.content[0].text
@@ -226,9 +227,10 @@ describe('cep_auth Tool', () => {
 
       const result = await handler({}, {})
 
-      assert.match(
-        result.content[0].text,
-        /you can also run `npx @google\/chrome-enterprise-premium-mcp auth login` in your shell/,
+      const manualLogin = cliInvocation('auth login')
+      assert.ok(
+        result.content[0].text.includes(`you can also run \`${manualLogin}\` in your shell`),
+        `Expected output to contain: "you can also run \`${manualLogin}\` in your shell"`,
       )
     })
   })
@@ -248,9 +250,12 @@ describe('cep_auth Tool', () => {
 
       const result = await handler({}, {})
 
-      assert.match(
-        result.content[0].text,
-        /export CEP_OAUTH_CLIENT_ID and CEP_OAUTH_CLIENT_SECRET in your shell and run `npx @google\/chrome-enterprise-premium-mcp auth login`/,
+      const manualLogin = cliInvocation('auth login')
+      assert.ok(
+        result.content[0].text.includes(
+          `export CEP_OAUTH_CLIENT_ID and CEP_OAUTH_CLIENT_SECRET in your shell and run \`${manualLogin}\``,
+        ),
+        `Expected output to contain env exports and running: "${manualLogin}"`,
       )
     })
   })

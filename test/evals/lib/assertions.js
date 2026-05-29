@@ -104,8 +104,16 @@ export function checkTools(actualToolNames, expectedToolNames) {
   const actualSet = new Set(actualToolNames)
 
   for (const expected of expectedToolNames) {
-    if (!actualSet.has(expected)) {
-      failures.push(`expected tool not called: "${expected}"`)
+    if (expected.includes('|')) {
+      const options = expected.split('|')
+      const matched = options.some(opt => actualSet.has(opt))
+      if (!matched) {
+        failures.push(`expected one of these tools to be called: "${options.join('", "')}"`)
+      }
+    } else {
+      if (!actualSet.has(expected)) {
+        failures.push(`expected tool not called: "${expected}"`)
+      }
     }
   }
 

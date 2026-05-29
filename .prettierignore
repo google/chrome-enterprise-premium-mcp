@@ -7,3 +7,5 @@ results_final.json
 .gemini/
 .opencode/
 *.patch
+.venv/
+.stryker-tmp/

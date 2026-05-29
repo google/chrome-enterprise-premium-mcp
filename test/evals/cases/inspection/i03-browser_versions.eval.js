@@ -18,7 +18,7 @@ export default {
   id: 'i03',
   priority: 'P0',
   tags: ['inspection'],
-  expectedTools: ['count_browser_versions'],
+  expectedTools: ['count_browser_versions|diagnose_environment'],
   requiredPatterns: ['120', '121'],
   prompt: 'What Chrome browser versions are deployed across my organization? Are any outdated?',
   goldenResponse:

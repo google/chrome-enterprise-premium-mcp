@@ -22,6 +22,7 @@ import assert from 'node:assert/strict'
 import { describe, test, mock, beforeEach } from 'node:test'
 import { registerTools } from '../../tools/index.js'
 import { FLAGS } from '../../lib/util/feature_flags.js'
+import { SCOPES, OAUTH_SCOPE_REGISTRY } from '../../lib/constants.js'
 
 const CORE_TOOLS = [
   'cep_auth',
@@ -157,5 +158,45 @@ describe('SEB Tool Registration', () => {
     assert.strictEqual(mockAdminSdkClient.listOrgUnits.mock.callCount(), 1)
     const callArgs = mockAdminSdkClient.listOrgUnits.mock.calls[0].arguments
     assert.deepStrictEqual(callArgs[0], { customerId: 'C_SHARED_123' })
+  })
+
+  describe('Scope Registry Integrity', () => {
+    test('Every scope URL in the SCOPES constant must have an entry in OAUTH_SCOPE_REGISTRY', () => {
+      for (const [id, url] of Object.entries(SCOPES)) {
+        assert.ok(
+          OAUTH_SCOPE_REGISTRY[url],
+          `Scope "${id}" with URL "${url}" is missing from OAUTH_SCOPE_REGISTRY in lib/constants.js`,
+        )
+        assert.ok(OAUTH_SCOPE_REGISTRY[url].name, `Scope "${url}" in registry is missing a human-readable "name"`)
+        assert.ok(OAUTH_SCOPE_REGISTRY[url].category, `Scope "${url}" in registry is missing a functional "category"`)
+      }
+    })
+
+    test('Every tool registered in the codebase must use scopes that exist in the Registry', () => {
+      const server = {
+        registerTool: mock.fn(),
+      }
+
+      // Register ALL tools (including experiments) to audit their scopes
+      registerTools(server, {
+        featureFlags: { isEnabled: () => true },
+      })
+
+      const registeredTools = server.registerTool.mock.calls
+
+      for (const call of registeredTools) {
+        const toolName = call.arguments[0]
+        const handler = call.arguments[2]
+        const requestedScopes = handler._scopes || Object.values(SCOPES)
+
+        for (const url of requestedScopes) {
+          assert.ok(
+            OAUTH_SCOPE_REGISTRY[url],
+            `Tool "${toolName}" requests scope "${url}" which is NOT found in the Registry. ` +
+              `Update OAUTH_SCOPE_CONFIG in lib/constants.js.`,
+          )
+        }
+      }
+    })
   })
 })
