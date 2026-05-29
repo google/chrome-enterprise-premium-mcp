@@ -30,9 +30,9 @@ import { oauthFlowCredential } from '../../lib/util/credential/oauth_flow.js'
 import { resolveOAuthClientConfig } from '../../lib/util/credential/oauth_client_config.js'
 import { SCOPES } from '../../lib/constants.js'
 import { guardedToolCall, formatToolResponse } from '../utils/wrapper.js'
+import { cliInvocation } from '../../lib/util/cli_invocation.js'
 
 const TOOL_NAME = 'cep_auth'
-const NPX_CLI = 'npx @google/chrome-enterprise-premium-mcp auth login'
 
 const AGENT_HINT =
   'Show the user the authUrl and ask them to open it in a browser. After the browser is ' +
@@ -49,16 +49,17 @@ const AGENT_HINT =
  * @returns {string} A single line of user-facing prose.
  */
 function cliFallbackLine(source) {
+  const loginCmd = cliInvocation('auth login')
   if (source === 'custom') {
     return (
       "If the URL above is hard to copy or doesn't render cleanly in your client, " +
-      `export CEP_OAUTH_CLIENT_ID and CEP_OAUTH_CLIENT_SECRET in your shell and run \`${NPX_CLI}\`. ` +
+      `export CEP_OAUTH_CLIENT_ID and CEP_OAUTH_CLIENT_SECRET in your shell and run \`${loginCmd}\`. ` +
       'Running that caches a token this server reads on every call.'
     )
   }
   return (
     "If the URL above is hard to copy or doesn't render cleanly in your client, " +
-    `you can also run \`${NPX_CLI}\` in your shell. ` +
+    `you can also run \`${loginCmd}\` in your shell. ` +
     'Running that caches a token this server reads on every call.'
   )
 }
