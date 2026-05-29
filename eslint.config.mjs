@@ -41,7 +41,17 @@ const copyrightHeader = [
 
 export default [
   {
-    ignores: ['**/dist', '**/node_modules', 'results/**', '.worktrees/**', '.claude/**', '.gemini/**', '.opencode/**'],
+    ignores: [
+      '**/dist',
+      '**/node_modules',
+      'results/**',
+      '.worktrees/**',
+      '.claude/**',
+      '.gemini/**',
+      '.opencode/**',
+      '**/.venv/**',
+      '**/.stryker-tmp/**',
+    ],
   },
   js.configs.recommended,
   nodePlugin.configs['flat/recommended'],

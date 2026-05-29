@@ -165,7 +165,7 @@ export function guardedToolCall(
   options = {},
   sessionState = { customerId: null, cachedRootOrgUnitId: null },
 ) {
-  return async (params, context) => {
+  const wrapped = async (params, context) => {
     const authToken = getAuthToken(context?.requestInfo)
     if (!authToken) {
       const validity = await isTokenLocallyValid({ scopes })
@@ -291,4 +291,7 @@ export function guardedToolCall(
       }
     }
   }
+
+  wrapped._scopes = scopes
+  return wrapped
 }
