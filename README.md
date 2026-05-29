@@ -11,105 +11,27 @@ environment.
 
 <img width="1280" height="640" alt="c7b0d696-8488-48f9-8a11-bf8bbc72ee7e" src="https://github.com/user-attachments/assets/2665d05d-3f02-4577-8183-2972e74b02e6" />
 
-## Quick start
+### Quick start
 
-```bash
-git clone https://github.com/google/chrome-enterprise-premium-mcp.git
-cd chrome-enterprise-premium-mcp
-npm install
-```
+Get up and running in less than 2 minutes using the bundled Google-managed OAuth client. No repository cloning required!
 
 ### 1. Sign in
 
-Run the auth CLI once before you connect your MCP client:
+Run the authentication CLI once before you connect your MCP client:
 
 ```bash
 npx @google/chrome-enterprise-premium-mcp auth login
 ```
 
-A browser tab opens on Google's consent screen for the Chrome Enterprise Premium scopes.
+A browser tab opens on Google's consent screen. Sign in with your Google Workspace administrator account and approve the requested permissions.
 
-Once you approve, the CLI catches the authorization code on a short-lived loopback server and trades it with Google for an access token. It writes the token to `~/.config/cep-mcp/tokens.json` at file mode 0600.
+Once approved, the CLI retrieves an access token and saves it securely to `~/.config/cep-mcp/tokens.json` (file mode `0600`). The MCP server reads this file on every tool call, so you only need to sign in once.
 
-The MCP server reads that file on every tool call, so you sign in once and the token lasts until it expires.
+### 2. Connect your MCP client
 
-If you cloned this repo and ran `npm install`, the same command is on your PATH as `chrome-enterprise-premium-mcp auth login`. The script `npm run auth:login` is a convenience wrapper for the same flow.
+The server uses **stdio** transport; your MCP client launches it as a child process. Add the configuration snippet to your client:
 
-The rest of the docs writes the command as just `auth login`. Use whichever invocation fits how you installed the server.
-
-You can also sign in from inside the agent: ask it to sign you in and it will call the `cep_auth` tool on your behalf.
-
-Some agent UIs wrap or clip long URLs in their text panels, and the consent URL is long enough that copying it sometimes breaks. If that happens, drop to a shell and run `auth login`.
-
-To use an OAuth client you registered in your own Cloud project, export `CEP_OAUTH_CLIENT_ID` and `CEP_OAUTH_CLIENT_SECRET` and run `auth login` again. The consent screen and grants then resolve against your project instead of the bundled Google-managed one.
-
-The end-to-end Cloud console setup is in [Use a custom OAuth client](docs/auth-bring-your-own-oauth-client.md).
-
-For the paste-the-redirect flow on CI runners and SSH sessions without
-a browser, see
-[Sign in from a host without a browser](docs/auth-bring-your-own-oauth-client.md#sign-in-from-a-host-without-a-browser).
-
-The scope set requested at consent maps to the underlying APIs:
-
-| Scope                                 | API                                                                             | Used for                                                           |
-| :------------------------------------ | :------------------------------------------------------------------------------ | :----------------------------------------------------------------- |
-| `openid`, `userinfo.email`            | OpenID Connect                                                                  | Identifies the principal in startup banner output                  |
-| `chrome.management.policy`            | [Chrome Policy](https://developers.google.com/chrome/policy)                    | Reading and writing connector policies, extension install policies |
-| `chrome.management.reports.readonly`  | [Chrome Management](https://developers.google.com/chrome/management)            | Browser version counts                                             |
-| `chrome.management.profiles.readonly` | [Chrome Management](https://developers.google.com/chrome/management)            | Listing managed browser profiles                                   |
-| `admin.reports.audit.readonly`        | [Admin SDK Reports](https://developers.google.com/admin-sdk/reports)            | Chrome activity logs                                               |
-| `admin.directory.orgunit.readonly`    | [Admin SDK Directory](https://developers.google.com/admin-sdk/directory)        | Organizational unit hierarchy                                      |
-| `admin.directory.customer.readonly`   | [Admin SDK Directory](https://developers.google.com/admin-sdk/directory)        | Customer ID resolution                                             |
-| `apps.licensing`                      | [Enterprise License Manager](https://developers.google.com/admin-sdk/licensing) | CEP subscription and per-user license checks                       |
-| `cloud-identity.policies`             | [Cloud Identity](https://cloud.google.com/identity/docs)                        | DLP rules and content detectors (CRUD)                             |
-| `service.management`                  | [Service Usage](https://cloud.google.com/service-usage/docs)                    | Checking and enabling required APIs                                |
-
-> [!NOTE]
-> If your organization restricts third-party app access, an administrator
-> must
-> [trust the OAuth client](docs/troubleshooting.md#configure-oauth-app-for-sensitive-scopes)
-> before you can authenticate with sensitive Workspace scopes.
-
-#### Hosted deployments
-
-For Cloud Run, Vertex AI Agent Engine, or service-account automation, see
-the
-[authentication setup matrix](docs/configuration.md#authenticate-to-google-apis).
-
-### 2. Enable required APIs (custom OAuth client or service account only)
-
-Skip this step if you used the default Google-managed OAuth client.
-
-For a custom OAuth client (`CEP_OAUTH_CLIENT_ID` /
-`CEP_OAUTH_CLIENT_SECRET`) or a service-account key, enable these
-APIs in the Cloud project that owns those credentials:
-
-```bash
-gcloud services enable \
-  admin.googleapis.com \
-  chromemanagement.googleapis.com \
-  chromepolicy.googleapis.com \
-  cloudidentity.googleapis.com \
-  licensing.googleapis.com \
-  serviceusage.googleapis.com \
-  servicemanagement.googleapis.com
-```
-
-Or enable them from the
-[API Library](https://console.cloud.google.com/apis/library) in Cloud Console.
-
-> [!NOTE]
-> Newly enabled APIs can take 1–5 minutes to become available.
-> `PERMISSION_DENIED` responses are retried automatically with
-> exponential backoff, so wait through any retry messages on first run
-> instead of restarting.
-
-### 3. Connect your MCP client
-
-The server uses **stdio** transport; your MCP client launches it as a child
-process. Add the config snippet for your client:
-
-For example, add to `~/.gemini/settings.json`:
+For example, add to `~/.gemini/settings.json` (Gemini Code Assist) or `claude_desktop_config.json` (Claude Desktop):
 
 ```json
 {
@@ -123,22 +45,17 @@ For example, add to `~/.gemini/settings.json`:
 }
 ```
 
-</details>
+### 3. Verify
 
-> [!TIP]
-> If you are running from a local checkout instead of npx, replace the
-> command with `node` and the args with the absolute path to
-> `mcp-server.js`. Relative paths might not resolve depending on the
-> client.
-
-### 4. Verify
-
-Restart your MCP client, then ask:
+Restart your MCP client, then ask the agent:
 
 > "What Chrome Enterprise Premium tools do you have access to?"
 
-You should see the available tools listed in the response. If they don't
-appear, see [Troubleshooting](#troubleshooting) for the usual causes.
+You should see the available tools listed in the response. If they don't appear, see [Troubleshooting](docs/troubleshooting.md).
+
+---
+
+## Security & Blast Radius Warning
 
 > [!CAUTION]
 > **This server is an administrator-level interface to Chrome Enterprise Premium.**
@@ -161,6 +78,39 @@ appear, see [Troubleshooting](#troubleshooting) for the usual causes.
 > - Pay extra attention to mutating tools (`create_*`, `update_*`, `delete_*`, `enable_*`); they have tenant-wide security impact.
 > - Use a dedicated, least-privilege admin account when experimenting.
 
+## Workspace Scopes & Permissions
+
+The scope set requested during the "Sign in" consent flow maps directly to the underlying Google APIs needed for the server's tools:
+
+| Scope                                 | API                                                                             | Used for                                             |
+| :------------------------------------ | :------------------------------------------------------------------------------ | :--------------------------------------------------- |
+| `openid`, `userinfo.email`            | OpenID Connect                                                                  | Identifies the logged-in admin in startup output     |
+| `chrome.management.policy`            | [Chrome Policy](https://developers.google.com/chrome/policy)                    | Reading and writing connector and extension policies |
+| `chrome.management.reports.readonly`  | [Chrome Management](https://developers.google.com/chrome/management)            | Telemetry version counts                             |
+| `chrome.management.profiles.readonly` | [Chrome Management](https://developers.google.com/chrome/management)            | Listing managed browser profiles                     |
+| `admin.reports.audit.readonly`        | [Admin SDK Reports](https://developers.google.com/admin-sdk/reports)            | Fetching Chrome activity logs                        |
+| `admin.directory.orgunit.readonly`    | [Admin SDK Directory](https://developers.google.com/admin-sdk/directory)        | Organizational Unit hierarchy                        |
+| `admin.directory.customer.readonly`   | [Admin SDK Directory](https://developers.google.com/admin-sdk/directory)        | Customer ID resolution                               |
+| `apps.licensing`                      | [Enterprise License Manager](https://developers.google.com/admin-sdk/licensing) | CEP subscription and per-user license checks         |
+| `cloud-identity.policies`             | [Cloud Identity](https://cloud.google.com/identity/docs)                        | Managing DLP rules and content detectors (CRUD)      |
+| `service.management`                  | [Service Usage](https://cloud.google.com/service-usage/docs)                    | Verifying and enabling required Google Cloud APIs    |
+
+> [!NOTE]
+> **OAuth App Trust Required:** If your organization restricts third-party app access, a Super Admin must [trust the OAuth client](docs/troubleshooting.md#configure-oauth-app-for-sensitive-scopes) in the Admin Console before you can authenticate.
+
+> [!IMPORTANT]
+> **Workspace Admin Role Required:** Chrome Management and Admin SDK APIs require a Google Workspace admin role in addition to Google Cloud IAM roles. You must hold an admin role in the [Admin Console](https://admin.google.com/) (Super Admin or delegated with Chrome Management permissions). With only Google Cloud IAM permissions, calls will return `403 Permission Denied` with no indication that a Workspace role is missing.
+
+## Advanced Authentication Options
+
+For production environments, headless systems, or customized configurations, the server supports alternative auth pathways:
+
+- **Custom OAuth Client:** To run under your own Google Cloud project instead of the default managed one (enabling you to manage your own consent screen and credentials), see [Use a Custom OAuth Client](docs/auth-bring-your-own-oauth-client.md).
+- **Headless / SSH Sessions:** To authenticate on remote hosts or CI runners without a web browser, see [Sign In from a Host Without a Browser](docs/auth-bring-your-own-oauth-client.md#sign-in-from-a-host-without-a-browser).
+- **Hosted Deployments:** For Cloud Run, Vertex AI Agent Engine, or service-account automation, see the [Authentication Setup Matrix](docs/configuration.md#authenticate-to-google-apis).
+
+---
+
 ## Configuration
 
 For environment variables and stdio vs. HTTP transport, see
@@ -168,21 +118,13 @@ For environment variables and stdio vs. HTTP transport, see
 
 ## Prerequisites
 
-| Requirement              | Details                                                                                                                                                                                                                               |
-| :----------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Node.js**              | >= 18.0.0 (`node --version` to check)                                                                                                                                                                                                 |
-| **Google Workspace**     | Any edition, plus a [Chrome Enterprise Premium](https://docs.cloud.google.com/chrome-enterprise-premium/docs/overview) license ([60-day free trial available](https://docs.cloud.google.com/chrome-enterprise-premium/docs/overview)) |
-| **Admin role**           | Google Workspace Super Admin, or a delegated admin with Chrome Management and DLP permissions                                                                                                                                         |
-| **Google Cloud project** | Linked to your Workspace domain, with required APIs enabled                                                                                                                                                                           |
-| **OAuth App Trust**      | The OAuth client must be [trusted in the Admin Console](docs/troubleshooting.md#configure-oauth-app-for-sensitive-scopes) for sensitive scopes.                                                                                       |
-
-> [!IMPORTANT]
-> Chrome Management and Admin SDK APIs require a Google Workspace admin
-> role in addition to Google Cloud IAM roles. You must hold an admin role
-> in the [Admin Console](https://admin.google.com/) (Super Admin or
-> delegated with Chrome Management permissions). With only Google Cloud
-> IAM permissions, calls return `403 Permission Denied` with no indication
-> that a Workspace role is missing.
+| Requirement              | Details                                                                                                                                                                                                                                   |
+| :----------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Node.js**              | >= 18.0.0 (`node --version` to check)                                                                                                                                                                                                     |
+| **Google Workspace**     | Any edition, plus a [Chrome Enterprise Premium](https://docs.cloud.google.com/chrome-enterprise-premium/docs/overview) license ([60-day free trial available](https://docs.cloud.google.com/chrome-enterprise-premium-mcp/docs/overview)) |
+| **Admin role**           | Google Workspace Super Admin, or a delegated admin with Chrome Management and DLP permissions                                                                                                                                             |
+| **Google Cloud project** | Linked to your Workspace domain, with required APIs enabled                                                                                                                                                                               |
+| **OAuth App Trust**      | The OAuth client must be [trusted in the Admin Console](docs/troubleshooting.md#configure-oauth-app-for-sensitive-scopes) for sensitive scopes.                                                                                           |
 
 ## Available tools and prompts
 
@@ -220,6 +162,41 @@ redirect the real API clients at an in-process Express fake under
 backends are wired, see [`docs/architecture.md`](docs/architecture.md).
 
 ## Development
+
+### Local Development Setup
+
+If you want to contribute to the codebase or run the server from a local clone instead of `npx`:
+
+1.  **Clone & Install:**
+
+    ```bash
+    git clone https://github.com/google/chrome-enterprise-premium-mcp.git
+    cd chrome-enterprise-premium-mcp
+    npm install
+    ```
+
+2.  **Sign In Locally:**
+    Run the auth CLI using the local package script:
+
+    ```bash
+    npm run auth:login
+    ```
+
+3.  **Connect Local Server:**
+    In your MCP client configuration, replace the `npx` command with `node` and point the arguments to your absolute path of `mcp-server.js`:
+    ```json
+    {
+      "mcpServers": {
+        "cep": {
+          "command": "node",
+          "args": ["/absolute/path/to/chrome-enterprise-premium-mcp/mcp-server.js"],
+          "env": { "GCP_STDIO": "true" }
+        }
+      }
+    }
+    ```
+
+### Contributor Workflow
 
 Run `npm run presubmit` before every PR. It runs unit tests, fake-backend
 integration tests, and a smoke test against the in-process fake API server;
