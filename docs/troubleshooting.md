@@ -20,13 +20,13 @@ limitations under the License.
 
 ### "No cached OAuth credentials" or "No Google credentials configured"
 
-You haven't authorized the server yet. Run `npx -y @google/chrome-enterprise-premium-mcp@latest auth login` (or, from a local checkout, `chrome-enterprise-premium-mcp auth login`); a consent page opens in your browser, and on approval the access token is written to `~/.config/cep-mcp/tokens.json`.
+You haven't authorized the server yet. Run `npx @google/chrome-enterprise-premium-mcp auth login`; a consent page opens in your browser, and on approval the access token is written to `~/.config/cep-mcp/tokens.json`.
 
 If the file does not exist after the login flow, the consent didn't complete; check whether your browser opened a consent tab you missed.
 
 ### "Request had insufficient authentication scopes"
 
-The cached OAuth token does not cover one or more required scopes. Re-run `npx -y @google/chrome-enterprise-premium-mcp@latest auth login` to re-consent with the full scope set.
+The cached OAuth token does not cover one or more required scopes. Re-run `npx @google/chrome-enterprise-premium-mcp auth login` to re-consent with the full scope set.
 
 Scopes can't be added to an existing token; the cache is replaced on every login.
 
@@ -44,7 +44,7 @@ gcloud services enable admin.googleapis.com chromemanagement.googleapis.com chro
 
 ### "invalid_grant" or "Token has been revoked"
 
-Cached credentials are stale. Common causes are a password change, an admin revoking access, MFA re-enrollment, or the access token expiring. Delete `~/.config/cep-mcp/tokens.json` and re-run `npx -y @google/chrome-enterprise-premium-mcp@latest auth login`.
+Cached credentials are stale. Common causes are a password change, an admin revoking access, MFA re-enrollment, or the access token expiring. Delete `~/.config/cep-mcp/tokens.json` and re-run `npx @google/chrome-enterprise-premium-mcp auth login`.
 
 ### Configure OAuth app for sensitive scopes
 
@@ -81,7 +81,7 @@ Dependencies are missing.
 
 From a local checkout, run `npm install` from the project root.
 
-If you're using `npx -y @google/chrome-enterprise-premium-mcp@latest`, the package fetch was interrupted. Clear the npx cache (`rm -rf ~/.npm/_npx`) and rerun the same command.
+If you're using `npx @google/chrome-enterprise-premium-mcp`, the package fetch was interrupted. Clear the npx cache (`rm -rf ~/.npm/_npx`) and rerun the same command.
 
 ### "ExperimentalWarning: ... is an experimental feature"
 
@@ -103,7 +103,7 @@ Try these in order.
 2. **Run the client's MCP-reload command.** Some clients pick up tool registrations only after an explicit reload, even after a restart. Consult your client's documentation for the reload command.
 3. **Use absolute paths.** The `args` path in your config must be absolute. Relative paths resolve from the client's working directory, which is unpredictable.
 4. **Check that the client can find `node`.** Graphical-interface clients might not inherit your shell PATH. Try the full path to node, for example `"command": "/usr/local/bin/node"`. Find yours with `which node`.
-5. **Test the server manually.** Run `npx -y @google/chrome-enterprise-premium-mcp@latest` in a terminal. The server prints `[mcp] Chrome Enterprise Premium MCP server stdio transport connected` on standard error. If you see errors, fix those first.
+5. **Test the server manually.** Run `npx @google/chrome-enterprise-premium-mcp` in a terminal. The server prints `[mcp] Chrome Enterprise Premium MCP server stdio transport connected` on standard error. If you see errors, fix those first.
 
 ### Server starts but immediately exits
 

@@ -23,13 +23,13 @@ The command form depends on how you installed the server.
 Via npx:
 
 ```bash
-npx -y @google/chrome-enterprise-premium-mcp@latest auth login
+npx @google/chrome-enterprise-premium-mcp auth login
 ```
 
-From a local checkout after `npm install`, the `chrome-enterprise-premium-mcp` binary is on your PATH:
+From a local checkout after `npm install`:
 
 ```bash
-chrome-enterprise-premium-mcp auth login
+npm run auth:login
 ```
 
 The rest of this document writes the command as `auth login` for brevity. Prefix it with whichever invocation suits your setup.

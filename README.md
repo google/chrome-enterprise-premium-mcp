@@ -21,11 +21,13 @@ npm install
 
 ### 1. Sign in
 
-Run the auth CLI once before you connect your MCP client:
+Run the auth CLI once before you connect your MCP client. If you followed the steps above (cloned the repository and ran `npm install`), run the local npm script:
 
 ```bash
-npx @google/chrome-enterprise-premium-mcp auth login
+npm run auth:login
 ```
+
+_(If you installed the package from the npm registry instead of cloning the repository, you can run `npx @google/chrome-enterprise-premium-mcp auth login` from any directory)._
 
 A browser tab opens on Google's consent screen for the Chrome Enterprise Premium scopes.
 
@@ -33,9 +35,7 @@ Once you approve, the CLI catches the authorization code on a short-lived loopba
 
 The MCP server reads that file on every tool call, so you sign in once and the token lasts until it expires.
 
-If you cloned this repo and ran `npm install`, the same command is on your PATH as `chrome-enterprise-premium-mcp auth login`. The script `npm run auth:login` is a convenience wrapper for the same flow.
-
-The rest of the docs writes the command as just `auth login`. Use whichever invocation fits how you installed the server.
+The rest of the docs writes the command as just `auth login`. Use whichever invocation fits how you installed the server (e.g., `npm run auth:login` or `npx @google/chrome-enterprise-premium-mcp auth login`).
 
 You can also sign in from inside the agent: ask it to sign you in and it will call the `cep_auth` tool on your behalf.
 
