@@ -1,5 +1,36 @@
 # Changelog
 
+## [1.8.0](https://github.com/google/chrome-enterprise-premium-mcp/compare/chrome-enterprise-premium-mcp-v1.7.0...chrome-enterprise-premium-mcp-v1.8.0) (2026-05-29)
+
+
+### Features
+
+* **auth:** dynamic environment-aware agent hints and user instructions ([#257](https://github.com/google/chrome-enterprise-premium-mcp/issues/257)) ([2f1b554](https://github.com/google/chrome-enterprise-premium-mcp/commit/2f1b554a4c0e41471506df0c6e948151c71f4135))
+
+
+### Bug Fixes
+
+* **adk:** update model name and docs ([#214](https://github.com/google/chrome-enterprise-premium-mcp/issues/214)) ([a6d5d7c](https://github.com/google/chrome-enterprise-premium-mcp/commit/a6d5d7c20315b1d96a80ec09ef18b3349223bda4))
+* **auth:** route sign-in fallback through cli_invocation helper ([#273](https://github.com/google/chrome-enterprise-premium-mcp/issues/273)) ([e41dcf7](https://github.com/google/chrome-enterprise-premium-mcp/commit/e41dcf73c15e0be7ca3c86a8696f608d3fe2eb5c))
+* **eval:** add test proxy support rewriter and fake endpoint for k07 ([#276](https://github.com/google/chrome-enterprise-premium-mcp/issues/276)) ([064c144](https://github.com/google/chrome-enterprise-premium-mcp/commit/064c1445c754a9404144859586de7f4b7f9d6150))
+* **eval:** remove robot emoji prefix from mock rule for m03 refuse check ([#275](https://github.com/google/chrome-enterprise-premium-mcp/issues/275)) ([198ea2d](https://github.com/google/chrome-enterprise-premium-mcp/commit/198ea2d3d3e94599d6b2c76d1acfd201da86acd5))
+* **eval:** simplify m01 judge instructions as per team consensus ([#285](https://github.com/google/chrome-enterprise-premium-mcp/issues/285)) ([4e0df7a](https://github.com/google/chrome-enterprise-premium-mcp/commit/4e0df7a6bb86d009b45762ad1e5b9fd0236837b9))
+* **eval:** support optional expectedTools and update i03 to permit diagnose_environment ([#289](https://github.com/google/chrome-enterprise-premium-mcp/issues/289)) ([e10f54d](https://github.com/google/chrome-enterprise-premium-mcp/commit/e10f54da321a20cddde90a2e29dd73fb0f14d927))
+* **eval:** update d01 to expect and permit actual OU IDs ([#284](https://github.com/google/chrome-enterprise-premium-mcp/issues/284)) ([8d24e05](https://github.com/google/chrome-enterprise-premium-mcp/commit/8d24e05d6dd46aa94fe1acc166a01b182627da51))
+* **eval:** update s03 to expect correct built-in auth login commands ([#283](https://github.com/google/chrome-enterprise-premium-mcp/issues/283)) ([c926f18](https://github.com/google/chrome-enterprise-premium-mcp/commit/c926f18a57918007db22abcdaffc975d927a689f))
+* self-reference in devDependencies to resolve local npx failure ([#290](https://github.com/google/chrome-enterprise-premium-mcp/issues/290)) ([4fabd9a](https://github.com/google/chrome-enterprise-premium-mcp/commit/4fabd9a5b84e71cddbe3ff394461d996def4f6c9))
+* support /apps prefix for fake licensing user endpoint ([#274](https://github.com/google/chrome-enterprise-premium-mcp/issues/274)) ([f20c3e5](https://github.com/google/chrome-enterprise-premium-mcp/commit/f20c3e5fad5ac784b6e666955bc4dc9ab075afe8))
+
+
+### Documentation
+
+* align knowledge summaries with actual document content ([#278](https://github.com/google/chrome-enterprise-premium-mcp/issues/278)) ([d32ebbc](https://github.com/google/chrome-enterprise-premium-mcp/commit/d32ebbcc90dbad4f7448e609269ba762e3a497f5))
+
+
+### Tests
+
+* **evals:** update deprecated model reference to gemini-3.1-flash-lite ([#281](https://github.com/google/chrome-enterprise-premium-mcp/issues/281)) ([a2e7139](https://github.com/google/chrome-enterprise-premium-mcp/commit/a2e713961f922e61309926996528785062ce4630))
+
 ## [1.7.0](https://github.com/google/chrome-enterprise-premium-mcp/compare/chrome-enterprise-premium-mcp-v1.6.0...chrome-enterprise-premium-mcp-v1.7.0) (2026-05-22)
 
 
