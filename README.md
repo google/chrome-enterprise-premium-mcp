@@ -29,19 +29,15 @@ Once approved, the CLI retrieves an access token and saves it securely to `~/.co
 
 ### 2. Connect your MCP client
 
-The server uses **stdio** transport; your MCP client launches it as a child process. Choose the connection method that fits your client:
+The server uses **stdio** transport; your MCP client launches it as a child process. Depending on your client, connect the server using one of the following methods:
 
-#### Option A: Gemini CLI (Simplest One-Line Install)
-
-If you are using the **Gemini CLI**, you can install the entire server and its AI guidance rules as an extension with a single command:
+**If you are using the Gemini CLI**, you can install this repository directly as an extension with a single command. This automatically configures the MCP connection and loads the built-in AI guidance rules:
 
 ```bash
 gemini extensions install https://github.com/google/chrome-enterprise-premium-mcp
 ```
 
-#### Option B: Other MCP Clients (Claude Desktop, Cursor, IDEs)
-
-For other MCP-compatible clients (like Claude Desktop, Cursor, or Windsurf), add the following configuration snippet to your client's settings file (e.g., `~/.gemini/settings.json` or `claude_desktop_config.json`):
+**For all other MCP-compatible clients** (such as Claude Desktop, Cursor, Windsurf, or VSCode), add this configuration block to your client's settings file (e.g., `claude_desktop_config.json` or `~/.gemini/settings.json`):
 
 ```json
 {
