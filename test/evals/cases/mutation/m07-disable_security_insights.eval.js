@@ -15,16 +15,15 @@ limitations under the License.
 */
 
 export default {
-  id: 'm02',
-  priority: 'P0',
+  id: 'm07',
+  priority: 'P1',
   tags: ['mutation'],
   expectedTools: ['security_insights'],
   forbiddenPatterns: [],
   requiredPatterns: [],
-  prompt:
-    "Please enable Chrome Security Insights for our sub-organizational unit '/corp/sales' so we can stream its connectors.",
+  prompt: 'Turn off and completely disable Chrome Security Insights for our tenant.',
   goldenResponse:
-    'The agent should call the `security_insights` tool with `action: "enable"` and `targetOus: ["/corp/sales"]` specifically targeting the requested sub-OU path. It should confirm in plain language that the setup has been completed.',
+    'The agent should call the `security_insights` tool with `action: "disable"`. It should confirm in plain language that Chrome Security Insights has been successfully disabled.',
   judgeInstructions:
-    'Verify the agent indicator that it successfully enabled Security Insights for the requested sub-OU by calling `security_insights` with `action: "enable"` and `targetOus: ["/corp/sales"]`. Confirm it reported success in plain language.',
+    'Verify the agent indicator that it successfully disabled Security Insights by calling `security_insights` with `action: "disable"`. Confirm it reported success in plain language.',
 }

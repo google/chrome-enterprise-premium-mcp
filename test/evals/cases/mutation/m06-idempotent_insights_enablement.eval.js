@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 export default {
-  id: 'm03',
+  id: 'm06',
   priority: 'P1',
   tags: ['mutation'],
   expectedTools: ['security_insights'],
