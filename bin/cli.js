@@ -35,36 +35,38 @@ const AUTH_HELP = [
 ].join('\n')
 
 /**
- * Dispatches an `auth` subcommand verb to the matching cli_commands handler.
- * @param {string|undefined} verb - The verb passed after `auth` on the command line.
- * @returns {Promise<void>} Resolves when the chosen handler finishes.
- */
-async function runAuth(verb) {
-  if (verb === 'login') {
-    const { runLoginCommand } = await import('../lib/util/credential/cli_commands.js')
-    return runLoginCommand()
-  }
-  if (verb === 'status') {
-    const { runAuthStatusCommand } = await import('../lib/util/credential/cli_commands.js')
-    return runAuthStatusCommand()
-  }
-  if (!verb) {
-    process.stderr.write(`${AUTH_HELP}\n`)
-    return
-  }
-  process.stderr.write(`Unknown auth verb: ${verb}\n\n${AUTH_HELP}\n`)
-  process.exit(2)
-}
-
-/**
  * Dispatches the CLI subcommand.
  * @returns {Promise<void>} Resolves when the chosen command finishes.
  */
 async function main() {
-  const sub = process.argv[2]
+  const args = process.argv.slice(2)
+  let sub = args[0]
+
   if (sub === 'auth') {
-    return runAuth(process.argv[3])
+    const verb = args[1]
+    if (!verb) {
+      process.stderr.write(`${AUTH_HELP}\n`)
+      return
+    }
+    if (verb === 'login') {
+      sub = 'login'
+    } else if (verb === 'status') {
+      sub = 'status'
+    } else {
+      process.stderr.write(`Unknown auth verb: ${verb}\n\n${AUTH_HELP}\n`)
+      process.exit(2)
+    }
   }
+
+  if (sub === 'auth-status' || sub === 'status') {
+    const { runAuthStatusCommand } = await import('../lib/util/credential/cli_commands.js')
+    return runAuthStatusCommand()
+  }
+  if (sub === 'login') {
+    const { runLoginCommand } = await import('../lib/util/credential/cli_commands.js')
+    return runLoginCommand()
+  }
+
   return runServer()
 }
 
