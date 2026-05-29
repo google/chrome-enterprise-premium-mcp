@@ -104,6 +104,7 @@ Run the tests using the npm scripts:
 
 ```bash
 npm run presubmit             # Runs the full presubmit suite (unit + fake integration + smoke)
+npm run postsubmit            # Runs post-merge verification (requires real API credentials)
 npm run test:unit             # Runs unit tests only
 npm run test:integration:fake # Runs integration tests against the in-process fake API server
 npm run test:integration:real # Runs integration tests against real Google APIs (requires ADC)
@@ -114,9 +115,9 @@ npm run test:integration:real # Runs integration tests against real Google APIs 
 We enforce strict style rules. Use these commands to format and validate your changes:
 
 ```bash
-npm run lint          # Check for linter and style errors (read-only)
-npm run lint -- --fix # Automatically fix linter issues
-npm run format        # Automatically fix formatting using Prettier
+npm run lint     # Check for linter and style errors (read-only)
+npm run lint:fix # Automatically fix linter issues
+npm run format   # Automatically fix formatting using Prettier
 ```
 
 `npm run presubmit` runs linter and formatter checks in read-only mode and will fail on violations. However, a pre-commit hook is configured to automatically format and lint your staged files when you commit, so commits made from a clean working tree usually pass automatically.
@@ -124,3 +125,10 @@ npm run format        # Automatically fix formatting using Prettier
 ### 5. Continuous Integration (CI)
 
 On every pull request, GitHub Actions runs four parallel jobs (`lint`, `test-unit`, `test-integration-fake`, and `test-smoke`) corresponding to the npm scripts above. The CI jobs run hermetically without GCP credentials, ensuring that tests do not rely on external state. The workflow configuration is located at [`.github/workflows/node.js.yml`](.github/workflows/node.js.yml).
+
+### 6. Evaluations & Test Framework
+
+For deeper insights into the testing infrastructure and evaluations:
+
+- **Evaluations Framework:** To evaluate Gemini agent behavior against a fake backend (graded by deterministic checks and an LLM judge), see the [Evaluations Guide](test/evals/README.md).
+- **Test Suite & Runner Layout:** For a detailed walkthrough of the test suite structure, including instructions on how to write new unit and integration tests, see the [Testing README](test/README.md).
