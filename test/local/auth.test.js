@@ -203,4 +203,78 @@ describe('Auth', () => {
       assert.match(message, /cep_auth/)
     })
   })
+
+  describe('resolveCredentialsSource', () => {
+    test('When authToken is provided, then it resolves to bearer', async () => {
+      const { resolveCredentialsSource } = await import('../../lib/util/auth-error.js')
+      assert.strictEqual(resolveCredentialsSource('test-token', {}), 'bearer')
+    })
+
+    test('When GOOGLE_APPLICATION_CREDENTIALS is set in env, then it resolves to adc', async () => {
+      const { resolveCredentialsSource } = await import('../../lib/util/auth-error.js')
+      assert.strictEqual(resolveCredentialsSource(null, { GOOGLE_APPLICATION_CREDENTIALS: '/path/to/key.json' }), 'adc')
+    })
+
+    test('When PORT is set in env indicating Knative/CloudRun, then it resolves to adc', async () => {
+      const { resolveCredentialsSource } = await import('../../lib/util/auth-error.js')
+      assert.strictEqual(resolveCredentialsSource(null, { PORT: '8080' }), 'adc')
+    })
+
+    test('When PORT is set but GCP_STDIO is true indicating local debugging, then it resolves to cache', async () => {
+      const { resolveCredentialsSource } = await import('../../lib/util/auth-error.js')
+      assert.strictEqual(resolveCredentialsSource(null, { PORT: '8080', GCP_STDIO: 'true' }), 'cache')
+    })
+
+    test('When neither env var is set, then it defaults to cache', async () => {
+      const { resolveCredentialsSource } = await import('../../lib/util/auth-error.js')
+      assert.strictEqual(resolveCredentialsSource(null, {}), 'cache')
+    })
+  })
+
+  describe('getAuthErrorMessage with dynamic sources', () => {
+    test('When source is bearer and status is 401, then it returns Bearer token expired message', async () => {
+      const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
+      const error = new Error('Unauthenticated')
+      error.status = 401
+      const msg = getAuthErrorMessage(error, 'bearer')
+      assert.match(msg, /inbound Bearer token has expired/)
+      assert.match(msg, /Re-authenticate through your MCP client/)
+    })
+
+    test('When source is bearer and status is 403, then it returns Bearer principal lacks permissions message', async () => {
+      const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
+      const error = new Error('Permission Denied')
+      error.status = 403
+      const msg = getAuthErrorMessage(error, 'bearer')
+      assert.match(msg, /principal lacks the required permissions/)
+      assert.match(msg, /Verify Workspace Roles/)
+    })
+
+    test('When source is adc and status is 401, then it returns Service Account invalid message', async () => {
+      const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
+      const error = new Error('Invalid grant')
+      error.status = 401
+      const msg = getAuthErrorMessage(error, 'adc')
+      assert.match(msg, /Service Account credentials \(ADC\) are invalid/)
+      assert.match(msg, /GOOGLE_APPLICATION_CREDENTIALS file path/)
+    })
+
+    test('When source is adc and status is 403, then it returns Domain-Wide Delegation message', async () => {
+      const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
+      const error = new Error('Permission Denied')
+      error.status = 403
+      const msg = getAuthErrorMessage(error, 'adc')
+      assert.match(msg, /Domain-Wide Delegation/)
+      assert.match(msg, /CEP_IMPERSONATE_SUBJECT/)
+    })
+
+    test('When source is provided and status is 401, then it returns custom AuthClient invalid message', async () => {
+      const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
+      const error = new Error('Invalid token')
+      error.status = 401
+      const msg = getAuthErrorMessage(error, 'provided')
+      assert.match(msg, /caller-provided custom AuthClient/)
+      assert.match(msg, /expired credentials/)
+    })
+  })
 })
