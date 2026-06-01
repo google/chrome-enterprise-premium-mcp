@@ -67,7 +67,7 @@ You should see the available tools listed in the response. If they don't appear,
 > **This server is an administrator-level interface to Chrome Enterprise Premium.**
 > When you connect it to an MCP client, you can use natural-language prompts to:
 >
-> - Create, modify, and delete DLP rules and content detectors.
+> - **Create and modify DLP rules and content detectors.**
 > - Change connector policies.
 > - Force-install browser extensions onto every managed Chrome browser.
 > - Enable Google Cloud APIs on your project.
@@ -81,7 +81,7 @@ You should see the available tools listed in the response. If they don't appear,
 >
 > - Connect this server only to MCP clients you trust, on data sources you trust.
 > - Treat every document, message, and webpage you put in front of the agent as untrusted. It might contain hidden instructions.
-> - Pay extra attention to mutating tools (`create_*`, `update_*`, `delete_*`, `enable_*`); they have tenant-wide security impact.
+> - Pay extra attention to mutating tools (`create_*`, `update_*`, `enable_*`); they have tenant-wide security impact.
 > - Use a dedicated, least-privilege admin account when experimenting.
 
 ## Workspace Scopes & Permissions
@@ -126,11 +126,19 @@ For environment variables and stdio vs. HTTP transport, see
 
 | Requirement              | Details                                                                                                                                                                                                                                   |
 | :----------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Node.js**              | >= 18.0.0 (`node --version` to check)                                                                                                                                                                                                     |
+| **Node.js**              | >= 20.0.0 (`node --version` to check)                                                                                                                                                                                                     |
 | **Google Workspace**     | Any edition, plus a [Chrome Enterprise Premium](https://docs.cloud.google.com/chrome-enterprise-premium/docs/overview) license ([60-day free trial available](https://docs.cloud.google.com/chrome-enterprise-premium-mcp/docs/overview)) |
 | **Admin role**           | Google Workspace Super Admin, or a delegated admin with Chrome Management and DLP permissions                                                                                                                                             |
 | **Google Cloud project** | Linked to your Workspace domain, with required APIs enabled                                                                                                                                                                               |
 | **OAuth App Trust**      | The OAuth client must be [trusted in the Admin Console](docs/troubleshooting.md#configure-oauth-app-for-sensitive-scopes) for sensitive scopes.                                                                                           |
+
+> [!IMPORTANT]
+> Chrome Management and Admin SDK APIs require a Google Workspace admin
+> role in addition to Google Cloud IAM roles. You must hold an admin role
+> in the [Admin Console](https://admin.google.com/) (Super Admin or
+> delegated with Chrome Management permissions). With only Google Cloud
+> IAM permissions, calls return `403 Permission Denied` with no indication
+> that a Workspace role is missing.
 
 ## Available tools and prompts
 
@@ -150,13 +158,13 @@ The server exposes tools for reading and managing Chrome Enterprise resources:
   customer profiles
 - **Licensing:** check CEP subscription status, check per-user license
   assignment
-- **DLP:** list/create/delete DLP rules, list/create/delete detectors (regex,
+- **DLP:** list/create DLP rules, list/create detectors (regex,
   word list, URL list), create default rule sets
 - **Connectors:** get connector policy status, enable Chrome Enterprise
   connectors
 - **Extensions:** check SEB extension status, install SEB extension
 - **Security:** get Chrome activity logs, check and enable required APIs
-- **Knowledge:** search the built-in Chrome Enterprise Premium knowledge base
+- **Knowledge:** retrieve documentation from the built-in Chrome Enterprise Premium knowledge base
 
 ## Architecture
 
