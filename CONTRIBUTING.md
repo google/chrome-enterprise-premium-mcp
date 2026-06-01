@@ -54,45 +54,81 @@ information on using pull requests.
 
 ## Development
 
+### 1. Local Development Setup
+
+To set up a local environment for developing and testing the server:
+
+1.  **Clone & Install:**
+
+    ```bash
+    git clone https://github.com/google/chrome-enterprise-premium-mcp.git
+    cd chrome-enterprise-premium-mcp
+    npm install
+    ```
+
+2.  **Sign In Locally:**
+    Run the auth CLI using the local package script to cache your credentials:
+
+    ```bash
+    npm run auth:login
+    ```
+
+3.  **Connect Local Server:**
+    To test your local changes with an MCP client (like Claude or VSCode), point the client's configuration to `node` and the absolute path of your local `mcp-server.js`:
+    ```json
+    {
+      "mcpServers": {
+        "cep-dev": {
+          "command": "node",
+          "args": ["/absolute/path/to/chrome-enterprise-premium-mcp/mcp-server.js"],
+          "env": { "GCP_STDIO": "true" }
+        }
+      }
+    }
+    ```
+
+### 2. Running Locally
+
+Use these convenience scripts for local runtime tasks:
+
 ```bash
-npm install
+npm start             # Starts the stdio server locally
+npm run auth:login    # Runs the OAuth login flow
+npm run auth:status   # Shows local OAuth credential status
+npm run mcp-inspector # Launches the browser-based MCP Inspector debugging UI
 ```
 
-### Running locally
+### 3. Testing
+
+Run the tests using the npm scripts:
 
 ```bash
-npm start             # Stdio mode (default)
-npm run auth:login    # Run the OAuth flow against the bundled or custom client
-npm run auth:status   # Show OAuth credential status
-npm run mcp-inspector # MCP Inspector (browser-based debugging UI)
+npm run presubmit             # Runs the full presubmit suite (unit + fake integration + smoke)
+npm run postsubmit            # Runs post-merge verification (requires real API credentials)
+npm run test:unit             # Runs unit tests only
+npm run test:integration:fake # Runs integration tests against the in-process fake API server
+npm run test:integration:real # Runs integration tests against real Google APIs (requires ADC)
 ```
 
-### Testing
+### 4. Linting & Formatting
+
+We enforce strict style rules. Use these commands to format and validate your changes:
 
 ```bash
-npm run presubmit             # Unit + fake integration + smoke
-npm run test:unit             # Unit tests only
-npm run test:integration:fake # Integration tests against fake API server
-npm run test:integration:real # Integration tests against real Google APIs
+npm run lint     # Check for linter and style errors (read-only)
+npm run lint:fix # Automatically fix linter issues
+npm run format   # Automatically fix formatting using Prettier
 ```
 
-### Linting and formatting
+`npm run presubmit` runs linter and formatter checks in read-only mode and will fail on violations. However, a pre-commit hook is configured to automatically format and lint your staged files when you commit, so commits made from a clean working tree usually pass automatically.
 
-```bash
-npm run lint          # Check for errors (read-only)
-npm run lint -- --fix # Auto-fix lint
-npm run format        # Auto-fix formatting (Prettier)
-```
+### 5. Continuous Integration (CI)
 
-`npm run presubmit` runs `prettier --check` and `eslint` in read-only mode;
-it will fail rather than auto-fix. The husky pre-commit hook fixes staged
-files through lint-staged on commit, so a clean working tree usually passes.
+On every pull request, GitHub Actions runs four parallel jobs (`lint`, `test-unit`, `test-integration-fake`, and `test-smoke`) corresponding to the npm scripts above. The CI jobs run hermetically without GCP credentials, ensuring that tests do not rely on external state. The workflow configuration is located at [`.github/workflows/node.js.yml`](.github/workflows/node.js.yml).
 
-### Continuous integration
+### 6. Evaluations & Test Framework
 
-On every pull request, GitHub Actions runs four parallel jobs: `lint`,
-`test-unit`, `test-integration-fake`, and `test-smoke`. Each maps to one of
-the `npm run` scripts in the testing section. The jobs run hermetically without ADC, so a
-test that accidentally reaches `getAuthClient()` fails fast with a named
-error rather than hanging on metadata-server discovery. The workflow lives
-at [`.github/workflows/node.js.yml`](.github/workflows/node.js.yml).
+For deeper insights into the testing infrastructure and evaluations:
+
+- **Evaluations Framework:** To evaluate Gemini agent behavior against a fake backend (graded by deterministic checks and an LLM judge), see the [Evaluations Guide](test/evals/README.md).
+- **Test Suite & Runner Layout:** For a detailed walkthrough of the test suite structure, including instructions on how to write new unit and integration tests, see the [Testing README](test/README.md).
