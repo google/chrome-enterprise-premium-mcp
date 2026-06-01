@@ -96,4 +96,15 @@ describe('startLoopbackServer', () => {
       await server.stop()
     }
   })
+
+  it('When a request is received, then the response contains Connection: close header', async () => {
+    const server = await startLoopbackServer()
+    try {
+      server.waitForCode()
+      const res = await fetch(`${server.redirectUri}?code=test`)
+      assert.equal(res.headers.get('connection'), 'close')
+    } finally {
+      await server.stop()
+    }
+  })
 })
