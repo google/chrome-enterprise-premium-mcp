@@ -262,6 +262,9 @@ function getInitialState() {
  * @param customerKey
  */
 function resolveCustomerId(state, customerKey) {
+  if (!isSafeKey(customerKey)) {
+    return null
+  }
   if (customerKey === 'my_customer') {
     return state.defaultCustomerId
   }
@@ -670,6 +673,10 @@ export function createFakeApp() {
   })
 
   app.get('/v1/projects/:projectId/services/:serviceName', (req, res) => {
+    const { serviceName } = req.params
+    if (!isSafeKey(serviceName)) {
+      return res.status(400).json({ error: { message: 'Invalid service name' } })
+    }
     if (state.serviceUsage['serviceusage.googleapis.com'] === 'DISABLED') {
       return res.status(403).json({
         error: {
@@ -679,14 +686,18 @@ export function createFakeApp() {
         },
       })
     }
-    const stateVal = state.serviceUsage[req.params.serviceName] || 'DISABLED'
+    const stateVal = state.serviceUsage[serviceName] || 'DISABLED'
     res.json({
-      name: `projects/${req.params.projectId}/services/${req.params.serviceName}`,
+      name: `projects/${req.params.projectId}/services/${serviceName}`,
       state: stateVal,
     })
   })
 
   app.post('/v1/projects/:projectId/services/:serviceName\\:enable', (req, res) => {
+    const { serviceName } = req.params
+    if (!isSafeKey(serviceName)) {
+      return res.status(400).json({ error: { message: 'Invalid service name' } })
+    }
     if (state.serviceUsage['serviceusage.googleapis.com'] === 'DISABLED') {
       return res.status(403).json({
         error: {
@@ -696,7 +707,7 @@ export function createFakeApp() {
         },
       })
     }
-    state.serviceUsage[req.params.serviceName] = 'ENABLED'
+    state.serviceUsage[serviceName] = 'ENABLED'
     res.json({
       done: true,
       response: {
@@ -731,6 +742,9 @@ export function createFakeApp() {
    */
   function mergeFixture(data) {
     if (data.kind === 'admin#directory#customer') {
+      if (!isSafeKey(data.id)) {
+        return
+      }
       state.customers[data.id] = data
       state.defaultCustomerId = data.id
     } else if (data.kind === 'admin#directory#orgUnits') {
