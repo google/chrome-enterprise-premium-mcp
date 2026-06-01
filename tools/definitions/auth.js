@@ -71,61 +71,6 @@ function cliFallbackLine(source) {
   )
 }
 
-/* OSC 8 hyperlink: ESC ] 8 ; ; URI ST text ESC ] 8 ; ; ST, where ST is ESC \. */
-const OSC = '\x1b]8;;'
-const ST = '\x1b\x5c'
-
-/**
- * Detects if the current terminal environment is likely to support OSC 8 hyperlinks.
- * Checks environment variables FORCE_HYPERLINK, DOMTERM, VTE_VERSION, TERM_PROGRAM,
- * TERM, and NO_COLOR.
- * @returns {boolean} True if the terminal likely supports hyperlinks.
- */
-function supportsHyperlinks() {
-  if (process.env.FORCE_HYPERLINK === '1') {
-    return true
-  }
-  if (process.env.FORCE_HYPERLINK === '0') {
-    return false
-  }
-  if (process.env.NO_COLOR) {
-    return false
-  }
-
-  const env = process.env
-  if (env.DOMTERM) {
-    return true
-  }
-  if (env.TERM_PROGRAM) {
-    const program = env.TERM_PROGRAM.toLowerCase()
-    if (['hyper', 'iterm.app', 'wezterm', 'vscode'].includes(program)) {
-      return true
-    }
-  }
-  if (env.TERM === 'xterm-kitty') {
-    return true
-  }
-  if (env.VTE_VERSION) {
-    const version = parseInt(env.VTE_VERSION, 10)
-    if (version >= 4902) {
-      return true
-    }
-  }
-  return false
-}
-
-/**
- * Wraps a URL in OSC 8 hyperlink escapes. Modern terminals render the visible
- * text as a clickable link to the same URL; others show the URL bytes plus
- * a few stray escape chars but the URL itself remains selectable.
- * @param {string} url The URL to render as a hyperlink.
- * @param {string} [label] The visible text label. Defaults to the URL itself.
- * @returns {string} The OSC 8 wrapped URL.
- */
-function osc8(url, label = url) {
-  return `${OSC}${url}${ST}${label}${OSC}${ST}`
-}
-
 /**
  * Formats the OAuth probe result into a human-friendly summary string.
  * @param {object} probe The result from oauthFlowCredential().probe().
@@ -322,12 +267,6 @@ function awaitingResponse(result) {
 
   lines.push('1. Open the URL below in your local browser:')
   lines.push('')
-  if (supportsHyperlinks()) {
-    lines.push(`🔗 ${osc8(result.authUrl, 'Click here to open the Google Sign-in page in your browser')}`)
-    lines.push('')
-    lines.push('Or copy and paste this URL if the link above does not work:')
-    lines.push('')
-  }
   lines.push(result.authUrl)
   lines.push('')
   lines.push(
