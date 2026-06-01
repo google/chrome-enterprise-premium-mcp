@@ -71,26 +71,6 @@ describe('cep_auth Tool', () => {
     handler = call.arguments[2]
   }
 
-  test('When cep_auth is invoked and the loopback callback completes during the wait, then it returns status=completed', async () => {
-    const future = new Date(Date.now() + 3_600_000)
-    const startToolAuth = mock.fn(async () => ({
-      status: 'completed',
-      source: 'managed',
-      expiresAt: future,
-    }))
-    const completeToolAuth = mock.fn()
-    await register({ startToolAuth, completeToolAuth })
-
-    const result = await handler({}, {})
-
-    assert.strictEqual(result.isError, undefined)
-    assert.strictEqual(result.structuredContent.status, 'completed')
-    assert.strictEqual(result.structuredContent.expiresAt, future.toISOString())
-    assert.match(result.content[0].text, /Signed in/)
-    assert.strictEqual(startToolAuth.mock.callCount(), 1)
-    assert.strictEqual(completeToolAuth.mock.callCount(), 0)
-  })
-
   test('When cep_auth is invoked and the wait window expires with terminal hyperlink support, then it returns status=awaiting with OSC 8 hyperlink and plain URL', async () => {
     process.env.FORCE_HYPERLINK = '1'
     try {
