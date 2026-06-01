@@ -21,8 +21,8 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import os from 'node:os'
 import esmock from 'esmock'
-import { commonTransform } from '../../tools/utils/wrapper.js'
-import { validateAndGetOrgUnitId, resolveRootOrgUnitId } from '../../tools/utils/org-unit.js'
+import { commonTransform, guardedToolCall } from '../../tools/utils/wrapper.js'
+import { validateAndGetOrgUnitId } from '../../tools/utils/org-unit.js'
 import { formatStatus } from '../../lib/util/helpers.js'
 import { SCOPES } from '../../lib/constants.js'
 
@@ -138,7 +138,7 @@ describe('Tool Utils', () => {
       const tool = guardedToolCall({ handler: failHandler })
       const result = await tool({}, { requestInfo: { headers: { authorization: 'Bearer abc' } } })
       assert.strictEqual(result.isError, true)
-      assert.match(result.content[0].text, /inbound Bearer token/)
+      assert.match(result.content[0].text, /mcp reauth/)
     })
 
     test('When handler fails with 403 and an inbound Bearer token is present, then the remediation tells the caller to refresh the inbound token', async () => {
@@ -151,7 +151,7 @@ describe('Tool Utils', () => {
       const tool = guardedToolCall({ handler: failHandler })
       const result = await tool({}, { requestInfo: { headers: { authorization: 'Bearer abc' } } })
       assert.strictEqual(result.isError, true)
-      assert.match(result.content[0].text, /inbound Bearer token/)
+      assert.match(result.content[0].text, /mcp reauth/)
     })
 
     test('When handler fails with 401 and source is cache, then it returns the cache remediation message', async () => {

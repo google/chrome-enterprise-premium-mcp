@@ -56,7 +56,7 @@ describe('Auth', () => {
     const previous = process.env.GOOGLE_APPLICATION_CREDENTIALS
     process.env.GOOGLE_APPLICATION_CREDENTIALS = '/tmp/fake-key.json'
     try {
-       const { client, source } = await getAuthClient(['https://www.googleapis.com/auth/cloud-platform'])
+      const { client, source } = await getAuthClient(['https://www.googleapis.com/auth/cloud-platform'])
       assert.ok(client)
       assert.strictEqual(source, 'adc')
       assert.strictEqual(observedConfig.email, 'svc@example.iam.gserviceaccount.com')
