@@ -121,15 +121,16 @@ For production environments, headless systems, or customized configurations, the
 
 For environment variables and stdio vs. HTTP transport, see
 [`docs/configuration.md`](docs/configuration.md).
+
 ## Prerequisites
 
-| Requirement              | Details                                                                                                                                                                                                                               |
-| :----------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Node.js**              | >= 20.0.0 (`node --version` to check)                                                                                                                                                                                                 |
+| Requirement              | Details                                                                                                                                                                                                                                   |
+| :----------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Node.js**              | >= 20.0.0 (`node --version` to check)                                                                                                                                                                                                     |
 | **Google Workspace**     | Any edition, plus a [Chrome Enterprise Premium](https://docs.cloud.google.com/chrome-enterprise-premium/docs/overview) license ([60-day free trial available](https://docs.cloud.google.com/chrome-enterprise-premium-mcp/docs/overview)) |
-| **Admin role**           | Google Workspace Super Admin, or a delegated admin with Chrome Management and DLP permissions                                                                                                                                         |
-| **Google Cloud project** | Linked to your Workspace domain, with required APIs enabled                                                                                                                                                                           |
-| **OAuth App Trust**      | The OAuth client must be [trusted in the Admin Console](docs/troubleshooting.md#configure-oauth-app-for-sensitive-scopes) for sensitive scopes.                                                                                       |
+| **Admin role**           | Google Workspace Super Admin, or a delegated admin with Chrome Management and DLP permissions                                                                                                                                             |
+| **Google Cloud project** | Linked to your Workspace domain, with required APIs enabled                                                                                                                                                                               |
+| **OAuth App Trust**      | The OAuth client must be [trusted in the Admin Console](docs/troubleshooting.md#configure-oauth-app-for-sensitive-scopes) for sensitive scopes.                                                                                           |
 
 > [!IMPORTANT]
 > Chrome Management and Admin SDK APIs require a Google Workspace admin
@@ -138,6 +139,7 @@ For environment variables and stdio vs. HTTP transport, see
 > delegated with Chrome Management permissions). With only Google Cloud
 > IAM permissions, calls return `403 Permission Denied` with no indication
 > that a Workspace role is missing.
+
 ## Available tools and prompts
 
 ### Prompts
