@@ -21,7 +21,7 @@ limitations under the License.
 import { TAGS, SCOPES } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 import { validateAndGetOrgUnitId } from './org-unit.js'
-import { isTokenLocallyValid, canLaunchBrowser } from '../../lib/util/credential/auth_login.js'
+import { isTokenLocallyValid } from '../../lib/util/credential/auth_login.js'
 import { cliInvocation } from '../../lib/util/cli_invocation.js'
 
 /**
@@ -169,7 +169,7 @@ export function guardedToolCall(
     const authToken = getAuthToken(context?.requestInfo)
     if (!authToken) {
       const validity = await isTokenLocallyValid({ scopes })
-      if (!validity.ok && !canLaunchBrowser()) {
+      if (!validity.ok) {
         return buildAuthRequiredResponse(validity)
       }
     }
