@@ -429,6 +429,17 @@ export function createFakeApp() {
     res.json({ chromeBrowserProfiles: state.profiles })
   })
 
+  // Chrome Management: Enable Security Insights
+  app.post('/v1/customers/:customerId/enterprise/securityInsights\\:enable', (req, res) => {
+    const customerId = requireCustomer(state, req.params.customerId, res)
+    if (!customerId) {
+      return
+    }
+    res.json({
+      insightsState: 'INSIGHTS_ENABLED',
+    })
+  })
+
   // Chrome Policy: Resolve Policies
   app.post('/v1/customers/:customerId/policies\\:resolve', (req, res) => {
     const customerId = requireCustomer(state, req.params.customerId, res)

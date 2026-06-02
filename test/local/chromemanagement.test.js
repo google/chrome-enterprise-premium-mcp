@@ -205,5 +205,25 @@ describe('Chrome Management API', () => {
       await client.listCustomerProfiles('C0123', 'TEST_BEARER_TOKEN')
       assert.strictEqual(observedAuth, 'TEST_BEARER_TOKEN')
     })
+
+    test('When enableSecurityInsights is called with an authToken, then it is forwarded to getClient', async () => {
+      const { ChromeManagementClient } = await import('../../lib/api/chrome_management_client.js')
+      const client = new ChromeManagementClient()
+      let observedAuth = 'sentinel-not-set'
+      client.getClient = async authToken => {
+        observedAuth = authToken
+        return {
+          customers: {
+            enterprise: {
+              securityInsights: {
+                enable: async () => ({ data: { insightsState: 'INSIGHTS_ENABLED' } }),
+              },
+            },
+          },
+        }
+      }
+      await client.enableSecurityInsights('C0123', 'TEST_BEARER_TOKEN')
+      assert.strictEqual(observedAuth, 'TEST_BEARER_TOKEN')
+    })
   })
 })
