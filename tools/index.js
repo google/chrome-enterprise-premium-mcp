@@ -46,6 +46,7 @@ import { registerEnableChromeEnterpriseConnectorsTool } from './definitions/enab
 import { registerDiagnoseEnvironmentTool } from './definitions/diagnose_environment.js'
 import { registerKnowledgeTools } from './definitions/knowledge.js'
 import { registerAuthTools } from './definitions/auth.js'
+import { registerSecurityInsightsTool } from './definitions/security_insights.js'
 import { featureFlags, FLAGS } from '../lib/util/feature_flags.js'
 
 /**
@@ -92,6 +93,7 @@ export function registerTools(server, options = {}, sessionState) {
   registerCheckUserCepLicenseTool(server, commonOpts, state)
   registerCountBrowserVersionsTool(server, { ...commonOpts, chromeManagementClient }, state)
   registerCustomerProfileTool(server, { ...commonOpts, chromeManagementClient }, state)
+  registerSecurityInsightsTool(server, { ...commonOpts, chromeManagementClient }, state)
   registerGetConnectorPolicyTool(server, { chromePolicyClient }, state)
   registerGetChromeActivityLogTool(server, { ...commonOpts, chromeManagementClient }, state)
   registerListDlpRulesTool(server, { cloudIdentityClient }, state)

@@ -49,6 +49,7 @@ const CORE_TOOLS = [
   'list_detectors',
   'list_dlp_rules',
   'list_org_units',
+  'security_insights',
 ]
 
 const DELETE_EXPERIMENT_TOOLS = ['delete_agent_dlp_rule', 'delete_detector']

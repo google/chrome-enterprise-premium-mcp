@@ -98,6 +98,7 @@ describe('MCP Server in stdio mode', () => {
         'list_detectors',
         'list_dlp_rules',
         'list_org_units',
+        'security_insights',
         'search_content',
         'list_documents',
         'get_document',
