@@ -19,11 +19,12 @@ import { describe, test, mock, beforeEach } from 'node:test'
 import esmock from 'esmock'
 import { cliInvocation } from '../../lib/util/cli_invocation.js'
 
-async function loadToolWithMocks({ startToolAuth, completeToolAuth }) {
+async function loadToolWithMocks({ startToolAuth, completeToolAuth, canLaunchBrowser }) {
   return esmock('../../tools/definitions/auth.js', {
     '../../lib/util/credential/auth_login.js': {
       startToolAuth,
       completeToolAuth,
+      canLaunchBrowser,
     },
   })
 }
@@ -63,12 +64,16 @@ describe('cep_auth Tool', () => {
     handler = null
   })
 
-  async function register(mocks) {
+  async function getHandler(toolName, mocks) {
     const { registerAuthTool } = await loadToolWithMocks(mocks)
     registerAuthTool(server)
-    const call = server.registerTool.mock.calls.find(c => c.arguments[0] === 'cep_auth')
-    assert.ok(call, 'cep_auth was not registered')
-    handler = call.arguments[2]
+    const call = server.registerTool.mock.calls.find(c => c.arguments[0] === toolName)
+    assert.ok(call, `${toolName} was not registered`)
+    return call.arguments[2]
+  }
+
+  async function register(mocks) {
+    handler = await getHandler('cep_auth', mocks)
   }
 
   test('When cep_auth is invoked and the loopback callback completes during the wait, then it returns status=completed', async () => {
@@ -258,5 +263,80 @@ describe('cep_auth Tool', () => {
         `Expected output to contain env exports and running: "${manualLogin}"`,
       )
     })
+  })
+
+  test('When cep_auth awaits and browserOpened is true, then it displays a concise instruction set without detailed steps', async () => {
+    const startToolAuth = mock.fn(async () => ({
+      status: 'awaiting',
+      authUrl: 'https://accounts.google.com/o/oauth2/v2/auth?state=ABC',
+      browserAttempted: true,
+      browserOpened: true,
+      expiresAt: new Date(Date.now() + 300_000),
+      source: 'managed',
+    }))
+    const completeToolAuth = mock.fn()
+    await register({ startToolAuth, completeToolAuth })
+
+    const result = await handler({}, {})
+
+    assert.strictEqual(result.structuredContent.status, 'awaiting')
+    assert.strictEqual(result.structuredContent.browserOpened, true)
+    assert.match(result.content[0].text, /A browser tab should have opened/)
+    assert.match(result.content[0].text, /Once you sign in and see the "Signed in" success message/)
+    assert.match(result.content[0].text, /If the browser did not open, run `cep_auth` with `authMethod: 'manual'`/)
+    // Verify it does NOT contain the long manual instructions steps
+    assert.ok(!result.content[0].text.includes('1. Open the URL below'))
+    assert.ok(!result.content[0].text.includes('2. Sign in with your Google account'))
+  })
+
+  test('When cep_auth awaits and browserOpened is false, then it displays the full manual instructions', async () => {
+    const startToolAuth = mock.fn(async () => ({
+      status: 'awaiting',
+      authUrl: 'https://accounts.google.com/o/oauth2/v2/auth?state=ABC',
+      browserAttempted: false,
+      browserOpened: false,
+      expiresAt: new Date(Date.now() + 300_000),
+      source: 'managed',
+    }))
+    const completeToolAuth = mock.fn()
+    await register({ startToolAuth, completeToolAuth })
+
+    const result = await handler({}, {})
+
+    assert.strictEqual(result.structuredContent.status, 'awaiting')
+    assert.strictEqual(result.structuredContent.browserOpened, false)
+    assert.match(result.content[0].text, /I cannot open a browser in this environment/)
+    assert.match(result.content[0].text, /1\. Open the URL below/)
+    assert.match(result.content[0].text, /2\. Sign in with your Google account/)
+    assert.match(result.content[0].text, /3\. Copy that entire new address/)
+  })
+
+  test('When cep_auth is called with authMethod, then it passes it down to startToolAuth', async () => {
+    const startToolAuth = mock.fn(async () => ({
+      status: 'completed',
+      source: 'managed',
+    }))
+    const completeToolAuth = mock.fn()
+    await register({ startToolAuth, completeToolAuth })
+
+    await handler({ authMethod: 'manual' }, {})
+
+    assert.strictEqual(startToolAuth.mock.callCount(), 1)
+    assert.deepStrictEqual(startToolAuth.mock.calls[0].arguments, [{ authMethod: 'manual' }])
+  })
+
+  test('When cep_auth_status is called, then it includes canLaunchBrowser in the response status data', async () => {
+    const canLaunchBrowserMock = mock.fn(() => true)
+    const statusHandler = await getHandler('cep_auth_status', {
+      canLaunchBrowser: canLaunchBrowserMock,
+      startToolAuth: mock.fn(),
+      completeToolAuth: mock.fn(),
+    })
+
+    const result = await statusHandler({}, {})
+
+    assert.strictEqual(result.isError, undefined)
+    assert.strictEqual(result.structuredContent.status.canLaunchBrowser, true)
+    assert.strictEqual(canLaunchBrowserMock.mock.callCount(), 1)
   })
 })
