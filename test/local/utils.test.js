@@ -158,15 +158,13 @@ describe('Tool Utils', () => {
       const handler = mock.fn(async () => ({ content: [{ type: 'text', text: 'ok' }] }))
       const homeKey = process.platform === 'win32' ? 'APPDATA' : 'HOME'
       const saved = process.env[homeKey]
-      const savedSsh = process.env.SSH_CONNECTION
       const emptyHome = path.join(
         os.tmpdir(),
         `cep-mcp-empty-home-${process.pid}-${Math.random().toString(16).slice(2)}`,
       )
 
       await fs.mkdir(emptyHome, { recursive: true })
-      // Use Object.assign to bypass require-atomic-updates false positives in tests
-      Object.assign(process.env, { [homeKey]: emptyHome, SSH_CONNECTION: 'true' })
+      process.env[homeKey] = emptyHome
 
       try {
         const tool = guardedToolCall({ handler })
@@ -184,12 +182,6 @@ describe('Tool Utils', () => {
           process.env[homeKey] = saved
         }
 
-        if (savedSsh === undefined) {
-          delete process.env.SSH_CONNECTION
-        } else {
-          process.env.SSH_CONNECTION = savedSsh
-        }
-
         await fs.rm(emptyHome, { recursive: true, force: true })
       }
     })
@@ -198,7 +190,6 @@ describe('Tool Utils', () => {
       const handler = mock.fn(async () => ({ content: [{ type: 'text', text: 'ok' }] }))
       const homeKey = process.platform === 'win32' ? 'APPDATA' : 'HOME'
       const saved = process.env[homeKey]
-      const savedSsh = process.env.SSH_CONNECTION
       const home = path.join(os.tmpdir(), `cep-mcp-expired-home-${process.pid}-${Math.random().toString(16).slice(2)}`)
       const cacheDir = process.platform === 'win32' ? path.join(home, 'cep-mcp') : path.join(home, '.config', 'cep-mcp')
       const cachePath = path.join(cacheDir, 'tokens.json')
@@ -208,8 +199,7 @@ describe('Tool Utils', () => {
       await fs.mkdir(cacheDir, { recursive: true })
       await fs.writeFile(cachePath, JSON.stringify({ access_token: 'stale', expiry_date: expiredAt }), { mode: 0o600 })
 
-      // Use Object.assign to bypass require-atomic-updates false positives in tests
-      Object.assign(process.env, { [homeKey]: home, SSH_CONNECTION: 'true' })
+      process.env[homeKey] = home
 
       try {
         const tool = guardedToolCall({ handler })
@@ -224,12 +214,6 @@ describe('Tool Utils', () => {
           delete process.env[homeKey]
         } else {
           process.env[homeKey] = saved
-        }
-
-        if (savedSsh === undefined) {
-          delete process.env.SSH_CONNECTION
-        } else {
-          process.env.SSH_CONNECTION = savedSsh
         }
 
         await fs.rm(home, { recursive: true, force: true })
@@ -300,6 +284,34 @@ describe('Tool Utils', () => {
         }
 
         await fs.rm(home, { recursive: true, force: true })
+      }
+    })
+
+    test('When guardedToolCall runs with skipAuthCheck: true and no cached token, then it bypasses pre-flight and invokes the handler', async () => {
+      const handler = mock.fn(async () => ({ content: [{ type: 'text', text: 'ok' }] }))
+      const homeKey = process.platform === 'win32' ? 'APPDATA' : 'HOME'
+      const saved = process.env[homeKey]
+      const emptyHome = path.join(
+        os.tmpdir(),
+        `cep-mcp-empty-home-skip-${process.pid}-${Math.random().toString(16).slice(2)}`,
+      )
+
+      await fs.mkdir(emptyHome, { recursive: true })
+      process.env[homeKey] = emptyHome
+
+      try {
+        const tool = guardedToolCall({ handler, skipAuthCheck: true })
+        const result = await tool({}, {})
+        assert.strictEqual(result.content[0].text, 'ok')
+        assert.strictEqual(handler.mock.callCount(), 1)
+      } finally {
+        if (saved === undefined) {
+          delete process.env[homeKey]
+        } else {
+          process.env[homeKey] = saved
+        }
+
+        await fs.rm(emptyHome, { recursive: true, force: true })
       }
     })
   })
