@@ -314,7 +314,7 @@ describe('Chrome Management API', () => {
 
       assert.strictEqual(mockCheck.mock.callCount(), 1)
       assert.strictEqual(mockCheck.mock.calls[0].arguments[0], 'my_customer')
-      assert.ok(result.content[0].text.includes('Chrome Security Insights status is now: `INSIGHTS_DISABLED`'))
+      assert.ok(result.content[0].text.includes('Chrome Security Insights status is: `INSIGHTS_DISABLED`'))
       assert.strictEqual(result.structuredContent.insightsState, 'INSIGHTS_DISABLED')
     })
 

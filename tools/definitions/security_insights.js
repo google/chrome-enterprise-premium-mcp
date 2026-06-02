@@ -78,8 +78,12 @@ Use this to check, enable, or disable the security insights feature customer-wid
             formatFn: raw => {
               const state = raw?.insightsState || 'INSIGHTS_ENABLEMENT_STATE_UNSPECIFIED'
               const sc = { insightsState: state }
+              const summaryText =
+                action === 'check'
+                  ? `Chrome Security Insights status is: \`${state}\``
+                  : `Chrome Security Insights status is now: \`${state}\``
               return formatToolResponse({
-                summary: `Chrome Security Insights status is now: \`${state}\``,
+                summary: summaryText,
                 data: sc,
                 structuredContent: sc,
               })
