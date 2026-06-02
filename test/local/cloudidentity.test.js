@@ -145,7 +145,7 @@ describe('Cloud Identity API', () => {
       })
     })
 
-    test('When dataMasking uses predefined detectors, then it passes masking parameters to createDlpRule', async () => {
+    test('When dataMasking uses predefined masking detectors, then it passes masking parameters to createDlpRule', async () => {
       const mockCreateDlpRule = mock.fn(async () => ({ response: { name: 'policies/123' } }))
       const handler = await setupCloudIdentityHandler(server, 'create_chrome_dlp_rule', {
         createDlpRule: mockCreateDlpRule,
