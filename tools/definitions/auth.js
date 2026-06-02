@@ -186,7 +186,6 @@ export function registerAuthTools(server, options, sessionState) {
         return successResponse(result)
       }
       return awaitingResponse(result)
-
     } catch (err) {
       logger.error(`${TAGS.MCP} cep_auth failed:`, err?.message || err)
       const message = err?.message || String(err)
