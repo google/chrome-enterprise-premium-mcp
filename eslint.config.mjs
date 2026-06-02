@@ -42,6 +42,7 @@ const copyrightHeader = [
 export default [
   {
     ignores: [
+
       '**/dist',
       '**/node_modules',
       '**/venv',
@@ -50,6 +51,7 @@ export default [
       '**/.stryker-tmp/**',
       'results/**',
       '.worktrees/**',
+
       '.claude/**',
       '.gemini/**',
       '.opencode/**',
