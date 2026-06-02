@@ -220,7 +220,10 @@ describe('cep_auth Tool', () => {
     assert.strictEqual(result.structuredContent.browserOpened, true)
     assert.match(result.content[0].text, /A browser tab should have opened/)
     assert.match(result.content[0].text, /Once you sign in and see the "Signed in" success message/)
-    assert.match(result.content[0].text, /If the browser did not open, run `cep_auth` with `authMethod: 'manual'`/)
+    assert.match(
+      result.content[0].text,
+      /If the browser did not open, please ask your agent to help you sign in manually/,
+    )
     // Verify it does NOT contain the long manual instructions steps
     assert.ok(!result.content[0].text.includes('1. Open the URL below'))
     assert.ok(!result.content[0].text.includes('2. Sign in with your Google account'))
