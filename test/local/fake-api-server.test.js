@@ -247,7 +247,7 @@ describe('Fake API Server', () => {
       assert.strictEqual(res.status, 200)
       const html = await res.text()
       assert.ok(html.includes('Administrator Privilege Definitions'))
-      assert.ok(html.includes('Security Center Admin'))
+      assert.ok(html.includes('View Chrome Insights Settings'))
       assert.ok(html.includes('DLP Administrator'))
     })
 

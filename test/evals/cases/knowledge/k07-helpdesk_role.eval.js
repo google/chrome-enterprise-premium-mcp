@@ -18,12 +18,12 @@ export default {
   id: 'k07',
   priority: 'P1',
   tags: ['iam', 'roles'],
-  requiredPatterns: ['Security Center Admin', 'DLP'],
+  requiredPatterns: ['Chrome Insights Settings', 'DLP'],
   prompt: `Our Helpdesk team needs to view CEP security dashboards and adjust DLP rules,
-but we cannot give them 'Super Admin' access. What roles are required?`,
-  goldenResponse: `Use delegated administrator roles rather than Super Admin:
+but we cannot give them 'Super Admin' access. What privileges/roles are required?`,
+  goldenResponse: `Use delegated administrator privileges rather than Super Admin:
 
-- **Viewing dashboards:** Assign the Security Center Admin (Custom Role).
+- **Viewing dashboards:** Assign either 'View Chrome Insights Settings', 'Manage Chrome Insights Settings', or the 'Chrome Enterprise Security Service' (APP_ADMIN) privilege.
 - **Managing DLP rules:** Assign the DLP Administrator (Custom Role).`,
-  judgeInstructions: `The agent must recommend delegated roles or custom roles for dashboard viewing and DLP management. The agent MUST specifically mention 'Security Center Admin' and either 'DLP Administrator' or 'Cloud BeyondCorp Admin'.`,
+  judgeInstructions: `The agent must recommend delegated privileges or custom roles for dashboard viewing and DLP management. The agent MUST specifically mention 'View Chrome Insights Settings' (or 'Manage Chrome Insights Settings' / 'Chrome Enterprise Security Service') and either 'DLP Administrator' or 'Cloud BeyondCorp Admin'.`,
 }

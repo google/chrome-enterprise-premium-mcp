@@ -18,7 +18,7 @@ _When these topics appear in search results, ensure these specific facts are pre
 
 - **Pricing**: $6 USD list price; Credit Card support; Volume discounts.
 - **Trial**: 60-day; Workspace/Cloud Console start; NO automatic charge.
-- **IAM Roles**: 'Cloud BeyondCorp Admin' (Org-level) for purchase; 'Security Center Admin'/'Mobile Admin' for dashboards; 'DLP Administrator' for rules.
+- **IAM Roles**: 'Cloud BeyondCorp Admin' (Org-level) for purchase; 'View/Manage Chrome Insights Settings' or 'Chrome Enterprise Security Service' (APP_ADMIN) for dashboards; 'DLP Administrator' for rules.
 - **Syncing**: macOS user profiles may require manually clicking 'Sync Now' to pull new extension policies; CEP license assignment changes can take up to 24h to propagate.
 - **Deployment**: 'ExtensionInstallForcelist' policy for EV; Native Helper MSI/PKG required.
 - **Client Tools**: `chrome://policy` for verification; `chrome://safe-browsing/#tab-reporting` for logs.
