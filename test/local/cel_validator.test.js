@@ -203,7 +203,9 @@ describe('CEL Validator', () => {
         ['URL_NAVIGATION'],
       )
       assert.strictEqual(result.isValid, false)
-      assert.ok(result.errors.some(e => e.includes('ONLY regex detectors are supported for data masking')))
+      assert.ok(
+        result.errors.some(e => e.includes('only custom regular expressions and predefined detectors are supported')),
+      )
     })
 
     test('When customMessage contains unauthorized HTML tags, then it fails validation', () => {
