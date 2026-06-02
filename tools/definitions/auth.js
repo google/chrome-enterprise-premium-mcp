@@ -275,15 +275,7 @@ function awaitingResponse(result) {
       'Once you sign in and see the "Signed in" success message, you can close that tab and return here to continue.',
     )
     lines.push('')
-    lines.push('If the browser did not open, you can click or copy this link to sign in manually:')
-    lines.push('')
-    if (supportsHyperlinks()) {
-      lines.push(`🔗 ${osc8(result.authUrl, 'Click here to open the Google Sign-in page')}`)
-      lines.push('')
-    }
-    lines.push(result.authUrl)
-    lines.push('')
-    lines.push('After signing in, paste the redirect URL back as the `redirectUrl` argument.')
+    lines.push("If the browser did not open, run `cep_auth` with `authMethod: 'manual'` to get a copy-paste link.")
   } else {
     if (result.browserAttempted) {
       lines.push('Failed to open browser automatically. Please complete sign-in manually:')
