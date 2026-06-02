@@ -123,7 +123,7 @@ describe('CEL Validator', () => {
   test('When an invalid predefined detector is used, then it fails validation', () => {
     const result = validateCelCondition("all_content.matches_dlp_detector('INVALID_DETECTOR')", ['FILE_UPLOAD'])
     assert.strictEqual(result.isValid, false)
-    assert.ok(result.errors.some(e => e.includes('INVALID_DETECTOR') && e.includes('predefined DLP detector')))
+    assert.ok(result.errors.some(e => e.includes('INVALID_DETECTOR') && e.includes('data type DLP detector')))
   })
 
   test('When a predefined detector is used with parameters, then it fails validation', () => {
