@@ -38,6 +38,7 @@ import {
   MCP_SAFETY_CONSTRAINTS,
   POLICY_STATES,
   MASK_TYPES,
+  PREDEFINED_DETECTORS,
 } from '../../lib/util/chrome_dlp_constants.js'
 
 const triggerList = Object.entries(CHROME_TRIGGERS)
@@ -133,9 +134,10 @@ To ensure technical accuracy and verify trigger compatibility, you should retrie
                     .enum(Object.values(MASK_TYPES).map(m => m.value))
                     .describe(`The type of masking to apply:\n${maskTypeList}`),
                   resourceName: z
-                    .string()
-                    .startsWith('policies/')
-                    .describe('The resource name of the detector (e.g. policies/akajj264apk5psphei)'),
+                    .union([z.string().startsWith('policies/'), z.enum(PREDEFINED_DETECTORS)])
+                    .describe(
+                      'The resource name or predefined detector name (e.g. policies/akajj264apk5psphei or CREDIT_CARD_NUMBER)',
+                    ),
                   displayName: z.string().describe('The display name for the detector in the UI.'),
                 }),
               )

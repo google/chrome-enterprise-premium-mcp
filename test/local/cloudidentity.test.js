@@ -145,6 +145,46 @@ describe('Cloud Identity API', () => {
       })
     })
 
+    test('When dataMasking uses predefined detectors, then it passes masking parameters to createDlpRule', async () => {
+      const mockCreateDlpRule = mock.fn(async () => ({ response: { name: 'policies/123' } }))
+      const handler = await setupCloudIdentityHandler(server, 'create_chrome_dlp_rule', {
+        createDlpRule: mockCreateDlpRule,
+      })
+
+      await handler(
+        {
+          customerId: 'C0123',
+          orgUnitId: 'ou1',
+          displayName: 'Masking Rule Predefined',
+          triggers: ['URL_NAVIGATION'],
+          condition: "url.contains('test')",
+          action: 'AUDIT',
+          dataMasking: {
+            regexDetectors: [
+              {
+                maskType: 'MASK_TYPE_REDACT',
+                resourceName: 'CREDIT_CARD_NUMBER',
+                displayName: 'Credit Cards',
+              },
+            ],
+          },
+        },
+        { requestInfo: {} },
+      )
+
+      assert.strictEqual(mockCreateDlpRule.mock.callCount(), 1)
+      const passedConfig = mockCreateDlpRule.mock.calls[0].arguments[2]
+      assert.deepStrictEqual(passedConfig.action.chromeAction.auditOnly.actionParams.dataMasking, {
+        regexDetector: [
+          {
+            maskType: 'MASK_TYPE_REDACT',
+            resourceName: 'CREDIT_CARD_NUMBER',
+            displayName: 'Credit Cards',
+          },
+        ],
+      })
+    })
+
     test('When condition is not provided, then it is omitted from the rule configuration', async () => {
       const mockCreateDlpRule = mock.fn(async () => ({ response: { name: 'policies/123' } }))
       const handler = await setupCloudIdentityHandler(server, 'create_chrome_dlp_rule', {
