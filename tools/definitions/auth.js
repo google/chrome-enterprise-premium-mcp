@@ -113,6 +113,7 @@ export function registerAuthTools(server, options, sessionState) {
     {
       description:
         'Sign in to Google for the Chrome Enterprise Premium (CEP) MCP server. ' +
+        'Before calling this tool, you MUST warn the user that this will open a browser tab or prompt them to sign in, and ask for their confirmation. ' +
         'Use this tool ONLY for the CEP MCP server. The Google Workspace MCP server has its own separate auth tool—do not use this one for that. ' +
         `Requests the CEP scope set: ${scopeSummary}. ` +
         'Call with no arguments to start the sign-in. ' +
