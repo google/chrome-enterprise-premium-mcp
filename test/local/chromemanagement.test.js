@@ -222,8 +222,35 @@ describe('Chrome Management API', () => {
           },
         }
       }
-      await client.enableSecurityInsights('C0123', 'TEST_BEARER_TOKEN')
+      await client.enableSecurityInsights('C0123', null, 'TEST_BEARER_TOKEN')
       assert.strictEqual(observedAuth, 'TEST_BEARER_TOKEN')
+    })
+
+    test('When enableSecurityInsights is called with targetOus, then it passes them in the requestBody to enable', async () => {
+      const { ChromeManagementClient } = await import('../../lib/api/chrome_management_client.js')
+      const client = new ChromeManagementClient()
+      let observedRequest = null
+      client.getClient = async () => {
+        return {
+          customers: {
+            enterprise: {
+              securityInsights: {
+                enable: async req => {
+                  observedRequest = req
+                  return { data: { insightsState: 'INSIGHTS_ENABLED' } }
+                },
+              },
+            },
+          },
+        }
+      }
+      await client.enableSecurityInsights('C0123', ['ou1', 'ou2'])
+      assert.deepStrictEqual(observedRequest, {
+        name: 'customers/C0123/enterprise/securityInsights',
+        requestBody: {
+          targetOus: ['ou1', 'ou2'],
+        },
+      })
     })
   })
 })
