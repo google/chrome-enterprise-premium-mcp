@@ -136,7 +136,7 @@ To ensure technical accuracy and verify trigger compatibility, you should retrie
                   resourceName: z
                     .union([z.string().startsWith('policies/'), z.enum(MASKING_DETECTORS)])
                     .describe(
-                      'The resource name of the custom detector (e.g. policies/akajj264apk5psphei) or a shorthand masking detector (e.g. cc-number, ssn, email)',
+                      'The resource name of the custom detector (e.g. policies/akajj264apk5psphei) or a data masking detector (e.g. cc-number, ssn, email)',
                     ),
                   displayName: z.string().describe('The display name for the detector in the UI.'),
                 }),
@@ -145,7 +145,7 @@ To ensure technical accuracy and verify trigger compatibility, you should retrie
           })
           .optional()
           .describe(
-            `Data masking configurations (supports custom regular expressions and shorthand masking detectors). ${ACTION_PARAMETER_CONSTRAINTS.DATA_MASKING_SUPPORT}`,
+            `Data masking configurations (supports custom regular expressions and data masking detectors). ${ACTION_PARAMETER_CONSTRAINTS.DATA_MASKING_SUPPORT}`,
           ),
       },
       outputSchema: z.looseObject({
