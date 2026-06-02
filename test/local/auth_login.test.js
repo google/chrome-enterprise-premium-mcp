@@ -324,6 +324,52 @@ describe('startToolAuth', () => {
       .catch(() => false)
     assert.strictEqual(exists, false)
   })
+
+  test('When a loopback callback fires after the pending session has been cleared or reset, it does not write the cache or proceed', async () => {
+    const { client, calls } = makeFakeOAuth2Client()
+    let receivedState
+    let resolveCode
+    const codePromise = new Promise(resolve => {
+      resolveCode = resolve
+    })
+    const server = makeFakeServer({ codePromise })
+    const captureClient = {
+      ...client,
+      generateAuthUrl(opts) {
+        receivedState = opts.state
+        return client.generateAuthUrl(opts)
+      },
+    }
+    await startToolAuth({
+      env: { SSH_CONNECTION: 'x' },
+      browserAvailable: () => false,
+      openBrowser: async () => false,
+      startServer: async () => server,
+      oauth2ClientFactory: () => captureClient,
+      configResolver: () => FAKE_CONFIG,
+      cachePath,
+      scopes: ['scope-a'],
+    })
+
+    // Manually clear the pending session (simulating expiration, clear, or restart)
+    await _resetPendingAuthForTests()
+
+    // Trigger callback of the old session
+    resolveCode({ code: 'old-code', state: receivedState })
+
+    // Wait for background execution
+    await new Promise(resolve => {
+      setTimeout(resolve, 50)
+    })
+
+    // Assert that token exchange was NOT called because the session was reset!
+    assert.strictEqual(calls.getToken.length, 0)
+    const exists = await fs
+      .stat(cachePath)
+      .then(() => true)
+      .catch(() => false)
+    assert.strictEqual(exists, false)
+  })
 })
 
 describe('completeToolAuth', () => {
