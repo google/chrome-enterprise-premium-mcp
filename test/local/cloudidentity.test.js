@@ -163,7 +163,7 @@ describe('Cloud Identity API', () => {
             regexDetectors: [
               {
                 maskType: 'MASK_TYPE_REDACT',
-                resourceName: 'CREDIT_CARD_NUMBER',
+                resourceName: 'cc-number',
                 displayName: 'Credit Cards',
               },
             ],
@@ -178,7 +178,7 @@ describe('Cloud Identity API', () => {
         regexDetector: [
           {
             maskType: 'MASK_TYPE_REDACT',
-            resourceName: 'CREDIT_CARD_NUMBER',
+            resourceName: 'cc-number',
             displayName: 'Credit Cards',
           },
         ],
