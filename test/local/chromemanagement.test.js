@@ -223,13 +223,16 @@ describe('Chrome Management API', () => {
       client.getClient = async authToken => {
         observedAuth = authToken
         return {
-          context: {
-            _options: {
-              auth: {
-                request: async () => ({ data: { insightsState: 'INSIGHTS_DISABLED' } }),
+          client: {
+            context: {
+              _options: {
+                auth: {
+                  request: async () => ({ data: { insightsState: 'INSIGHTS_DISABLED' } }),
+                },
               },
             },
           },
+          source: 'mock',
         }
       }
       const result = await client.checkSecurityInsightsStatus('my_customer', 'TEST_BEARER_TOKEN')
@@ -248,16 +251,19 @@ describe('Chrome Management API', () => {
       client.getClient = async authToken => {
         observedAuth = authToken
         return {
-          context: {
-            _options: {
-              auth: {
-                request: async req => {
-                  observedData = req.data
-                  return { data: { insightsState: 'INSIGHTS_ENABLED' } }
+          client: {
+            context: {
+              _options: {
+                auth: {
+                  request: async req => {
+                    observedData = req.data
+                    return { data: { insightsState: 'INSIGHTS_ENABLED' } }
+                  },
                 },
               },
             },
           },
+          source: 'mock',
         }
       }
       const result = await client.enableSecurityInsights('my_customer', ['/corp'], 'TEST_BEARER_TOKEN')
@@ -276,13 +282,16 @@ describe('Chrome Management API', () => {
       client.getClient = async authToken => {
         observedAuth = authToken
         return {
-          context: {
-            _options: {
-              auth: {
-                request: async () => ({ data: { insightsState: 'INSIGHTS_DISABLED' } }),
+          client: {
+            context: {
+              _options: {
+                auth: {
+                  request: async () => ({ data: { insightsState: 'INSIGHTS_DISABLED' } }),
+                },
               },
             },
           },
+          source: 'mock',
         }
       }
       const result = await client.disableSecurityInsights('my_customer', 'TEST_BEARER_TOKEN')
