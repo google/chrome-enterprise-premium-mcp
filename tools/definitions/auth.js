@@ -253,6 +253,7 @@ export function registerAuthTools(server, options, sessionState) {
           })
         },
         skipAutoResolve: true,
+        skipAuthCheck: true,
       },
       options,
       sessionState,
@@ -282,6 +283,7 @@ export function registerAuthTools(server, options, sessionState) {
           })
         },
         skipAutoResolve: true,
+        skipAuthCheck: true,
       },
       options,
       sessionState,

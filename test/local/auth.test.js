@@ -136,6 +136,27 @@ describe('Auth', () => {
     }
   })
 
+  test('When no tokens exist and we are in stdio mode, then getAuthClient throws immediately without opening browser', async () => {
+    const { getAuthClient } = await esmock('../../lib/util/auth.js', {
+      '../../lib/util/gcp.js': {
+        isStdioMode: () => true,
+      },
+      '../../lib/util/credential/token_cache.js': {
+        TokenCache: class {
+          static defaultPath() {
+            return '/tmp/fake-path'
+          }
+          constructor() {}
+          async readEnforcingMode() {
+            return null
+          }
+        },
+      },
+    })
+
+    await assert.rejects(() => getAuthClient(['some-scope']), /Authentication required. Run the `cep_auth` tool/)
+  })
+
   describe('getAuthErrorMessage', () => {
     test('When the error reports SERVICE_DISABLED for a BYO OAuth client owner project, then the remediation lists the required APIs and points at the BYO walkthrough', async () => {
       const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
