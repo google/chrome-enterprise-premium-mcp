@@ -43,33 +43,64 @@ The agent uses the `gemini-3.1-flash-lite-preview` model (defined as `AI_MODEL_N
 
 Follow these steps to run the agent against a real Google Cloud project.
 
-1. Authenticate to `gcloud` with the scope set the MCP server needs:
+### 1. Setup Python Virtual Environment & Install Dependencies
 
-   ```bash
-   gcloud auth application-default login \
-     --scopes=openid,\
-   https://www.googleapis.com/auth/userinfo.email,\
-   https://www.googleapis.com/auth/chrome.management.policy,\
-   https://www.googleapis.com/auth/chrome.management.reports.readonly,\
-   https://www.googleapis.com/auth/chrome.management.profiles.readonly,\
-   https://www.googleapis.com/auth/admin.reports.audit.readonly,\
-   https://www.googleapis.com/auth/admin.directory.orgunit.readonly,\
-   https://www.googleapis.com/auth/admin.directory.customer.readonly,\
-   https://www.googleapis.com/auth/apps.licensing,\
-   https://www.googleapis.com/auth/cloud-identity.policies,\
-   https://www.googleapis.com/auth/service.management \
-     --no-launch-browser
-   ```
+To prevent conflicts with system-level packages, create a local Python virtual environment, activate it, and install the required dependencies (which handles the `google-adk` framework and the necessary `mcp` Python SDK):
 
-   For an OAuth-flow alternative that does not require `gcloud`, run `chrome-enterprise-premium-mcp auth login` from a local checkout (or `npx -y @google/chrome-enterprise-premium-mcp@latest auth login`). For the setup walkthrough, see [`docs/auth-bring-your-own-oauth-client.md`](../../docs/auth-bring-your-own-oauth-client.md).
+```bash
+# Create virtual environment
+python3 -m venv .venv
 
-2. Start the ADK server:
+# Activate virtual environment
+source .venv/bin/activate
 
-   ```bash
-   adk web --host 0.0.0.0 adk/
-   ```
+# Install dependencies
+pip install -r adk/cep_agent/requirements.txt
+```
 
-   The ADK server starts locally. Open the printed URL in a browser to interact with the agent.
+### 2. Authenticate the MCP Server
+
+The MCP server must be authorized to call Google Workspace admin APIs on your behalf.
+
+Run the standard cached OAuth login flow from the repository root:
+
+```bash
+npm run auth:login
+```
+
+_(If you installed the server from the npm registry instead of cloning the repository, run `npx -y @google/chrome-enterprise-premium-mcp@latest auth login` instead)._
+
+For enterprise environments that require using a custom OAuth client or service account, see the configuration steps in [`docs/auth-bring-your-own-oauth-client.md`](../../docs/auth-bring-your-own-oauth-client.md).
+
+### 3. Configure Gemini LLM Authentication
+
+The ADK Agent requires access to the Gemini API to serve as its conversational engine. You can authenticate using either Vertex AI (leveraging standard Google Cloud credentials) or a direct Google AI Studio API Key:
+
+**Option A: Vertex AI (Recommended for corporate workstations)**
+Ensure your workstation is authenticated to GCP and export these environment variables:
+
+```bash
+gcloud auth application-default login
+export GOOGLE_GENAI_USE_VERTEXAI=1
+export GOOGLE_CLOUD_PROJECT="YOUR_GCP_PROJECT_ID"
+```
+
+**Option B: Google AI Studio API Key**
+Generate a key from AI Studio and export it:
+
+```bash
+export GEMINI_API_KEY="YOUR_AI_STUDIO_API_KEY"
+```
+
+### 4. Start the ADK Server
+
+While your virtual environment is active, launch the ADK web interface:
+
+```bash
+adk web --host 0.0.0.0 adk/
+```
+
+The ADK server starts locally. Open the printed URL in a browser to interact with the agent.
 
 ## Usage
 
