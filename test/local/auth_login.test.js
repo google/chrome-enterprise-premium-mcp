@@ -230,9 +230,9 @@ describe('startToolAuth', () => {
       },
     }
     const result = await startToolAuth({
-      env: { SSH_CONNECTION: 'x' },
-      browserAvailable: () => false,
-      openBrowser: async () => false,
+      env: {},
+      browserAvailable: () => true,
+      openBrowser: async () => true,
       startServer: async () => server,
       oauth2ClientFactory: () => captureClient,
       configResolver: () => FAKE_CONFIG,
@@ -292,6 +292,41 @@ describe('startToolAuth', () => {
       err => err.code === 'ACCESS_DENIED',
     )
   })
+
+  test('When startToolAuth times out but loopback callback fires later, then it exchanges the code in the background', async () => {
+    const { client, calls } = makeFakeOAuth2Client()
+    let resolveCallback
+    const codePromise = new Promise(resolve => {
+      resolveCallback = resolve
+    })
+    const server = makeFakeServer({ codePromise })
+    const result = await startToolAuth({
+      env: { SSH_CONNECTION: 'x' },
+      browserAvailable: () => false,
+      openBrowser: async () => false,
+      startServer: async () => server,
+      oauth2ClientFactory: () => client,
+      configResolver: () => FAKE_CONFIG,
+      cachePath,
+      scopes: ['scope-a'],
+      awaitCallbackMs: 25,
+    })
+    assert.strictEqual(result.status, 'awaiting')
+    assert.strictEqual(calls.getToken.length, 0)
+
+    const state = new URL(result.authUrl).searchParams.get('state')
+    resolveCallback({ code: 'late-code', state })
+
+    await new Promise(resolve => {
+      setTimeout(resolve, 50)
+    })
+
+    assert.strictEqual(calls.getToken.length, 1)
+    assert.strictEqual(calls.getToken[0].code, 'late-code')
+    const cached = JSON.parse(await fs.readFile(cachePath, 'utf8'))
+    assert.strictEqual(cached.access_token, 'tok-late-code')
+    assert.ok(server.wasStopped())
+  })
 })
 
 describe('completeToolAuth', () => {
@@ -307,7 +342,7 @@ describe('completeToolAuth', () => {
 
   test('When completeToolAuth is called with no pending sign-in, then it rejects with NO_PENDING_AUTH', async () => {
     await assert.rejects(
-      completeToolAuth({ redirectUrl: 'http://127.0.0.1:1/?code=x&state=y' }),
+      completeToolAuth({ redirectUrl: 'http://127.0.0.1:1/?code=x&state=y', cachePath }),
       err => err.code === 'NO_PENDING_AUTH',
     )
   })
@@ -336,6 +371,7 @@ describe('completeToolAuth', () => {
     })
     const result = await completeToolAuth({
       redirectUrl: `http://127.0.0.1:55555/?code=pasted-code&state=${capturedState}`,
+      cachePath,
     })
     assert.strictEqual(result.status, 'completed')
     assert.strictEqual(calls.getToken[0].code, 'pasted-code')
@@ -359,7 +395,7 @@ describe('completeToolAuth', () => {
       awaitCallbackMs: 25,
     })
     await assert.rejects(
-      completeToolAuth({ redirectUrl: 'http://127.0.0.1:1/?code=x&state=wrong' }),
+      completeToolAuth({ redirectUrl: 'http://127.0.0.1:1/?code=x&state=wrong', cachePath }),
       err => err.code === 'STATE_MISMATCH',
     )
     const exists = await fs
@@ -383,7 +419,10 @@ describe('completeToolAuth', () => {
       scopes: ['scope-a'],
       awaitCallbackMs: 25,
     })
-    await assert.rejects(completeToolAuth({ redirectUrl: 'not a url' }), err => err.code === 'BAD_REDIRECT_URL')
+    await assert.rejects(
+      completeToolAuth({ redirectUrl: 'not a url', cachePath }),
+      err => err.code === 'BAD_REDIRECT_URL',
+    )
   })
 
   test('When completeToolAuth receives a redirectUrl carrying an error parameter, then it rejects with the mapped code', async () => {
@@ -409,8 +448,19 @@ describe('completeToolAuth', () => {
       awaitCallbackMs: 25,
     })
     await assert.rejects(
-      completeToolAuth({ redirectUrl: `http://127.0.0.1:1/?error=access_denied&state=${capturedState}` }),
+      completeToolAuth({ redirectUrl: `http://127.0.0.1:1/?error=access_denied&state=${capturedState}`, cachePath }),
       err => err.code === 'ACCESS_DENIED',
     )
+  })
+
+  test('When completeToolAuth is called with a valid cached token, then it returns completed immediately without pending auth', async () => {
+    const future = Date.now() + 3600 * 1000
+    await writeCache(cachePath, { access_token: 'pre-existing-token', expiry_date: future })
+    const result = await completeToolAuth({
+      redirectUrl: 'http://127.0.0.1:1/?code=x&state=y',
+      cachePath,
+    })
+    assert.strictEqual(result.status, 'completed')
+    assert.strictEqual(result.expiresAt.getTime(), future)
   })
 })
