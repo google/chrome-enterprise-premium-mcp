@@ -145,7 +145,7 @@ To ensure technical accuracy and verify trigger compatibility, you should retrie
           })
           .optional()
           .describe(
-            `Data masking configurations (currently only regex detectors are supported). ${ACTION_PARAMETER_CONSTRAINTS.DATA_MASKING_SUPPORT}`,
+            `Data masking configurations (supports custom regular expressions and predefined detectors). ${ACTION_PARAMETER_CONSTRAINTS.DATA_MASKING_SUPPORT}`,
           ),
       },
       outputSchema: z.looseObject({
