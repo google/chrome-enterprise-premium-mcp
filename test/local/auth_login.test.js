@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 import assert from 'node:assert/strict'
-import { describe, test, beforeEach, afterEach } from 'node:test'
+import { describe, test, beforeEach, afterEach, mock } from 'node:test'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import os from 'node:os'
@@ -354,6 +354,54 @@ describe('startToolAuth', () => {
     const cached = JSON.parse(await fs.readFile(cachePath, 'utf8'))
     assert.strictEqual(cached.access_token, 'tok-late-code')
     assert.ok(server.wasStopped())
+  })
+
+  test('When startToolAuth is called with authMethod="manual", then it does not check browserAvailable or attempt browser launch', async () => {
+    const { client } = makeFakeOAuth2Client()
+    const server = makeFakeServer()
+    const browserAvailable = mock.fn(() => true)
+    const openBrowser = mock.fn(async () => true)
+
+    const result = await startToolAuth({
+      authMethod: 'manual',
+      browserAvailable,
+      openBrowser,
+      startServer: async () => server,
+      oauth2ClientFactory: () => client,
+      configResolver: () => FAKE_CONFIG,
+      cachePath,
+      scopes: ['scope-a'],
+    })
+
+    assert.strictEqual(result.status, 'awaiting')
+    assert.strictEqual(result.browserAttempted, false)
+    assert.strictEqual(result.browserOpened, false)
+    assert.strictEqual(browserAvailable.mock.callCount(), 0)
+    assert.strictEqual(openBrowser.mock.callCount(), 0)
+  })
+
+  test('When startToolAuth is called with authMethod="browser", then it attempts browser launch regardless of browserAvailable', async () => {
+    const { client } = makeFakeOAuth2Client()
+    const server = makeFakeServer()
+    const browserAvailable = mock.fn(() => false)
+    const openBrowser = mock.fn(async () => true)
+
+    const result = await startToolAuth({
+      authMethod: 'browser',
+      browserAvailable,
+      openBrowser,
+      startServer: async () => server,
+      oauth2ClientFactory: () => client,
+      configResolver: () => FAKE_CONFIG,
+      cachePath,
+      scopes: ['scope-a'],
+    })
+
+    assert.strictEqual(result.status, 'awaiting')
+    assert.strictEqual(result.browserAttempted, true)
+    assert.strictEqual(result.browserOpened, true)
+    assert.strictEqual(browserAvailable.mock.callCount(), 0)
+    assert.strictEqual(openBrowser.mock.callCount(), 1)
   })
 })
 
