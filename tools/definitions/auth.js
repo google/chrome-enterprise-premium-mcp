@@ -23,7 +23,7 @@ limitations under the License.
 
 import { z } from 'zod'
 import { logger } from '../../lib/util/logger.js'
-import { startToolAuth, completeToolAuth } from '../../lib/util/credential/auth_login.js'
+import { startToolAuth, completeToolAuth, canLaunchBrowser } from '../../lib/util/credential/auth_login.js'
 import { TokenCache } from '../../lib/util/credential/token_cache.js'
 import { oauthFlowCredential } from '../../lib/util/credential/oauth_flow.js'
 import { resolveOAuthClientConfig } from '../../lib/util/credential/oauth_client_config.js'
@@ -71,6 +71,61 @@ function cliFallbackLine(source) {
   )
 }
 
+/* OSC 8 hyperlink: ESC ] 8 ; ; URI ST text ESC ] 8 ; ; ST, where ST is ESC \. */
+const OSC = '\x1b]8;;'
+const ST = '\x1b\x5c'
+
+/**
+ * Detects if the current terminal environment is likely to support OSC 8 hyperlinks.
+ * Checks environment variables FORCE_HYPERLINK, DOMTERM, VTE_VERSION, TERM_PROGRAM,
+ * TERM, and NO_COLOR.
+ * @returns {boolean} True if the terminal likely supports hyperlinks.
+ */
+function supportsHyperlinks() {
+  if (process.env.FORCE_HYPERLINK === '1') {
+    return true
+  }
+  if (process.env.FORCE_HYPERLINK === '0') {
+    return false
+  }
+  if (process.env.NO_COLOR) {
+    return false
+  }
+
+  const env = process.env
+  if (env.DOMTERM) {
+    return true
+  }
+  if (env.TERM_PROGRAM) {
+    const program = env.TERM_PROGRAM.toLowerCase()
+    if (['hyper', 'iterm.app', 'wezterm', 'vscode'].includes(program)) {
+      return true
+    }
+  }
+  if (env.TERM === 'xterm-kitty') {
+    return true
+  }
+  if (env.VTE_VERSION) {
+    const version = parseInt(env.VTE_VERSION, 10)
+    if (version >= 4902) {
+      return true
+    }
+  }
+  return false
+}
+
+/**
+ * Wraps a URL in OSC 8 hyperlink escapes. Modern terminals render the visible
+ * text as a clickable link to the same URL; others show the URL bytes plus
+ * a few stray escape chars but the URL itself remains selectable.
+ * @param {string} url The URL to render as a hyperlink.
+ * @param {string} [label] The visible text label. Defaults to the URL itself.
+ * @returns {string} The OSC 8 wrapped URL.
+ */
+function osc8(url, label = url) {
+  return `${OSC}${url}${ST}${label}${OSC}${ST}`
+}
+
 /**
  * Formats the OAuth probe result into a human-friendly summary string.
  * @param {object} probe The result from oauthFlowCredential().probe().
@@ -113,6 +168,7 @@ export function registerAuthTools(server, options, sessionState) {
     {
       description:
         'Sign in to Google for the Chrome Enterprise Premium (CEP) MCP server. ' +
+        'Before calling this tool, you MUST warn the user that this will open a browser tab or prompt them to sign in, and ask for their confirmation. ' +
         'Use this tool ONLY for the CEP MCP server. The Google Workspace MCP server has its own separate auth tool—do not use this one for that. ' +
         `Requests the CEP scope set: ${scopeSummary}. ` +
         'Call with no arguments to start the sign-in. ' +
@@ -124,6 +180,14 @@ export function registerAuthTools(server, options, sessionState) {
           .describe(
             'The full URL the browser was redirected to after consent (looks like http://127.0.0.1:PORT/?code=...&state=...). Omit to start a fresh sign-in.',
           ),
+        authMethod: z
+          .enum(['auto', 'browser', 'manual'])
+          .optional()
+          .default('auto')
+          .describe(
+            'The authentication method to use: "auto" (attempts browser, falls back to manual), ' +
+              '"browser" (forces opening browser), "manual" (skips browser and directly provides URL for manual copy-paste).',
+          ),
       },
       outputSchema: z.looseObject({
         status: z.enum(['completed', 'awaiting', 'error']),
@@ -133,7 +197,7 @@ export function registerAuthTools(server, options, sessionState) {
         expiresAt: z.string().optional(),
       }),
     },
-    async ({ redirectUrl }, context) => {
+    async ({ redirectUrl, authMethod }, context) => {
       if (context?.requestInfo?.headers?.authorization) {
         const msg =
           'This server received an inbound Bearer token, so sign-in via cep_auth does not apply. ' +
@@ -149,7 +213,10 @@ export function registerAuthTools(server, options, sessionState) {
           const result = await completeToolAuth({ redirectUrl })
           return successResponse(result)
         }
-        const result = await startToolAuth({})
+        const result = await startToolAuth({ authMethod })
+        if (result.status === 'completed') {
+          return successResponse(result)
+        }
         return awaitingResponse(result)
       } catch (err) {
         logger.error(`${TAGS.MCP} cep_auth failed:`, err?.message || err)
@@ -184,6 +251,7 @@ export function registerAuthTools(server, options, sessionState) {
           // Enhance the probe data with friendly names for the user/agent
           const statusReport = {
             ...probe,
+            canLaunchBrowser: canLaunchBrowser(),
             granted: (probe.grantedScopes || []).map(url => OAUTH_SCOPE_REGISTRY[url]?.name || url),
             missing: (probe.missingScopes || []).map(url => OAUTH_SCOPE_REGISTRY[url]?.name || url),
           }
@@ -191,7 +259,7 @@ export function registerAuthTools(server, options, sessionState) {
           return formatToolResponse({
             summary: formatAuthStatusSummary(probe),
             data: { status: statusReport },
-            structuredContent: { status: probe },
+            structuredContent: { status: statusReport },
           })
         },
         skipAutoResolve: true,
@@ -262,21 +330,32 @@ function awaitingResponse(result) {
       'Once you sign in and see the "Signed in" success message, you can close that tab and return here to continue.',
     )
     lines.push('')
-    lines.push('If the browser did not open, you can complete sign-in manually:')
+    lines.push('If the browser did not open, please ask your agent to help you sign in manually.')
   } else {
-    lines.push('I cannot open a browser in this environment. Please complete sign-in manually:')
+    if (result.browserAttempted) {
+      lines.push('Failed to open browser automatically. Please complete sign-in manually:')
+    } else {
+      lines.push('I cannot open a browser in this environment. Please complete sign-in manually:')
+    }
+    lines.push('')
+    lines.push('1. Open the URL below in your local browser:')
+    lines.push('')
+    if (supportsHyperlinks()) {
+      lines.push(`🔗 ${osc8(result.authUrl, 'Click here to open the Google Sign-in page in your browser')}`)
+      lines.push('')
+      lines.push('Or copy and paste this URL if the link above does not work:')
+      lines.push('')
+    }
+    lines.push(result.authUrl)
+    lines.push('')
+    lines.push(
+      '2. Sign in with your Google account. After signing in, your browser will redirect to a 127.0.0.1 address and show a "Connection Refused" error—this is expected.',
+    )
+    lines.push("3. Copy that entire new address from your browser's address bar and paste it back here.")
+    lines.push('')
+    lines.push(cliFallbackLine(resolveOAuthClientConfig().source))
   }
 
-  lines.push('1. Open the URL below in your local browser:')
-  lines.push('')
-  lines.push(result.authUrl)
-  lines.push('')
-  lines.push(
-    '2. Sign in with your Google account. After signing in, your browser will redirect to a 127.0.0.1 address and show a "Connection Refused" error—this is expected.',
-  )
-  lines.push("3. Copy that entire new address from your browser's address bar and paste it back here.")
-  lines.push('')
-  lines.push(cliFallbackLine(resolveOAuthClientConfig().source))
   const expiresAt = result.expiresAt instanceof Date ? result.expiresAt.toISOString() : undefined
   return {
     content: [{ type: 'text', text: lines.join('\n') }],
