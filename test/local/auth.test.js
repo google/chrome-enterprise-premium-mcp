@@ -223,7 +223,8 @@ describe('Auth', () => {
       error.status = 401
       const msg = getAuthErrorMessage(error, 'bearer')
       assert.match(msg, /inbound Bearer token has expired/)
-      assert.match(msg, /Re-authenticate through your MCP client/)
+      assert.match(msg, /re-authenticate or refresh the connection/)
+      assert.match(msg, /Gemini CLI/)
     })
 
     test('When source is bearer and status is 403, then it returns Bearer principal lacks permissions message', async () => {
@@ -242,6 +243,26 @@ describe('Auth', () => {
       const msg = getAuthErrorMessage(error, 'provided')
       assert.match(msg, /caller-provided custom AuthClient/)
       assert.match(msg, /expired credentials/)
+    })
+
+    test('When source is bearer and status is 403 and API is disabled on default project, then it returns 1P API disabled message', async () => {
+      const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
+      const error = new Error('API has not been used in project 947770278602')
+      error.status = 403
+      const msg = getAuthErrorMessage(error, 'bearer')
+      assert.match(msg, /default Google-managed 1P OAuth project/)
+      assert.match(msg, /reach out to a Chrome Enterprise Premium team member/)
+      assert.match(msg, /enable the missing API on project 947770278602/)
+    })
+
+    test('When source is bearer and status is 403 and API is disabled on custom project, then it returns BYO API disabled message', async () => {
+      const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
+      const error = new Error('API has not been used in project 12345')
+      error.status = 403
+      const msg = getAuthErrorMessage(error, 'bearer')
+      assert.match(msg, /owns your OAuth client/)
+      assert.match(msg, /ask your Google Cloud administrator to enable/)
+      assert.doesNotMatch(msg, /gcloud services enable/)
     })
   })
 })
