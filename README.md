@@ -46,7 +46,7 @@ Restart your MCP client, then ask the agent to perform a check, for example:
 > "List my Chrome Enterprise Premium DLP rules"
 
 > [!NOTE]
-> **Authentication:** The first time you run a query that calls a tool, the agent will prompt you to sign in.
+> **Authentication:** The first time you run a query that calls a tool requiring authentication, the agent will prompt you to sign in.
 >
 > - **Desktop:** A browser tab will open automatically on Google's consent screen.
 > - **Headless/Remote:** If you are on SSH, Cloud Shell, or a container, the agent will provide a consent URL. Open it locally, sign in, and paste the redirect URL back to the agent in the chat.
