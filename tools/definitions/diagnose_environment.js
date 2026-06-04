@@ -142,6 +142,21 @@ function computeIssues(data) {
     })
   }
 
+  if (data.securityInsights?.insightsState === 'INSIGHTS_DISABLED') {
+    issues.push({
+      severity: 'high',
+      component: 'securityInsights',
+      message:
+        'Chrome Security Insights is disabled. Threat events, file scanning, and security telemetry reporting are inactive.',
+    })
+  } else if (data.securityInsights?.insightsState === 'INSIGHTS_ENABLEMENT_STATE_UNSPECIFIED') {
+    issues.push({
+      severity: 'medium',
+      component: 'securityInsights',
+      message: 'Chrome Security Insights status is unspecified or could not be retrieved.',
+    })
+  }
+
   return issues
 }
 
@@ -180,15 +195,26 @@ async function fetchEnvironment(
   customerId,
   authToken,
 ) {
-  const [customerData, orgUnitsData, subscriptionData, dlpPolicies, detectorPolicies, browserVersions] =
-    await Promise.all([
-      adminSdkClient.getCustomerId(authToken),
-      adminSdkClient.listOrgUnits({ customerId }, authToken),
-      adminSdkClient.checkCepSubscription(customerId, authToken),
-      cloudIdentityClient.listDlpRules(authToken),
-      cloudIdentityClient.listDetectors(authToken),
-      chromeManagementClient.countBrowserVersions(customerId, null, authToken),
-    ])
+  const [
+    customerData,
+    orgUnitsData,
+    subscriptionData,
+    dlpPolicies,
+    detectorPolicies,
+    browserVersions,
+    securityInsights,
+  ] = await Promise.all([
+    adminSdkClient.getCustomerId(authToken),
+    adminSdkClient.listOrgUnits({ customerId }, authToken),
+    adminSdkClient.checkCepSubscription(customerId, authToken),
+    cloudIdentityClient.listDlpRules(authToken),
+    cloudIdentityClient.listDetectors(authToken),
+    chromeManagementClient.countBrowserVersions(customerId, null, authToken),
+    chromeManagementClient.checkSecurityInsightsStatus(customerId, authToken).catch(err => {
+      logger.error(`${TAGS.API} Error fetching security insights status in diagnosis:`, err)
+      return { insightsState: 'INSIGHTS_ENABLEMENT_STATE_UNSPECIFIED', error: true }
+    }),
+  ])
 
   const orgUnits = orgUnitsData?.organizationUnits || []
   const rootOU = orgUnits.find(ou => ou.orgUnitPath === '/') || orgUnits[0]
@@ -271,7 +297,17 @@ async function fetchEnvironment(
     }
   }
 
-  return { customer, orgUnits, subscription, versions, allDlpRules, allDetectors, connectors, sebExtension }
+  return {
+    customer,
+    orgUnits,
+    subscription,
+    versions,
+    allDlpRules,
+    allDetectors,
+    connectors,
+    sebExtension,
+    securityInsights,
+  }
 }
 
 /**
@@ -347,7 +383,17 @@ Use 'limit' and 'offset' for pagination on large datasets.`,
  * @returns {object} The formatted tool response for the agent to present to the user
  */
 function buildSummaryResponse(env) {
-  const { customer, orgUnits, subscription, versions, allDlpRules, allDetectors, connectors, sebExtension } = env
+  const {
+    customer,
+    orgUnits,
+    subscription,
+    versions,
+    allDlpRules,
+    allDetectors,
+    connectors,
+    sebExtension,
+    securityInsights,
+  } = env
 
   const activeRules = allDlpRules.filter(r => r.state === 'ACTIVE')
   const inactiveRules = allDlpRules.filter(r => r.state !== 'ACTIVE')
@@ -375,6 +421,7 @@ function buildSummaryResponse(env) {
     detectors: { total: allDetectors.length },
     connectors,
     sebExtension,
+    securityInsights,
     browserVersions: { total: versions.length, deviceCount: totalDevices },
     issues: [],
   }
@@ -390,6 +437,13 @@ function buildSummaryResponse(env) {
   summary += `**Customer:** ${customer.customerId} (${customer.domain || 'unknown domain'})\n`
   summary += `**Org Units:** ${orgUnits.length}\n`
   summary += `**CEP Subscription:** ${subscription.isActive ? `Active (${subscription.assignmentCount} licenses)` : 'Not active'}\n`
+  summary += `**Security Insights:** ${
+    securityInsights?.insightsState === 'INSIGHTS_ENABLED'
+      ? 'Enabled'
+      : securityInsights?.insightsState === 'INSIGHTS_DISABLED'
+        ? 'Disabled'
+        : 'Unknown/Unspecified'
+  }\n`
   summary += `**DLP Rules:** ${allDlpRules.length} total (${activeRules.length} active: ${dlpRuleSummary.byAction.block} block, ${dlpRuleSummary.byAction.warn} warn, ${dlpRuleSummary.byAction.audit} audit, ${dlpRuleSummary.byAction.watermark} watermark)\n`
   summary += `**Detectors:** ${allDetectors.length}\n`
   summary += `**Browser Versions:** ${versions.length} versions across ${totalDevices} devices\n`
@@ -401,7 +455,12 @@ function buildSummaryResponse(env) {
     summary += `**Result: ${issueCount} issue(s) found** (${critical} critical, ${high} high, ${medium} medium)\n\n`
     for (const issue of sc.issues) {
       const icon = issue.severity === 'critical' ? '🔴' : issue.severity === 'high' ? '🟠' : '🟡'
-      summary += `${icon} **${issue.severity.toUpperCase()}** (${issue.component}): ${issue.message}\n`
+      let remediation = ''
+      if (issue.component === 'securityInsights' && issue.severity === 'high') {
+        remediation =
+          ' -> Action: Use the `security_insights` tool to enable this feature (e.g. `security_insights enable`).'
+      }
+      summary += `${icon} **${issue.severity.toUpperCase()}** (${issue.component}): ${issue.message}${remediation}\n`
     }
   }
 
