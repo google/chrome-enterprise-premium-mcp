@@ -44,10 +44,10 @@ area:security:
           - 'tools/utils/wrapper.js'
           - 'SECURITY.md'
 
-# Dependency changes (package.json, lockfile)
+# Dependency changes (package.json, lockfile, Dockerfile base image)
 dependencies:
   - changed-files:
-      - any-glob-to-any-file: ['package.json', 'package-lock.json']
+      - any-glob-to-any-file: ['package.json', 'package-lock.json', 'Dockerfile', '.dockerignore']
 
 # Gemini extension integration
 area:gemini-extension:
