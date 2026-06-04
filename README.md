@@ -45,9 +45,9 @@ Restart your MCP client, then ask the agent to perform a check, for example:
 
 > "How can you help me use Chrome Enterprise Premium?"
 
-> "List my Chrome Enterprise Premium DLP rules"
-
 > "How do I set up a rule to block uploads of credit card numbers?"
+
+> "List my Chrome Enterprise Premium DLP rules"
 
 > [!NOTE]
 > **Authentication:** The first time you run a query that calls a tool requiring authentication, the agent will prompt you to sign in.
