@@ -132,3 +132,7 @@ For deeper insights into the testing infrastructure and evaluations:
 
 - **Evaluations Framework:** To evaluate Gemini agent behavior against a fake backend (graded by deterministic checks and an LLM judge), see the [Evaluations Guide](test/evals/README.md).
 - **Test Suite & Runner Layout:** For a detailed walkthrough of the test suite structure, including instructions on how to write new unit and integration tests, see the [Testing README](test/README.md).
+
+### 7. Codebase Architecture
+
+For details on the codebase layers (API clients, tools, server entry point), design patterns, and test harness architecture, see the [Architecture Guide](docs/architecture.md).
