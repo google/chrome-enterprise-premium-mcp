@@ -35,3 +35,6 @@ session.db
 .adk/
 
 .DS_Store
+
+# Generated compiled docs
+lib/knowledge/compiled_docs.js
