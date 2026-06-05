@@ -32,9 +32,8 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { SetLevelRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import fs from 'node:fs/promises'
-import { readFileSync } from 'node:fs'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-const pkg = JSON.parse(readFileSync(fileURLToPath(new URL('./package.json', import.meta.url)), 'utf8'))
+import pkg from './package.json' with { type: 'json' }
 
 import { buildServerInstructions } from './lib/knowledge/instructions.js'
 import { registerTools } from './tools/index.js'
