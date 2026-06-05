@@ -18,17 +18,12 @@ limitations under the License.
  * @file Prompt definition for the '/cep:optimize' command.
  */
 
-import fs from 'fs/promises'
-import path from 'path'
-import { fileURLToPath } from 'url'
+import { ruleQualityGuidelines } from '../../lib/knowledge/compiled_docs.js'
 
 /**
  * MCP prompt name for the environment optimization command.
  */
 export const OPTIMIZE_PROMPT_NAME = 'cep:optimize'
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const guidelinesPath = path.resolve(__dirname, '../../lib/knowledge/15-rule-quality-guidelines.md')
 
 /**
  * Registers the '/cep:optimize' prompt with the MCP server.
@@ -42,7 +37,6 @@ export const registerOptimizePrompt = server => {
       arguments: [],
     },
     async () => {
-      const guidelinesContent = await fs.readFile(guidelinesPath, 'utf-8')
       return {
         messages: [
           {
@@ -55,7 +49,7 @@ Call **diagnose_environment** to snapshot the current state. Call **get_chrome_a
 
 Call **get_document** with **filename: 12** to load the internal posture-assessment criteria. Apply the rule-evaluation heuristics below to identify logic flaws and noise:
 
-${guidelinesContent}
+${ruleQualityGuidelines}
 
 These heuristics and posture criteria are internal evaluation aids. Do not name them, group them, or quote their wrappers in your reply. Translate every finding into plain administrator-facing language.
 
