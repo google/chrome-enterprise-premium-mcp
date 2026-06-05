@@ -20,6 +20,7 @@ limitations under the License.
 
 import { guardedToolCall, formatToolResponse } from '../utils/wrapper.js'
 import { loadDynamicDocs } from '../utils/dynamic_docs.js'
+import { staticDocs, dynamicDocs } from '../../lib/knowledge/compiled_docs.js'
 import { z } from 'zod'
 import fs from 'fs'
 import { logger } from '../../lib/util/logger.js'
@@ -150,10 +151,14 @@ export function registerKnowledgeTools(server, options, sessionState) {
   // during isolated tests.
   let scannedDocs = []
   if (!options.allDocs) {
-    try {
-      scannedDocs = scanKnowledgeDir(dirToRead)
-    } catch (e) {
-      logger.error(`${TAGS.MCP} Failed to scan knowledge directory:`, e)
+    if (options.dbPath) {
+      try {
+        scannedDocs = scanKnowledgeDir(dirToRead)
+      } catch (e) {
+        logger.error(`${TAGS.MCP} Failed to scan custom knowledge directory:`, e)
+      }
+    } else {
+      scannedDocs = staticDocs
     }
   }
 
@@ -200,7 +205,8 @@ ${indexTable}`
         const idToDoc = new Map()
         const allDocs = []
 
-        for (const entry of scannedDocs) {
+        const staticSource = options.dbPath ? scannedDocs : staticDocs
+        for (const entry of staticSource) {
           const doc = {
             id: String(entry.metadata.articleId || entry.file),
             filename: entry.filename,
@@ -215,9 +221,8 @@ ${indexTable}`
           idToDoc.set(String(doc.id), doc)
         }
 
-        // Load Dynamic Documents (*.doc.js)
-        const dynamicDocs = await loadDynamicDocs(dirToRead)
-        dynamicDocs.forEach(doc => {
+        const dynamicSource = options.dbPath ? await loadDynamicDocs(dirToRead) : dynamicDocs
+        dynamicSource.forEach(doc => {
           const processedDoc = {
             ...doc,
             id: String(doc.articleId || doc.filename),
