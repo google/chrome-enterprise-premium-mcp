@@ -65,6 +65,7 @@
     "@eslint/js": "^10.0.1",
     "@google/chrome-enterprise-premium-mcp": "file:.",
     "@google/generative-ai": "^0.24.1",
+    "esbuild": "^0.28.0",
     "eslint": "^10.3.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-jsdoc": "^62.9.0",
@@ -75,6 +76,7 @@
     "husky": "^9.1.7",
     "js-yaml": "^4.1.1",
     "lint-staged": "^16.4.0",
+    "postject": "^1.0.0-alpha.6",
     "prettier": "^3.8.3",
     "prettier-plugin-packagejson": "^3.0.2"
   },
