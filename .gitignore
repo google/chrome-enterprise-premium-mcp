@@ -38,3 +38,7 @@ session.db
 
 # Generated compiled docs
 lib/knowledge/compiled_docs.js
+
+# Build and packaging output
+dist/
+*.tgz
