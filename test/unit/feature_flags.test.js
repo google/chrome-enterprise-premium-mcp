@@ -24,6 +24,21 @@ describe('FeatureFlags', () => {
     assert.strictEqual(featureFlags.isEnabled(FLAGS.DELETE_TOOL_ENABLED), false)
   })
 
+  test('When SECURITY_INSIGHTS_DATA_TOOL_ENABLED is not set, then it returns false by default', () => {
+    const featureFlags = new FeatureFlags({})
+    assert.strictEqual(featureFlags.isEnabled(FLAGS.SECURITY_INSIGHTS_DATA_TOOL_ENABLED), false)
+  })
+
+  test('When SECURITY_INSIGHTS_DATA_TOOL_ENABLED is set to "true", then it returns true', () => {
+    const featureFlags = new FeatureFlags({ [`EXPERIMENT_${FLAGS.SECURITY_INSIGHTS_DATA_TOOL_ENABLED}`]: 'true' })
+    assert.strictEqual(featureFlags.isEnabled(FLAGS.SECURITY_INSIGHTS_DATA_TOOL_ENABLED), true)
+  })
+
+  test('When SECURITY_INSIGHTS_DATA_TOOL_ENABLED is set to "1", then it returns true', () => {
+    const featureFlags = new FeatureFlags({ [`EXPERIMENT_${FLAGS.SECURITY_INSIGHTS_DATA_TOOL_ENABLED}`]: '1' })
+    assert.strictEqual(featureFlags.isEnabled(FLAGS.SECURITY_INSIGHTS_DATA_TOOL_ENABLED), true)
+  })
+
   test('When flag is set to "true", then it returns true', () => {
     const featureFlags = new FeatureFlags({ [`EXPERIMENT_${FLAGS.DELETE_TOOL_ENABLED}`]: 'true' })
     assert.strictEqual(featureFlags.isEnabled(FLAGS.DELETE_TOOL_ENABLED), true)
