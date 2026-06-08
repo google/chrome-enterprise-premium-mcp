@@ -1,5 +1,36 @@
 # Changelog
 
+## [1.9.0](https://github.com/google/chrome-enterprise-premium-mcp/compare/chrome-enterprise-premium-mcp-v1.8.0...chrome-enterprise-premium-mcp-v1.9.0) (2026-06-04)
+
+
+### Features
+
+* add Chrome Security Insights configuration integration and unified tool ([#295](https://github.com/google/chrome-enterprise-premium-mcp/issues/295)) ([0b26618](https://github.com/google/chrome-enterprise-premium-mcp/commit/0b266185b2d0a69b5a7d6f88020e3a630b5f6be4))
+* **auth:** fail early on missing credentials instead of opening browser ([#301](https://github.com/google/chrome-enterprise-premium-mcp/issues/301)) ([97bd1c9](https://github.com/google/chrome-enterprise-premium-mcp/commit/97bd1c923efcb90a111b9223056b57e67a6cd320))
+* **auth:** implement robust instant asynchronous auth flow for cep_auth ([#303](https://github.com/google/chrome-enterprise-premium-mcp/issues/303)) ([545b81b](https://github.com/google/chrome-enterprise-premium-mcp/commit/545b81b5e6cf77ef868d49de9dbeac97bae3b672))
+* integrate Security Insights into diagnose_environment tool ([#306](https://github.com/google/chrome-enterprise-premium-mcp/issues/306)) ([07c2cbf](https://github.com/google/chrome-enterprise-premium-mcp/commit/07c2cbf81dc002337ca4bdd1670b3e17c14f28e6))
+* replace incorrect dashboard roles with correct privileges ([#307](https://github.com/google/chrome-enterprise-premium-mcp/issues/307)) ([78a250a](https://github.com/google/chrome-enterprise-premium-mcp/commit/78a250a5ead3364bb82e24c49beec09842ef05e7))
+
+
+### Bug Fixes
+
+* **adk:** resolve agent dependency bug and improve auth documentation ([#293](https://github.com/google/chrome-enterprise-premium-mcp/issues/293)) ([8642490](https://github.com/google/chrome-enterprise-premium-mcp/commit/86424903e529cc02bbf1959a50cf9f6bbd1de05c))
+* ignore python virtual environments in eslint config ([#296](https://github.com/google/chrome-enterprise-premium-mcp/issues/296)) ([614c25d](https://github.com/google/chrome-enterprise-premium-mcp/commit/614c25d2dea959cf136eb057f6ef7463add83985))
+* prevent local loopback server shutdown hangs by forcing Connection: close ([#297](https://github.com/google/chrome-enterprise-premium-mcp/issues/297)) ([51bd90e](https://github.com/google/chrome-enterprise-premium-mcp/commit/51bd90eaae67708bc2a2ca11c7b5d1eeb48bd023))
+* **test:** allow 'latest' version in gemini-extension.json ([#310](https://github.com/google/chrome-enterprise-premium-mcp/issues/310)) ([f40ce8e](https://github.com/google/chrome-enterprise-premium-mcp/commit/f40ce8eef3752ada8d93d2bef1f7fa19c58bfee3))
+
+
+### Documentation
+
+* remove references to gated tools from README ([#287](https://github.com/google/chrome-enterprise-premium-mcp/issues/287)) ([e6edec3](https://github.com/google/chrome-enterprise-premium-mcp/commit/e6edec341cb0f520734c9cc9d32e30e9e2f07a28))
+* streamline README onboarding and consolidate contributor setup ([#294](https://github.com/google/chrome-enterprise-premium-mcp/issues/294)) ([1980c80](https://github.com/google/chrome-enterprise-premium-mcp/commit/1980c80c91abe8e0d97064a1ea81d97bfaaa7019))
+
+
+### Code Refactoring
+
+* **auth:** make non-headless authentication non-blocking ([#299](https://github.com/google/chrome-enterprise-premium-mcp/issues/299)) ([d7c285d](https://github.com/google/chrome-enterprise-premium-mcp/commit/d7c285d8c48d6a55558f869fca0ae3c634f23e2f))
+* **auth:** remove workstation ADC support from local python agent ([#292](https://github.com/google/chrome-enterprise-premium-mcp/issues/292)) ([78bb325](https://github.com/google/chrome-enterprise-premium-mcp/commit/78bb325a6d1080627c78bd684a6dc5b7da727014))
+
 ## [1.8.0](https://github.com/google/chrome-enterprise-premium-mcp/compare/chrome-enterprise-premium-mcp-v1.7.0...chrome-enterprise-premium-mcp-v1.8.0) (2026-05-29)
 
 
