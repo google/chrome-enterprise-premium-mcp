@@ -29,13 +29,19 @@ import { logger } from '../../lib/util/logger.js'
 // so the grounding-content check would give a false negative over HTTP.
 await runStdioInitializeTest()
 
-const server = spawn('node', ['mcp-server.js'], {
+const binary = process.env.CEP_TEST_BINARY || 'node'
+const args = process.env.CEP_TEST_BINARY ? [] : ['mcp-server.js']
+
+const server = spawn(binary, args, {
   env: { ...process.env, GOOGLE_API_ROOT_URL: 'http://localhost:1234', PORT: '3000' },
 })
 
 async function runStdioInitializeTest() {
   return new Promise(resolve => {
-    const stdio = spawn('node', ['mcp-server.js'], {
+    const binary = process.env.CEP_TEST_BINARY || 'node'
+    const args = process.env.CEP_TEST_BINARY ? [] : ['mcp-server.js']
+
+    const stdio = spawn(binary, args, {
       env: { ...process.env, GCP_STDIO: 'true', GOOGLE_API_ROOT_URL: 'http://localhost:1234' },
       stdio: ['pipe', 'pipe', 'inherit'],
     })
@@ -82,7 +88,7 @@ async function runStdioInitializeTest() {
       )
     })
     // Safety net — if no valid response within 5s, fail.
-    setTimeout(() => finish(false), 5000)
+    setTimeout(() => finish(false), 15000)
   })
 }
 

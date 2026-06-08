@@ -32,9 +32,17 @@ import axios from 'axios'
 import * as cheerio from 'cheerio'
 import { FLAGS } from '../../lib/util/feature_flags.js'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-const DB_DIR = path.resolve(__dirname, '../../lib/knowledge')
+/**
+ * Resolves the default Knowledge DB directory path.
+ * @returns {string|null} The absolute path to the default knowledge directory,
+ * or null if it cannot be resolved.
+ */
+function getDefaultDbDir() {
+  if (import.meta && import.meta.url) {
+    return fileURLToPath(new URL('../../lib/knowledge', import.meta.url))
+  }
+  return null
+}
 
 // Files in lib/knowledge that exist on disk but must not surface as
 // retrievable documents. README.md is project-internal documentation.
@@ -145,7 +153,7 @@ export function registerKnowledgeTools(server, options, sessionState) {
   const { featureFlags: flags } = options
   logger.debug(`${TAGS.MCP} Registering Knowledge tools...`)
 
-  const dirToRead = options.dbPath || DB_DIR
+  const dirToRead = options.dbPath || getDefaultDbDir()
   // When tests pass options.allDocs, they're bypassing on-disk loading
   // entirely; skip the scan so we don't read the real knowledge dir
   // during isolated tests.

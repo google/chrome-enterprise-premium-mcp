@@ -31,14 +31,26 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 // eslint-disable-next-line no-control-regex
 const ANSI_RE = /\x1b\[[0-9;]*m/g
 
+function spawnServer(env) {
+  const binary = process.env.CEP_TEST_BINARY
+  if (binary) {
+    return spawnSync(binary, [], { env, timeout: 12000 })
+  } else {
+    const serverPath = path.resolve(__dirname, '../../../mcp-server.js')
+    return spawnSync(process.execPath, [serverPath], { env, timeout: 12000 })
+  }
+}
+
 describe('MCP Server in stdio mode', () => {
   let client
   let transport
 
   before(async () => {
+    const command = process.env.CEP_TEST_BINARY || 'node'
+    const args = process.env.CEP_TEST_BINARY ? [] : ['mcp-server.js']
     transport = new StdioClientTransport({
-      command: 'node',
-      args: ['mcp-server.js'],
+      command,
+      args,
       env: {
         ...process.env,
         GCP_STDIO: 'true',
@@ -112,16 +124,12 @@ describe('MCP Server in stdio mode', () => {
     const FAKE_API_ROOT = 'http://localhost:1'
 
     test('When server starts with custom PORT, then it logs the correct port', () => {
-      const serverPath = path.resolve(__dirname, '../../../mcp-server.js')
-      const result = spawnSync(process.execPath, [serverPath], {
-        env: {
-          ...process.env,
-          PORT: '4000',
-          GCP_STDIO: 'false',
-          CEP_LOG_LEVEL: 'info',
-          GOOGLE_API_ROOT_URL: FAKE_API_ROOT,
-        },
-        timeout: 12000,
+      const result = spawnServer({
+        ...process.env,
+        PORT: '4000',
+        GCP_STDIO: 'false',
+        CEP_LOG_LEVEL: 'info',
+        GOOGLE_API_ROOT_URL: FAKE_API_ROOT,
       })
 
       const output = result.stderr.toString() + result.stdout.toString()
@@ -130,10 +138,11 @@ describe('MCP Server in stdio mode', () => {
     })
 
     test('When server starts without PORT, then it assigns a random port', () => {
-      const serverPath = path.resolve(__dirname, '../../../mcp-server.js')
-      const result = spawnSync(process.execPath, [serverPath], {
-        env: { ...process.env, GCP_STDIO: 'false', CEP_LOG_LEVEL: 'info', GOOGLE_API_ROOT_URL: FAKE_API_ROOT },
-        timeout: 12000,
+      const result = spawnServer({
+        ...process.env,
+        GCP_STDIO: 'false',
+        CEP_LOG_LEVEL: 'info',
+        GOOGLE_API_ROOT_URL: FAKE_API_ROOT,
       })
 
       const output = result.stderr.toString() + result.stdout.toString()
@@ -141,7 +150,6 @@ describe('MCP Server in stdio mode', () => {
     })
 
     test('When server starts with a port that is already in use, then it logs an explicit error and exits', async () => {
-      const serverPath = path.resolve(__dirname, '../../../mcp-server.js')
       const net = await import('node:net')
 
       const server = net.createServer()
@@ -152,15 +160,12 @@ describe('MCP Server in stdio mode', () => {
 
       let result
       try {
-        result = spawnSync(process.execPath, [serverPath], {
-          env: {
-            ...process.env,
-            PORT: port.toString(),
-            GCP_STDIO: 'false',
-            CEP_LOG_LEVEL: 'info',
-            GOOGLE_API_ROOT_URL: FAKE_API_ROOT,
-          },
-          timeout: 12000,
+        result = spawnServer({
+          ...process.env,
+          PORT: port.toString(),
+          GCP_STDIO: 'false',
+          CEP_LOG_LEVEL: 'info',
+          GOOGLE_API_ROOT_URL: FAKE_API_ROOT,
         })
       } finally {
         server.close()
@@ -171,10 +176,11 @@ describe('MCP Server in stdio mode', () => {
     })
 
     test('When server starts with Fake Data URL, then it logs Data Access: Fake Data', () => {
-      const serverPath = path.resolve(__dirname, '../../../mcp-server.js')
-      const result = spawnSync(process.execPath, [serverPath], {
-        env: { ...process.env, GOOGLE_API_ROOT_URL: 'http://localhost:8080', GCP_STDIO: 'true', CEP_LOG_LEVEL: 'info' },
-        timeout: 12000,
+      const result = spawnServer({
+        ...process.env,
+        GOOGLE_API_ROOT_URL: 'http://localhost:8080',
+        GCP_STDIO: 'true',
+        CEP_LOG_LEVEL: 'info',
       })
 
       const output = result.stderr.toString() + result.stdout.toString()
