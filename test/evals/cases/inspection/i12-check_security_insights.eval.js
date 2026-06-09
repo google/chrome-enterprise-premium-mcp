@@ -25,5 +25,6 @@ export default {
   goldenResponse:
     'The agent should call the `security_insights` tool with the `action` parameter set to "check" to query the tenant-wide status. It should report back in plain language whether the feature is enabled or disabled.',
   judgeInstructions:
-    'Verify the agent successfully called the `security_insights` tool with `action: "check"` and reported the resulting enablement state cleanly in plain language. Do not penalize for omitting raw payload contents.',
+    'Verify the agent reported the enablement state of Chrome Security Insights cleanly in plain language. ' +
+    'Do not penalize the agent for omitting tool execution details or raw payload contents.',
 }
