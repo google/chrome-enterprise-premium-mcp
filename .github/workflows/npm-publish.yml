@@ -23,6 +23,14 @@ jobs:
         with:
           node-version: '24'
           registry-url: 'https://wombat-dressing-room.appspot.com/'
-      - run: npm publish --access public
+      - name: Publish to npm
+        run: |
+          if [ "${{ github.event.release.prerelease }}" = "true" ]; then
+            echo "Publishing pre-release to npm with tag 'beta'"
+            npm publish --access public --tag beta
+          else
+            echo "Publishing stable release to npm with tag 'latest'"
+            npm publish --access public
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.WOMBAT_NPM_PACKAGE_TOKEN }}
