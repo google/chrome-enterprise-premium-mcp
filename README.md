@@ -11,6 +11,19 @@ environment.
 
 <img width="1280" height="640" alt="c7b0d696-8488-48f9-8a11-bf8bbc72ee7e" src="https://github.com/user-attachments/assets/2665d05d-3f02-4577-8183-2972e74b02e6" />
 
+## Prerequisites
+
+Before setting up the MCP server, ensure you have the following:
+
+1.  **Node.js & npm:** Node.js version `20.0.0` or higher installed locally.
+2.  **Google Workspace Account:**
+    - Any Workspace edition with a [Chrome Enterprise Premium](https://docs.cloud.google.com/chrome-enterprise-premium/docs/overview) license.
+    - An administrator role in the [Admin Console](https://admin.google.com/) (Super Admin or delegated with **Chrome Management** and **DLP** permissions). Standard Workspace accounts (or Google Cloud IAM permissions alone) do not grant access and will return `403 Permission Denied` errors with no indication that a Workspace role is missing.
+3.  **OAuth App Trust (if required):** If your organization restricts third-party app access, a Super Admin must [trust the OAuth client](docs/troubleshooting.md#configure-oauth-app-for-sensitive-scopes) in the Admin Console before you can authenticate.
+4.  **MCP Client:** A compatible MCP host application (such as Gemini CLI, Claude Desktop, Cursor, Windsurf, or VS Code).
+
+---
+
 ### Quick start
 
 Get up and running in less than 2 minutes using the bundled Google-managed OAuth client. No repository cloning required!
@@ -104,9 +117,6 @@ The scope set requested during the "Sign in" consent flow maps directly to the u
 > [!NOTE]
 > **OAuth App Trust Required:** If your organization restricts third-party app access, a Super Admin must [trust the OAuth client](docs/troubleshooting.md#configure-oauth-app-for-sensitive-scopes) in the Admin Console before you can authenticate.
 
-> [!IMPORTANT]
-> **Workspace Admin Role Required:** Chrome Management and Admin SDK APIs require a Google Workspace admin role in addition to Google Cloud IAM roles. You must hold an admin role in the [Admin Console](https://admin.google.com/) (Super Admin or delegated with Chrome Management permissions). With only Google Cloud IAM permissions, calls will return `403 Permission Denied` with no indication that a Workspace role is missing.
-
 ## Advanced Authentication Options
 
 For production environments, headless systems, or customized configurations, the server supports alternative auth pathways:
@@ -121,24 +131,6 @@ For production environments, headless systems, or customized configurations, the
 
 For environment variables and stdio vs. HTTP transport, see
 [`docs/configuration.md`](docs/configuration.md).
-
-## Prerequisites
-
-| Requirement              | Details                                                                                                                                                                                                                                   |
-| :----------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Node.js**              | >= 20.0.0 (`node --version` to check)                                                                                                                                                                                                     |
-| **Google Workspace**     | Any edition, plus a [Chrome Enterprise Premium](https://docs.cloud.google.com/chrome-enterprise-premium/docs/overview) license ([60-day free trial available](https://docs.cloud.google.com/chrome-enterprise-premium-mcp/docs/overview)) |
-| **Admin role**           | Google Workspace Super Admin, or a delegated admin with Chrome Management and DLP permissions                                                                                                                                             |
-| **Google Cloud project** | Linked to your Workspace domain, with required APIs enabled                                                                                                                                                                               |
-| **OAuth App Trust**      | The OAuth client must be [trusted in the Admin Console](docs/troubleshooting.md#configure-oauth-app-for-sensitive-scopes) for sensitive scopes.                                                                                           |
-
-> [!IMPORTANT]
-> Chrome Management and Admin SDK APIs require a Google Workspace admin
-> role in addition to Google Cloud IAM roles. You must hold an admin role
-> in the [Admin Console](https://admin.google.com/) (Super Admin or
-> delegated with Chrome Management permissions). With only Google Cloud
-> IAM permissions, calls return `403 Permission Denied` with no indication
-> that a Workspace role is missing.
 
 ## Available tools and prompts
 
