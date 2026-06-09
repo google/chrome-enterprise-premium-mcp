@@ -18,6 +18,7 @@ export default {
   id: 'm07',
   priority: 'P1',
   tags: ['mutation'],
+  scenario: 'security-insights-enabled',
   expectedTools: ['security_insights'],
   forbiddenPatterns: [],
   requiredPatterns: [],
@@ -25,5 +26,6 @@ export default {
   goldenResponse:
     'The agent should call the `security_insights` tool with `action: "disable"`. It should confirm in plain language that Chrome Security Insights has been successfully disabled.',
   judgeInstructions:
-    'Verify the agent indicator that it successfully disabled Security Insights by calling `security_insights` with `action: "disable"`. Confirm it reported success in plain language.',
+    'Verify the agent reported that it successfully disabled Chrome Security Insights. ' +
+    'Do not penalize the agent for omitting tool execution details or raw payload contents.',
 }
