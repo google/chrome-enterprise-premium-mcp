@@ -44,7 +44,7 @@ import { featureFlags, FLAGS, getActiveScopes } from './lib/util/feature_flags.j
 import { logger } from './lib/util/logger.js'
 import { printBanner, dim } from './lib/util/banner.js'
 import { buildApiCredsField, buildScopesField, buildAuthRemediationLines } from './lib/util/auth_messages.js'
-import { verifyIdToken, parseExpectedAudience } from './lib/util/credential/jwt_verifier.js'
+import { verifyToken, parseExpectedAudience } from './lib/util/credential/jwt_verifier.js'
 import { resolveOAuthClientConfig } from './lib/util/credential/oauth_client_config.js'
 import { oauthFlowCredential } from './lib/util/credential/oauth_flow.js'
 import { verifyBearerToken } from './lib/util/credential/bearer_verifier.js'
@@ -389,7 +389,7 @@ export async function runServer() {
             return
           }
           const token = auth.slice(7).trim()
-          const result = await verifyBearerToken(token, { expectedAudience, lockedSub, verify: verifyIdToken })
+          const result = await verifyBearerToken(token, { expectedAudience, lockedSub, verify: verifyToken })
           if (!result.ok) {
             if (result.status === 403) {
               logger.warn(

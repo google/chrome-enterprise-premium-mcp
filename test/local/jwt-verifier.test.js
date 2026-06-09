@@ -51,23 +51,53 @@ describe('parseExpectedAudience', () => {
   })
 })
 
-describe('verifyIdToken', () => {
+describe('verifyToken', () => {
   it('When token is missing, then it throws', async () => {
-    const { verifyIdToken } = await esmock('../../lib/util/credential/jwt_verifier.js', {})
-    await assert.rejects(() => verifyIdToken('', { expectedAudience: 'aud' }), /token is required/)
+    const { verifyToken } = await esmock('../../lib/util/credential/jwt_verifier.js', {})
+    await assert.rejects(() => verifyToken('', { expectedAudience: 'aud' }), /token is required/)
   })
 
   it('When expectedAudience is missing, then it throws', async () => {
-    const { verifyIdToken } = await esmock('../../lib/util/credential/jwt_verifier.js', {})
-    await assert.rejects(() => verifyIdToken('eyJhbGciOi...', { expectedAudience: '' }), /expectedAudience is required/)
+    const { verifyToken } = await esmock('../../lib/util/credential/jwt_verifier.js', {})
+    await assert.rejects(() => verifyToken('eyJhbGciOi...', { expectedAudience: '' }), /expectedAudience is required/)
   })
 
-  it('When verifyIdToken succeeds with a valid payload, then it returns the principal', async () => {
-    const { verifyIdToken } = await esmock('../../lib/util/credential/jwt_verifier.js', {
+  it('When getTokenInfo (Path A) succeeds with matching audience, then it returns the principal', async () => {
+    const { verifyToken } = await esmock('../../lib/util/credential/jwt_verifier.js', {
       'google-auth-library': {
         OAuth2Client: class {
+          async getTokenInfo(token) {
+            assert.equal(token, 'ACCESS_TOKEN')
+            return {
+              email: 'user@example.com',
+              sub: 'user-123',
+              aud: 'expected-aud',
+            }
+          }
+          // Path B should not be reached
+          async verifyIdToken() {
+            assert.fail('Path B should not be reached when Path A succeeds')
+          }
+        },
+      },
+    })
+    const principal = await verifyToken('ACCESS_TOKEN', { expectedAudience: 'expected-aud' })
+    assert.deepEqual(principal, {
+      email: 'user@example.com',
+      sub: 'user-123',
+      aud: 'expected-aud',
+    })
+  })
+
+  it('When getTokenInfo (Path A) fails but verifyIdToken (Path B) succeeds, then it returns the principal', async () => {
+    const { verifyToken } = await esmock('../../lib/util/credential/jwt_verifier.js', {
+      'google-auth-library': {
+        OAuth2Client: class {
+          async getTokenInfo() {
+            throw new Error('invalid_token (this is expected for JWTs)')
+          }
           async verifyIdToken({ idToken, audience }) {
-            assert.equal(idToken, 'GOOD_TOKEN')
+            assert.equal(idToken, 'ID_TOKEN')
             assert.equal(audience, 'expected-aud')
             return {
               getPayload: () => ({
@@ -81,7 +111,7 @@ describe('verifyIdToken', () => {
         },
       },
     })
-    const principal = await verifyIdToken('GOOD_TOKEN', { expectedAudience: 'expected-aud' })
+    const principal = await verifyToken('ID_TOKEN', { expectedAudience: 'expected-aud' })
     assert.deepEqual(principal, {
       email: 'tim@example.com',
       sub: '123456',
@@ -90,29 +120,74 @@ describe('verifyIdToken', () => {
     })
   })
 
-  it('When the underlying verifier throws, then verifyIdToken propagates the error', async () => {
-    const { verifyIdToken } = await esmock('../../lib/util/credential/jwt_verifier.js', {
+  it('When Path A fails and Path B fails, then verifyToken propagates the Error from Path B', async () => {
+    const { verifyToken } = await esmock('../../lib/util/credential/jwt_verifier.js', {
       'google-auth-library': {
         OAuth2Client: class {
+          async getTokenInfo() {
+            throw new Error('invalid_token')
+          }
           async verifyIdToken() {
-            throw new Error('Wrong recipient, payload audience != requiredAudience')
+            throw new Error('Path B final failure')
           }
         },
       },
     })
-    await assert.rejects(() => verifyIdToken('BAD_TOKEN', { expectedAudience: 'expected-aud' }), /Wrong recipient/)
+    await assert.rejects(() => verifyToken('BAD_TOKEN', { expectedAudience: 'expected-aud' }), /Path B final failure/)
   })
 
-  it('When the payload has no email, then verifyIdToken throws', async () => {
-    const { verifyIdToken } = await esmock('../../lib/util/credential/jwt_verifier.js', {
+  it('When Path A succeeds but audience mismatch, then verifyToken throws without falling back to Path B', async () => {
+    const { verifyToken } = await esmock('../../lib/util/credential/jwt_verifier.js', {
       'google-auth-library': {
         OAuth2Client: class {
+          async getTokenInfo() {
+            return {
+              aud: 'wrong-aud',
+              email: 'user@example.com',
+              sub: '123',
+            }
+          }
+          async verifyIdToken() {
+            assert.fail('Should not fall back to Path B if Path A audience check fails')
+          }
+        },
+      },
+    })
+    await assert.rejects(
+      () => verifyToken('ACCESS_TOKEN_WRONG_AUD', { expectedAudience: 'expected-aud' }),
+      /invalid audience/,
+    )
+  })
+
+  it('When Path A succeeds but no email, then verifyToken throws', async () => {
+    const { verifyToken } = await esmock('../../lib/util/credential/jwt_verifier.js', {
+      'google-auth-library': {
+        OAuth2Client: class {
+          async getTokenInfo() {
+            return {
+              aud: 'expected-aud',
+              sub: '123',
+            }
+          }
+        },
+      },
+    })
+    await assert.rejects(() => verifyToken('ACCESS_TOKEN_NO_EMAIL', { expectedAudience: 'expected-aud' }), /no email/)
+  })
+
+  it('When Path B payload has no email, then verifyToken throws', async () => {
+    const { verifyToken } = await esmock('../../lib/util/credential/jwt_verifier.js', {
+      'google-auth-library': {
+        OAuth2Client: class {
+          async getTokenInfo() {
+            throw new Error('not an access token')
+          }
           async verifyIdToken() {
             return { getPayload: () => ({ sub: '123', aud: 'aud', iss: 'iss' }) }
           }
         },
       },
     })
-    await assert.rejects(() => verifyIdToken('NO_EMAIL_TOKEN', { expectedAudience: 'aud' }), /no email claim/)
+    await assert.rejects(() => verifyToken('NO_EMAIL_ID_TOKEN', { expectedAudience: 'aud' }), /no email claim/)
   })
 })
