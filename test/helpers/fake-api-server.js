@@ -251,6 +251,20 @@ function getInitialState() {
       'serviceusage.googleapis.com': 'ENABLED',
     }),
     insightsState: 'INSIGHTS_DISABLED',
+    securityInsightsData: {
+      contentTransfers: {
+        summaries: [{ metric: 'CONTENT_TRANSFERS_METRIC_TOTAL_TRANSFERS', count: '100' }],
+      },
+      contentTransfersBreakdowns: {
+        contentTransfersBreakdowns: [{ user: 'user@test.com', summary: { count: '50' } }],
+      },
+      urlVisits: {
+        summaries: [{ metric: 'URL_VISITS_METRIC_TOTAL_SUSPICIOUS_URL_VISITS', count: '5' }],
+      },
+      urlVisitsBreakdowns: {
+        urlVisitsBreakdowns: [{ user: 'user@test.com', summary: { count: '2' } }],
+      },
+    },
   }
 }
 
@@ -457,6 +471,45 @@ export function createFakeApp() {
     }
     state.insightsState = 'INSIGHTS_DISABLED'
     res.json({ insightsState: 'INSIGHTS_DISABLED' })
+  })
+
+  // Chrome Management: Query Content Transfers
+  app.get('/v1alpha1/customers/:customerId/enterprise/securityInsights\\:queryContentTransfers', (req, res) => {
+    const customerId = requireCustomer(state, req.params.customerId, res)
+    if (!customerId) {
+      return
+    }
+    res.json(state.securityInsightsData.contentTransfers)
+  })
+
+  // Chrome Management: Query Content Transfers Breakdowns
+  app.get(
+    '/v1alpha1/customers/:customerId/enterprise/securityInsights\\:queryContentTransfersBreakdowns',
+    (req, res) => {
+      const customerId = requireCustomer(state, req.params.customerId, res)
+      if (!customerId) {
+        return
+      }
+      res.json(state.securityInsightsData.contentTransfersBreakdowns)
+    },
+  )
+
+  // Chrome Management: Query URL Visits
+  app.get('/v1alpha1/customers/:customerId/enterprise/securityInsights\\:queryUrlVisits', (req, res) => {
+    const customerId = requireCustomer(state, req.params.customerId, res)
+    if (!customerId) {
+      return
+    }
+    res.json(state.securityInsightsData.urlVisits)
+  })
+
+  // Chrome Management: Query URL Visits Breakdowns
+  app.get('/v1alpha1/customers/:customerId/enterprise/securityInsights\\:queryUrlVisitsBreakdowns', (req, res) => {
+    const customerId = requireCustomer(state, req.params.customerId, res)
+    if (!customerId) {
+      return
+    }
+    res.json(state.securityInsightsData.urlVisitsBreakdowns)
   })
 
   // Chrome Policy: Resolve Policies
