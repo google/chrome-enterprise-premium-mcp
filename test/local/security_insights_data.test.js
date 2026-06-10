@@ -103,6 +103,24 @@ describe('security_insights_data Tool', () => {
       assert.deepStrictEqual(result.structuredContent.summaries[0].count, '100')
     })
 
+    test('When queryContentTransfers is called with breakdown parameters, then it filters them out and calls API with only filter', async () => {
+      await handler(
+        {
+          action: 'queryContentTransfers',
+          customerId,
+          filter: 'event_time >= "2026-01-01T00:00:00Z"',
+          pageSize: 10,
+          breakdown: 'USER',
+        },
+        { requestInfo: {} },
+      )
+
+      assert.strictEqual(mockClient.queryContentTransfers.mock.callCount(), 1)
+      const callArgs = mockClient.queryContentTransfers.mock.calls[0].arguments
+      assert.strictEqual(callArgs[0], customerId)
+      assert.deepStrictEqual(callArgs[1], { filter: 'event_time >= "2026-01-01T00:00:00Z"' })
+    })
+
     test('When queryContentTransfersBreakdowns is called, then it calls API and returns formatted breakdowns', async () => {
       const result = await handler(
         {
@@ -139,6 +157,23 @@ describe('security_insights_data Tool', () => {
 
       assert.ok(result.content[0].text.includes('Security Insights action `queryUrlVisits` completed.'))
       assert.deepStrictEqual(result.structuredContent.summaries[0].count, '5')
+    })
+
+    test('When queryUrlVisits is called with breakdown parameters, then it filters them out and calls API with only empty options', async () => {
+      await handler(
+        {
+          action: 'queryUrlVisits',
+          customerId,
+          pageSize: 10,
+          breakdown: 'USER',
+        },
+        { requestInfo: {} },
+      )
+
+      assert.strictEqual(mockClient.queryUrlVisits.mock.callCount(), 1)
+      const callArgs = mockClient.queryUrlVisits.mock.calls[0].arguments
+      assert.strictEqual(callArgs[0], customerId)
+      assert.deepStrictEqual(callArgs[1], {})
     })
 
     test('When queryUrlVisitsBreakdowns is called, then it calls API and returns formatted breakdowns', async () => {

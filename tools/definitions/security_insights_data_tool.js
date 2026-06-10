@@ -107,20 +107,23 @@ Supports filtering by event time, user, domain, or content category depending on
           if (filter !== undefined) {
             queryOptions.filter = filter
           }
-          if (pageSize !== undefined) {
-            queryOptions.pageSize = pageSize
-          }
-          if (pageToken !== undefined) {
-            queryOptions.pageToken = pageToken
-          }
-          if (metric !== undefined) {
-            queryOptions.metric = metric
-          }
-          if (breakdown !== undefined) {
-            queryOptions.breakdown = breakdown
-          }
-          if (fixedTimeRange !== undefined) {
-            queryOptions.fixedTimeRange = fixedTimeRange
+
+          if (action.endsWith('Breakdowns')) {
+            if (pageSize !== undefined) {
+              queryOptions.pageSize = pageSize
+            }
+            if (pageToken !== undefined) {
+              queryOptions.pageToken = pageToken
+            }
+            if (metric !== undefined) {
+              queryOptions.metric = metric
+            }
+            if (breakdown !== undefined) {
+              queryOptions.breakdown = breakdown
+            }
+            if (fixedTimeRange !== undefined) {
+              queryOptions.fixedTimeRange = fixedTimeRange
+            }
           }
 
           let result
@@ -143,7 +146,10 @@ Supports filtering by event time, user, domain, or content category depending on
                 const summaries = raw?.summaries || []
                 summaryText += ` Found ${summaries.length} summaries.`
               } else {
-                const breakdowns = raw?.contentTransfersBreakdowns || raw?.urlVisitsBreakdowns || []
+                const breakdowns =
+                  action === 'queryContentTransfersBreakdowns'
+                    ? raw?.contentTransfersBreakdowns || []
+                    : raw?.urlVisitsBreakdowns || []
                 summaryText += ` Found ${breakdowns.length} breakdowns.`
               }
 
