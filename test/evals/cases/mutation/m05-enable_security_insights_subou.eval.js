@@ -18,6 +18,7 @@ export default {
   id: 'm05',
   priority: 'P0',
   tags: ['mutation'],
+  scenario: 'healthy',
   expectedTools: ['security_insights'],
   forbiddenPatterns: [],
   requiredPatterns: [],
@@ -28,7 +29,7 @@ export default {
     'specifically targeting the requested sub-OU path. It should confirm in plain language that the setup ' +
     'has been completed.',
   judgeInstructions:
-    'Verify the agent indicator that it successfully enabled Security Insights for the requested sub-OU by ' +
-    'calling `security_insights` with `action: "enable"` and `targetOus: ["/Sales"]`. ' +
-    'Confirm it reported success in plain language.',
+    'Verify the agent reported that it successfully enabled Chrome Security Insights for the ' +
+    'requested sub-organizational unit (/Sales). ' +
+    'Do not penalize the agent for omitting tool execution details or raw payload contents.',
 }
