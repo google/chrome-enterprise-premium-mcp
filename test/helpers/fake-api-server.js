@@ -309,21 +309,49 @@ export function createFakeApp() {
   })
 
   // Support Google Help Articles (Proxy Target)
-  app.get('/a/answer/:id', (req, res) => {
+  const serveArticle = (req, res) => {
     if (req.params.id === '1219251') {
-      return res.send(`
+      return res.send(
+        `
         <article>
           <h1>Administrator Privilege Definitions</h1>
           <p>Recommended delegated roles for custom admin configurations:</p>
           <ul>
-            <li><strong>View Chrome Insights Settings / Manage Chrome Insights Settings</strong>: Assign this delegated privilege to view dashboards and security insights. Alternatively, assign <strong>Chrome Enterprise Security Service (APP_ADMIN)</strong>.</li>
+            <li><strong>View Chrome Insights Settings / Manage Chrome Insights Settings</strong>: ` +
+          `Assign this delegated privilege to view dashboards and security insights. ` +
+          `Alternatively, assign <strong>Chrome Enterprise Security Service (APP_ADMIN)</strong>.</li>
             <li><strong>DLP Administrator</strong>: Assign this custom role to adjust, edit, or view DLP rules.</li>
           </ul>
         </article>
-      `)
+      `,
+      )
+    }
+    if (req.params.id === '16493390') {
+      return res.send(
+        `
+        <article>
+          <h1>Configurable Timeout Deadlines for Deep Scanning</h1>
+          <p>As an administrator with the <strong>Chrome Enterprise Security Services</strong> privilege ` +
+          `and a <strong>Chrome Enterprise Premium</strong> subscription, you can configure the ` +
+          `evaluation time limit (timeouts) for DLP and malware scans, including the paste action.</p>
+          <h2>Steps to configure:</h2>
+          <ol>
+            <li>Go to the Google Admin console.</li>
+            <li>Navigate to <strong>Menu > Apps > Additional Google Services > ` +
+          `Chrome Enterprise Security Services > Deep scanning protection settings</strong>.</li>
+            <li>Click Edit.</li>
+            <li>Set the evaluation time limit in seconds (scan deadline/paste deadline).</li>
+            <li>Click Save.</li>
+          </ol>
+        </article>
+      `,
+      )
     }
     res.status(404).send('Article not found')
-  })
+  }
+
+  app.get('/a/answer/:id', serveArticle)
+  app.get('/chrome/a/answer/:id', serveArticle)
 
   // Admin SDK: Get Customer
   app.get('/admin/directory/v1/customers/:customerKey', (req, res) => {
