@@ -182,6 +182,29 @@ describe('diagnose_environment', () => {
       assert.ok(high.some(i => i.component === 'dlpRules'))
     })
 
+    test('When gaps are found in environment, then the generated issues contain Admin Console deep-links', async () => {
+      const { handler } = registerAndGetHandler({
+        connectorPolicy: [],
+        dlpRules: [],
+        securityInsights: { insightsState: 'INSIGHTS_DISABLED' },
+        resolvePolicy: [],
+      })
+      const result = await handler({ customerId: 'C0123' }, { requestInfo: {} })
+      const issues = result.structuredContent.issues
+
+      const uploadIssue = issues.find(i => i.component === 'connector.uploadAnalysis')
+      assert.ok(uploadIssue.message.includes('https://admin.google.com/ac/chrome/settings/user/details/file_attached'))
+
+      const dlpIssue = issues.find(i => i.component === 'dlpRules')
+      assert.ok(dlpIssue.message.includes('https://admin.google.com/ac/dp/rules'))
+
+      const sebIssue = issues.find(i => i.component === 'sebExtension')
+      assert.ok(sebIssue.message.includes('https://admin.google.com/ac/chrome/apps/user'))
+
+      const insightsIssue = issues.find(i => i.component === 'securityInsights')
+      assert.ok(insightsIssue.message.includes('https://admin.google.com/ac/dp'))
+    })
+
     test('When rules are audit-only, then it produces a medium issue', async () => {
       const { handler } = registerAndGetHandler({
         connectorPolicy: [{ value: {} }],
