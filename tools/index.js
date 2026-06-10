@@ -47,6 +47,7 @@ import { registerDiagnoseEnvironmentTool } from './definitions/diagnose_environm
 import { registerKnowledgeTools } from './definitions/knowledge.js'
 import { registerAuthTools } from './definitions/auth.js'
 import { registerSecurityInsightsTool } from './definitions/security_insights.js'
+import { registerSecurityInsightsDataTool } from './definitions/security-insights-data-tool.js'
 import { featureFlags, FLAGS } from '../lib/util/feature_flags.js'
 
 /**
@@ -94,6 +95,12 @@ export function registerTools(server, options = {}, sessionState) {
   registerCountBrowserVersionsTool(server, { ...commonOpts, chromeManagementClient }, state)
   registerCustomerProfileTool(server, { ...commonOpts, chromeManagementClient }, state)
   registerSecurityInsightsTool(server, { ...commonOpts, chromeManagementClient }, state)
+  if (flags.isEnabled(FLAGS.SECURITY_INSIGHTS_DATA_TOOL_ENABLED)) {
+    logger.debug(
+      `${TAGS.MCP} Registering 'security_insights_data' tool (EXPERIMENT_SECURITY_INSIGHTS_DATA_TOOL_ENABLED is active)`,
+    )
+    registerSecurityInsightsDataTool(server, { ...commonOpts, chromeManagementClient }, state)
+  }
   registerGetConnectorPolicyTool(server, { chromePolicyClient }, state)
   registerGetChromeActivityLogTool(server, { ...commonOpts, chromeManagementClient }, state)
   registerListDlpRulesTool(server, { cloudIdentityClient }, state)
