@@ -203,3 +203,5 @@ This repository is provided as a reference implementation that customers can exp
 - **Terms of Service:** [Terms of Service](https://policies.google.com/terms)
 - **Privacy Policy:** [Privacy Policy](https://policies.google.com/privacy)
 - **Security:** [Security Policy](SECURITY.md)
+
+<!-- Kokoro CI auth test comment -->
