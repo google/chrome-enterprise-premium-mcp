@@ -96,7 +96,7 @@ tools/definitions/list_customer_profiles.js
 tools/definitions/list_detectors.js
 tools/definitions/list_dlp_rules.js
 tools/definitions/list_org_units.js
-tools/definitions/security-insights-data-tool.js
+tools/definitions/security_insights_data_tool.js
 tools/definitions/security_insights.js
 tools/definitions/shared.js
 tools/index.js

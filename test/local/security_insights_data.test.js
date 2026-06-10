@@ -18,7 +18,7 @@ import assert from 'node:assert/strict'
 import { describe, test, mock, beforeEach } from 'node:test'
 import { registerTools } from '../../tools/index.js'
 import { FeatureFlags } from '../../lib/util/feature_flags.js'
-import { registerSecurityInsightsDataTool } from '../../tools/definitions/security-insights-data-tool.js'
+import { registerSecurityInsightsDataTool } from '../../tools/definitions/security_insights_data_tool.js'
 
 describe('security_insights_data Tool', () => {
   let server

@@ -47,7 +47,7 @@ import { registerDiagnoseEnvironmentTool } from './definitions/diagnose_environm
 import { registerKnowledgeTools } from './definitions/knowledge.js'
 import { registerAuthTools } from './definitions/auth.js'
 import { registerSecurityInsightsTool } from './definitions/security_insights.js'
-import { registerSecurityInsightsDataTool } from './definitions/security-insights-data-tool.js'
+import { registerSecurityInsightsDataTool } from './definitions/security_insights_data_tool.js'
 import { featureFlags, FLAGS } from '../lib/util/feature_flags.js'
 
 /**
