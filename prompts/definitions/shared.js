@@ -57,7 +57,7 @@ Below the table, group all identified issues into strict severity tiers. Use the
 For every issue listed under the severity headings, use the following bulleted format to explain the context and the exact remediation steps:
 *   **Issue:** [Brief statement of what is wrong]
 *   **Impact:** [What this means for the user's security posture]
-*   **Action:** [The specific step to fix it. Describe the action in professional English (e.g., "Install the Secure Enterprise Browser extension" or "Enable the Reporting Connector"). NEVER mention internal tool names or function names].
+*   **Action:** [The specific step to fix it. Describe the action in professional English (e.g., "Install the Secure Enterprise Browser extension" or "Enable the Reporting Connector"). If the issue is that "Chrome Security Insights is disabled", you must proactively offer to enable it for the user in your final response (e.g., "Chrome Security Insights is disabled. Would you like me to enable it for you now?"). NEVER mention internal tool names or function names].
 
 **Tone Restrictions:**
 Be objective, technical, and direct. Do not use overly dramatic language or generic corporate filler. Report the facts and the fixes. NEVER mention internal tool names in your final response.`
