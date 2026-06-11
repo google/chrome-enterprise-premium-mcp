@@ -41,6 +41,15 @@ const CONNECTOR_TYPES = {
   securityEventReporting: 'ON_SECURITY_EVENT',
 }
 
+const CONNECTOR_LINK_MAPPING = {
+  uploadAnalysis: 'file_attached',
+  downloadAnalysis: 'file_downloaded',
+  pasteAnalysis: 'bulk_text_entry',
+  printAnalysis: 'print_analysis_connector',
+  realtimeUrlCheck: 'realtime_url_check',
+  securityEventReporting: 'on_security_event',
+}
+
 const SEB_EXTENSION_SCHEMA = 'chrome.users.apps.InstallType'
 const SEB_EXTENSION_ID = 'chrome:ekajlcmdfcigmdbphhifahdfjbkciflj'
 const DEFAULT_PAGE_SIZE = 50
@@ -69,21 +78,12 @@ function computeIssues(data) {
     })
   }
 
-  const CONNECTOR_LINK_MAPPING = {
-    uploadAnalysis: 'file_attached',
-    downloadAnalysis: 'file_downloaded',
-    pasteAnalysis: 'bulk_text_entry',
-    printAnalysis: 'print_analysis_connector',
-    realtimeUrlCheck: 'realtime_url_check',
-    securityEventReporting: 'on_security_event',
-  }
-
   if (data.securityInsights?.insightsState === 'INSIGHTS_DISABLED') {
     issues.push({
       severity: 'critical',
       component: 'securityInsights',
       message:
-        'Chrome Security Insights is disabled. Threat events, file scanning, and security telemetry reporting are inactive. Update settings manually at https://admin.google.com/ac/dp',
+        'Chrome Security Insights is disabled. Threat events, file scanning, and security telemetry reporting are inactive.',
     })
   } else if (data.securityInsights?.insightsState === 'INSIGHTS_ENABLEMENT_STATE_UNSPECIFIED') {
     issues.push({
@@ -107,12 +107,24 @@ function computeIssues(data) {
         severity: 'critical',
         component: `connector.${key}`,
         message: `${name} connector is not configured.${actionSuffix}`,
+        ...(manualLink && {
+          remediation: {
+            actionLabel: `Configure ${name} connector`,
+            url: manualLink,
+          },
+        }),
       })
     } else if (!connector.isEnabled) {
       issues.push({
         severity: 'critical',
         component: `connector.${key}`,
         message: `${name} connector is present but explicitly disabled.${actionSuffix}`,
+        ...(manualLink && {
+          remediation: {
+            actionLabel: `Enable ${name} connector`,
+            url: manualLink,
+          },
+        }),
       })
     }
 
@@ -122,6 +134,12 @@ function computeIssues(data) {
           severity: 'high',
           component: `connector.${key}`,
           message: `${name}: ${finding.message}${actionSuffix}`,
+          ...(manualLink && {
+            remediation: {
+              actionLabel: `Configure ${name} settings`,
+              url: manualLink,
+            },
+          }),
         })
       }
     }
@@ -133,6 +151,10 @@ function computeIssues(data) {
       severity: 'high',
       component: 'dlpRules',
       message: 'No DLP rules configured. Create rules at: https://admin.google.com/ac/dp/rules',
+      remediation: {
+        actionLabel: 'Create DLP rules',
+        url: 'https://admin.google.com/ac/dp/rules',
+      },
     })
   } else {
     if (dlpRules.active === 0) {
@@ -140,12 +162,20 @@ function computeIssues(data) {
         severity: 'high',
         component: 'dlpRules',
         message: 'All DLP rules are inactive. Manage rules at: https://admin.google.com/ac/dp/rules',
+        remediation: {
+          actionLabel: 'Activate DLP rules',
+          url: 'https://admin.google.com/ac/dp/rules',
+        },
       })
     } else if (dlpRules.inactive > 0) {
       issues.push({
         severity: 'medium',
         component: 'dlpRules',
         message: `${dlpRules.inactive} DLP rule(s) are inactive. Manage rules at: https://admin.google.com/ac/dp/rules`,
+        remediation: {
+          actionLabel: 'Manage DLP rules',
+          url: 'https://admin.google.com/ac/dp/rules',
+        },
       })
     }
     if (dlpRules.active > 0 && !dlpRules.hasEnforcement) {
@@ -154,6 +184,10 @@ function computeIssues(data) {
         component: 'dlpRules',
         message:
           'All active DLP rules are audit-only. No blocking or warning enforcement. Manage rules at: https://admin.google.com/ac/dp/rules',
+        remediation: {
+          actionLabel: 'Configure blocking rules',
+          url: 'https://admin.google.com/ac/dp/rules',
+        },
       })
     }
   }
@@ -164,6 +198,10 @@ function computeIssues(data) {
       component: 'sebExtension',
       message:
         'Secure Enterprise Browser (SEB) extension is not force-installed. Configure it manually at https://admin.google.com/ac/chrome/apps/user',
+      remediation: {
+        actionLabel: 'Configure SEB force-installation',
+        url: 'https://admin.google.com/ac/chrome/apps/user',
+      },
     })
   }
 
@@ -288,6 +326,8 @@ async function fetchEnvironment(
   if (rootOUId && chromePolicyClient) {
     const connectorResults = await Promise.all(
       Object.entries(CONNECTOR_TYPES).map(async ([key, policyKey]) => {
+        const page = CONNECTOR_LINK_MAPPING[key]
+        const uiLink = page ? `https://admin.google.com/ac/chrome/settings/user/details/${page}` : null
         try {
           const schema = ConnectorPolicyFilter[policyKey]
           const policies = await chromePolicyClient.getConnectorPolicy(customerId, rootOUId, schema, authToken)
@@ -297,12 +337,13 @@ async function fetchEnvironment(
             {
               configured: analysis.isConfigured,
               isEnabled: analysis.isEnabled,
+              uiLink,
               policyCount: policies.length,
               findings: analysis.findings,
             },
           ]
         } catch {
-          return [key, { configured: false, isEnabled: false, policyCount: 0, error: true }]
+          return [key, { configured: false, isEnabled: false, uiLink, policyCount: 0, error: true }]
         }
       }),
     )

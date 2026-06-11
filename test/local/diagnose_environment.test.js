@@ -182,7 +182,7 @@ describe('diagnose_environment', () => {
       assert.ok(high.some(i => i.component === 'dlpRules'))
     })
 
-    test('When gaps are found in environment, then the generated issues contain Admin Console deep-links', async () => {
+    test('When gaps are found in environment, then the generated issues contain structured remediation metadata and deep-links', async () => {
       const { handler } = registerAndGetHandler({
         connectorPolicy: [],
         dlpRules: [],
@@ -191,18 +191,47 @@ describe('diagnose_environment', () => {
       })
       const result = await handler({ customerId: 'C0123' }, { requestInfo: {} })
       const issues = result.structuredContent.issues
+      const connectors = result.structuredContent.connectors
 
+      // Verify connector issues have structured remediation
       const uploadIssue = issues.find(i => i.component === 'connector.uploadAnalysis')
       assert.ok(uploadIssue.message.includes('https://admin.google.com/ac/chrome/settings/user/details/file_attached'))
+      assert.deepStrictEqual(uploadIssue.remediation, {
+        actionLabel: 'Configure Upload content analysis connector',
+        url: 'https://admin.google.com/ac/chrome/settings/user/details/file_attached',
+      })
 
+      // Verify DLP rules issue has structured remediation
       const dlpIssue = issues.find(i => i.component === 'dlpRules')
       assert.ok(dlpIssue.message.includes('https://admin.google.com/ac/dp/rules'))
+      assert.deepStrictEqual(dlpIssue.remediation, {
+        actionLabel: 'Create DLP rules',
+        url: 'https://admin.google.com/ac/dp/rules',
+      })
 
+      // Verify SEB extension issue has structured remediation
       const sebIssue = issues.find(i => i.component === 'sebExtension')
       assert.ok(sebIssue.message.includes('https://admin.google.com/ac/chrome/apps/user'))
+      assert.deepStrictEqual(sebIssue.remediation, {
+        actionLabel: 'Configure SEB force-installation',
+        url: 'https://admin.google.com/ac/chrome/apps/user',
+      })
 
+      // Verify Security Insights issue has no manual remediation link
       const insightsIssue = issues.find(i => i.component === 'securityInsights')
-      assert.ok(insightsIssue.message.includes('https://admin.google.com/ac/dp'))
+      assert.strictEqual(insightsIssue.severity, 'critical')
+      assert.ok(!insightsIssue.remediation)
+      assert.ok(!insightsIssue.message.includes('https://admin.google.com/ac/dp'))
+
+      // Verify connectors object contains individual deep-links even when unconfigured
+      assert.strictEqual(
+        connectors.uploadAnalysis.uiLink,
+        'https://admin.google.com/ac/chrome/settings/user/details/file_attached',
+      )
+      assert.strictEqual(
+        connectors.securityEventReporting.uiLink,
+        'https://admin.google.com/ac/chrome/settings/user/details/on_security_event',
+      )
     })
 
     test('When rules are audit-only, then it produces a medium issue', async () => {
