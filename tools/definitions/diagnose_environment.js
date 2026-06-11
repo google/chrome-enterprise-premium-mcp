@@ -78,6 +78,21 @@ function computeIssues(data) {
     securityEventReporting: 'on_security_event',
   }
 
+  if (data.securityInsights?.insightsState === 'INSIGHTS_DISABLED') {
+    issues.push({
+      severity: 'critical',
+      component: 'securityInsights',
+      message:
+        'Chrome Security Insights is disabled. Threat events, file scanning, and security telemetry reporting are inactive. Update settings manually at https://admin.google.com/ac/dp',
+    })
+  } else if (data.securityInsights?.insightsState === 'INSIGHTS_ENABLEMENT_STATE_UNSPECIFIED') {
+    issues.push({
+      severity: 'medium',
+      component: 'securityInsights',
+      message: 'Chrome Security Insights status is unspecified or could not be retrieved.',
+    })
+  }
+
   for (const [key, connector] of Object.entries(data.connectors || {})) {
     if (!Object.prototype.hasOwnProperty.call(CONNECTOR_DISPLAY_NAMES, key)) {
       continue
@@ -160,22 +175,15 @@ function computeIssues(data) {
     })
   }
 
-  if (data.securityInsights?.insightsState === 'INSIGHTS_DISABLED') {
-    issues.push({
-      severity: 'high',
-      component: 'securityInsights',
-      message:
-        'Chrome Security Insights is disabled. Threat events, file scanning, and security telemetry reporting are inactive. Update settings manually at https://admin.google.com/ac/dp',
-    })
-  } else if (data.securityInsights?.insightsState === 'INSIGHTS_ENABLEMENT_STATE_UNSPECIFIED') {
-    issues.push({
-      severity: 'medium',
-      component: 'securityInsights',
-      message: 'Chrome Security Insights status is unspecified or could not be retrieved.',
-    })
+  const SEVERITY_ORDER = {
+    critical: 0,
+    high: 1,
+    medium: 2,
   }
 
-  return issues
+  return issues.sort((a, b) => {
+    return (SEVERITY_ORDER[a.severity] ?? 99) - (SEVERITY_ORDER[b.severity] ?? 99)
+  })
 }
 
 /**
@@ -474,7 +482,7 @@ function buildSummaryResponse(env) {
     for (const issue of sc.issues) {
       const icon = issue.severity === 'critical' ? '🔴' : issue.severity === 'high' ? '🟠' : '🟡'
       let remediation = ''
-      if (issue.component === 'securityInsights' && issue.severity === 'high') {
+      if (issue.component === 'securityInsights' && issue.severity === 'critical') {
         remediation =
           ' -> Action: Use the `security_insights` tool to enable this feature (e.g. `security_insights enable`).'
       }
