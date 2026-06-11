@@ -69,19 +69,35 @@ function computeIssues(data) {
     })
   }
 
+  const CONNECTOR_LINK_MAPPING = {
+    uploadAnalysis: 'file_attached',
+    downloadAnalysis: 'file_downloaded',
+    pasteAnalysis: 'bulk_text_entry',
+    printAnalysis: 'print_analysis_connector',
+    realtimeUrlCheck: 'realtime_url_check',
+    securityEventReporting: 'on_security_event',
+  }
+
   for (const [key, connector] of Object.entries(data.connectors || {})) {
-    const name = CONNECTOR_DISPLAY_NAMES[key] || key
+    if (!Object.prototype.hasOwnProperty.call(CONNECTOR_DISPLAY_NAMES, key)) {
+      continue
+    }
+    const name = CONNECTOR_DISPLAY_NAMES[key]
+    const page = CONNECTOR_LINK_MAPPING[key]
+    const manualLink = page ? `https://admin.google.com/ac/chrome/settings/user/details/${page}` : null
+    const actionSuffix = manualLink ? `. Update settings manually at ${manualLink}` : ''
+
     if (!connector.configured) {
       issues.push({
         severity: 'critical',
         component: `connector.${key}`,
-        message: `${name} connector is not configured.`,
+        message: `${name} connector is not configured.${actionSuffix}`,
       })
     } else if (!connector.isEnabled) {
       issues.push({
         severity: 'critical',
         component: `connector.${key}`,
-        message: `${name} connector is present but explicitly disabled.`,
+        message: `${name} connector is present but explicitly disabled.${actionSuffix}`,
       })
     }
 
@@ -90,7 +106,7 @@ function computeIssues(data) {
         issues.push({
           severity: 'high',
           component: `connector.${key}`,
-          message: `${name}: ${finding.message}`,
+          message: `${name}: ${finding.message}${actionSuffix}`,
         })
       }
     }
@@ -101,27 +117,28 @@ function computeIssues(data) {
     issues.push({
       severity: 'high',
       component: 'dlpRules',
-      message: 'No DLP rules configured.',
+      message: 'No DLP rules configured. Create rules at: https://admin.google.com/ac/dp/rules',
     })
   } else {
     if (dlpRules.active === 0) {
       issues.push({
         severity: 'high',
         component: 'dlpRules',
-        message: 'All DLP rules are inactive.',
+        message: 'All DLP rules are inactive. Manage rules at: https://admin.google.com/ac/dp/rules',
       })
     } else if (dlpRules.inactive > 0) {
       issues.push({
         severity: 'medium',
         component: 'dlpRules',
-        message: `${dlpRules.inactive} DLP rule(s) are inactive.`,
+        message: `${dlpRules.inactive} DLP rule(s) are inactive. Manage rules at: https://admin.google.com/ac/dp/rules`,
       })
     }
     if (dlpRules.active > 0 && !dlpRules.hasEnforcement) {
       issues.push({
         severity: 'medium',
         component: 'dlpRules',
-        message: 'All active DLP rules are audit-only. No blocking or warning enforcement.',
+        message:
+          'All active DLP rules are audit-only. No blocking or warning enforcement. Manage rules at: https://admin.google.com/ac/dp/rules',
       })
     }
   }
@@ -130,7 +147,8 @@ function computeIssues(data) {
     issues.push({
       severity: 'high',
       component: 'sebExtension',
-      message: 'Secure Enterprise Browser (SEB) extension is not force-installed.',
+      message:
+        'Secure Enterprise Browser (SEB) extension is not force-installed. Configure it manually at https://admin.google.com/ac/chrome/apps/user',
     })
   }
 
@@ -147,7 +165,7 @@ function computeIssues(data) {
       severity: 'high',
       component: 'securityInsights',
       message:
-        'Chrome Security Insights is disabled. Threat events, file scanning, and security telemetry reporting are inactive.',
+        'Chrome Security Insights is disabled. Threat events, file scanning, and security telemetry reporting are inactive. Update settings manually at https://admin.google.com/ac/dp',
     })
   } else if (data.securityInsights?.insightsState === 'INSIGHTS_ENABLEMENT_STATE_UNSPECIFIED') {
     issues.push({

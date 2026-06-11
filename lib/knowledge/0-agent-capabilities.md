@@ -101,6 +101,20 @@ For security and architectural reasons, the agent has explicit limitations:
 
 - **No Configuration Updates:** The agent **CANNOT** update or modify existing Chrome Enterprise connector configurations. It is strictly limited to enabling connectors that are not yet configured (where the provider is UNSPECIFIED or NONE). The agent must never promise to "adjust", "fix", or "optimize" an already active connector (e.g., enabling "Delay Enforcement" on an active policy). If an existing configuration needs adjustment, the agent must identify the gap and provide the relevant manual Admin Console link to the administrator.
 
+### 7. Google Admin Console Deep-Links for Remediation
+
+When suggesting manual configuration or remediation for Chrome Enterprise connectors and related settings, the agent must proactively provide the corresponding deep-link:
+
+- **Real-Time URL Check Connector:** https://admin.google.com/ac/chrome/settings/user/details/realtime_url_check
+- **File Upload Connector:** https://admin.google.com/ac/chrome/settings/user/details/file_attached
+- **File Download Connector:** https://admin.google.com/ac/chrome/settings/user/details/file_downloaded
+- **Paste/Bulk Text Connector:** https://admin.google.com/ac/chrome/settings/user/details/bulk_text_entry
+- **Print Connector:** https://admin.google.com/ac/chrome/settings/user/details/print_analysis_connector
+- **Security Event Reporting Connector:** https://admin.google.com/ac/chrome/settings/user/details/on_security_event
+- **Chrome Security Insights:** https://admin.google.com/ac/dp
+- **Secure Enterprise Browser (SEB) extension / Apps:** https://admin.google.com/ac/chrome/apps/user
+- **DLP Rules:** https://admin.google.com/ac/dp/rules
+
 ### Knowledge Base
 
 The agent has access to a comprehensive knowledge base of Chrome Enterprise Premium documentation. To read authoritative technical details, exact roles, or procedures, use the **'get_document'** tool.
