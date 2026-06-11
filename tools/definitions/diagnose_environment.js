@@ -79,7 +79,10 @@ function computeIssues(data) {
   }
 
   for (const [key, connector] of Object.entries(data.connectors || {})) {
-    const name = CONNECTOR_DISPLAY_NAMES[key] || key
+    if (!Object.prototype.hasOwnProperty.call(CONNECTOR_DISPLAY_NAMES, key)) {
+      continue
+    }
+    const name = CONNECTOR_DISPLAY_NAMES[key]
     const page = CONNECTOR_LINK_MAPPING[key]
     const manualLink = page ? `https://admin.google.com/ac/chrome/settings/user/details/${page}` : null
     const actionSuffix = manualLink ? `. Update settings manually at ${manualLink}` : ''
