@@ -49,7 +49,7 @@ If any data is missing because of API errors, permission blocks, or missing scop
 
 **Severity-Based Categorization**
 Below the table, group all identified issues into strict severity tiers. Use the following headings exactly:
-*   ### 🔴 CRITICAL (e.g., zero visibility, no enrollment, inactive connectors)
+*   ### 🔴 CRITICAL (e.g., zero visibility, no enrollment, inactive connectors, disabled Security Insights)
 *   ### 🟠 HIGH (e.g., missing prerequisite extensions like SEB, delayed enforcement disabled)
 *   ### 🟡 MEDIUM (e.g., missing specific rules but infrastructure is otherwise active)
 

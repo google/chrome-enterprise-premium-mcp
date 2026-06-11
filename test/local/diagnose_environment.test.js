@@ -222,12 +222,12 @@ describe('diagnose_environment', () => {
       assert.ok(medium.length > 0)
     })
 
-    test('When Security Insights is disabled, then it produces a high issue with remediation action in summary', async () => {
+    test('When Security Insights is disabled, then it produces a critical issue with remediation action in summary', async () => {
       const { handler } = registerAndGetHandler({ securityInsights: { insightsState: 'INSIGHTS_DISABLED' } })
       const result = await handler({ customerId: 'C0123' }, { requestInfo: {} })
       const issues = result.structuredContent.issues.filter(i => i.component === 'securityInsights')
       assert.strictEqual(issues.length, 1)
-      assert.strictEqual(issues[0].severity, 'high')
+      assert.strictEqual(issues[0].severity, 'critical')
       assert.ok(result.content[0].text.includes('security_insights enable'), 'Summary should suggest enabling the tool')
     })
 
