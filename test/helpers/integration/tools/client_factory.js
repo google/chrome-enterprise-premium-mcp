@@ -20,6 +20,7 @@ import { CloudIdentityClient } from '../../../../lib/api/cloud_identity_client.j
 import { ChromePolicyClient } from '../../../../lib/api/chrome_policy_client.js'
 import { ChromeManagementClient } from '../../../../lib/api/chrome_management_client.js'
 import { ServiceUsageClient } from '../../../../lib/api/service_usage_client.js'
+import { CloudResourceManagerClient } from '../../../../lib/api/cloud_resource_manager_client.js'
 
 export function getApiClients(options = {}) {
   const backend = options.backend || process.env.CEP_BACKEND || (process.env.GOOGLE_API_ROOT_URL ? 'fake' : 'real')
@@ -33,6 +34,7 @@ export function getApiClients(options = {}) {
       chromePolicy: new ChromePolicyClient(),
       chromeManagement: new ChromeManagementClient(),
       serviceUsage: new ServiceUsageClient(),
+      cloudResourceManager: new CloudResourceManagerClient(),
     }
   }
 
@@ -45,5 +47,6 @@ export function getApiClients(options = {}) {
     chromePolicy: new ChromePolicyClient({ rootUrl, auth: fakeAuth }),
     chromeManagement: new ChromeManagementClient({ rootUrl, auth: fakeAuth }),
     serviceUsage: new ServiceUsageClient({ rootUrl, auth: fakeAuth }),
+    cloudResourceManager: new CloudResourceManagerClient({ rootUrl, auth: fakeAuth }),
   }
 }

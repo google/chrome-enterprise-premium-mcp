@@ -265,6 +265,14 @@ function getInitialState() {
         urlVisitsBreakdowns: [{ user: 'user@test.com', summary: { count: '2' } }],
       },
     },
+    organizations: [
+      {
+        name: 'organizations/123456789',
+        displayName: 'Test Org',
+        directoryCustomerId: 'C0123',
+        state: 'ACTIVE',
+      },
+    ],
   }
 }
 
@@ -571,6 +579,29 @@ export function createFakeApp() {
     res.json({})
   })
 
+  // Cloud Resource Manager: Search Organizations
+  app.post('/v1/organizations\\:search', (req, res) => {
+    const { query } = req.body
+    let results = state.organizations
+
+    if (query) {
+      // Simple query parsing for testing, e.g. "domain:test.com" or "directoryCustomerId:C0123"
+      const match = query.match(/(domain|directoryCustomerId):(\S+)/)
+      if (match) {
+        const [_, key, value] = match
+        if (key === 'domain') {
+          results = results.filter(
+            org => org.displayName.toLowerCase().includes(value.toLowerCase()) || value === 'test.com',
+          )
+        } else if (key === 'directoryCustomerId') {
+          results = results.filter(org => org.directoryCustomerId === value)
+        }
+      }
+    }
+
+    res.json({ organizations: results })
+  })
+
   // Cloud Identity: List Policies
   app.get('/v1beta1/policies', (req, res) => {
     const customerId = state.defaultCustomerId
@@ -834,6 +865,8 @@ export function createFakeApp() {
       data.policies.forEach(policy => {
         state.policies[policy.name] = policy
       })
+    } else if (data.kind === 'cloudresourcemanager#organizations') {
+      state.organizations = data.organizations
     }
   }
 
