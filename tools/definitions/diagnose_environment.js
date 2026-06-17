@@ -350,6 +350,13 @@ async function fetchEnvironment(
     }
   }
 
+  let normalizedContentTransfers = contentTransfers
+  let normalizedUrlVisits = urlVisits
+  if (securityInsights?.insightsState !== 'INSIGHTS_ENABLED') {
+    normalizedContentTransfers = null
+    normalizedUrlVisits = null
+  }
+
   return {
     customer,
     orgUnits,
@@ -360,8 +367,8 @@ async function fetchEnvironment(
     connectors,
     sebExtension,
     securityInsights,
-    contentTransfers,
-    urlVisits,
+    contentTransfers: normalizedContentTransfers,
+    urlVisits: normalizedUrlVisits,
   }
 }
 
@@ -513,7 +520,9 @@ function buildSummaryResponse(env) {
     urlVisits?.summaries?.find(s => s.metric === 'URL_VISITS_METRIC_TOTAL_SUSPICIOUS_URL_VISITS')?.count || '0'
 
   summary += `**Security Insights Data:**\n`
-  if (contentTransfers?.error || urlVisits?.error) {
+  if (!contentTransfers || !urlVisits) {
+    summary += `  - Status: N/A (Security Insights is disabled or unspecified)\n`
+  } else if (contentTransfers.error || urlVisits.error) {
     summary += `  - Status: ⚠️ Query failed (see issues below)\n`
   } else {
     summary += `  - Content Transfers (Total/Sensitive): ${totalTransfers} / ${sensitiveTransfers}\n`

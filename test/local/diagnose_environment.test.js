@@ -327,6 +327,35 @@ describe('diagnose_environment', () => {
       )
     })
 
+    test('When Security Insights is disabled and queries fail, then it does not produce issues and reports N/A', async () => {
+      const clients = createMockClients({
+        securityInsights: { insightsState: 'INSIGHTS_DISABLED' },
+      })
+      clients.chromeManagementClient.queryContentTransfers = mock.fn(async () => {
+        throw new Error('Quota exceeded')
+      })
+      clients.chromeManagementClient.queryUrlVisits = mock.fn(async () => {
+        throw new Error('Permission denied')
+      })
+      const handlers = {}
+      const server = createMockServer(handlers)
+      registerDiagnoseEnvironmentTool(server, clients, { customerId: null, cachedRootOrgUnitId: null })
+      const result = await handlers['diagnose_environment']({ customerId: 'C0123' }, { requestInfo: {} })
+
+      const siIssues = result.structuredContent.issues.filter(i => i.component === 'securityInsights')
+      assert.strictEqual(siIssues.length, 1)
+      assert.strictEqual(siIssues[0].severity, 'critical')
+
+      const dataIssues = result.structuredContent.issues.filter(i => i.component === 'securityInsightsData')
+      assert.strictEqual(dataIssues.length, 0)
+
+      assert.ok(
+        result.content[0].text.includes('Status: N/A (Security Insights is disabled or unspecified)'),
+        'Summary should report N/A for telemetry',
+      )
+      assert.ok(!result.content[0].text.includes('⚠️ Query failed'), 'Summary should not report query failure')
+    })
+
     test('When Security Insights Data is healthy, then it reports stats in the summary', async () => {
       const { handler } = registerAndGetHandler({ connectorPolicy: [{ value: {} }] })
       const result = await handler({ customerId: 'C0123' }, { requestInfo: {} })
