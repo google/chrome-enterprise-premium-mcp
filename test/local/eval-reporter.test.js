@@ -45,6 +45,41 @@ test('Daily Trend Reporter', async t => {
     assert.match(stdout, /No evaluation runs found/)
   })
 
+  await t.test('supports hyphenated pre-release version names in files', () => {
+    // Populate fake runs
+    const goldenRun = {
+      timestamp: new Date().toISOString(),
+      summary: { passed: 10, failed: 2, total: 12, passRate: 83.3 },
+      evaluations: [
+        { id: 'm01', category: 'mutation', failed: 0, total: 1 },
+        { id: 'm02', category: 'mutation', failed: 1, total: 1 },
+        { id: 'm03', category: 'mutation', failed: 1, total: 1 },
+      ],
+    }
+    fs.writeFileSync(path.join(RUNS_DIR, 'run-1.8.0-beta-1700000000000.json'), JSON.stringify(goldenRun))
+
+    const latestRun = {
+      timestamp: new Date().toISOString(),
+      summary: { passed: 11, failed: 1, total: 12, passRate: 91.7 },
+      evaluations: [
+        { id: 'm01', category: 'mutation', failed: 0, total: 1 },
+        { id: 'm02', category: 'mutation', failed: 0, total: 1 },
+        { id: 'm03', category: 'mutation', failed: 1, total: 1 },
+      ],
+    }
+    fs.writeFileSync(path.join(RUNS_DIR, 'run-1.9.0-1700000000001.json'), JSON.stringify(latestRun))
+
+    const stdout = execSync(`node ${path.resolve(__dirname, '../evals/reporter.js')}`, { encoding: 'utf8' })
+
+    // Check golden comparison outputs
+    assert.match(stdout, /Golden Run Comparison/)
+    assert.match(stdout, /Golden Run \(Previous Version 1.8.0-beta\)/)
+
+    // Cleanup fake runs
+    const files = fs.readdirSync(RUNS_DIR).filter(f => f.startsWith('run-') && f.endsWith('.json'))
+    files.forEach(f => fs.unlinkSync(path.join(RUNS_DIR, f)))
+  })
+
   await t.test('analyzes recent runs and highlights failures & improvements', () => {
     // Populate fake runs
     // Older runs: version 1.8.0

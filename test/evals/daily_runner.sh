@@ -3,7 +3,8 @@
 set -e
 
 # Change directory to the workspace root
-cd /usr/local/google/home/tushardey/chrome-enterprise-premium-mcp
+SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
+cd "$SCRIPT_DIR/../.."
 
 # Source user's shell profile to import GEMINI_API_KEY
 if [ -f "$HOME/.bashrc" ]; then
@@ -15,8 +16,8 @@ elif [ -f "$HOME/.zshrc" ]; then
 fi
 
 # Also load from App Data .env file if present
-if [ -f "/usr/local/google/home/tushardey/.gemini/jetski/.env" ]; then
-  export $(grep -v '^#' /usr/local/google/home/tushardey/.gemini/jetski/.env | xargs)
+if [ -f "$HOME/.gemini/jetski/.env" ]; then
+  export $(grep -v '^#' "$HOME/.gemini/jetski/.env" | xargs)
 fi
 
 # 1. Run evaluations and write JSON output

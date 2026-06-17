@@ -48,9 +48,9 @@ function getRunFiles() {
         .split('-')
       let version = ''
       let timestamp = 0
-      if (parts.length === 2) {
-        version = parts[0]
-        timestamp = parseInt(parts[1], 10)
+      if (parts.length >= 2) {
+        timestamp = parseInt(parts[parts.length - 1], 10)
+        version = parts.slice(0, -1).join('-')
       } else {
         timestamp = parseInt(parts[0], 10)
       }
