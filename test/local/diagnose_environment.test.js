@@ -43,6 +43,15 @@ function createMockClients(overrides = {}) {
     connectorPolicy: [],
     resolvePolicy: [],
     securityInsights: { insightsState: 'INSIGHTS_ENABLED' },
+    contentTransfers: {
+      summaries: [
+        { metric: 'CONTENT_TRANSFERS_METRIC_TOTAL_TRANSFERS', count: '100' },
+        { metric: 'CONTENT_TRANSFERS_METRIC_SENSITIVE_DATA_TRANSFERS', count: '10' },
+      ],
+    },
+    urlVisits: {
+      summaries: [{ metric: 'URL_VISITS_METRIC_TOTAL_SUSPICIOUS_URL_VISITS', count: '5' }],
+    },
   }
 
   const cfg = { ...defaults, ...overrides }
@@ -56,6 +65,8 @@ function createMockClients(overrides = {}) {
     chromeManagementClient: {
       countBrowserVersions: mock.fn(async () => cfg.browserVersions),
       checkSecurityInsightsStatus: mock.fn(async () => cfg.securityInsights),
+      queryContentTransfers: mock.fn(async () => cfg.contentTransfers),
+      queryUrlVisits: mock.fn(async () => cfg.urlVisits),
     },
     chromePolicyClient: {
       getConnectorPolicy: mock.fn(async () => cfg.connectorPolicy),
@@ -291,6 +302,66 @@ describe('diagnose_environment', () => {
       const { handler } = registerAndGetHandler({ connectorPolicy: [{ value: {} }] })
       const result = await handler({}, { requestInfo: {} })
       assert.ok(result.structuredContent.customer.customerId, 'Customer ID resolved')
+    })
+
+    test('When Security Insights Data queries fail, then it produces medium issues with remediation', async () => {
+      const clients = createMockClients()
+      clients.chromeManagementClient.queryContentTransfers = mock.fn(async () => {
+        throw new Error('Quota exceeded')
+      })
+      clients.chromeManagementClient.queryUrlVisits = mock.fn(async () => {
+        throw new Error('Permission denied')
+      })
+      const handlers = {}
+      const server = createMockServer(handlers)
+      registerDiagnoseEnvironmentTool(server, clients, { customerId: null, cachedRootOrgUnitId: null })
+      const result = await handlers['diagnose_environment']({ customerId: 'C0123' }, { requestInfo: {} })
+
+      const issues = result.structuredContent.issues.filter(i => i.component === 'securityInsightsData')
+      assert.strictEqual(issues.length, 2)
+      assert.strictEqual(issues[0].severity, 'medium')
+      assert.strictEqual(issues[1].severity, 'medium')
+      assert.ok(
+        result.content[0].text.includes('chrome.management.reports.readonly'),
+        'Summary should suggest checking scopes',
+      )
+    })
+
+    test('When Security Insights is disabled and queries fail, then it does not produce issues and reports N/A', async () => {
+      const clients = createMockClients({
+        securityInsights: { insightsState: 'INSIGHTS_DISABLED' },
+      })
+      clients.chromeManagementClient.queryContentTransfers = mock.fn(async () => {
+        throw new Error('Quota exceeded')
+      })
+      clients.chromeManagementClient.queryUrlVisits = mock.fn(async () => {
+        throw new Error('Permission denied')
+      })
+      const handlers = {}
+      const server = createMockServer(handlers)
+      registerDiagnoseEnvironmentTool(server, clients, { customerId: null, cachedRootOrgUnitId: null })
+      const result = await handlers['diagnose_environment']({ customerId: 'C0123' }, { requestInfo: {} })
+
+      const siIssues = result.structuredContent.issues.filter(i => i.component === 'securityInsights')
+      assert.strictEqual(siIssues.length, 1)
+      assert.strictEqual(siIssues[0].severity, 'critical')
+
+      const dataIssues = result.structuredContent.issues.filter(i => i.component === 'securityInsightsData')
+      assert.strictEqual(dataIssues.length, 0)
+
+      assert.ok(
+        result.content[0].text.includes('Status: N/A (Security Insights is disabled or unspecified)'),
+        'Summary should report N/A for telemetry',
+      )
+      assert.ok(!result.content[0].text.includes('⚠️ Query failed'), 'Summary should not report query failure')
+    })
+
+    test('When Security Insights Data is healthy, then it reports stats in the summary', async () => {
+      const { handler } = registerAndGetHandler({ connectorPolicy: [{ value: {} }] })
+      const result = await handler({ customerId: 'C0123' }, { requestInfo: {} })
+
+      assert.ok(result.content[0].text.includes('Content Transfers (Total/Sensitive): 100 / 10'))
+      assert.ok(result.content[0].text.includes('Suspicious URL Visits: 5'))
     })
   })
 

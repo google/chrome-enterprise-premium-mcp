@@ -32,6 +32,7 @@ lib/knowledge/27-url-blocklist-format.md
 lib/knowledge/28-safe-browsing-allowlists.md
 lib/knowledge/29-admin-privilege-definitions.md
 lib/knowledge/30-ev-device-attributes.md
+lib/knowledge/31-security-insights-data.md
 lib/knowledge/98-agent-knowledge-addendum.md
 lib/knowledge/README.md
 lib/knowledge/instructions.js

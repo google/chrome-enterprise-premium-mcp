@@ -93,6 +93,23 @@ function computeIssues(data) {
     })
   }
 
+  if (data.securityInsights?.insightsState === 'INSIGHTS_ENABLED') {
+    if (data.contentTransfers?.error) {
+      issues.push({
+        severity: 'medium',
+        component: 'securityInsightsData',
+        message: `Failed to query Content Transfers data: ${data.contentTransfers.message}`,
+      })
+    }
+    if (data.urlVisits?.error) {
+      issues.push({
+        severity: 'medium',
+        component: 'securityInsightsData',
+        message: `Failed to query URL Visits data: ${data.urlVisits.message}`,
+      })
+    }
+  }
+
   for (const [key, connector] of Object.entries(data.connectors || {})) {
     if (!Object.prototype.hasOwnProperty.call(CONNECTOR_DISPLAY_NAMES, key)) {
       continue
@@ -229,6 +246,8 @@ async function fetchEnvironment(
     detectorPolicies,
     browserVersions,
     securityInsights,
+    contentTransfers,
+    urlVisits,
   ] = await Promise.all([
     adminSdkClient.getCustomerId(authToken),
     adminSdkClient.listOrgUnits({ customerId }, authToken),
@@ -239,6 +258,14 @@ async function fetchEnvironment(
     chromeManagementClient.checkSecurityInsightsStatus(customerId, authToken).catch(err => {
       logger.error(`${TAGS.API} Error fetching security insights status in diagnosis:`, err)
       return { insightsState: 'INSIGHTS_ENABLEMENT_STATE_UNSPECIFIED', error: true }
+    }),
+    chromeManagementClient.queryContentTransfers(customerId, {}, authToken).catch(err => {
+      logger.error(`${TAGS.API} Error fetching content transfers in diagnosis:`, err)
+      return { error: true, message: err.message }
+    }),
+    chromeManagementClient.queryUrlVisits(customerId, {}, authToken).catch(err => {
+      logger.error(`${TAGS.API} Error fetching URL visits in diagnosis:`, err)
+      return { error: true, message: err.message }
     }),
   ])
 
@@ -323,6 +350,13 @@ async function fetchEnvironment(
     }
   }
 
+  let normalizedContentTransfers = contentTransfers
+  let normalizedUrlVisits = urlVisits
+  if (securityInsights?.insightsState !== 'INSIGHTS_ENABLED') {
+    normalizedContentTransfers = null
+    normalizedUrlVisits = null
+  }
+
   return {
     customer,
     orgUnits,
@@ -333,6 +367,8 @@ async function fetchEnvironment(
     connectors,
     sebExtension,
     securityInsights,
+    contentTransfers: normalizedContentTransfers,
+    urlVisits: normalizedUrlVisits,
   }
 }
 
@@ -419,6 +455,8 @@ function buildSummaryResponse(env) {
     connectors,
     sebExtension,
     securityInsights,
+    contentTransfers,
+    urlVisits,
   } = env
 
   const activeRules = allDlpRules.filter(r => r.state === 'ACTIVE')
@@ -448,6 +486,8 @@ function buildSummaryResponse(env) {
     connectors,
     sebExtension,
     securityInsights,
+    contentTransfers,
+    urlVisits,
     browserVersions: { total: versions.length, deviceCount: totalDevices },
     issues: [],
   }
@@ -470,6 +510,25 @@ function buildSummaryResponse(env) {
         ? 'Disabled'
         : 'Unknown/Unspecified'
   }\n`
+
+  const totalTransfers =
+    contentTransfers?.summaries?.find(s => s.metric === 'CONTENT_TRANSFERS_METRIC_TOTAL_TRANSFERS')?.count || '0'
+  const sensitiveTransfers =
+    contentTransfers?.summaries?.find(s => s.metric === 'CONTENT_TRANSFERS_METRIC_SENSITIVE_DATA_TRANSFERS')?.count ||
+    '0'
+  const suspiciousVisits =
+    urlVisits?.summaries?.find(s => s.metric === 'URL_VISITS_METRIC_TOTAL_SUSPICIOUS_URL_VISITS')?.count || '0'
+
+  summary += `**Security Insights Data:**\n`
+  if (!contentTransfers || !urlVisits) {
+    summary += `  - Status: N/A (Security Insights is disabled or unspecified)\n`
+  } else if (contentTransfers.error || urlVisits.error) {
+    summary += `  - Status: ⚠️ Query failed (see issues below)\n`
+  } else {
+    summary += `  - Content Transfers (Total/Sensitive): ${totalTransfers} / ${sensitiveTransfers}\n`
+    summary += `  - Suspicious URL Visits: ${suspiciousVisits}\n`
+  }
+
   summary += `**DLP Rules:** ${allDlpRules.length} total (${activeRules.length} active: ${dlpRuleSummary.byAction.block} block, ${dlpRuleSummary.byAction.warn} warn, ${dlpRuleSummary.byAction.audit} audit, ${dlpRuleSummary.byAction.watermark} watermark)\n`
   summary += `**Detectors:** ${allDetectors.length}\n`
   summary += `**Browser Versions:** ${versions.length} versions across ${totalDevices} devices\n`
@@ -485,6 +544,9 @@ function buildSummaryResponse(env) {
       if (issue.component === 'securityInsights' && issue.severity === 'critical') {
         remediation =
           ' -> Action: Use the `security_insights` tool to enable this feature (e.g. `security_insights enable`).'
+      } else if (issue.component === 'securityInsightsData' && issue.severity === 'medium') {
+        remediation =
+          ' -> Action: Verify that the API client has the required scopes: `chrome.management.reports.readonly`.'
       }
       summary += `${icon} **${issue.severity.toUpperCase()}** (${issue.component}): ${issue.message}${remediation}\n`
     }
