@@ -217,6 +217,7 @@ describe('cep_auth Tool', () => {
     const result = await handler({}, {})
 
     assert.strictEqual(result.structuredContent.status, 'awaiting')
+    assert.strictEqual(result.structuredContent.nextAction, 'complete-in-browser')
     assert.strictEqual(result.structuredContent.browserOpened, true)
     assert.match(result.content[0].text, /A browser tab should have opened/)
     assert.match(result.content[0].text, /Once you sign in and see the "Signed in" success message/)

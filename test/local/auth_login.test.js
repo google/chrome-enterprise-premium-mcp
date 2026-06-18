@@ -356,6 +356,55 @@ describe('startToolAuth', () => {
     assert.ok(server.wasStopped())
   })
 
+  test('When startToolAuth is called twice, both attempts remain active until one completes and cancels both', async () => {
+    const { client, calls } = makeFakeOAuth2Client()
+    let resolve1
+    const server1 = makeFakeServer({
+      codePromise: new Promise(r => {
+        resolve1 = r
+      }),
+    })
+    const server2 = makeFakeServer({ codePromise: new Promise(() => {}) })
+    let count = 0
+    const startServer = async () => (count++ === 0 ? server1 : server2)
+
+    const res1 = await startToolAuth({
+      env: { SSH_CONNECTION: 'x' },
+      browserAvailable: () => false,
+      openBrowser: async () => false,
+      startServer,
+      oauth2ClientFactory: () => client,
+      configResolver: () => FAKE_CONFIG,
+      cachePath,
+      scopes: ['scope-a'],
+    })
+    await startToolAuth({
+      env: { SSH_CONNECTION: 'x' },
+      browserAvailable: () => false,
+      openBrowser: async () => false,
+      startServer,
+      oauth2ClientFactory: () => client,
+      configResolver: () => FAKE_CONFIG,
+      cachePath,
+      scopes: ['scope-a'],
+    })
+
+    assert.strictEqual(server1.wasStopped(), false)
+    assert.strictEqual(server2.wasStopped(), false)
+
+    const state1 = new URL(res1.authUrl).searchParams.get('state')
+    resolve1({ code: 'code1', state: state1 })
+
+    await new Promise(resolve => {
+      setTimeout(resolve, 50)
+    })
+
+    assert.strictEqual(calls.getToken.length, 1)
+    assert.strictEqual(calls.getToken[0].code, 'code1')
+    assert.strictEqual(server1.wasStopped(), true)
+    assert.strictEqual(server2.wasStopped(), true)
+  })
+
   test('When startToolAuth is called with authMethod="manual", then it does not check browserAvailable or attempt browser launch', async () => {
     const { client } = makeFakeOAuth2Client()
     const server = makeFakeServer()

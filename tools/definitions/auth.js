@@ -172,6 +172,7 @@ export function registerAuthTools(server, options, sessionState) {
         'Use this tool ONLY for the CEP MCP server. The Google Workspace MCP server has its own separate auth tool—do not use this one for that. ' +
         `Requests the CEP scope set: ${scopeSummary}. ` +
         'Call with no arguments to start the sign-in. ' +
+        'If the response sets `nextAction` to `complete-in-browser`, inform the user that a browser tab has opened automatically and they just need to complete sign-in there (no further tool call is needed). ' +
         'If the response sets `nextAction` to `paste-redirect-url`, ask the user to paste the URL the browser was redirected to, then call `cep_auth` again with that string as the `redirectUrl` argument.',
       inputSchema: {
         redirectUrl: z
@@ -362,7 +363,7 @@ function awaitingResponse(result) {
     structuredContent: {
       status: 'awaiting',
       authUrl: result.authUrl,
-      nextAction: 'paste-redirect-url',
+      nextAction: result.browserOpened ? 'complete-in-browser' : 'paste-redirect-url',
       browserAttempted: result.browserAttempted,
       browserOpened: result.browserOpened,
       expiresAt,
