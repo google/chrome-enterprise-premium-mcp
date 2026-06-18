@@ -356,14 +356,9 @@ describe('startToolAuth', () => {
     assert.ok(server.wasStopped())
   })
 
-  test('When startToolAuth is called twice, both attempts remain active until one completes and cancels both', async () => {
-    const { client, calls } = makeFakeOAuth2Client()
-    let resolve1
-    const server1 = makeFakeServer({
-      codePromise: new Promise(r => {
-        resolve1 = r
-      }),
-    })
+  test('When startToolAuth is called twice, the second invocation reuses the active in-flight singleton session', async () => {
+    const { client } = makeFakeOAuth2Client()
+    const server1 = makeFakeServer({ codePromise: new Promise(() => {}) })
     const server2 = makeFakeServer({ codePromise: new Promise(() => {}) })
     let count = 0
     const startServer = async () => (count++ === 0 ? server1 : server2)
@@ -378,7 +373,7 @@ describe('startToolAuth', () => {
       cachePath,
       scopes: ['scope-a'],
     })
-    await startToolAuth({
+    const res2 = await startToolAuth({
       env: { SSH_CONNECTION: 'x' },
       browserAvailable: () => false,
       openBrowser: async () => false,
@@ -389,20 +384,21 @@ describe('startToolAuth', () => {
       scopes: ['scope-a'],
     })
 
+    assert.strictEqual(res1.authUrl, res2.authUrl)
+    assert.strictEqual(count, 1)
     assert.strictEqual(server1.wasStopped(), false)
-    assert.strictEqual(server2.wasStopped(), false)
+  })
 
-    const state1 = new URL(res1.authUrl).searchParams.get('state')
-    resolve1({ code: 'code1', state: state1 })
+  test('When startToolAuth is called with valid tokens already cached, it returns status=completed immediately', async () => {
+    const future = Date.now() + 3600 * 1000
+    await writeCache(cachePath, { access_token: 'existing-tok', expiry_date: future })
 
-    await new Promise(resolve => {
-      setTimeout(resolve, 50)
+    const result = await startToolAuth({
+      cachePath,
+      scopes: [],
     })
 
-    assert.strictEqual(calls.getToken.length, 1)
-    assert.strictEqual(calls.getToken[0].code, 'code1')
-    assert.strictEqual(server1.wasStopped(), true)
-    assert.strictEqual(server2.wasStopped(), true)
+    assert.strictEqual(result.status, 'completed')
   })
 
   test('When startToolAuth is called with authMethod="manual", then it does not check browserAvailable or attempt browser launch', async () => {
@@ -585,6 +581,46 @@ describe('completeToolAuth', () => {
       redirectUrl: 'http://127.0.0.1:1/?code=x&state=y',
       cachePath,
     })
+    assert.strictEqual(result.status, 'completed')
+    assert.strictEqual(result.expiresAt.getTime(), future)
+  })
+  test('When getToken fails but the background process already cached the tokens, then completeToolAuth succeeds', async () => {
+    const { client } = makeFakeOAuth2Client()
+    const server = makeFakeServer({ codePromise: new Promise(() => {}) })
+
+    // Stub getToken to fail
+    client.getToken = async () => {
+      throw new Error('invalid_grant')
+    }
+
+    let capturedState
+    const captureClient = {
+      ...client,
+      generateAuthUrl(opts) {
+        capturedState = opts.state
+        return client.generateAuthUrl(opts)
+      },
+    }
+
+    await startToolAuth({
+      browserAvailable: () => true,
+      openBrowser: async () => true,
+      startServer: async () => server,
+      oauth2ClientFactory: () => captureClient,
+      configResolver: () => FAKE_CONFIG,
+      cachePath,
+    })
+
+    // Manually write to the cache to simulate background process success
+    const future = Date.now() + 3600 * 1000
+    await writeCache(cachePath, { access_token: 'background-tok', expiry_date: future })
+
+    // This should now succeed because of the retry logic
+    const result = await completeToolAuth({
+      redirectUrl: `http://127.0.0.1:1/?code=x&state=${capturedState}`,
+      cachePath,
+    })
+
     assert.strictEqual(result.status, 'completed')
     assert.strictEqual(result.expiresAt.getTime(), future)
   })

@@ -304,7 +304,7 @@ export function registerAuthTools(server, options, sessionState) {
 
 /**
  * Builds the "you're signed in" response.
- * @param {{expiresAt?: Date|null, source?: string}} result The completed-auth result.
+ * @param {{expiresAt?: Date|null, source?: string, authMethod?: string}} result The completed-auth result.
  * @returns {object} MCP tool response with status=completed.
  */
 function successResponse(result) {
@@ -318,7 +318,7 @@ function successResponse(result) {
 
 /**
  * Builds the "waiting on the user to paste the URL back" response.
- * @param {{authUrl: string, browserOpened: boolean, browserAttempted: boolean, expiresAt?: Date|null, source?: string}} result The awaiting-auth result.
+ * @param {{authUrl: string, browserOpened: boolean, browserAttempted: boolean, expiresAt?: Date|null, source?: string, authMethod?: string}} result The awaiting-auth result.
  * @returns {object} MCP tool response with status=awaiting and nextAction=paste-redirect-url.
  */
 function awaitingResponse(result) {
@@ -336,7 +336,11 @@ function awaitingResponse(result) {
     if (result.browserAttempted) {
       lines.push('Failed to open browser automatically. Please complete sign-in manually:')
     } else {
-      lines.push('I cannot open a browser in this environment. Please complete sign-in manually:')
+      if (result.authMethod === 'manual') {
+        lines.push('Manual authentication requested. Please complete sign-in below:')
+      } else {
+        lines.push('I cannot open a browser in this environment. Please complete sign-in manually:')
+      }
     }
     lines.push('')
     lines.push('1. Open the URL below in your local browser:')
@@ -369,6 +373,7 @@ function awaitingResponse(result) {
       expiresAt,
       source: result.source,
       agentHint,
+      authMethod: result.authMethod,
     },
   }
 }

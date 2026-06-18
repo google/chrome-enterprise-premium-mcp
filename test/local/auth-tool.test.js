@@ -15,6 +15,7 @@ limitations under the License.
 */
 
 import assert from 'node:assert/strict'
+process.env.NO_COLOR = '1'
 import { describe, test, mock, beforeEach } from 'node:test'
 import esmock from 'esmock'
 import { cliInvocation } from '../../lib/util/cli_invocation.js'
