@@ -64,6 +64,9 @@ gemini extensions install https://github.com/google/chrome-enterprise-premium-mc
 }
 ```
 
+> [!TIP]
+> **Using NVM or version managers?** Graphical MCP clients (like Claude Desktop or Cursor) may not inherit your shell's environment. If you get a "command not found" error for `npx` or `node`, try using the absolute path to `npx` (e.g., `/usr/local/bin/npx` or your NVM path `/Users/username/.nvm/versions/node/vXX.XX.XX/bin/npx`), or see [Troubleshooting](docs/troubleshooting.md#nodejs) for how to resolve PATH issues.
+
 ### 3. Verify
 
 Restart your MCP client, then ask the agent:

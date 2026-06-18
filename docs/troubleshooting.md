@@ -103,6 +103,15 @@ Try these in order.
 2. **Run the client's MCP-reload command.** Some clients pick up tool registrations only after an explicit reload, even after a restart. Consult your client's documentation for the reload command.
 3. **Use absolute paths.** The `args` path in your config must be absolute. Relative paths resolve from the client's working directory, which is unpredictable.
 4. **Check that the client can find `node`.** Graphical-interface clients might not inherit your shell PATH. Try the full path to node, for example `"command": "/usr/local/bin/node"`. Find yours with `which node`.
+
+   If you use NVM or another version manager, the cleanest fix is to install a system-wide Node fallback (e.g., `sudo apt install nodejs npm` on Linux or `brew install node` on macOS). This provides a stable fallback for GUI clients while allowing you to keep using NVM in your terminal.
+
+   Alternatively, you can symlink your active NVM Node version to your local `bin` directory (note that you will need to re-run this if you delete this Node version):
+
+   ```bash
+   mkdir -p ~/bin && ln -sf $(node -e 'console.log(process.execPath)') ~/bin/node
+   ```
+
 5. **Test the server manually.** Run `npx -y @google/chrome-enterprise-premium-mcp@latest` in a terminal. The server prints `[mcp] Chrome Enterprise Premium MCP server stdio transport connected` on standard error. If you see errors, fix those first.
 
 ### Server starts but immediately exits

@@ -75,3 +75,4 @@ Don't reinvent; follow the recipes that already exist:
   `npm run format && git add -A` first; lint-staged will only touch what's
   already staged.
 - **Don't bypass hooks** with `--no-verify`. If one fails, fix the cause.
+- **Time-bound research for UI elements.** When searching for UI pages, links, or documentation (e.g., DataNexus tables, Admin Console URLs), do not spend extended time or tool calls. If a UI page or element cannot be found after 2-3 quick searches, give up and leave it blank.
