@@ -34,7 +34,7 @@ limitations under the License.
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { execFileSync } from 'node:child_process'
-import { findTestFiles } from './run-utils.js'
+import { findTestFiles, sanitizeOauthClientEnv } from './run-utils.js'
 import { setupSyntheticTokenCache } from './helpers/synthetic_token_cache.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -56,8 +56,7 @@ if (backend !== 'fake' && backend !== 'real') {
 
 process.env.CEP_BACKEND = backend
 if (backend !== 'real') {
-  process.env.CEP_OAUTH_CLIENT_ID = ''
-  process.env.CEP_OAUTH_CLIENT_SECRET = ''
+  sanitizeOauthClientEnv()
 }
 
 const integrationDirs = [join(root, 'test', 'integration', 'tools'), join(root, 'test', 'integration', 'server')]
