@@ -581,12 +581,13 @@ export function createFakeApp() {
 
   // Cloud Resource Manager: Search Organizations
   app.post('/v1/organizations\\:search', (req, res) => {
-    const { query } = req.body
+    const { filter, query } = req.body
+    const activeFilter = filter || query
     let results = state.organizations
 
-    if (query) {
+    if (activeFilter) {
       // Simple query parsing for testing, e.g. "domain:test.com" or "directoryCustomerId:C0123"
-      const match = query.match(/(domain|directoryCustomerId):(\S+)/)
+      const match = activeFilter.match(/(domain|directoryCustomerId):(\S+)/)
       if (match) {
         const [_, key, value] = match
         if (key === 'domain') {
