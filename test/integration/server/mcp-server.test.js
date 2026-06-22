@@ -103,6 +103,7 @@ describe('MCP Server in stdio mode', () => {
         'search_content',
         'list_documents',
         'get_document',
+        'search_organizations',
       ].sort(),
     )
   })

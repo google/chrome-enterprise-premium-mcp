@@ -49,6 +49,7 @@ const CORE_TOOLS = [
   'list_detectors',
   'list_dlp_rules',
   'list_org_units',
+  'search_organizations',
   'security_insights',
 ]
 

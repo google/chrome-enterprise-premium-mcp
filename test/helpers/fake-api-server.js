@@ -269,7 +269,7 @@ function getInitialState() {
       {
         name: 'organizations/123456789',
         displayName: 'Test Org',
-        directoryCustomerId: 'C0123',
+        directoryCustomerId: 'C0123456',
         state: 'ACTIVE',
       },
     ],

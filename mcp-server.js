@@ -100,7 +100,14 @@ async function probeOAuthFlow(requiredScopes) {
  * @returns {{customerId: null, cachedRootOrgUnitId: null, pendingRule: null, history: Array}} A new session-state object with all fields zeroed.
  */
 export function createSessionState() {
-  return { customerId: null, cachedRootOrgUnitId: null, pendingRule: null, history: [] }
+  return {
+    customerId: null,
+    cachedRootOrgUnitId: null,
+    pendingRule: null,
+    organizationId: null,
+    organizationName: null,
+    history: [],
+  }
 }
 
 /**

@@ -50,6 +50,8 @@ describe('HTTP per-request session state isolation', () => {
       customerId: null,
       cachedRootOrgUnitId: null,
       pendingRule: null,
+      organizationId: null,
+      organizationName: null,
       history: [],
     })
     a.customerId = 'C0AAAAAAA'
