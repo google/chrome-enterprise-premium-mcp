@@ -40,7 +40,7 @@ import { buildServerInstructions } from './lib/knowledge/instructions.js'
 import { registerTools } from './tools/index.js'
 import { registerPrompts } from './prompts/index.js'
 import { checkGCP, isStdioMode } from './lib/util/gcp.js'
-import { featureFlags, FLAGS } from './lib/util/feature_flags.js'
+import { featureFlags, FLAGS, getActiveScopes } from './lib/util/feature_flags.js'
 import { logger } from './lib/util/logger.js'
 import { printBanner, dim } from './lib/util/banner.js'
 import { buildApiCredsField, buildScopesField, buildAuthRemediationLines } from './lib/util/auth_messages.js'
@@ -49,7 +49,7 @@ import { resolveOAuthClientConfig } from './lib/util/credential/oauth_client_con
 import { oauthFlowCredential } from './lib/util/credential/oauth_flow.js'
 import { verifyBearerToken } from './lib/util/credential/bearer_verifier.js'
 import { installPrettyValidationErrors } from './lib/util/mcp_pretty_errors.js'
-import { TAGS, SCOPES } from './lib/constants.js'
+import { TAGS } from './lib/constants.js'
 
 // Import Clients
 import { AdminSdkClient } from './lib/api/admin_sdk_client.js'
@@ -308,10 +308,7 @@ export async function runServer() {
         .filter(flag => featureFlags.isEnabled(flag))
         .join(', ') || 'None'
 
-    let requiredScopes = Object.values(SCOPES)
-    if (!featureFlags.isEnabled(FLAGS.CLOUD_PLATFORM_SCOPE_ENABLED)) {
-      requiredScopes = requiredScopes.filter(s => s !== SCOPES.CLOUD_PLATFORM)
-    }
+    const requiredScopes = getActiveScopes()
     const probe = await probeOAuthFlow(requiredScopes)
     let oauthClientConfig = null
     try {
