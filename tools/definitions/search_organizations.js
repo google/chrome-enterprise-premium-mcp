@@ -44,8 +44,11 @@ export function registerSearchOrganizationsTool(server, options, sessionState) {
       inputSchema: z.object({
         customerId: z
           .string()
-          .optional()
-          .describe('The Workspace customer ID (e.g. C012345). Defaults to "my_customer".'),
+          .describe(
+            'The Workspace customer ID (e.g. C012345) retrieved from get_customer_id. ' +
+              'Note that the literal value "my_customer" is NOT supported by the GCP CRM API; ' +
+              'you must retrieve the real customer ID first and provide it here.',
+          ),
       }),
       outputSchema: z.looseObject({}),
     },

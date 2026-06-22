@@ -111,14 +111,4 @@ describe('search_organizations Tool', () => {
     // Verify output content
     assert.ok(result.content[0].text.includes('No GCP organization found'))
   })
-
-  test('handler auto-resolves customerId if omitted', async () => {
-    // If customerId is omitted, guardedToolCall should resolve it via adminSdk
-    await handler({}, { requestInfo: { headers: { authorization: 'Bearer mock-token' } } })
-
-    assert.strictEqual(mockAdminSdk.getCustomerId.mock.callCount(), 1)
-    assert.strictEqual(mockCrmClient.searchOrganizations.mock.callCount(), 1)
-    const callArgs = mockCrmClient.searchOrganizations.mock.calls[0].arguments
-    assert.deepStrictEqual(callArgs[0], { filter: 'owner.directorycustomerid:C012345' })
-  })
 })

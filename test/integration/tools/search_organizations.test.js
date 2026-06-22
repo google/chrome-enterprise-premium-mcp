@@ -56,22 +56,4 @@ describe('Search Organizations Tool Integration', () => {
     assert.strictEqual(sessionState.organizationId, '123456789')
     assert.strictEqual(sessionState.organizationName, 'organizations/123456789')
   })
-
-  test('When search_organizations is called without customerId, then it auto-resolves and succeeds', async () => {
-    const { client, sessionState } = harness
-
-    // Reset session state to verify auto-resolution writes to it again
-    sessionState.organizationId = null
-    sessionState.organizationName = null
-
-    const result = await client.callTool({
-      name: 'search_organizations',
-      arguments: {}, // Omit customerId
-    })
-
-    const { text } = parseToolOutput(result)
-
-    assert.ok(text.includes('Associated GCP Organization Found'), `Output text: ${text}`)
-    assert.strictEqual(sessionState.organizationId, '123456789')
-  })
 })
