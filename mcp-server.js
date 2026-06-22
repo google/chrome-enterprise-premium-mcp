@@ -308,7 +308,10 @@ export async function runServer() {
         .filter(flag => featureFlags.isEnabled(flag))
         .join(', ') || 'None'
 
-    const requiredScopes = Object.values(SCOPES)
+    let requiredScopes = Object.values(SCOPES)
+    if (!featureFlags.isEnabled(FLAGS.CLOUD_PLATFORM_SCOPE_ENABLED)) {
+      requiredScopes = requiredScopes.filter(s => s !== SCOPES.CLOUD_PLATFORM)
+    }
     const probe = await probeOAuthFlow(requiredScopes)
     let oauthClientConfig = null
     try {
