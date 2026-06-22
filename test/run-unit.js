@@ -28,7 +28,7 @@ limitations under the License.
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { execFileSync } from 'node:child_process'
-import { findTestFiles } from './run-utils.js'
+import { findTestFiles, sanitizeOauthClientEnv } from './run-utils.js'
 import { setupSyntheticTokenCache } from './helpers/synthetic_token_cache.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -40,6 +40,7 @@ if (!process.env.CEP_LOG_LEVEL) {
 }
 
 process.env.CEP_BACKEND = 'fake'
+sanitizeOauthClientEnv()
 
 setupSyntheticTokenCache('cep-mcp-unit-home-')
 

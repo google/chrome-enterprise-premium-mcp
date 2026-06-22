@@ -25,6 +25,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { sanitizeOauthClientEnv } from '../../run-utils.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -39,7 +40,7 @@ describe('MCP Server in stdio mode', () => {
     transport = new StdioClientTransport({
       command: 'node',
       args: ['mcp-server.js'],
-      env: {
+      env: sanitizeOauthClientEnv({
         ...process.env,
         GCP_STDIO: 'true',
         EXPERIMENT_KNOWLEDGE_SEARCH_ENABLED: 'true',
@@ -48,7 +49,7 @@ describe('MCP Server in stdio mode', () => {
         // delete_* tools; opt this child process out so the expected list
         // matches what the parent suite registers.
         EXPERIMENT_DELETE_TOOL_ENABLED: 'false',
-      },
+      }),
     })
     client = new Client({
       name: 'test-client',
