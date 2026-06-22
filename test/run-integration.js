@@ -55,6 +55,10 @@ if (backend !== 'fake' && backend !== 'real') {
 }
 
 process.env.CEP_BACKEND = backend
+if (backend !== 'real') {
+  process.env.CEP_OAUTH_CLIENT_ID = ''
+  process.env.CEP_OAUTH_CLIENT_SECRET = ''
+}
 
 const integrationDirs = [join(root, 'test', 'integration', 'tools'), join(root, 'test', 'integration', 'server')]
 const testFiles = integrationDirs.flatMap(dir => findTestFiles(dir)).sort()

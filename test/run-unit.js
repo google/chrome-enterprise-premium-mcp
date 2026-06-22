@@ -40,6 +40,8 @@ if (!process.env.CEP_LOG_LEVEL) {
 }
 
 process.env.CEP_BACKEND = 'fake'
+process.env.CEP_OAUTH_CLIENT_ID = ''
+process.env.CEP_OAUTH_CLIENT_SECRET = ''
 
 setupSyntheticTokenCache('cep-mcp-unit-home-')
 
