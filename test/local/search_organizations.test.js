@@ -77,10 +77,10 @@ describe('search_organizations Tool', () => {
       { requestInfo: { headers: { authorization: 'Bearer mock-token' } } },
     )
 
-    // Verify CRM client was called with correct query
+    // Verify CRM client was called with correct filter
     assert.strictEqual(mockCrmClient.searchOrganizations.mock.callCount(), 1)
     const callArgs = mockCrmClient.searchOrganizations.mock.calls[0].arguments
-    assert.deepStrictEqual(callArgs[0], { query: 'directoryCustomerId:C012345' })
+    assert.deepStrictEqual(callArgs[0], { filter: 'owner.directorycustomerid:C012345' })
     assert.strictEqual(callArgs[1], 'mock-token')
 
     // Verify sessionState was updated
@@ -119,6 +119,6 @@ describe('search_organizations Tool', () => {
     assert.strictEqual(mockAdminSdk.getCustomerId.mock.callCount(), 1)
     assert.strictEqual(mockCrmClient.searchOrganizations.mock.callCount(), 1)
     const callArgs = mockCrmClient.searchOrganizations.mock.calls[0].arguments
-    assert.deepStrictEqual(callArgs[0], { query: 'directoryCustomerId:C012345' })
+    assert.deepStrictEqual(callArgs[0], { filter: 'owner.directorycustomerid:C012345' })
   })
 })

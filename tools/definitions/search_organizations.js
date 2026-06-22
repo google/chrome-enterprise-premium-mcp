@@ -56,7 +56,7 @@ export function registerSearchOrganizationsTool(server, options, sessionState) {
 
           const result = await cloudResourceManagerClient.searchOrganizations(
             {
-              query: `directoryCustomerId:${customerId}`,
+              filter: `owner.directorycustomerid:${customerId}`,
             },
             authToken,
           )
