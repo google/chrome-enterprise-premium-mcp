@@ -41,6 +41,8 @@ describe('MCP Server in stdio mode', () => {
       args: ['mcp-server.js'],
       env: {
         ...process.env,
+        CEP_OAUTH_CLIENT_ID: '',
+        CEP_OAUTH_CLIENT_SECRET: '',
         GCP_STDIO: 'true',
         EXPERIMENT_KNOWLEDGE_SEARCH_ENABLED: 'true',
         // The integration runner sets EXPERIMENT_DELETE_TOOL_ENABLED=true, but
