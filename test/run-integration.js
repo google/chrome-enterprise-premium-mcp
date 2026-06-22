@@ -60,7 +60,15 @@ if (backend !== 'real') {
 }
 
 const integrationDirs = [join(root, 'test', 'integration', 'tools'), join(root, 'test', 'integration', 'server')]
-const testFiles = integrationDirs.flatMap(dir => findTestFiles(dir)).sort()
+let testFiles = []
+
+// Support running specific files passed as arguments
+const args = process.argv.slice(3)
+if (args.length > 0) {
+  testFiles = args.map(arg => resolve(root, arg))
+} else {
+  testFiles = integrationDirs.flatMap(dir => findTestFiles(dir)).sort()
+}
 
 if (testFiles.length === 0) {
   console.error('No test files found under test/integration/tools/ or test/integration/server/')
