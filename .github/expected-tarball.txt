@@ -7,6 +7,7 @@ lib/api/admin_sdk_client.js
 lib/api/chrome_management_client.js
 lib/api/chrome_policy_client.js
 lib/api/cloud_identity_client.js
+lib/api/cloud_resource_manager_client.js
 lib/api/service_usage_client.js
 lib/constants.js
 lib/knowledge/0-agent-capabilities.md
