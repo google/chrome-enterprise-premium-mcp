@@ -22,6 +22,8 @@
   "scripts": {
     "auth:login": "node bin/cli.js auth login",
     "auth:status": "node bin/cli.js auth status",
+    "build": "node tools/build.js",
+    "compile-docs": "node tools/compile-docs.js",
     "eval": "CEP_BACKEND=fake node test/evals/run.js",
     "eval:agentic": "CEP_BACKEND=fake node test/evals/run.js --category inspection,troubleshooting,mutation,discovery,connectors",
     "eval:boundary": "CEP_BACKEND=fake node test/evals/run.js --category boundary",
@@ -34,7 +36,7 @@
     "lint:fix": "eslint --fix .",
     "mcp-inspector": "npx @modelcontextprotocol/inspector node mcp-server.js",
     "postsubmit": "npm run presubmit && npm run test:integration:real",
-    "prepare": "husky || true",
+    "prepare": "node tools/compile-docs.js && (husky || true)",
     "presubmit": "prettier --check . && npm run lint && npm run test:unit && npm run test:integration:fake && npm run test:smoke",
     "start": "node mcp-server.js",
     "test": "node test/run-all.js",
@@ -65,6 +67,7 @@
     "@eslint/js": "^10.0.1",
     "@google/chrome-enterprise-premium-mcp": "file:.",
     "@google/generative-ai": "^0.24.1",
+    "esbuild": "^0.28.0",
     "eslint": "^10.3.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-jsdoc": "^62.9.0",
@@ -75,6 +78,7 @@
     "husky": "^9.1.7",
     "js-yaml": "^4.1.1",
     "lint-staged": "^16.4.0",
+    "postject": "^1.0.0-alpha.6",
     "prettier": "^3.8.3",
     "prettier-plugin-packagejson": "^3.0.2"
   },

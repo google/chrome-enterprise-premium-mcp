@@ -32,9 +32,8 @@ import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { SetLevelRequestSchema } from '@modelcontextprotocol/sdk/types.js'
 import fs from 'node:fs/promises'
-import { readFileSync } from 'node:fs'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-const pkg = JSON.parse(readFileSync(fileURLToPath(new URL('./package.json', import.meta.url)), 'utf8'))
+import pkg from './package.json' with { type: 'json' }
 
 import { buildServerInstructions } from './lib/knowledge/instructions.js'
 import { registerTools } from './tools/index.js'
@@ -292,13 +291,18 @@ export async function runServer() {
     // Calculate Knowledge DB articles. Resolve the default path relative to
     // this module so `npx` invocations from arbitrary CWDs still find the
     // bundled corpus.
-    const knowledgeDir = process.env.KNOWLEDGE_DB_PATH || fileURLToPath(new URL('./lib/knowledge', import.meta.url))
     let articleCount = 0
     try {
-      const files = await fs.readdir(knowledgeDir)
-      articleCount = files.filter(f => /^\d+.*\.md$/.test(f)).length
+      const { staticDocs, dynamicDocs } = await import('./lib/knowledge/compiled_docs.js')
+      articleCount = (staticDocs?.length || 0) + (dynamicDocs?.length || 0)
     } catch (_e) {
-      // Ignore or log
+      try {
+        const knowledgeDir = process.env.KNOWLEDGE_DB_PATH || fileURLToPath(new URL('./lib/knowledge', import.meta.url))
+        const files = await fs.readdir(knowledgeDir)
+        articleCount = files.filter(f => /^\d+.*\.md$/.test(f)).length
+      } catch (_e2) {
+        // Ignore
+      }
     }
 
     const activeExps =

@@ -30,9 +30,11 @@ describe('MCP Prompts', () => {
   let transport
 
   before(async () => {
+    const command = process.env.CEP_TEST_BINARY || 'node'
+    const args = process.env.CEP_TEST_BINARY ? [] : [SERVER_PATH]
     transport = new StdioClientTransport({
-      command: 'node',
-      args: [SERVER_PATH],
+      command,
+      args,
       env: { ...process.env, GCP_STDIO: 'true' },
     })
     client = new Client(

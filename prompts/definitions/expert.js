@@ -18,17 +18,12 @@ limitations under the License.
  * @file Prompt definition for the 'cep:expert' command.
  */
 
-import fs from 'fs'
-import path from 'path'
-import { fileURLToPath } from 'url'
+import { systemPrompt } from '../../lib/knowledge/compiled_docs.js'
 
 /**
  * MCP prompt name for the Chrome Enterprise Premium expert context command.
  */
 export const EXPERT_PROMPT_NAME = 'cep:expert'
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const systemPromptPath = path.resolve(__dirname, '../system-prompt.md')
 
 /**
  * Registers the 'cep:expert' prompt with the MCP server.
@@ -42,14 +37,13 @@ export const registerExpertPrompt = server => {
       arguments: [],
     },
     async () => {
-      const promptContent = fs.readFileSync(systemPromptPath, 'utf-8')
       return {
         messages: [
           {
             role: 'user',
             content: {
               type: 'text',
-              text: promptContent,
+              text: systemPrompt,
             },
           },
         ],
