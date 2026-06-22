@@ -20,6 +20,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import os from 'node:os'
 import { oauthFlowCredential, defaultOpenBrowser, printConsentUrl } from '../../lib/util/credential/oauth_flow.js'
+import { SCOPES } from '../../lib/constants.js'
 
 async function tmpCachePath(name) {
   const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'cep-mcp-oauth-test-'))
@@ -80,12 +81,12 @@ describe('oauthFlowCredential probe', () => {
       cachePath,
       requiredScopes: [
         'https://www.googleapis.com/auth/userinfo.email',
-        'https://www.googleapis.com/auth/cloud-platform',
+        'https://www.googleapis.com/auth/some-other-scope',
       ],
     })
     const probe = await cred.probe()
     assert.equal(probe.ok, false)
-    assert.deepEqual(probe.missingScopes, ['https://www.googleapis.com/auth/cloud-platform'])
+    assert.deepEqual(probe.missingScopes, ['https://www.googleapis.com/auth/some-other-scope'])
   })
 
   it('When the cache file mode is wider than 0600, then probe is ok:true with a permissions warning flag', async () => {
@@ -109,6 +110,56 @@ describe('oauthFlowCredential probe', () => {
     const probe = await cred.probe()
     assert.equal(probe.ok, true)
     assert.equal(probe.permissionsWarning, true)
+  })
+
+  it('When CLOUD_PLATFORM scope is required but the experiment is disabled, then probe ignores it and returns ok:true if other scopes are valid', async () => {
+    const cachePath = await tmpCachePath()
+    await fs.writeFile(
+      cachePath,
+      JSON.stringify({
+        access_token: 'a',
+        refresh_token: 'r',
+        expiry_date: Date.now() + 60_000,
+        scope: 'https://www.googleapis.com/auth/userinfo.email',
+      }),
+      { mode: 0o600 },
+    )
+    const cred = oauthFlowCredential({
+      clientId: 'test',
+      clientSecret: 'test',
+      cachePath,
+      requiredScopes: ['https://www.googleapis.com/auth/userinfo.email', SCOPES.CLOUD_PLATFORM],
+    })
+    const probe = await cred.probe()
+    assert.equal(probe.ok, true)
+  })
+
+  it('When CLOUD_PLATFORM scope is required and the experiment is enabled, then probe requires it and returns ok:false if missing', async () => {
+    const cachePath = await tmpCachePath()
+    await fs.writeFile(
+      cachePath,
+      JSON.stringify({
+        access_token: 'a',
+        refresh_token: 'r',
+        expiry_date: Date.now() + 60_000,
+        scope: 'https://www.googleapis.com/auth/userinfo.email',
+      }),
+      { mode: 0o600 },
+    )
+    process.env.EXPERIMENT_CLOUD_PLATFORM_SCOPE_ENABLED = 'true'
+    try {
+      const cred = oauthFlowCredential({
+        clientId: 'test',
+        clientSecret: 'test',
+        cachePath,
+        requiredScopes: ['https://www.googleapis.com/auth/userinfo.email', SCOPES.CLOUD_PLATFORM],
+      })
+      const probe = await cred.probe()
+      assert.equal(probe.ok, false)
+      assert.deepEqual(probe.missingScopes, [SCOPES.CLOUD_PLATFORM])
+    } finally {
+      delete process.env.EXPERIMENT_CLOUD_PLATFORM_SCOPE_ENABLED
+    }
   })
 })
 
@@ -225,6 +276,65 @@ describe('oauthFlowCredential runLoginFlow', () => {
 
     const stat = await fs.stat(cachePath)
     assert.equal(stat.mode & 0o777, 0o600, `expected cache file mode 0600, got ${(stat.mode & 0o777).toString(8)}`)
+  })
+
+  it('When runLoginFlow is called and the CLOUD_PLATFORM experiment is disabled, then the generated consent URL does not request CLOUD_PLATFORM', async () => {
+    const cachePath = await tmpCachePath()
+    const cred = oauthFlowCredential({ clientId: 'client', clientSecret: 'secret', cachePath })
+    let requestedScopes
+    async function openBrowser(url) {
+      const parsed = new URL(url)
+      requestedScopes = parsed.searchParams.get('scope').split(' ')
+      const redirectUri = parsed.searchParams.get('redirect_uri')
+      await fetch(`${redirectUri}?code=fakecode`)
+    }
+    function createOAuth2Client(cfg) {
+      return {
+        generateAuthUrl(params) {
+          const u = new URL('https://accounts.google.com/o/oauth2/v2/auth')
+          u.searchParams.set('redirect_uri', cfg.redirectUri)
+          u.searchParams.set('scope', (params.scope || []).join(' '))
+          return u.toString()
+        },
+        async getToken(_code) {
+          return { tokens: { access_token: 'ok' } }
+        },
+      }
+    }
+    await cred.runLoginFlow({ openBrowser, createOAuth2Client })
+    assert.ok(!requestedScopes.includes(SCOPES.CLOUD_PLATFORM), 'Should not request CLOUD_PLATFORM')
+  })
+
+  it('When runLoginFlow is called and the CLOUD_PLATFORM experiment is enabled, then the generated consent URL requests CLOUD_PLATFORM', async () => {
+    process.env.EXPERIMENT_CLOUD_PLATFORM_SCOPE_ENABLED = 'true'
+    try {
+      const cachePath = await tmpCachePath()
+      const cred = oauthFlowCredential({ clientId: 'client', clientSecret: 'secret', cachePath })
+      let requestedScopes
+      async function openBrowser(url) {
+        const parsed = new URL(url)
+        requestedScopes = parsed.searchParams.get('scope').split(' ')
+        const redirectUri = parsed.searchParams.get('redirect_uri')
+        await fetch(`${redirectUri}?code=fakecode`)
+      }
+      function createOAuth2Client(cfg) {
+        return {
+          generateAuthUrl(params) {
+            const u = new URL('https://accounts.google.com/o/oauth2/v2/auth')
+            u.searchParams.set('redirect_uri', cfg.redirectUri)
+            u.searchParams.set('scope', (params.scope || []).join(' '))
+            return u.toString()
+          },
+          async getToken(_code) {
+            return { tokens: { access_token: 'ok' } }
+          },
+        }
+      }
+      await cred.runLoginFlow({ openBrowser, createOAuth2Client })
+      assert.ok(requestedScopes.includes(SCOPES.CLOUD_PLATFORM), 'Should request CLOUD_PLATFORM')
+    } finally {
+      delete process.env.EXPERIMENT_CLOUD_PLATFORM_SCOPE_ENABLED
+    }
   })
 })
 
