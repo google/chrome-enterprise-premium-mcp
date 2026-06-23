@@ -91,6 +91,12 @@ describe('search_organizations Tool', () => {
     assert.ok(result.content[0].text.includes('Associated GCP Organization Found'))
     assert.ok(result.content[0].text.includes('Test Org'))
     assert.ok(result.content[0].text.includes('123456789'))
+
+    // Verify structured output content
+    assert.deepStrictEqual(result.structuredContent, {
+      organizationId: '123456789',
+      organizationName: 'organizations/123456789',
+    })
   })
 
   test('handler handles no organizations found gracefully', async () => {
@@ -109,6 +115,13 @@ describe('search_organizations Tool', () => {
     assert.strictEqual(sessionState.organizationName, null)
 
     // Verify output content
-    assert.ok(result.content[0].text.includes('No GCP organization found'))
+    assert.ok(result.content[0].text.includes('GCP Organization Not Found'))
+    assert.ok(result.content[0].text.includes('A GCP organization does not exist for your domain yet'))
+
+    // Verify structured output content
+    assert.deepStrictEqual(result.structuredContent, {
+      organizationId: null,
+      organizationName: null,
+    })
   })
 })

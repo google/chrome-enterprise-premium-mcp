@@ -50,7 +50,23 @@ export function registerSearchOrganizationsTool(server, options, sessionState) {
               'you must retrieve the real customer ID first and provide it here.',
           ),
       }),
-      outputSchema: z.looseObject({}),
+      outputSchema: z.looseObject({
+        organizationId: z
+          .string()
+          .nullable()
+          .describe(
+            'The unique GCP Organization ID (e.g. 123456789) associated with the customer. ' +
+              'If this is empty/null, a GCP organization does not exist for this domain. ' +
+              'In this case, you MUST prompt the user with this exact message to consider creating one: ' +
+              '"A GCP organization does not exist for your domain yet, you can create one by navigating to ' +
+              'https://console.cloud.google.com/ and accepting the terms of service. Having a GCP organization ' +
+              'is required for access to Chrome Enterprise Premium features like DLP with CAA conditions and Security Gateway"',
+          ),
+        organizationName: z
+          .string()
+          .nullable()
+          .describe('The full resource name of the organization (e.g. organizations/123456789).'),
+      }),
     },
     guardedToolCall(
       {
@@ -70,10 +86,19 @@ export function registerSearchOrganizationsTool(server, options, sessionState) {
             formatFn: raw => {
               const orgs = raw?.organizations || []
               if (orgs.length === 0) {
+                const sc = {
+                  organizationId: null,
+                  organizationName: null,
+                }
+                const summary =
+                  '## GCP Organization Not Found\n\n' +
+                  'A GCP organization does not exist for your domain yet, you can create one by navigating to ' +
+                  'https://console.cloud.google.com/ and accepting the terms of service. Having a GCP organization ' +
+                  'is required for access to Chrome Enterprise Premium features like DLP with CAA conditions and Security Gateway'
                 return formatToolResponse({
-                  summary: `No GCP organization found associated with customer ID ${customerId}.`,
-                  data: raw,
-                  structuredContent: raw,
+                  summary,
+                  data: sc,
+                  structuredContent: sc,
                 })
               }
 
@@ -87,6 +112,11 @@ export function registerSearchOrganizationsTool(server, options, sessionState) {
                 logger.info(`${TAGS.MCP} Cached organizationId: ${orgId} in sessionState.`)
               }
 
+              const sc = {
+                organizationId: orgId,
+                organizationName: org.name,
+              }
+
               const summary =
                 `## Associated GCP Organization Found\n\n` +
                 `- **Display Name:** ${org.displayName}\n` +
@@ -97,8 +127,8 @@ export function registerSearchOrganizationsTool(server, options, sessionState) {
 
               return formatToolResponse({
                 summary,
-                data: raw,
-                structuredContent: raw,
+                data: sc,
+                structuredContent: sc,
               })
             },
           })

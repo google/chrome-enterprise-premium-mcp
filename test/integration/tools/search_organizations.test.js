@@ -48,9 +48,9 @@ describe('Search Organizations Tool Integration', () => {
     assert.ok(text.includes('Test Org'), `Output text: ${text}`)
     assert.ok(text.includes('123456789'), `Output text: ${text}`)
 
-    // Verify raw details in structured content
-    assert.strictEqual(details.organizations[0].displayName, 'Test Org')
-    assert.strictEqual(details.organizations[0].name, 'organizations/123456789')
+    // Verify structured content details
+    assert.strictEqual(details.organizationId, '123456789')
+    assert.strictEqual(details.organizationName, 'organizations/123456789')
 
     // Verify sessionState was updated
     assert.strictEqual(sessionState.organizationId, '123456789')
