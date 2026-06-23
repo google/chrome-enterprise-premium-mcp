@@ -19,7 +19,7 @@ import assert from 'node:assert'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { execSync } from 'node:child_process'
+import { execFileSync } from 'node:child_process'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const RUNS_DIR = path.resolve(__dirname, '../../evals/runs')
@@ -41,7 +41,9 @@ test('Daily Trend Reporter', async t => {
   }
 
   await t.test('reports correctly when no runs are present', () => {
-    const stdout = execSync(`node ${path.resolve(__dirname, '../../evals/reporter.js')}`, { encoding: 'utf8' })
+    const stdout = execFileSync(process.execPath, [path.resolve(__dirname, '../../evals/reporter.js')], {
+      encoding: 'utf8',
+    })
     assert.match(stdout, /No evaluation runs found/)
   })
 
@@ -69,7 +71,9 @@ test('Daily Trend Reporter', async t => {
     }
     fs.writeFileSync(path.join(RUNS_DIR, 'run-1.9.0-1700000000001.json'), JSON.stringify(latestRun))
 
-    const stdout = execSync(`node ${path.resolve(__dirname, '../../evals/reporter.js')}`, { encoding: 'utf8' })
+    const stdout = execFileSync(process.execPath, [path.resolve(__dirname, '../../evals/reporter.js')], {
+      encoding: 'utf8',
+    })
 
     // Check golden comparison outputs
     assert.match(stdout, /Golden Run Comparison/)
@@ -108,7 +112,9 @@ test('Daily Trend Reporter', async t => {
       fs.writeFileSync(path.join(RUNS_DIR, `run-1.9.0-170000000000${i}.json`), JSON.stringify(run))
     }
 
-    const stdout = execSync(`node ${path.resolve(__dirname, '../../evals/reporter.js')}`, { encoding: 'utf8' })
+    const stdout = execFileSync(process.execPath, [path.resolve(__dirname, '../../evals/reporter.js')], {
+      encoding: 'utf8',
+    })
 
     // Check persistent failure alert on m03
     assert.match(stdout, /Persistent Failures Alert/)
