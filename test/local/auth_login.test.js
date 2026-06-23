@@ -19,6 +19,7 @@ import { describe, test, beforeEach, afterEach, mock } from 'node:test'
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import os from 'node:os'
+import { SCOPES } from '../../lib/constants.js'
 import {
   isTokenLocallyValid,
   canLaunchBrowser,
@@ -78,6 +79,32 @@ describe('isTokenLocallyValid', () => {
     await writeCache(cachePath, { access_token: 'tok' })
     const result = await isTokenLocallyValid({ cachePath })
     assert.deepStrictEqual(result, { ok: true, expiresAt: null })
+  })
+
+  test('When CLOUD_PLATFORM scope is requested but the experiment is disabled, then it ignores it and reports ok: true if other scopes are valid', async () => {
+    const future = Date.now() + 60_000
+    await writeCache(cachePath, { access_token: 'tok', expiry_date: future, scope: 'openid email' })
+    const result = await isTokenLocallyValid({
+      cachePath,
+      scopes: ['openid', 'email', SCOPES.CLOUD_PLATFORM],
+    })
+    assert.strictEqual(result.ok, true)
+  })
+
+  test('When CLOUD_PLATFORM scope is requested and the experiment is enabled, then it requires it and reports ok: false if missing', async () => {
+    const future = Date.now() + 60_000
+    await writeCache(cachePath, { access_token: 'tok', expiry_date: future, scope: 'openid email' })
+    process.env.EXPERIMENT_CLOUD_PLATFORM_SCOPE_ENABLED = 'true'
+    try {
+      const result = await isTokenLocallyValid({
+        cachePath,
+        scopes: ['openid', 'email', SCOPES.CLOUD_PLATFORM],
+      })
+      assert.strictEqual(result.ok, false)
+      assert.strictEqual(result.reason, 'insufficient')
+    } finally {
+      delete process.env.EXPERIMENT_CLOUD_PLATFORM_SCOPE_ENABLED
+    }
   })
 })
 
@@ -538,5 +565,44 @@ describe('completeToolAuth', () => {
     })
     assert.strictEqual(result.status, 'completed')
     assert.strictEqual(result.expiresAt.getTime(), future)
+  })
+
+  test('When startToolAuth is called and the CLOUD_PLATFORM experiment is disabled, then the generated auth URL does not contain the CLOUD_PLATFORM scope', async () => {
+    const { client, calls } = makeFakeOAuth2Client()
+    const server = makeFakeServer()
+    await startToolAuth({
+      env: { SSH_CONNECTION: 'x' },
+      browserAvailable: () => false,
+      openBrowser: async () => false,
+      startServer: async () => server,
+      oauth2ClientFactory: () => client,
+      configResolver: () => FAKE_CONFIG,
+      cachePath,
+      awaitCallbackMs: 25,
+    })
+    const requestedScopes = calls.lastAuthUrlOpts.scope
+    assert.ok(!requestedScopes.includes(SCOPES.CLOUD_PLATFORM), 'Should not contain CLOUD_PLATFORM')
+  })
+
+  test('When startToolAuth is called and the CLOUD_PLATFORM experiment is enabled, then the generated auth URL contains the CLOUD_PLATFORM scope', async () => {
+    const { client, calls } = makeFakeOAuth2Client()
+    const server = makeFakeServer()
+    process.env.EXPERIMENT_CLOUD_PLATFORM_SCOPE_ENABLED = 'true'
+    try {
+      await startToolAuth({
+        env: { SSH_CONNECTION: 'x' },
+        browserAvailable: () => false,
+        openBrowser: async () => false,
+        startServer: async () => server,
+        oauth2ClientFactory: () => client,
+        configResolver: () => FAKE_CONFIG,
+        cachePath,
+        awaitCallbackMs: 25,
+      })
+      const requestedScopes = calls.lastAuthUrlOpts.scope
+      assert.ok(requestedScopes.includes(SCOPES.CLOUD_PLATFORM), 'Should contain CLOUD_PLATFORM')
+    } finally {
+      delete process.env.EXPERIMENT_CLOUD_PLATFORM_SCOPE_ENABLED
+    }
   })
 })

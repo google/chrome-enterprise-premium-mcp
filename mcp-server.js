@@ -40,7 +40,7 @@ import { buildServerInstructions } from './lib/knowledge/instructions.js'
 import { registerTools } from './tools/index.js'
 import { registerPrompts } from './prompts/index.js'
 import { checkGCP, isStdioMode } from './lib/util/gcp.js'
-import { featureFlags, FLAGS } from './lib/util/feature_flags.js'
+import { featureFlags, FLAGS, getActiveScopes } from './lib/util/feature_flags.js'
 import { logger } from './lib/util/logger.js'
 import { printBanner, dim } from './lib/util/banner.js'
 import { buildApiCredsField, buildScopesField, buildAuthRemediationLines } from './lib/util/auth_messages.js'
@@ -49,7 +49,7 @@ import { resolveOAuthClientConfig } from './lib/util/credential/oauth_client_con
 import { oauthFlowCredential } from './lib/util/credential/oauth_flow.js'
 import { verifyBearerToken } from './lib/util/credential/bearer_verifier.js'
 import { installPrettyValidationErrors } from './lib/util/mcp_pretty_errors.js'
-import { TAGS, SCOPES } from './lib/constants.js'
+import { TAGS } from './lib/constants.js'
 
 // Import Clients
 import { AdminSdkClient } from './lib/api/admin_sdk_client.js'
@@ -58,6 +58,7 @@ import { ChromePolicyClient } from './lib/api/chrome_policy_client.js'
 import { ChromeManagementClient } from './lib/api/chrome_management_client.js'
 import { ServiceUsageClient } from './lib/api/service_usage_client.js'
 import { CloudResourceManagerClient } from './lib/api/cloud_resource_manager_client.js'
+import { BeyondCorpClient } from './lib/api/beyondcorp_client.js'
 
 /**
  * Redirects console.log to console.error for compatibility with Stdio transport.
@@ -257,6 +258,7 @@ export async function getServer(gcpInfo, sharedSessionState, principal = null) {
     chromeManagement: new ChromeManagementClient(apiOptions),
     serviceUsage: new ServiceUsageClient(apiOptions),
     cloudResourceManager: new CloudResourceManagerClient(apiOptions),
+    beyondcorp: new BeyondCorpClient(apiOptions),
   }
 
   const toolOptions = {
@@ -315,7 +317,7 @@ export async function runServer() {
         .filter(flag => featureFlags.isEnabled(flag))
         .join(', ') || 'None'
 
-    const requiredScopes = Object.values(SCOPES)
+    const requiredScopes = getActiveScopes()
     const probe = await probeOAuthFlow(requiredScopes)
     let oauthClientConfig = null
     try {

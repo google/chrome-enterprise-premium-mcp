@@ -49,6 +49,7 @@ import { registerAuthTools } from './definitions/auth.js'
 import { registerSecurityInsightsTool } from './definitions/security_insights.js'
 import { registerSecurityInsightsDataTool } from './definitions/security_insights_data_tool.js'
 import { registerSearchOrganizationsTool } from './definitions/search_organizations.js'
+import { registerSecureGatewayTools } from './definitions/secure_gateway.js'
 import { featureFlags, FLAGS } from '../lib/util/feature_flags.js'
 
 /**
@@ -137,6 +138,10 @@ export function registerTools(server, options = {}, sessionState) {
     )
   }
 
+  if (flags.isEnabled(FLAGS.SECURE_GATEWAY_ENABLED)) {
+    logger.debug(`${TAGS.MCP} Registering secure gateway tools (EXPERIMENT_SECURE_GATEWAY_ENABLED is active)`)
+    registerSecureGatewayTools(server, options, state)
+  }
   registerKnowledgeTools(server, { ...options, featureFlags: flags }, state)
   registerAuthTools(server, commonOpts, state)
 }
