@@ -15,6 +15,7 @@ limitations under the License.
 */
 
 import assert from 'node:assert/strict'
+process.env.NO_COLOR = '1'
 import { describe, test, mock, beforeEach } from 'node:test'
 import esmock from 'esmock'
 import { cliInvocation } from '../../lib/util/cli_invocation.js'
@@ -217,6 +218,7 @@ describe('cep_auth Tool', () => {
     const result = await handler({}, {})
 
     assert.strictEqual(result.structuredContent.status, 'awaiting')
+    assert.strictEqual(result.structuredContent.nextAction, 'complete-in-browser')
     assert.strictEqual(result.structuredContent.browserOpened, true)
     assert.match(result.content[0].text, /A browser tab should have opened/)
     assert.match(result.content[0].text, /Once you sign in and see the "Signed in" success message/)

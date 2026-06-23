@@ -46,6 +46,7 @@ export const registerAuthPrompt = server => {
             text: `The user wants to sign in. Call the **cep_auth** tool with no arguments to start.
 
 - If the tool returns status="completed", the access token is cached and you're done.
+- If the tool returns status="awaiting" with nextAction="complete-in-browser", inform the user that a browser tab has opened automatically and they just need to complete sign-in there. No further tool call is needed.
 - If the tool returns status="awaiting" with nextAction="paste-redirect-url", show the user the authUrl from the response, ask them to open it in a browser and complete sign-in, then ask them to paste the full URL the browser is redirected to (it looks like \`http://127.0.0.1:PORT/?code=...&state=...\` and the page may show "connection refused" — that's expected). Call **cep_auth** again with that pasted URL as the redirectUrl argument.
 - If the tool returns status="error", relay the message to the user.`,
           },
