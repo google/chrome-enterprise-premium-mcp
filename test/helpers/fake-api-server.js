@@ -251,6 +251,32 @@ function getInitialState() {
       'serviceusage.googleapis.com': 'ENABLED',
     }),
     insightsState: 'INSIGHTS_DISABLED',
+    securityInsightsData: {
+      contentTransfers: {
+        summaries: [{ metric: 'CONTENT_TRANSFERS_METRIC_TOTAL_TRANSFERS', count: '100' }],
+      },
+      contentTransfersBreakdowns: {
+        contentTransfersBreakdowns: [{ user: 'user@test.com', summary: { count: '50' } }],
+      },
+      urlVisits: {
+        summaries: [{ metric: 'URL_VISITS_METRIC_TOTAL_SUSPICIOUS_URL_VISITS', count: '5' }],
+      },
+      urlVisitsBreakdowns: {
+        urlVisitsBreakdowns: [{ user: 'user@test.com', summary: { count: '2' } }],
+      },
+    },
+    organizations: [
+      {
+        name: 'organizations/123456789',
+        displayName: 'Test Org',
+        directoryCustomerId: 'C0123456',
+        state: 'ACTIVE',
+      },
+    ],
+    securityGateways: nullProtoMap({}),
+    securityGatewayApplications: nullProtoMap({}),
+    securityGatewayIamPolicies: nullProtoMap({}),
+    securityGatewayApplicationIamPolicies: nullProtoMap({}),
   }
 }
 
@@ -296,6 +322,10 @@ export function createFakeApp() {
   let mockErrors = {}
   const app = express()
   app.use(express.json())
+  app.use((req, res, next) => {
+    console.log(`[FAKE SERVER] ${req.method} ${req.url}`)
+    next()
+  })
 
   // Mock error middleware
   app.use((req, res, next) => {
@@ -309,21 +339,49 @@ export function createFakeApp() {
   })
 
   // Support Google Help Articles (Proxy Target)
-  app.get('/a/answer/:id', (req, res) => {
+  const serveArticle = (req, res) => {
     if (req.params.id === '1219251') {
-      return res.send(`
+      return res.send(
+        `
         <article>
           <h1>Administrator Privilege Definitions</h1>
           <p>Recommended delegated roles for custom admin configurations:</p>
           <ul>
-            <li><strong>View Chrome Insights Settings / Manage Chrome Insights Settings</strong>: Assign this delegated privilege to view dashboards and security insights. Alternatively, assign <strong>Chrome Enterprise Security Service (APP_ADMIN)</strong>.</li>
+            <li><strong>View Chrome Insights Settings / Manage Chrome Insights Settings</strong>: ` +
+          `Assign this delegated privilege to view dashboards and security insights. ` +
+          `Alternatively, assign <strong>Chrome Enterprise Security Service (APP_ADMIN)</strong>.</li>
             <li><strong>DLP Administrator</strong>: Assign this custom role to adjust, edit, or view DLP rules.</li>
           </ul>
         </article>
-      `)
+      `,
+      )
+    }
+    if (req.params.id === '16493390') {
+      return res.send(
+        `
+        <article>
+          <h1>Configurable Timeout Deadlines for Deep Scanning</h1>
+          <p>As an administrator with the <strong>Chrome Enterprise Security Services</strong> privilege ` +
+          `and a <strong>Chrome Enterprise Premium</strong> subscription, you can configure the ` +
+          `evaluation time limit (timeouts) for DLP and malware scans, including the paste action.</p>
+          <h2>Steps to configure:</h2>
+          <ol>
+            <li>Go to the Google Admin console.</li>
+            <li>Navigate to <strong>Menu > Apps > Additional Google Services > ` +
+          `Chrome Enterprise Security Services > Deep scanning protection settings</strong>.</li>
+            <li>Click Edit.</li>
+            <li>Set the evaluation time limit in seconds (scan deadline/paste deadline).</li>
+            <li>Click Save.</li>
+          </ol>
+        </article>
+      `,
+      )
     }
     res.status(404).send('Article not found')
-  })
+  }
+
+  app.get('/a/answer/:id', serveArticle)
+  app.get('/chrome/a/answer/:id', serveArticle)
 
   // Admin SDK: Get Customer
   app.get('/admin/directory/v1/customers/:customerKey', (req, res) => {
@@ -459,6 +517,45 @@ export function createFakeApp() {
     res.json({ insightsState: 'INSIGHTS_DISABLED' })
   })
 
+  // Chrome Management: Query Content Transfers
+  app.get('/v1alpha1/customers/:customerId/enterprise/securityInsights\\:queryContentTransfers', (req, res) => {
+    const customerId = requireCustomer(state, req.params.customerId, res)
+    if (!customerId) {
+      return
+    }
+    res.json(state.securityInsightsData.contentTransfers)
+  })
+
+  // Chrome Management: Query Content Transfers Breakdowns
+  app.get(
+    '/v1alpha1/customers/:customerId/enterprise/securityInsights\\:queryContentTransfersBreakdowns',
+    (req, res) => {
+      const customerId = requireCustomer(state, req.params.customerId, res)
+      if (!customerId) {
+        return
+      }
+      res.json(state.securityInsightsData.contentTransfersBreakdowns)
+    },
+  )
+
+  // Chrome Management: Query URL Visits
+  app.get('/v1alpha1/customers/:customerId/enterprise/securityInsights\\:queryUrlVisits', (req, res) => {
+    const customerId = requireCustomer(state, req.params.customerId, res)
+    if (!customerId) {
+      return
+    }
+    res.json(state.securityInsightsData.urlVisits)
+  })
+
+  // Chrome Management: Query URL Visits Breakdowns
+  app.get('/v1alpha1/customers/:customerId/enterprise/securityInsights\\:queryUrlVisitsBreakdowns', (req, res) => {
+    const customerId = requireCustomer(state, req.params.customerId, res)
+    if (!customerId) {
+      return
+    }
+    res.json(state.securityInsightsData.urlVisitsBreakdowns)
+  })
+
   // Chrome Policy: Resolve Policies
   app.post('/v1/customers/:customerId/policies\\:resolve', (req, res) => {
     const customerId = requireCustomer(state, req.params.customerId, res)
@@ -516,6 +613,31 @@ export function createFakeApp() {
     }
 
     res.json({})
+  })
+
+  // Cloud Resource Manager: Search Organizations
+  app.post('/v1/organizations\\:search', (req, res) => {
+    const { filter, query } = req.body
+    const activeFilter = filter || query
+    let results = state.organizations
+
+    if (activeFilter) {
+      // Simple query parsing for testing, e.g. "domain:test.com" or "owner.directorycustomerid:C0123"
+      const match = activeFilter.match(/(domain|owner\.directorycustomerid|directorycustomerid):(\S+)/i)
+      if (match) {
+        const [_, key, value] = match
+        const normalizedKey = key.toLowerCase()
+        if (normalizedKey === 'domain') {
+          results = results.filter(
+            org => org.displayName.toLowerCase().includes(value.toLowerCase()) || value === 'test.com',
+          )
+        } else if (normalizedKey.includes('directorycustomerid')) {
+          results = results.filter(org => org.directoryCustomerId.toLowerCase() === value.toLowerCase())
+        }
+      }
+    }
+
+    res.json({ organizations: results })
   })
 
   // Cloud Identity: List Policies
@@ -717,6 +839,189 @@ export function createFakeApp() {
     res.json({ services })
   })
 
+  // BeyondCorp: Create Security Gateway
+  app.post('/v1/projects/:projectId/locations/global/securityGateways', (req, res) => {
+    const { projectId } = req.params
+    const gatewayId = req.query.security_gateway_id || req.query.securityGatewayId
+    if (!gatewayId) {
+      return res
+        .status(400)
+        .json({ error: { message: 'Missing security_gateway_id or securityGatewayId query parameter' } })
+    }
+    const name = `projects/${projectId}/locations/global/securityGateways/${gatewayId}`
+    const display_name = req.body.display_name || gatewayId
+    const service_discovery = req.body.service_discovery
+    const gateway = {
+      name,
+      displayName: display_name,
+      state: 'ACTIVE',
+      delegatingServiceAccount: `service-${projectId}-beyondcorp@gcp-sa-beyondcorp.iam.gserviceaccount.com`,
+      ...(service_discovery ? { serviceDiscovery: service_discovery } : {}),
+    }
+    state.securityGateways[name] = gateway
+    res.json(gateway)
+  })
+
+  // BeyondCorp: List Security Gateways
+  app.get('/v1/projects/:projectId/locations/global/securityGateways', (req, res) => {
+    const { projectId } = req.params
+    const prefix = `projects/${projectId}/locations/global/securityGateways/`
+    const list = Object.values(state.securityGateways).filter(g => g.name.startsWith(prefix))
+    res.json({ securityGateways: list })
+  })
+
+  // BeyondCorp: Get Gateway IAM Policy
+  app.get('/v1/projects/:projectId/locations/global/securityGateways/:gatewayId\\:getIamPolicy', (req, res) => {
+    const { projectId, gatewayId } = req.params
+    const name = `projects/${projectId}/locations/global/securityGateways/${gatewayId}`
+    const policy = state.securityGatewayIamPolicies[name] || { bindings: [], version: 3, etag: 'BwXN8_d-bOM=' }
+    res.json(policy)
+  })
+
+  // BeyondCorp: Set Gateway IAM Policy
+  app.post('/v1/projects/:projectId/locations/global/securityGateways/:gatewayId\\:setIamPolicy', (req, res) => {
+    const { projectId, gatewayId } = req.params
+    const name = `projects/${projectId}/locations/global/securityGateways/${gatewayId}`
+    const policy = req.body.policy
+    state.securityGatewayIamPolicies[name] = policy
+    res.json(policy)
+  })
+
+  // BeyondCorp: Get Security Gateway
+  app.get('/v1/projects/:projectId/locations/global/securityGateways/:gatewayId', (req, res) => {
+    const { projectId, gatewayId } = req.params
+    const name = `projects/${projectId}/locations/global/securityGateways/${gatewayId}`
+    const gateway = state.securityGateways[name]
+    if (!gateway) {
+      return res.status(404).json({ error: { message: `Security Gateway ${name} not found` } })
+    }
+    res.json(gateway)
+  })
+
+  // BeyondCorp: Patch Security Gateway
+  app.patch('/v1/projects/:projectId/locations/global/securityGateways/:gatewayId', (req, res) => {
+    const { projectId, gatewayId } = req.params
+    const name = `projects/${projectId}/locations/global/securityGateways/${gatewayId}`
+    const gateway = state.securityGateways[name]
+    if (!gateway) {
+      return res.status(404).json({ error: { message: `Security Gateway ${name} not found` } })
+    }
+    const updateMask = Array.isArray(req.query.updateMask)
+      ? req.query.updateMask.join(',')
+      : typeof req.query.updateMask === 'string'
+        ? req.query.updateMask
+        : ''
+    if (updateMask.includes('service_discovery') && req.body.service_discovery) {
+      gateway.serviceDiscovery = req.body.service_discovery
+    }
+    if (req.body.display_name) {
+      gateway.displayName = req.body.display_name
+    }
+    state.securityGateways[name] = gateway
+    res.json(gateway)
+  })
+
+  // BeyondCorp: Delete Security Gateway
+  app.delete('/v1/projects/:projectId/locations/global/securityGateways/:gatewayId', (req, res) => {
+    const { projectId, gatewayId } = req.params
+    const name = `projects/${projectId}/locations/global/securityGateways/${gatewayId}`
+    if (state.securityGateways[name]) {
+      delete state.securityGateways[name]
+      delete state.securityGatewayIamPolicies[name]
+      const appPrefix = `${name}/applications/`
+      Object.keys(state.securityGatewayApplications).forEach(appKey => {
+        if (appKey.startsWith(appPrefix)) {
+          delete state.securityGatewayApplications[appKey]
+          delete state.securityGatewayApplicationIamPolicies[appKey]
+        }
+      })
+      return res.json({ done: true })
+    }
+    res.status(404).json({ error: { message: `Security Gateway ${name} not found` } })
+  })
+
+  // BeyondCorp: Create Application
+  app.post('/v1/projects/:projectId/locations/global/securityGateways/:gatewayId/applications', (req, res) => {
+    const { projectId, gatewayId } = req.params
+    const applicationId = req.query.application_id || req.query.applicationId
+    if (!applicationId) {
+      return res.status(400).json({ error: { message: 'Missing application_id or applicationId query parameter' } })
+    }
+    const name = `projects/${projectId}/locations/global/securityGateways/${gatewayId}/applications/${applicationId}`
+    const application = {
+      name,
+      displayName: req.body.display_name,
+      endpointMatchers: req.body.endpoint_matchers,
+      upstreams: req.body.upstreams,
+    }
+    state.securityGatewayApplications[name] = application
+    res.json(application)
+  })
+
+  // BeyondCorp: List Applications
+  app.get('/v1/projects/:projectId/locations/global/securityGateways/:gatewayId/applications', (req, res) => {
+    const { projectId, gatewayId } = req.params
+    const prefix = `projects/${projectId}/locations/global/securityGateways/${gatewayId}/applications/`
+    const list = Object.values(state.securityGatewayApplications).filter(a => a.name.startsWith(prefix))
+    res.json({ applications: list })
+  })
+
+  // BeyondCorp: Get Application IAM Policy
+  app.get(
+    '/v1/projects/:projectId/locations/global/securityGateways/:gatewayId/applications/:applicationId\\:getIamPolicy',
+    (req, res) => {
+      const { projectId, gatewayId, applicationId } = req.params
+      const name = `projects/${projectId}/locations/global/securityGateways/${gatewayId}/applications/${applicationId}`
+      const policy = state.securityGatewayApplicationIamPolicies[name] || {
+        bindings: [],
+        version: 3,
+        etag: 'BwXN8_d-bOM=',
+      }
+      res.json(policy)
+    },
+  )
+
+  // BeyondCorp: Set Application IAM Policy
+  app.post(
+    '/v1/projects/:projectId/locations/global/securityGateways/:gatewayId/applications/:applicationId\\:setIamPolicy',
+    (req, res) => {
+      const { projectId, gatewayId, applicationId } = req.params
+      const name = `projects/${projectId}/locations/global/securityGateways/${gatewayId}/applications/${applicationId}`
+      const policy = req.body.policy
+      state.securityGatewayApplicationIamPolicies[name] = policy
+      res.json(policy)
+    },
+  )
+
+  // BeyondCorp: Get Application
+  app.get(
+    '/v1/projects/:projectId/locations/global/securityGateways/:gatewayId/applications/:applicationId',
+    (req, res) => {
+      const { projectId, gatewayId, applicationId } = req.params
+      const name = `projects/${projectId}/locations/global/securityGateways/${gatewayId}/applications/${applicationId}`
+      const application = state.securityGatewayApplications[name]
+      if (!application) {
+        return res.status(404).json({ error: { message: `Application ${name} not found` } })
+      }
+      res.json(application)
+    },
+  )
+
+  // BeyondCorp: Delete Application
+  app.delete(
+    '/v1/projects/:projectId/locations/global/securityGateways/:gatewayId/applications/:applicationId',
+    (req, res) => {
+      const { projectId, gatewayId, applicationId } = req.params
+      const name = `projects/${projectId}/locations/global/securityGateways/${gatewayId}/applications/${applicationId}`
+      if (state.securityGatewayApplications[name]) {
+        delete state.securityGatewayApplications[name]
+        delete state.securityGatewayApplicationIamPolicies[name]
+        return res.json({ done: true })
+      }
+      res.status(404).json({ error: { message: `Application ${name} not found` } })
+    },
+  )
+
   // Test Helper: Reset State
   app.post('/test/reset', (_req, res) => {
     state = getInitialState()
@@ -781,6 +1086,8 @@ export function createFakeApp() {
       data.policies.forEach(policy => {
         state.policies[policy.name] = policy
       })
+    } else if (data.kind === 'cloudresourcemanager#organizations') {
+      state.organizations = data.organizations
     }
   }
 

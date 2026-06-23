@@ -61,7 +61,9 @@ The response includes a pre-computed **issues[]** array with severity ratings. U
 - **Subscription and everything else.** If the CEP subscription is inactive or has zero licenses assigned, no other control matters until that's fixed.
 - **SEB extension and browser-side features.** Data masking and other in-browser enforcement only work where the Secure Enterprise Browser extension is force-installed.
 - **Audit-only rules.** Rules in audit mode don't block or warn users; they only log events. Note this when summarizing rule status.
+- **Chrome Security Insights disabled.** If Chrome Security Insights is disabled, proactively offer to enable it for the user (e.g., "Chrome Security Insights is disabled. Would you like me to enable it for you now?").
 - **Healthy environment.** When nothing is broken, confirm the environment is healthy and summarize the key metrics — don't manufacture a problem.
+- **Actionable next steps.** After summarizing findings, clearly identify actionable next steps and ask if the user wants you to implement them when appropriate (particularly for actions your tools can perform). Describe your capabilities in plain English without mentioning internal tool names.
 
 ${SHARED_DIAGNOSTIC_RULES}
 `,
