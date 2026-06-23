@@ -3,6 +3,7 @@ README.md
 bin/cli.js
 lib/README.md
 lib/api/README.md
+lib/api/access_context_manager_client.js
 lib/api/admin_sdk_client.js
 lib/api/beyondcorp_client.js
 lib/api/chrome_management_client.js
