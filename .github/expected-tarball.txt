@@ -4,6 +4,7 @@ bin/cli.js
 lib/README.md
 lib/api/README.md
 lib/api/admin_sdk_client.js
+lib/api/beyondcorp_client.js
 lib/api/chrome_management_client.js
 lib/api/chrome_policy_client.js
 lib/api/cloud_identity_client.js
@@ -98,6 +99,8 @@ tools/definitions/list_customer_profiles.js
 tools/definitions/list_detectors.js
 tools/definitions/list_dlp_rules.js
 tools/definitions/list_org_units.js
+tools/definitions/search_organizations.js
+tools/definitions/secure_gateway.js
 tools/definitions/security_insights.js
 tools/definitions/security_insights_data_tool.js
 tools/definitions/shared.js

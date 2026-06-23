@@ -63,6 +63,7 @@ The response includes a pre-computed **issues[]** array with severity ratings. U
 - **Audit-only rules.** Rules in audit mode don't block or warn users; they only log events. Note this when summarizing rule status.
 - **Chrome Security Insights disabled.** If Chrome Security Insights is disabled, proactively offer to enable it for the user (e.g., "Chrome Security Insights is disabled. Would you like me to enable it for you now?").
 - **Healthy environment.** When nothing is broken, confirm the environment is healthy and summarize the key metrics — don't manufacture a problem.
+- **Actionable next steps.** After summarizing findings, clearly identify actionable next steps and ask if the user wants you to implement them when appropriate (particularly for actions your tools can perform). Describe your capabilities in plain English without mentioning internal tool names.
 
 ${SHARED_DIAGNOSTIC_RULES}
 `,

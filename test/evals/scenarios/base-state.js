@@ -389,6 +389,15 @@ export function getBaseState() {
       },
     },
 
+    organizations: [
+      {
+        name: 'organizations/123456789',
+        displayName: 'Test Org',
+        directoryCustomerId: defaultCustomerId,
+        state: 'ACTIVE',
+      },
+    ],
+
     serviceUsage: Object.fromEntries(Object.values(SERVICE_NAMES).map(name => [name, 'ENABLED'])),
   }
 }

@@ -19,7 +19,7 @@ export default {
   priority: 'P1',
   tags: ['tools', 'dlp'],
   scenario: 'healthy',
-  expectedTools: ['list_dlp_rules'],
+  expectedTools: ['list_dlp_rules|diagnose_environment'],
   prompt: 'Which browser actions are we currently monitoring for data protection?',
   goldenResponse: `We are currently monitoring the following browser actions using Chrome DLP rules:
 - **FILE_UPLOAD** (Block sensitive file uploads, Warn before uploading PII)

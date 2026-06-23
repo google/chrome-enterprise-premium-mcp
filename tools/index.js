@@ -48,6 +48,8 @@ import { registerKnowledgeTools } from './definitions/knowledge.js'
 import { registerAuthTools } from './definitions/auth.js'
 import { registerSecurityInsightsTool } from './definitions/security_insights.js'
 import { registerSecurityInsightsDataTool } from './definitions/security_insights_data_tool.js'
+import { registerSearchOrganizationsTool } from './definitions/search_organizations.js'
+import { registerSecureGatewayTools } from './definitions/secure_gateway.js'
 import { featureFlags, FLAGS } from '../lib/util/feature_flags.js'
 
 /**
@@ -79,6 +81,7 @@ export function registerTools(server, options = {}, sessionState) {
     chromePolicy: chromePolicyClient,
     cloudIdentity: cloudIdentityClient,
     serviceUsage: serviceUsageClient,
+    cloudResourceManager: cloudResourceManagerClient,
   } = apiClients
 
   const apiOptions = options.apiOptions || {}
@@ -124,6 +127,7 @@ export function registerTools(server, options = {}, sessionState) {
     registerCheckAndEnableCepApiTool(server, { ...commonOpts, serviceUsageClient }, state)
   }
   registerEnableChromeEnterpriseConnectorsTool(server, { ...commonOpts, chromePolicyClient }, state)
+  registerSearchOrganizationsTool(server, { ...commonOpts, cloudResourceManagerClient }, state)
 
   if (flags.isEnabled(FLAGS.DIAGNOSE_TOOL_ENABLED)) {
     logger.debug(`${TAGS.MCP} Registering diagnose tool (EXPERIMENT_DIAGNOSE_TOOL_ENABLED is active)`)
@@ -134,6 +138,10 @@ export function registerTools(server, options = {}, sessionState) {
     )
   }
 
+  if (flags.isEnabled(FLAGS.SECURE_GATEWAY_ENABLED)) {
+    logger.debug(`${TAGS.MCP} Registering secure gateway tools (EXPERIMENT_SECURE_GATEWAY_ENABLED is active)`)
+    registerSecureGatewayTools(server, options, state)
+  }
   registerKnowledgeTools(server, { ...options, featureFlags: flags }, state)
   registerAuthTools(server, commonOpts, state)
 }
