@@ -50,6 +50,15 @@ const CORE_TOOLS = [
   'list_dlp_rules',
   'list_org_units',
   'security_insights',
+]
+
+const DELETE_EXPERIMENT_TOOLS = ['delete_agent_dlp_rule', 'delete_detector']
+
+const DIAGNOSE_EXPERIMENT_TOOLS = ['diagnose_environment']
+
+const KNOWLEDGE_SEARCH_EXPERIMENT_TOOLS = ['search_content', 'list_documents']
+
+const SECURE_GATEWAY_EXPERIMENT_TOOLS = [
   'create_secure_gateway_application',
   'create_secure_gateway',
   'enable_service_discovery',
@@ -62,12 +71,6 @@ const CORE_TOOLS = [
   'set_secure_gateway_application_iam_policy',
   'set_secure_gateway_iam_policy',
 ]
-
-const DELETE_EXPERIMENT_TOOLS = ['delete_agent_dlp_rule', 'delete_detector']
-
-const DIAGNOSE_EXPERIMENT_TOOLS = ['diagnose_environment']
-
-const KNOWLEDGE_SEARCH_EXPERIMENT_TOOLS = ['search_content', 'list_documents']
 
 // Tests for SEB tool registration and individual tool handler logic.
 describe('SEB Tool Registration', () => {

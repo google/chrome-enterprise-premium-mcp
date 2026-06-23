@@ -44,6 +44,7 @@ describe('MCP Server in stdio mode', () => {
         ...process.env,
         GCP_STDIO: 'true',
         EXPERIMENT_KNOWLEDGE_SEARCH_ENABLED: 'true',
+        EXPERIMENT_SECURE_GATEWAY_ENABLED: 'true',
         // The integration runner sets EXPERIMENT_DELETE_TOOL_ENABLED=true, but
         // the listTools assertion below pins the exact tool set without the
         // delete_* tools; opt this child process out so the expected list

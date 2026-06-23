@@ -135,7 +135,10 @@ export function registerTools(server, options = {}, sessionState) {
     )
   }
 
-  registerSecureGatewayTools(server, options, state)
+  if (flags.isEnabled(FLAGS.SECURE_GATEWAY_ENABLED)) {
+    logger.debug(`${TAGS.MCP} Registering secure gateway tools (EXPERIMENT_SECURE_GATEWAY_ENABLED is active)`)
+    registerSecureGatewayTools(server, options, state)
+  }
   registerKnowledgeTools(server, { ...options, featureFlags: flags }, state)
   registerAuthTools(server, commonOpts, state)
 }
