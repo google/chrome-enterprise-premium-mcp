@@ -14,19 +14,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-/**
- * @file Scenario: all DLP rules removed (zero enforcement).
- *
- * Used by: pr05 (prompt rule-state).
- */
-
-/** @param {object} state - Cloned base state. */
-export function mutate(state) {
-  for (const key of Object.keys(state.policies)) {
-    if (state.policies[key].setting?.type === 'settings/rule.dlp') {
-      delete state.policies[key]
-    }
-  }
-  state.activities = []
-  return state
+export default {
+  id: 'gw01',
+  priority: 'P1',
+  tags: ['gateway', 'discovery'],
+  fixtures: ['customer-default.json', 'gateways-configured.json'],
+  expectedTools: ['list_secure_gateways'],
+  forbiddenPatterns: [],
+  requiredPatterns: ['gateway-alpha'],
+  experiments: {
+    SECURE_GATEWAY_ENABLED: true,
+  },
+  prompt: 'List the secure gateways in my Google Cloud project my-project-123.',
+  goldenResponse: 'The secure gateways in project my-project-123 include gateway-alpha.',
 }

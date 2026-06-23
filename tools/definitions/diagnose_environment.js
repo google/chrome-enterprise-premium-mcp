@@ -41,6 +41,15 @@ const CONNECTOR_TYPES = {
   securityEventReporting: 'ON_SECURITY_EVENT',
 }
 
+const CONNECTOR_LINK_MAPPING = {
+  uploadAnalysis: 'file_attached',
+  downloadAnalysis: 'file_downloaded',
+  pasteAnalysis: 'bulk_text_entry',
+  printAnalysis: 'print_analysis_connector',
+  realtimeUrlCheck: 'realtime_url_check',
+  securityEventReporting: 'on_security_event',
+}
+
 const SEB_EXTENSION_SCHEMA = 'chrome.users.apps.InstallType'
 const SEB_EXTENSION_ID = 'chrome:ekajlcmdfcigmdbphhifahdfjbkciflj'
 const DEFAULT_PAGE_SIZE = 50
@@ -69,13 +78,36 @@ function computeIssues(data) {
     })
   }
 
-  const CONNECTOR_LINK_MAPPING = {
-    uploadAnalysis: 'file_attached',
-    downloadAnalysis: 'file_downloaded',
-    pasteAnalysis: 'bulk_text_entry',
-    printAnalysis: 'print_analysis_connector',
-    realtimeUrlCheck: 'realtime_url_check',
-    securityEventReporting: 'on_security_event',
+  if (data.securityInsights?.insightsState === 'INSIGHTS_DISABLED') {
+    issues.push({
+      severity: 'critical',
+      component: 'securityInsights',
+      message:
+        'Chrome Security Insights is disabled. Threat events, file scanning, and security telemetry reporting are inactive.',
+    })
+  } else if (data.securityInsights?.insightsState === 'INSIGHTS_ENABLEMENT_STATE_UNSPECIFIED') {
+    issues.push({
+      severity: 'medium',
+      component: 'securityInsights',
+      message: 'Chrome Security Insights status is unspecified or could not be retrieved.',
+    })
+  }
+
+  if (data.securityInsights?.insightsState === 'INSIGHTS_ENABLED') {
+    if (data.contentTransfers?.error) {
+      issues.push({
+        severity: 'medium',
+        component: 'securityInsightsData',
+        message: `Failed to query Content Transfers data: ${data.contentTransfers.message}`,
+      })
+    }
+    if (data.urlVisits?.error) {
+      issues.push({
+        severity: 'medium',
+        component: 'securityInsightsData',
+        message: `Failed to query URL Visits data: ${data.urlVisits.message}`,
+      })
+    }
   }
 
   for (const [key, connector] of Object.entries(data.connectors || {})) {
@@ -92,12 +124,24 @@ function computeIssues(data) {
         severity: 'critical',
         component: `connector.${key}`,
         message: `${name} connector is not configured.${actionSuffix}`,
+        ...(manualLink && {
+          remediation: {
+            actionLabel: `Configure ${name} connector`,
+            url: manualLink,
+          },
+        }),
       })
     } else if (!connector.isEnabled) {
       issues.push({
         severity: 'critical',
         component: `connector.${key}`,
         message: `${name} connector is present but explicitly disabled.${actionSuffix}`,
+        ...(manualLink && {
+          remediation: {
+            actionLabel: `Enable ${name} connector`,
+            url: manualLink,
+          },
+        }),
       })
     }
 
@@ -107,6 +151,12 @@ function computeIssues(data) {
           severity: 'high',
           component: `connector.${key}`,
           message: `${name}: ${finding.message}${actionSuffix}`,
+          ...(manualLink && {
+            remediation: {
+              actionLabel: `Configure ${name} settings`,
+              url: manualLink,
+            },
+          }),
         })
       }
     }
@@ -118,6 +168,10 @@ function computeIssues(data) {
       severity: 'high',
       component: 'dlpRules',
       message: 'No DLP rules configured. Create rules at: https://admin.google.com/ac/dp/rules',
+      remediation: {
+        actionLabel: 'Create DLP rules',
+        url: 'https://admin.google.com/ac/dp/rules',
+      },
     })
   } else {
     if (dlpRules.active === 0) {
@@ -125,12 +179,20 @@ function computeIssues(data) {
         severity: 'high',
         component: 'dlpRules',
         message: 'All DLP rules are inactive. Manage rules at: https://admin.google.com/ac/dp/rules',
+        remediation: {
+          actionLabel: 'Activate DLP rules',
+          url: 'https://admin.google.com/ac/dp/rules',
+        },
       })
     } else if (dlpRules.inactive > 0) {
       issues.push({
         severity: 'medium',
         component: 'dlpRules',
         message: `${dlpRules.inactive} DLP rule(s) are inactive. Manage rules at: https://admin.google.com/ac/dp/rules`,
+        remediation: {
+          actionLabel: 'Manage DLP rules',
+          url: 'https://admin.google.com/ac/dp/rules',
+        },
       })
     }
     if (dlpRules.active > 0 && !dlpRules.hasEnforcement) {
@@ -139,6 +201,10 @@ function computeIssues(data) {
         component: 'dlpRules',
         message:
           'All active DLP rules are audit-only. No blocking or warning enforcement. Manage rules at: https://admin.google.com/ac/dp/rules',
+        remediation: {
+          actionLabel: 'Configure blocking rules',
+          url: 'https://admin.google.com/ac/dp/rules',
+        },
       })
     }
   }
@@ -149,6 +215,10 @@ function computeIssues(data) {
       component: 'sebExtension',
       message:
         'Secure Enterprise Browser (SEB) extension is not force-installed. Configure it manually at https://admin.google.com/ac/chrome/apps/user',
+      remediation: {
+        actionLabel: 'Configure SEB force-installation',
+        url: 'https://admin.google.com/ac/chrome/apps/user',
+      },
     })
   }
 
@@ -160,22 +230,15 @@ function computeIssues(data) {
     })
   }
 
-  if (data.securityInsights?.insightsState === 'INSIGHTS_DISABLED') {
-    issues.push({
-      severity: 'high',
-      component: 'securityInsights',
-      message:
-        'Chrome Security Insights is disabled. Threat events, file scanning, and security telemetry reporting are inactive. Update settings manually at https://admin.google.com/ac/dp',
-    })
-  } else if (data.securityInsights?.insightsState === 'INSIGHTS_ENABLEMENT_STATE_UNSPECIFIED') {
-    issues.push({
-      severity: 'medium',
-      component: 'securityInsights',
-      message: 'Chrome Security Insights status is unspecified or could not be retrieved.',
-    })
+  const SEVERITY_ORDER = {
+    critical: 0,
+    high: 1,
+    medium: 2,
   }
 
-  return issues
+  return issues.sort((a, b) => {
+    return (SEVERITY_ORDER[a.severity] ?? 99) - (SEVERITY_ORDER[b.severity] ?? 99)
+  })
 }
 
 /**
@@ -221,6 +284,8 @@ async function fetchEnvironment(
     detectorPolicies,
     browserVersions,
     securityInsights,
+    contentTransfers,
+    urlVisits,
   ] = await Promise.all([
     adminSdkClient.getCustomerId(authToken),
     adminSdkClient.listOrgUnits({ customerId }, authToken),
@@ -231,6 +296,14 @@ async function fetchEnvironment(
     chromeManagementClient.checkSecurityInsightsStatus(customerId, authToken).catch(err => {
       logger.error(`${TAGS.API} Error fetching security insights status in diagnosis:`, err)
       return { insightsState: 'INSIGHTS_ENABLEMENT_STATE_UNSPECIFIED', error: true }
+    }),
+    chromeManagementClient.queryContentTransfers(customerId, {}, authToken).catch(err => {
+      logger.error(`${TAGS.API} Error fetching content transfers in diagnosis:`, err)
+      return { error: true, message: err.message }
+    }),
+    chromeManagementClient.queryUrlVisits(customerId, {}, authToken).catch(err => {
+      logger.error(`${TAGS.API} Error fetching URL visits in diagnosis:`, err)
+      return { error: true, message: err.message }
     }),
   ])
 
@@ -280,6 +353,8 @@ async function fetchEnvironment(
   if (rootOUId && chromePolicyClient) {
     const connectorResults = await Promise.all(
       Object.entries(CONNECTOR_TYPES).map(async ([key, policyKey]) => {
+        const page = CONNECTOR_LINK_MAPPING[key]
+        const uiLink = page ? `https://admin.google.com/ac/chrome/settings/user/details/${page}` : null
         try {
           const schema = ConnectorPolicyFilter[policyKey]
           const policies = await chromePolicyClient.getConnectorPolicy(customerId, rootOUId, schema, authToken)
@@ -289,12 +364,13 @@ async function fetchEnvironment(
             {
               configured: analysis.isConfigured,
               isEnabled: analysis.isEnabled,
+              uiLink,
               policyCount: policies.length,
               findings: analysis.findings,
             },
           ]
         } catch {
-          return [key, { configured: false, isEnabled: false, policyCount: 0, error: true }]
+          return [key, { configured: false, isEnabled: false, uiLink, policyCount: 0, error: true }]
         }
       }),
     )
@@ -315,6 +391,13 @@ async function fetchEnvironment(
     }
   }
 
+  let normalizedContentTransfers = contentTransfers
+  let normalizedUrlVisits = urlVisits
+  if (securityInsights?.insightsState !== 'INSIGHTS_ENABLED') {
+    normalizedContentTransfers = null
+    normalizedUrlVisits = null
+  }
+
   return {
     customer,
     orgUnits,
@@ -325,6 +408,8 @@ async function fetchEnvironment(
     connectors,
     sebExtension,
     securityInsights,
+    contentTransfers: normalizedContentTransfers,
+    urlVisits: normalizedUrlVisits,
   }
 }
 
@@ -411,6 +496,8 @@ function buildSummaryResponse(env) {
     connectors,
     sebExtension,
     securityInsights,
+    contentTransfers,
+    urlVisits,
   } = env
 
   const activeRules = allDlpRules.filter(r => r.state === 'ACTIVE')
@@ -440,6 +527,8 @@ function buildSummaryResponse(env) {
     connectors,
     sebExtension,
     securityInsights,
+    contentTransfers,
+    urlVisits,
     browserVersions: { total: versions.length, deviceCount: totalDevices },
     issues: [],
   }
@@ -462,6 +551,25 @@ function buildSummaryResponse(env) {
         ? 'Disabled'
         : 'Unknown/Unspecified'
   }\n`
+
+  const totalTransfers =
+    contentTransfers?.summaries?.find(s => s.metric === 'CONTENT_TRANSFERS_METRIC_TOTAL_TRANSFERS')?.count || '0'
+  const sensitiveTransfers =
+    contentTransfers?.summaries?.find(s => s.metric === 'CONTENT_TRANSFERS_METRIC_SENSITIVE_DATA_TRANSFERS')?.count ||
+    '0'
+  const suspiciousVisits =
+    urlVisits?.summaries?.find(s => s.metric === 'URL_VISITS_METRIC_TOTAL_SUSPICIOUS_URL_VISITS')?.count || '0'
+
+  summary += `**Security Insights Data:**\n`
+  if (!contentTransfers || !urlVisits) {
+    summary += `  - Status: N/A (Security Insights is disabled or unspecified)\n`
+  } else if (contentTransfers.error || urlVisits.error) {
+    summary += `  - Status: ⚠️ Query failed (see issues below)\n`
+  } else {
+    summary += `  - Content Transfers (Total/Sensitive): ${totalTransfers} / ${sensitiveTransfers}\n`
+    summary += `  - Suspicious URL Visits: ${suspiciousVisits}\n`
+  }
+
   summary += `**DLP Rules:** ${allDlpRules.length} total (${activeRules.length} active: ${dlpRuleSummary.byAction.block} block, ${dlpRuleSummary.byAction.warn} warn, ${dlpRuleSummary.byAction.audit} audit, ${dlpRuleSummary.byAction.watermark} watermark)\n`
   summary += `**Detectors:** ${allDetectors.length}\n`
   summary += `**Browser Versions:** ${versions.length} versions across ${totalDevices} devices\n`
@@ -474,9 +582,12 @@ function buildSummaryResponse(env) {
     for (const issue of sc.issues) {
       const icon = issue.severity === 'critical' ? '🔴' : issue.severity === 'high' ? '🟠' : '🟡'
       let remediation = ''
-      if (issue.component === 'securityInsights' && issue.severity === 'high') {
+      if (issue.component === 'securityInsights' && issue.severity === 'critical') {
         remediation =
           ' -> Action: Use the `security_insights` tool to enable this feature (e.g. `security_insights enable`).'
+      } else if (issue.component === 'securityInsightsData' && issue.severity === 'medium') {
+        remediation =
+          ' -> Action: Verify that the API client has the required scopes: `chrome.management.reports.readonly`.'
       }
       summary += `${icon} **${issue.severity.toUpperCase()}** (${issue.component}): ${issue.message}${remediation}\n`
     }

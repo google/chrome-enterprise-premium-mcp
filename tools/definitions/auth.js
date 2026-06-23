@@ -27,9 +27,10 @@ import { startToolAuth, completeToolAuth, canLaunchBrowser } from '../../lib/uti
 import { TokenCache } from '../../lib/util/credential/token_cache.js'
 import { oauthFlowCredential } from '../../lib/util/credential/oauth_flow.js'
 import { resolveOAuthClientConfig } from '../../lib/util/credential/oauth_client_config.js'
-import { TAGS, SCOPES, OAUTH_SCOPE_REGISTRY, getUniqueScopeCategories } from '../../lib/constants.js'
+import { TAGS, OAUTH_SCOPE_REGISTRY, getUniqueScopeCategories } from '../../lib/constants.js'
 import { guardedToolCall, formatToolResponse } from '../utils/wrapper.js'
 import { cliInvocation } from '../../lib/util/cli_invocation.js'
+import { getActiveScopes } from '../../lib/util/feature_flags.js'
 
 const TOOL_NAME = 'cep_auth'
 
@@ -161,7 +162,7 @@ export const registerAuthTool = registerAuthTools
 export function registerAuthTools(server, options, sessionState) {
   logger.debug(`${TAGS.MCP} Registering auth tools...`)
 
-  const scopeSummary = getUniqueScopeCategories(Object.values(SCOPES)).join(', ')
+  const scopeSummary = getUniqueScopeCategories(getActiveScopes()).join(', ')
 
   server.registerTool(
     TOOL_NAME,
@@ -245,7 +246,7 @@ export function registerAuthTools(server, options, sessionState) {
     guardedToolCall(
       {
         handler: async () => {
-          const requiredScopes = Object.values(SCOPES)
+          const requiredScopes = getActiveScopes()
           const cred = oauthFlowCredential({ requiredScopes })
           const probe = await cred.probe()
 

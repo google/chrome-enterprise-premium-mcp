@@ -20,7 +20,13 @@ limitations under the License.
 
 import fs from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { Status } from './transient.js'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const packageJsonPath = path.resolve(__dirname, '../../../package.json')
+const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'))
+const currentVersion = packageJson.version
 
 const ANSI = Object.freeze({
   reset: '\x1b[0m',
@@ -413,6 +419,7 @@ function writeJson(results, filepath, { inconclusive = false } = {}) {
 
   const output = {
     timestamp: new Date().toISOString(),
+    version: currentVersion,
     summary: {
       passed: overall.passed,
       failed: overall.failed,
