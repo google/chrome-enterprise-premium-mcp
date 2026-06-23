@@ -75,3 +75,7 @@ Don't reinvent; follow the recipes that already exist:
   `npm run format && git add -A` first; lint-staged will only touch what's
   already staged.
 - **Don't bypass hooks** with `--no-verify`. If one fails, fix the cause.
+
+## Task Protocol MCP
+
+The Task Protocol MCP server source code is located at `~/task-protocol-mcp` (resolves to `/usr/local/google/home/dylanklein/task-protocol-mcp`). If you need to propose or implement improvements to the task templates (e.g., `templates/core.json`) during a retrospective, you should operate on that directory.

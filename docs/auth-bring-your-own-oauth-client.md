@@ -115,7 +115,7 @@ Follow these steps to sign in by pasting the redirect URL from a different machi
 
 ## Scopes
 
-When you log in, you'll see a consent screen requesting the full scope set the server needs (defined in `lib/constants.js`). To see which scopes the cached token actually granted, run `auth status`.
+When you log in, you'll see a consent screen requesting the full scope set the server needs (see [Permissions & Scopes Reference](permissions.md)). To see which scopes the cached token actually granted, run `auth status`.
 
 ## Refresh expired tokens
 
