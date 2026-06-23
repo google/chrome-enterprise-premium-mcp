@@ -25,6 +25,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { sanitizeOauthClientEnv } from '../../run-utils.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -39,16 +40,17 @@ describe('MCP Server in stdio mode', () => {
     transport = new StdioClientTransport({
       command: 'node',
       args: ['mcp-server.js'],
-      env: {
+      env: sanitizeOauthClientEnv({
         ...process.env,
         GCP_STDIO: 'true',
         EXPERIMENT_KNOWLEDGE_SEARCH_ENABLED: 'true',
+        EXPERIMENT_SECURE_GATEWAY_ENABLED: 'true',
         // The integration runner sets EXPERIMENT_DELETE_TOOL_ENABLED=true, but
         // the listTools assertion below pins the exact tool set without the
         // delete_* tools; opt this child process out so the expected list
         // matches what the parent suite registers.
         EXPERIMENT_DELETE_TOOL_ENABLED: 'false',
-      },
+      }),
     })
     client = new Client({
       name: 'test-client',
@@ -102,6 +104,17 @@ describe('MCP Server in stdio mode', () => {
         'search_content',
         'list_documents',
         'get_document',
+        'create_secure_gateway_application',
+        'create_secure_gateway',
+        'enable_service_discovery',
+        'get_secure_gateway',
+        'get_secure_gateway_application',
+        'get_secure_gateway_application_iam_policy',
+        'get_secure_gateway_iam_policy',
+        'list_secure_gateway_applications',
+        'list_secure_gateways',
+        'set_secure_gateway_application_iam_policy',
+        'set_secure_gateway_iam_policy',
       ].sort(),
     )
   })

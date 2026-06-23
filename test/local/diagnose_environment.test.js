@@ -43,6 +43,15 @@ function createMockClients(overrides = {}) {
     connectorPolicy: [],
     resolvePolicy: [],
     securityInsights: { insightsState: 'INSIGHTS_ENABLED' },
+    contentTransfers: {
+      summaries: [
+        { metric: 'CONTENT_TRANSFERS_METRIC_TOTAL_TRANSFERS', count: '100' },
+        { metric: 'CONTENT_TRANSFERS_METRIC_SENSITIVE_DATA_TRANSFERS', count: '10' },
+      ],
+    },
+    urlVisits: {
+      summaries: [{ metric: 'URL_VISITS_METRIC_TOTAL_SUSPICIOUS_URL_VISITS', count: '5' }],
+    },
   }
 
   const cfg = { ...defaults, ...overrides }
@@ -56,6 +65,8 @@ function createMockClients(overrides = {}) {
     chromeManagementClient: {
       countBrowserVersions: mock.fn(async () => cfg.browserVersions),
       checkSecurityInsightsStatus: mock.fn(async () => cfg.securityInsights),
+      queryContentTransfers: mock.fn(async () => cfg.contentTransfers),
+      queryUrlVisits: mock.fn(async () => cfg.urlVisits),
     },
     chromePolicyClient: {
       getConnectorPolicy: mock.fn(async () => cfg.connectorPolicy),
@@ -182,7 +193,7 @@ describe('diagnose_environment', () => {
       assert.ok(high.some(i => i.component === 'dlpRules'))
     })
 
-    test('When gaps are found in environment, then the generated issues contain Admin Console deep-links', async () => {
+    test('When gaps are found in environment, then the generated issues contain structured remediation metadata and deep-links', async () => {
       const { handler } = registerAndGetHandler({
         connectorPolicy: [],
         dlpRules: [],
@@ -191,18 +202,47 @@ describe('diagnose_environment', () => {
       })
       const result = await handler({ customerId: 'C0123' }, { requestInfo: {} })
       const issues = result.structuredContent.issues
+      const connectors = result.structuredContent.connectors
 
+      // Verify connector issues have structured remediation
       const uploadIssue = issues.find(i => i.component === 'connector.uploadAnalysis')
       assert.ok(uploadIssue.message.includes('https://admin.google.com/ac/chrome/settings/user/details/file_attached'))
+      assert.deepStrictEqual(uploadIssue.remediation, {
+        actionLabel: 'Configure Upload content analysis connector',
+        url: 'https://admin.google.com/ac/chrome/settings/user/details/file_attached',
+      })
 
+      // Verify DLP rules issue has structured remediation
       const dlpIssue = issues.find(i => i.component === 'dlpRules')
       assert.ok(dlpIssue.message.includes('https://admin.google.com/ac/dp/rules'))
+      assert.deepStrictEqual(dlpIssue.remediation, {
+        actionLabel: 'Create DLP rules',
+        url: 'https://admin.google.com/ac/dp/rules',
+      })
 
+      // Verify SEB extension issue has structured remediation
       const sebIssue = issues.find(i => i.component === 'sebExtension')
       assert.ok(sebIssue.message.includes('https://admin.google.com/ac/chrome/apps/user'))
+      assert.deepStrictEqual(sebIssue.remediation, {
+        actionLabel: 'Configure SEB force-installation',
+        url: 'https://admin.google.com/ac/chrome/apps/user',
+      })
 
+      // Verify Security Insights issue has no manual remediation link
       const insightsIssue = issues.find(i => i.component === 'securityInsights')
-      assert.ok(insightsIssue.message.includes('https://admin.google.com/ac/dp'))
+      assert.strictEqual(insightsIssue.severity, 'critical')
+      assert.ok(!insightsIssue.remediation)
+      assert.ok(!insightsIssue.message.includes('https://admin.google.com/ac/dp'))
+
+      // Verify connectors object contains individual deep-links even when unconfigured
+      assert.strictEqual(
+        connectors.uploadAnalysis.uiLink,
+        'https://admin.google.com/ac/chrome/settings/user/details/file_attached',
+      )
+      assert.strictEqual(
+        connectors.securityEventReporting.uiLink,
+        'https://admin.google.com/ac/chrome/settings/user/details/on_security_event',
+      )
     })
 
     test('When rules are audit-only, then it produces a medium issue', async () => {
@@ -222,12 +262,12 @@ describe('diagnose_environment', () => {
       assert.ok(medium.length > 0)
     })
 
-    test('When Security Insights is disabled, then it produces a high issue with remediation action in summary', async () => {
+    test('When Security Insights is disabled, then it produces a critical issue with remediation action in summary', async () => {
       const { handler } = registerAndGetHandler({ securityInsights: { insightsState: 'INSIGHTS_DISABLED' } })
       const result = await handler({ customerId: 'C0123' }, { requestInfo: {} })
       const issues = result.structuredContent.issues.filter(i => i.component === 'securityInsights')
       assert.strictEqual(issues.length, 1)
-      assert.strictEqual(issues[0].severity, 'high')
+      assert.strictEqual(issues[0].severity, 'critical')
       assert.ok(result.content[0].text.includes('security_insights enable'), 'Summary should suggest enabling the tool')
     })
 
@@ -291,6 +331,66 @@ describe('diagnose_environment', () => {
       const { handler } = registerAndGetHandler({ connectorPolicy: [{ value: {} }] })
       const result = await handler({}, { requestInfo: {} })
       assert.ok(result.structuredContent.customer.customerId, 'Customer ID resolved')
+    })
+
+    test('When Security Insights Data queries fail, then it produces medium issues with remediation', async () => {
+      const clients = createMockClients()
+      clients.chromeManagementClient.queryContentTransfers = mock.fn(async () => {
+        throw new Error('Quota exceeded')
+      })
+      clients.chromeManagementClient.queryUrlVisits = mock.fn(async () => {
+        throw new Error('Permission denied')
+      })
+      const handlers = {}
+      const server = createMockServer(handlers)
+      registerDiagnoseEnvironmentTool(server, clients, { customerId: null, cachedRootOrgUnitId: null })
+      const result = await handlers['diagnose_environment']({ customerId: 'C0123' }, { requestInfo: {} })
+
+      const issues = result.structuredContent.issues.filter(i => i.component === 'securityInsightsData')
+      assert.strictEqual(issues.length, 2)
+      assert.strictEqual(issues[0].severity, 'medium')
+      assert.strictEqual(issues[1].severity, 'medium')
+      assert.ok(
+        result.content[0].text.includes('chrome.management.reports.readonly'),
+        'Summary should suggest checking scopes',
+      )
+    })
+
+    test('When Security Insights is disabled and queries fail, then it does not produce issues and reports N/A', async () => {
+      const clients = createMockClients({
+        securityInsights: { insightsState: 'INSIGHTS_DISABLED' },
+      })
+      clients.chromeManagementClient.queryContentTransfers = mock.fn(async () => {
+        throw new Error('Quota exceeded')
+      })
+      clients.chromeManagementClient.queryUrlVisits = mock.fn(async () => {
+        throw new Error('Permission denied')
+      })
+      const handlers = {}
+      const server = createMockServer(handlers)
+      registerDiagnoseEnvironmentTool(server, clients, { customerId: null, cachedRootOrgUnitId: null })
+      const result = await handlers['diagnose_environment']({ customerId: 'C0123' }, { requestInfo: {} })
+
+      const siIssues = result.structuredContent.issues.filter(i => i.component === 'securityInsights')
+      assert.strictEqual(siIssues.length, 1)
+      assert.strictEqual(siIssues[0].severity, 'critical')
+
+      const dataIssues = result.structuredContent.issues.filter(i => i.component === 'securityInsightsData')
+      assert.strictEqual(dataIssues.length, 0)
+
+      assert.ok(
+        result.content[0].text.includes('Status: N/A (Security Insights is disabled or unspecified)'),
+        'Summary should report N/A for telemetry',
+      )
+      assert.ok(!result.content[0].text.includes('⚠️ Query failed'), 'Summary should not report query failure')
+    })
+
+    test('When Security Insights Data is healthy, then it reports stats in the summary', async () => {
+      const { handler } = registerAndGetHandler({ connectorPolicy: [{ value: {} }] })
+      const result = await handler({ customerId: 'C0123' }, { requestInfo: {} })
+
+      assert.ok(result.content[0].text.includes('Content Transfers (Total/Sensitive): 100 / 10'))
+      assert.ok(result.content[0].text.includes('Suspicious URL Visits: 5'))
     })
   })
 

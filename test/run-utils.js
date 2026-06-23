@@ -29,3 +29,15 @@ export function findTestFiles(dir) {
   }
   return results
 }
+
+/**
+ * Defensively blanks out custom OAuth client credentials to empty strings (rather than
+ * deleting them) so spawned subprocesses ignore developer .env files and host creds.
+ * @param {object} [env] - The environment object to sanitize.
+ * @returns {object} The sanitized environment object.
+ */
+export function sanitizeOauthClientEnv(env = process.env) {
+  env.CEP_OAUTH_CLIENT_ID = ''
+  env.CEP_OAUTH_CLIENT_SECRET = ''
+  return env
+}
