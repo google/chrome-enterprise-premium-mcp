@@ -586,16 +586,17 @@ export function createFakeApp() {
     let results = state.organizations
 
     if (activeFilter) {
-      // Simple query parsing for testing, e.g. "domain:test.com" or "directoryCustomerId:C0123"
-      const match = activeFilter.match(/(domain|directoryCustomerId):(\S+)/)
+      // Simple query parsing for testing, e.g. "domain:test.com" or "owner.directorycustomerid:C0123"
+      const match = activeFilter.match(/(domain|owner\.directorycustomerid|directorycustomerid):(\S+)/i)
       if (match) {
         const [_, key, value] = match
-        if (key === 'domain') {
+        const normalizedKey = key.toLowerCase()
+        if (normalizedKey === 'domain') {
           results = results.filter(
             org => org.displayName.toLowerCase().includes(value.toLowerCase()) || value === 'test.com',
           )
-        } else if (key === 'directoryCustomerId') {
-          results = results.filter(org => org.directoryCustomerId === value)
+        } else if (normalizedKey.includes('directorycustomerid')) {
+          results = results.filter(org => org.directoryCustomerId.toLowerCase() === value.toLowerCase())
         }
       }
     }
