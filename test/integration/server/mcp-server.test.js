@@ -104,6 +104,7 @@ describe('MCP Server in stdio mode', () => {
         'search_content',
         'list_documents',
         'get_document',
+        'search_organizations',
         'create_secure_gateway_application',
         'create_secure_gateway',
         'enable_service_discovery',

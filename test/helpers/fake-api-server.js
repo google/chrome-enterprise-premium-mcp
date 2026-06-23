@@ -269,7 +269,7 @@ function getInitialState() {
       {
         name: 'organizations/123456789',
         displayName: 'Test Org',
-        directoryCustomerId: 'C0123',
+        directoryCustomerId: 'C0123456',
         state: 'ACTIVE',
       },
     ],
@@ -617,20 +617,22 @@ export function createFakeApp() {
 
   // Cloud Resource Manager: Search Organizations
   app.post('/v1/organizations\\:search', (req, res) => {
-    const { query } = req.body
+    const { filter, query } = req.body
+    const activeFilter = filter || query
     let results = state.organizations
 
-    if (query) {
-      // Simple query parsing for testing, e.g. "domain:test.com" or "directoryCustomerId:C0123"
-      const match = query.match(/(domain|directoryCustomerId):(\S+)/)
+    if (activeFilter) {
+      // Simple query parsing for testing, e.g. "domain:test.com" or "owner.directorycustomerid:C0123"
+      const match = activeFilter.match(/(domain|owner\.directorycustomerid|directorycustomerid):(\S+)/i)
       if (match) {
         const [_, key, value] = match
-        if (key === 'domain') {
+        const normalizedKey = key.toLowerCase()
+        if (normalizedKey === 'domain') {
           results = results.filter(
             org => org.displayName.toLowerCase().includes(value.toLowerCase()) || value === 'test.com',
           )
-        } else if (key === 'directoryCustomerId') {
-          results = results.filter(org => org.directoryCustomerId === value)
+        } else if (normalizedKey.includes('directorycustomerid')) {
+          results = results.filter(org => org.directoryCustomerId.toLowerCase() === value.toLowerCase())
         }
       }
     }
