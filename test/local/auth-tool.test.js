@@ -19,11 +19,12 @@ import { describe, test, mock, beforeEach } from 'node:test'
 import esmock from 'esmock'
 import { cliInvocation } from '../../lib/util/cli_invocation.js'
 
-async function loadToolWithMocks({ startToolAuth, completeToolAuth }) {
+async function loadToolWithMocks({ startToolAuth, completeToolAuth, canLaunchBrowser }) {
   return esmock('../../tools/definitions/auth.js', {
     '../../lib/util/credential/auth_login.js': {
       startToolAuth,
       completeToolAuth,
+      canLaunchBrowser,
     },
   })
 }
@@ -63,107 +64,48 @@ describe('cep_auth Tool', () => {
     handler = null
   })
 
-  async function register(mocks) {
+  async function getHandler(toolName, mocks) {
     const { registerAuthTool } = await loadToolWithMocks(mocks)
     registerAuthTool(server)
-    const call = server.registerTool.mock.calls.find(c => c.arguments[0] === 'cep_auth')
-    assert.ok(call, 'cep_auth was not registered')
-    handler = call.arguments[2]
+    const call = server.registerTool.mock.calls.find(c => c.arguments[0] === toolName)
+    assert.ok(call, `${toolName} was not registered`)
+    return call.arguments[2]
   }
 
-  test('When cep_auth is invoked and the loopback callback completes during the wait, then it returns status=completed', async () => {
-    const future = new Date(Date.now() + 3_600_000)
+  async function register(mocks) {
+    handler = await getHandler('cep_auth', mocks)
+  }
+
+  test('When cep_auth is invoked and returns status=awaiting, then it prints the plain URL once and sets correct structured content', async () => {
     const startToolAuth = mock.fn(async () => ({
-      status: 'completed',
+      status: 'awaiting',
+      authUrl: 'https://accounts.google.com/o/oauth2/v2/auth?state=ABC',
+      browserAttempted: false,
+      browserOpened: false,
+      expiresAt: new Date(Date.now() + 300_000),
       source: 'managed',
-      expiresAt: future,
     }))
     const completeToolAuth = mock.fn()
     await register({ startToolAuth, completeToolAuth })
 
     const result = await handler({}, {})
 
-    assert.strictEqual(result.isError, undefined)
-    assert.strictEqual(result.structuredContent.status, 'completed')
-    assert.strictEqual(result.structuredContent.expiresAt, future.toISOString())
-    assert.match(result.content[0].text, /Signed in/)
-    assert.strictEqual(startToolAuth.mock.callCount(), 1)
-    assert.strictEqual(completeToolAuth.mock.callCount(), 0)
-  })
+    assert.strictEqual(result.structuredContent.status, 'awaiting')
+    assert.strictEqual(result.structuredContent.nextAction, 'paste-redirect-url')
+    assert.strictEqual(result.structuredContent.authUrl, 'https://accounts.google.com/o/oauth2/v2/auth?state=ABC')
+    assert.ok(result.structuredContent.agentHint?.length > 0)
+    assert.match(result.content[0].text, /Open the URL below/)
+    assert.match(result.content[0].text, /accounts\.google\.com/)
 
-  test('When cep_auth is invoked and the wait window expires with terminal hyperlink support, then it returns status=awaiting with OSC 8 hyperlink and plain URL', async () => {
-    process.env.FORCE_HYPERLINK = '1'
-    try {
-      const startToolAuth = mock.fn(async () => ({
-        status: 'awaiting',
-        authUrl: 'https://accounts.google.com/o/oauth2/v2/auth?state=ABC',
-        browserAttempted: false,
-        browserOpened: false,
-        expiresAt: new Date(Date.now() + 300_000),
-        source: 'managed',
-      }))
-      const completeToolAuth = mock.fn()
-      await register({ startToolAuth, completeToolAuth })
+    const lines = result.content[0].text.split('\n')
+    const plainUrlIndex = lines.findIndex(l => l === 'https://accounts.google.com/o/oauth2/v2/auth?state=ABC')
+    assert.ok(plainUrlIndex > 0, 'plainUrl should appear in the text block')
+    assert.strictEqual(lines[plainUrlIndex - 1], '', 'plainUrl should have a blank line above it')
+    assert.strictEqual(lines[plainUrlIndex + 1], '', 'plainUrl should have a blank line below it')
 
-      const result = await handler({}, {})
-
-      assert.strictEqual(result.structuredContent.status, 'awaiting')
-      assert.strictEqual(result.structuredContent.nextAction, 'paste-redirect-url')
-      assert.strictEqual(result.structuredContent.authUrl, 'https://accounts.google.com/o/oauth2/v2/auth?state=ABC')
-      assert.ok(result.structuredContent.agentHint?.length > 0)
-      assert.match(result.content[0].text, /Open the URL below/)
-      assert.match(result.content[0].text, /accounts\.google\.com/)
-
-      const lines = result.content[0].text.split('\n')
-      const plainUrlIndex = lines.findIndex(l => l === 'https://accounts.google.com/o/oauth2/v2/auth?state=ABC')
-      assert.ok(plainUrlIndex > 0, 'plainUrl should appear in the text block')
-      assert.strictEqual(lines[plainUrlIndex - 1], '', 'plainUrl should have a blank line above it')
-      assert.strictEqual(lines[plainUrlIndex + 1], '', 'plainUrl should have a blank line below it')
-
-      const ESC = '\x1b'
-      const url = 'https://accounts.google.com/o/oauth2/v2/auth?state=ABC'
-      const expectedLabel = 'Click here to open the Google Sign-in page in your browser'
-      const expectedLink = `🔗 ${ESC}]8;;${url}${ESC}\\${expectedLabel}${ESC}]8;;${ESC}\\`
-      assert.ok(lines.includes(expectedLink), 'Should contain the OSC 8 formatted hyperlink')
-    } finally {
-      delete process.env.FORCE_HYPERLINK
-    }
-  })
-
-  test('When cep_auth is invoked and the wait window expires without terminal hyperlink support, then it returns status=awaiting with plain URL and no OSC 8 sequences', async () => {
-    process.env.FORCE_HYPERLINK = '0'
-    try {
-      const startToolAuth = mock.fn(async () => ({
-        status: 'awaiting',
-        authUrl: 'https://accounts.google.com/o/oauth2/v2/auth?state=ABC',
-        browserAttempted: false,
-        browserOpened: false,
-        expiresAt: new Date(Date.now() + 300_000),
-        source: 'managed',
-      }))
-      const completeToolAuth = mock.fn()
-      await register({ startToolAuth, completeToolAuth })
-
-      const result = await handler({}, {})
-
-      assert.strictEqual(result.structuredContent.status, 'awaiting')
-      assert.strictEqual(result.structuredContent.nextAction, 'paste-redirect-url')
-      assert.strictEqual(result.structuredContent.authUrl, 'https://accounts.google.com/o/oauth2/v2/auth?state=ABC')
-      assert.ok(result.structuredContent.agentHint?.length > 0)
-      assert.match(result.content[0].text, /Open the URL below/)
-      assert.match(result.content[0].text, /accounts\.google\.com/)
-
-      const text = result.content[0].text
-      assert.ok(!text.includes('\x1b]8;;'), 'Should not contain any OSC 8 hyperlink escapes')
-
-      const lines = text.split('\n')
-      const plainUrlIndex = lines.findIndex(l => l === 'https://accounts.google.com/o/oauth2/v2/auth?state=ABC')
-      assert.ok(plainUrlIndex > 0, 'plainUrl should appear in the text block')
-      assert.strictEqual(lines[plainUrlIndex - 1], '', 'plainUrl should have a blank line above it')
-      assert.strictEqual(lines[plainUrlIndex + 1], '', 'plainUrl should have a blank line below it')
-    } finally {
-      delete process.env.FORCE_HYPERLINK
-    }
+    const occurrences = lines.filter(l => l.includes('https://accounts.google.com/o/oauth2/v2/auth?state=ABC')).length
+    assert.strictEqual(occurrences, 1, 'Should only print the URL once')
+    assert.ok(!result.content[0].text.includes('\x1b]8;;'), 'Should not contain any OSC 8 hyperlink escapes')
   })
 
   test('When cep_auth is invoked with a valid redirectUrl, then it calls completeToolAuth and returns status=completed', async () => {
@@ -258,5 +200,83 @@ describe('cep_auth Tool', () => {
         `Expected output to contain env exports and running: "${manualLogin}"`,
       )
     })
+  })
+
+  test('When cep_auth awaits and browserOpened is true, then it displays a concise instruction set without detailed steps', async () => {
+    const startToolAuth = mock.fn(async () => ({
+      status: 'awaiting',
+      authUrl: 'https://accounts.google.com/o/oauth2/v2/auth?state=ABC',
+      browserAttempted: true,
+      browserOpened: true,
+      expiresAt: new Date(Date.now() + 300_000),
+      source: 'managed',
+    }))
+    const completeToolAuth = mock.fn()
+    await register({ startToolAuth, completeToolAuth })
+
+    const result = await handler({}, {})
+
+    assert.strictEqual(result.structuredContent.status, 'awaiting')
+    assert.strictEqual(result.structuredContent.browserOpened, true)
+    assert.match(result.content[0].text, /A browser tab should have opened/)
+    assert.match(result.content[0].text, /Once you sign in and see the "Signed in" success message/)
+    assert.match(
+      result.content[0].text,
+      /If the browser did not open, please ask your agent to help you sign in manually/,
+    )
+    // Verify it does NOT contain the long manual instructions steps
+    assert.ok(!result.content[0].text.includes('1. Open the URL below'))
+    assert.ok(!result.content[0].text.includes('2. Sign in with your Google account'))
+  })
+
+  test('When cep_auth awaits and browserOpened is false, then it displays the full manual instructions', async () => {
+    const startToolAuth = mock.fn(async () => ({
+      status: 'awaiting',
+      authUrl: 'https://accounts.google.com/o/oauth2/v2/auth?state=ABC',
+      browserAttempted: false,
+      browserOpened: false,
+      expiresAt: new Date(Date.now() + 300_000),
+      source: 'managed',
+    }))
+    const completeToolAuth = mock.fn()
+    await register({ startToolAuth, completeToolAuth })
+
+    const result = await handler({}, {})
+
+    assert.strictEqual(result.structuredContent.status, 'awaiting')
+    assert.strictEqual(result.structuredContent.browserOpened, false)
+    assert.match(result.content[0].text, /I cannot open a browser in this environment/)
+    assert.match(result.content[0].text, /1\. Open the URL below/)
+    assert.match(result.content[0].text, /2\. Sign in with your Google account/)
+    assert.match(result.content[0].text, /3\. Copy that entire new address/)
+  })
+
+  test('When cep_auth is called with authMethod, then it passes it down to startToolAuth', async () => {
+    const startToolAuth = mock.fn(async () => ({
+      status: 'completed',
+      source: 'managed',
+    }))
+    const completeToolAuth = mock.fn()
+    await register({ startToolAuth, completeToolAuth })
+
+    await handler({ authMethod: 'manual' }, {})
+
+    assert.strictEqual(startToolAuth.mock.callCount(), 1)
+    assert.deepStrictEqual(startToolAuth.mock.calls[0].arguments, [{ authMethod: 'manual' }])
+  })
+
+  test('When cep_auth_status is called, then it includes canLaunchBrowser in the response status data', async () => {
+    const canLaunchBrowserMock = mock.fn(() => true)
+    const statusHandler = await getHandler('cep_auth_status', {
+      canLaunchBrowser: canLaunchBrowserMock,
+      startToolAuth: mock.fn(),
+      completeToolAuth: mock.fn(),
+    })
+
+    const result = await statusHandler({}, {})
+
+    assert.strictEqual(result.isError, undefined)
+    assert.strictEqual(result.structuredContent.status.canLaunchBrowser, true)
+    assert.strictEqual(canLaunchBrowserMock.mock.callCount(), 1)
   })
 })

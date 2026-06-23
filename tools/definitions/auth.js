@@ -23,7 +23,7 @@ limitations under the License.
 
 import { z } from 'zod'
 import { logger } from '../../lib/util/logger.js'
-import { startToolAuth, completeToolAuth } from '../../lib/util/credential/auth_login.js'
+import { startToolAuth, completeToolAuth, canLaunchBrowser } from '../../lib/util/credential/auth_login.js'
 import { TokenCache } from '../../lib/util/credential/token_cache.js'
 import { oauthFlowCredential } from '../../lib/util/credential/oauth_flow.js'
 import { resolveOAuthClientConfig } from '../../lib/util/credential/oauth_client_config.js'
@@ -168,6 +168,7 @@ export function registerAuthTools(server, options, sessionState) {
     {
       description:
         'Sign in to Google for the Chrome Enterprise Premium (CEP) MCP server. ' +
+        'Before calling this tool, you MUST warn the user that this will open a browser tab or prompt them to sign in, and ask for their confirmation. ' +
         'Use this tool ONLY for the CEP MCP server. The Google Workspace MCP server has its own separate auth tool—do not use this one for that. ' +
         `Requests the CEP scope set: ${scopeSummary}. ` +
         'Call with no arguments to start the sign-in. ' +
@@ -179,6 +180,14 @@ export function registerAuthTools(server, options, sessionState) {
           .describe(
             'The full URL the browser was redirected to after consent (looks like http://127.0.0.1:PORT/?code=...&state=...). Omit to start a fresh sign-in.',
           ),
+        authMethod: z
+          .enum(['auto', 'browser', 'manual'])
+          .optional()
+          .default('auto')
+          .describe(
+            'The authentication method to use: "auto" (attempts browser, falls back to manual), ' +
+              '"browser" (forces opening browser), "manual" (skips browser and directly provides URL for manual copy-paste).',
+          ),
       },
       outputSchema: z.looseObject({
         status: z.enum(['completed', 'awaiting', 'error']),
@@ -188,7 +197,7 @@ export function registerAuthTools(server, options, sessionState) {
         expiresAt: z.string().optional(),
       }),
     },
-    async ({ redirectUrl }, context) => {
+    async ({ redirectUrl, authMethod }, context) => {
       if (context?.requestInfo?.headers?.authorization) {
         const msg =
           'This server received an inbound Bearer token, so sign-in via cep_auth does not apply. ' +
@@ -204,7 +213,7 @@ export function registerAuthTools(server, options, sessionState) {
           const result = await completeToolAuth({ redirectUrl })
           return successResponse(result)
         }
-        const result = await startToolAuth({})
+        const result = await startToolAuth({ authMethod })
         if (result.status === 'completed') {
           return successResponse(result)
         }
@@ -242,6 +251,7 @@ export function registerAuthTools(server, options, sessionState) {
           // Enhance the probe data with friendly names for the user/agent
           const statusReport = {
             ...probe,
+            canLaunchBrowser: canLaunchBrowser(),
             granted: (probe.grantedScopes || []).map(url => OAUTH_SCOPE_REGISTRY[url]?.name || url),
             missing: (probe.missingScopes || []).map(url => OAUTH_SCOPE_REGISTRY[url]?.name || url),
           }
@@ -249,10 +259,11 @@ export function registerAuthTools(server, options, sessionState) {
           return formatToolResponse({
             summary: formatAuthStatusSummary(probe),
             data: { status: statusReport },
-            structuredContent: { status: probe },
+            structuredContent: { status: statusReport },
           })
         },
         skipAutoResolve: true,
+        skipAuthCheck: true,
       },
       options,
       sessionState,
@@ -282,6 +293,7 @@ export function registerAuthTools(server, options, sessionState) {
           })
         },
         skipAutoResolve: true,
+        skipAuthCheck: true,
       },
       options,
       sessionState,
@@ -318,27 +330,32 @@ function awaitingResponse(result) {
       'Once you sign in and see the "Signed in" success message, you can close that tab and return here to continue.',
     )
     lines.push('')
-    lines.push('If the browser did not open, you can complete sign-in manually:')
+    lines.push('If the browser did not open, please ask your agent to help you sign in manually.')
   } else {
-    lines.push('I cannot open a browser in this environment. Please complete sign-in manually:')
+    if (result.browserAttempted) {
+      lines.push('Failed to open browser automatically. Please complete sign-in manually:')
+    } else {
+      lines.push('I cannot open a browser in this environment. Please complete sign-in manually:')
+    }
+    lines.push('')
+    lines.push('1. Open the URL below in your local browser:')
+    lines.push('')
+    if (supportsHyperlinks()) {
+      lines.push(`🔗 ${osc8(result.authUrl, 'Click here to open the Google Sign-in page in your browser')}`)
+      lines.push('')
+      lines.push('Or copy and paste this URL if the link above does not work:')
+      lines.push('')
+    }
+    lines.push(result.authUrl)
+    lines.push('')
+    lines.push(
+      '2. Sign in with your Google account. After signing in, your browser will redirect to a 127.0.0.1 address and show a "Connection Refused" error—this is expected.',
+    )
+    lines.push("3. Copy that entire new address from your browser's address bar and paste it back here.")
+    lines.push('')
+    lines.push(cliFallbackLine(resolveOAuthClientConfig().source))
   }
 
-  lines.push('1. Open the URL below in your local browser:')
-  lines.push('')
-  if (supportsHyperlinks()) {
-    lines.push(`🔗 ${osc8(result.authUrl, 'Click here to open the Google Sign-in page in your browser')}`)
-    lines.push('')
-    lines.push('Or copy and paste this URL if the link above does not work:')
-    lines.push('')
-  }
-  lines.push(result.authUrl)
-  lines.push('')
-  lines.push(
-    '2. Sign in with your Google account. After signing in, your browser will redirect to a 127.0.0.1 address and show a "Connection Refused" error—this is expected.',
-  )
-  lines.push("3. Copy that entire new address from your browser's address bar and paste it back here.")
-  lines.push('')
-  lines.push(cliFallbackLine(resolveOAuthClientConfig().source))
   const expiresAt = result.expiresAt instanceof Date ? result.expiresAt.toISOString() : undefined
   return {
     content: [{ type: 'text', text: lines.join('\n') }],

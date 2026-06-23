@@ -59,7 +59,7 @@ Tools return `formatToolResponse({ summary, data, structuredContent })`:
 | Extensions  | check_seb_extension_status, install_seb_extension                                                           | Chrome Policy                |
 | Security    | get_chrome_activity_log, check_and_enable_cep_api                                                           | Admin SDK, Service Usage     |
 | Diagnostics | diagnose_environment                                                                                        | Multi-API health check       |
-| Knowledge   | search_content, get_document, list_documents                                                                | Local knowledge base         |
+| Knowledge   | get_document                                                                                                | Local knowledge base         |
 
 ## Feature-gated tools
 

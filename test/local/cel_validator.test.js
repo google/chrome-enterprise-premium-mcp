@@ -113,20 +113,20 @@ describe('CEL Validator', () => {
     assert.ok(result.errors.some(e => e.includes('file_size_in_bytes')))
   })
 
-  test('When a valid predefined detector is used, then it passes validation', () => {
+  test('When a valid data type detector is used, then it passes validation', () => {
     const result = validateCelCondition("all_content.matches_dlp_detector('US_SOCIAL_SECURITY_NUMBER')", [
       'FILE_UPLOAD',
     ])
     assert.strictEqual(result.isValid, true)
   })
 
-  test('When an invalid predefined detector is used, then it fails validation', () => {
+  test('When an invalid data type detector is used, then it fails validation', () => {
     const result = validateCelCondition("all_content.matches_dlp_detector('INVALID_DETECTOR')", ['FILE_UPLOAD'])
     assert.strictEqual(result.isValid, false)
-    assert.ok(result.errors.some(e => e.includes('INVALID_DETECTOR') && e.includes('predefined DLP detector')))
+    assert.ok(result.errors.some(e => e.includes('INVALID_DETECTOR') && e.includes('data type DLP detector')))
   })
 
-  test('When a predefined detector is used with parameters, then it fails validation', () => {
+  test('When a data type detector is used with parameters, then it fails validation', () => {
     const result = validateCelCondition(
       "all_content.matches_dlp_detector('US_SOCIAL_SECURITY_NUMBER', {minimum_match_count: 2})",
       ['FILE_UPLOAD'],
@@ -203,7 +203,11 @@ describe('CEL Validator', () => {
         ['URL_NAVIGATION'],
       )
       assert.strictEqual(result.isValid, false)
-      assert.ok(result.errors.some(e => e.includes('ONLY regex detectors are supported for data masking')))
+      assert.ok(
+        result.errors.some(
+          e => e.includes('Invalid dataMasking structure') && e.includes("inside the 'regexDetectors' array"),
+        ),
+      )
     })
 
     test('When customMessage contains unauthorized HTML tags, then it fails validation', () => {

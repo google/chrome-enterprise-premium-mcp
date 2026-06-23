@@ -80,7 +80,7 @@ For security and architectural reasons, the agent has explicit limitations:
 - **Pricing:** Standard list price is **$6/user/month**.
 - **Payment:** Supports credit card self-service or **traditional offline invoicing**.
 - **Trial:** The agent can help you start a **60-day free trial** for up to **5,000 users**.
-- **Permissions (IAM Roles):** Management requires the **Cloud BeyondCorp Admin** role at the Organization level and the **Security Center Admin** role for dashboards/telemetry.
+- **Permissions (IAM Roles):** Management requires the **Cloud BeyondCorp Admin** role at the Organization level. To view security dashboards, administrators require **any one** of the following delegated privileges: **View Chrome Insights Settings**, **Manage Chrome Insights Settings**, or **Chrome Enterprise Security Service (APP_ADMIN)**.
 
 ### 3. Client-Side Actions
 

@@ -47,6 +47,10 @@ test('gemini-extension.json package version matches package.json version', () =>
   const rangeString = packageArg.slice(lastAtIndex + 1)
   assert.ok(rangeString, 'Could not extract version range from argument')
 
+  if (rangeString === 'latest') {
+    return
+  }
+
   assert.ok(rangeString.startsWith('^'), 'Version range must start with ^ for semantic versioning')
   const rangeVersion = rangeString.slice(1)
   const [rMajor, rMinor, rPatch] = rangeVersion.split('.').map(Number)

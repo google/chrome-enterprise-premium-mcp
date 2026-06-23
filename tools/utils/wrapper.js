@@ -21,7 +21,7 @@ limitations under the License.
 import { TAGS, SCOPES } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
 import { validateAndGetOrgUnitId } from './org-unit.js'
-import { isTokenLocallyValid, canLaunchBrowser } from '../../lib/util/credential/auth_login.js'
+import { isTokenLocallyValid } from '../../lib/util/credential/auth_login.js'
 import { cliInvocation } from '../../lib/util/cli_invocation.js'
 
 /**
@@ -152,6 +152,7 @@ export function safeFormatResponse({ rawData, formatFn, toolName }) {
  * @param {(...args: unknown[]) => unknown} [toolDef.transform] - Optional parameter transformation function
  * @param {(...args: unknown[]) => unknown} toolDef.handler - The main tool handler function
  * @param {boolean} [toolDef.skipAutoResolve] - Whether to skip auto-resolving customerId
+ * @param {boolean} [toolDef.skipAuthCheck] - Whether to skip checking if tokens are valid.
  * @param {string[]} [toolDef.scopes] - Scopes required for this tool. Defaults to all SCOPES.
  * @param {object} options - Configuration options for the wrapper
  * @param {object} [options.apiClients] - Collection of API clients
@@ -161,15 +162,15 @@ export function safeFormatResponse({ rawData, formatFn, toolName }) {
  * @returns {(...args: unknown[]) => unknown} The wrapped tool handler function
  */
 export function guardedToolCall(
-  { validate, transform, handler, skipAutoResolve = false, scopes = Object.values(SCOPES) },
+  { validate, transform, handler, skipAutoResolve = false, skipAuthCheck = false, scopes = Object.values(SCOPES) },
   options = {},
   sessionState = { customerId: null, cachedRootOrgUnitId: null },
 ) {
   const wrapped = async (params, context) => {
     const authToken = getAuthToken(context?.requestInfo)
-    if (!authToken) {
+    if (!authToken && !skipAuthCheck) {
       const validity = await isTokenLocallyValid({ scopes })
-      if (!validity.ok && !canLaunchBrowser()) {
+      if (!validity.ok) {
         return buildAuthRequiredResponse(validity)
       }
     }

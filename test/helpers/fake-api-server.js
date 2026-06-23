@@ -250,6 +250,7 @@ function getInitialState() {
       'licensing.googleapis.com': 'ENABLED',
       'serviceusage.googleapis.com': 'ENABLED',
     }),
+    insightsState: 'INSIGHTS_DISABLED',
   }
 }
 
@@ -315,7 +316,7 @@ export function createFakeApp() {
           <h1>Administrator Privilege Definitions</h1>
           <p>Recommended delegated roles for custom admin configurations:</p>
           <ul>
-            <li><strong>Security Center Admin</strong>: Assign this custom role to view dashboards and security insights.</li>
+            <li><strong>View Chrome Insights Settings / Manage Chrome Insights Settings</strong>: Assign this delegated privilege to view dashboards and security insights. Alternatively, assign <strong>Chrome Enterprise Security Service (APP_ADMIN)</strong>.</li>
             <li><strong>DLP Administrator</strong>: Assign this custom role to adjust, edit, or view DLP rules.</li>
           </ul>
         </article>
@@ -427,6 +428,35 @@ export function createFakeApp() {
       return res.status(501).json({ error: { message: 'orgUnitId not implemented' } })
     }
     res.json({ chromeBrowserProfiles: state.profiles })
+  })
+
+  // Chrome Management: Check Security Insights Status
+  app.get('/v1/customers/:customerId/enterprise/securityInsights\\:checkEnablementStatus', (req, res) => {
+    const customerId = requireCustomer(state, req.params.customerId, res)
+    if (!customerId) {
+      return
+    }
+    res.json({ insightsState: state.insightsState })
+  })
+
+  // Chrome Management: Enable Security Insights
+  app.post('/v1/customers/:customerId/enterprise/securityInsights\\:enable', (req, res) => {
+    const customerId = requireCustomer(state, req.params.customerId, res)
+    if (!customerId) {
+      return
+    }
+    state.insightsState = 'INSIGHTS_ENABLED'
+    res.json({ insightsState: 'INSIGHTS_ENABLED' })
+  })
+
+  // Chrome Management: Disable Security Insights
+  app.post('/v1/customers/:customerId/enterprise/securityInsights\\:disable', (req, res) => {
+    const customerId = requireCustomer(state, req.params.customerId, res)
+    if (!customerId) {
+      return
+    }
+    state.insightsState = 'INSIGHTS_DISABLED'
+    res.json({ insightsState: 'INSIGHTS_DISABLED' })
   })
 
   // Chrome Policy: Resolve Policies

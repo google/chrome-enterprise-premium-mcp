@@ -83,7 +83,7 @@ contain any forbidden strings. Patterns are plain substring matches by default
 
 ```yaml
 forbidden_patterns:
-  - search_content # substring match
+  - get_document # substring match
   - "re:policies/fake\\w+" # regex match
   - "re:all_content\\.matches_" # regex match
 ```
@@ -148,7 +148,7 @@ categories:
 
 ### MCP tool names
 
-The internal tool names, such as `search_content` and `create_chrome_dlp_rule`,
+The internal tool names, such as `get_document` and `create_chrome_dlp_rule`,
 must never appear in user-facing text. The agent should say "I checked your DLP
 rules" not "I called `list_dlp_rules`."
 
@@ -193,8 +193,8 @@ resource IDs (`re:policies/fake\\w+`, `re:fakeOUId\\d+`).
 ### `knowledge/` -- Factual Q&A
 
 The agent answers a question about Chrome Enterprise Premium using the
-`search_content` tool (knowledge base lookup). Graded on factual accuracy
-against the golden response. No tool calls besides `search_content`.
+`get_document` tool (knowledge base lookup). Graded on factual accuracy
+against the golden response. No tool calls besides `get_document`.
 
 Examples: "What is CEP?", "How much does it cost?", "How do I deploy Chrome?"
 

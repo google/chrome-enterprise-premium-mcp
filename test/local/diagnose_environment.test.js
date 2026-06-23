@@ -42,6 +42,7 @@ function createMockClients(overrides = {}) {
     browserVersions: [{ version: '134.0.0', count: '10', channel: 'STABLE' }],
     connectorPolicy: [],
     resolvePolicy: [],
+    securityInsights: { insightsState: 'INSIGHTS_ENABLED' },
   }
 
   const cfg = { ...defaults, ...overrides }
@@ -54,6 +55,7 @@ function createMockClients(overrides = {}) {
     },
     chromeManagementClient: {
       countBrowserVersions: mock.fn(async () => cfg.browserVersions),
+      checkSecurityInsightsStatus: mock.fn(async () => cfg.securityInsights),
     },
     chromePolicyClient: {
       getConnectorPolicy: mock.fn(async () => cfg.connectorPolicy),
@@ -69,13 +71,26 @@ function createMockClients(overrides = {}) {
   }
 }
 
-function registerAndGetHandler(clientOverrides = {}) {
-  const handlers = {}
-  const server = {
+function createMockServer(handlers) {
+  return {
     registerTool: mock.fn((name, _desc, handler) => {
-      handlers[name] = handler
+      handlers[name] = (params, context = {}) => {
+        const requestInfo = context.requestInfo || {}
+        const headers = requestInfo.headers || {}
+        if (!headers.authorization) {
+          headers.authorization = 'Bearer mock-token'
+        }
+        requestInfo.headers = headers
+        context.requestInfo = requestInfo
+        return handler(params, context)
+      }
     }),
   }
+}
+
+function registerAndGetHandler(clientOverrides = {}) {
+  const handlers = {}
+  const server = createMockServer(handlers)
   const clients = createMockClients(clientOverrides)
   registerDiagnoseEnvironmentTool(server, clients, { customerId: null, cachedRootOrgUnitId: null })
   return { handler: handlers['diagnose_environment'], clients }
@@ -184,12 +199,38 @@ describe('diagnose_environment', () => {
       assert.ok(medium.length > 0)
     })
 
-    test('When SEB is not installed, then it produces a high issue', async () => {
-      const { handler } = registerAndGetHandler({ resolvePolicy: [] })
+    test('When Security Insights is disabled, then it produces a high issue with remediation action in summary', async () => {
+      const { handler } = registerAndGetHandler({ securityInsights: { insightsState: 'INSIGHTS_DISABLED' } })
       const result = await handler({ customerId: 'C0123' }, { requestInfo: {} })
-      const seb = result.structuredContent.issues.filter(i => i.component === 'sebExtension')
-      assert.ok(seb.length === 1)
-      assert.ok(seb[0].severity === 'high')
+      const issues = result.structuredContent.issues.filter(i => i.component === 'securityInsights')
+      assert.strictEqual(issues.length, 1)
+      assert.strictEqual(issues[0].severity, 'high')
+      assert.ok(result.content[0].text.includes('security_insights enable'), 'Summary should suggest enabling the tool')
+    })
+
+    test('When Security Insights is unspecified, then it produces a medium issue', async () => {
+      const { handler } = registerAndGetHandler({
+        securityInsights: { insightsState: 'INSIGHTS_ENABLEMENT_STATE_UNSPECIFIED' },
+      })
+      const result = await handler({ customerId: 'C0123' }, { requestInfo: {} })
+      const issues = result.structuredContent.issues.filter(i => i.component === 'securityInsights')
+      assert.strictEqual(issues.length, 1)
+      assert.strictEqual(issues[0].severity, 'medium')
+    })
+
+    test('When Security Insights check fails, then it handles the error gracefully and lists it as medium issue', async () => {
+      const clients = createMockClients()
+      clients.chromeManagementClient.checkSecurityInsightsStatus = mock.fn(async () => {
+        throw new Error('API failure')
+      })
+      const handlers = {}
+      const server = createMockServer(handlers)
+      registerDiagnoseEnvironmentTool(server, clients, { customerId: null, cachedRootOrgUnitId: null })
+      const result = await handlers['diagnose_environment']({ customerId: 'C0123' }, { requestInfo: {} })
+      assert.strictEqual(result.isError, undefined) // Should not fail the diagnostic run
+      const issues = result.structuredContent.issues.filter(i => i.component === 'securityInsights')
+      assert.strictEqual(issues.length, 1)
+      assert.strictEqual(issues[0].severity, 'medium')
     })
 
     test('When diagnosis is run, then it returns summary counts rather than raw arrays', async () => {
@@ -309,11 +350,7 @@ describe('diagnose_environment', () => {
       })
 
       const handlers = {}
-      const server = {
-        registerTool: mock.fn((name, _desc, handler) => {
-          handlers[name] = handler
-        }),
-      }
+      const server = createMockServer(handlers)
       registerDiagnoseEnvironmentTool(server, clients, { customerId: null, cachedRootOrgUnitId: null })
 
       const result = await handlers['diagnose_environment']({ customerId: 'C0123' }, { requestInfo: {} })
@@ -330,11 +367,7 @@ describe('diagnose_environment', () => {
       })
 
       const handlers = {}
-      const server = {
-        registerTool: mock.fn((name, _desc, handler) => {
-          handlers[name] = handler
-        }),
-      }
+      const server = createMockServer(handlers)
       registerDiagnoseEnvironmentTool(server, clients, { customerId: null, cachedRootOrgUnitId: null })
 
       const result = await handlers['diagnose_environment']({ customerId: 'C0123' }, { requestInfo: {} })
