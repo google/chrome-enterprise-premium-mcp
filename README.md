@@ -28,19 +28,7 @@ Before setting up the MCP server, ensure you have the following:
 
 Get up and running in less than 2 minutes using the bundled Google-managed OAuth client. No repository cloning required!
 
-### 1. Sign in
-
-Run the authentication CLI once before you connect your MCP client:
-
-```bash
-npx @google/chrome-enterprise-premium-mcp auth login
-```
-
-A browser tab opens on Google's consent screen. Sign in with your Google Workspace administrator account and approve the requested permissions.
-
-Once approved, the CLI retrieves an access token and saves it securely to `~/.config/cep-mcp/tokens.json` (file mode `0600`). The MCP server reads this file on every tool call, so you only need to sign in once.
-
-### 2. Connect your MCP client
+### 1. Connect your MCP client
 
 The server uses **stdio** transport; your MCP client launches it as a child process. Depending on your client, connect the server using one of the following methods:
 
@@ -64,13 +52,25 @@ gemini extensions install https://github.com/google/chrome-enterprise-premium-mc
 }
 ```
 
-### 3. Verify
+### 2. Query the agent
 
-Restart your MCP client, then ask the agent:
+Restart your MCP client, then ask the agent to perform a check, for example:
 
-> "What Chrome Enterprise Premium tools do you have access to?"
+> "How can you help me use Chrome Enterprise Premium?"
 
-You should see the available tools listed in the response. If they don't appear, see [Troubleshooting](docs/troubleshooting.md).
+> "How do I set up a rule to block uploads of credit card numbers?"
+
+> "List my Chrome Enterprise Premium DLP rules."
+
+> [!NOTE]
+> **Authentication:** The first time you run a query that calls a tool requiring authentication, the agent will prompt you to sign in.
+>
+> - **Desktop:** A browser tab will open automatically on Google's consent screen.
+> - **Headless/Remote:** If you are on SSH, Cloud Shell, or a container, the agent will provide a consent URL. Open it locally, sign in, and paste the redirect URL back to the agent in the chat.
+> - **CLI Fallback:** If you prefer to authenticate via the terminal, you can run:
+>   ```bash
+>   npx @google/chrome-enterprise-premium-mcp auth login
+>   ```
 
 ---
 
