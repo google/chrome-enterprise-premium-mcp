@@ -103,6 +103,17 @@ describe('MCP Server in stdio mode', () => {
         'search_content',
         'list_documents',
         'get_document',
+        'create_secure_gateway_application',
+        'create_secure_gateway',
+        'enable_service_discovery',
+        'get_secure_gateway',
+        'get_secure_gateway_application',
+        'get_secure_gateway_application_iam_policy',
+        'get_secure_gateway_iam_policy',
+        'list_secure_gateway_applications',
+        'list_secure_gateways',
+        'set_secure_gateway_application_iam_policy',
+        'set_secure_gateway_iam_policy',
       ].sort(),
     )
   })
