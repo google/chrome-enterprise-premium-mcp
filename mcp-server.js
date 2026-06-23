@@ -58,6 +58,7 @@ import { ChromePolicyClient } from './lib/api/chrome_policy_client.js'
 import { ChromeManagementClient } from './lib/api/chrome_management_client.js'
 import { ServiceUsageClient } from './lib/api/service_usage_client.js'
 import { CloudResourceManagerClient } from './lib/api/cloud_resource_manager_client.js'
+import { BeyondCorpClient } from './lib/api/beyondcorp_client.js'
 
 /**
  * Redirects console.log to console.error for compatibility with Stdio transport.
@@ -250,6 +251,7 @@ export async function getServer(gcpInfo, sharedSessionState, principal = null) {
     chromeManagement: new ChromeManagementClient(apiOptions),
     serviceUsage: new ServiceUsageClient(apiOptions),
     cloudResourceManager: new CloudResourceManagerClient(apiOptions),
+    beyondcorp: new BeyondCorpClient(apiOptions),
   }
 
   const toolOptions = {
