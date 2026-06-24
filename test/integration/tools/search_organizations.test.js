@@ -24,10 +24,12 @@ describe('Search Organizations Tool Integration', () => {
   const createdResources = []
 
   before(async () => {
+    process.env.EXPERIMENT_SEARCH_ORGANIZATIONS_TOOL_ENABLED = 'true'
     harness = await createIntegrationHarness()
   })
 
   after(async () => {
+    delete process.env.EXPERIMENT_SEARCH_ORGANIZATIONS_TOOL_ENABLED
     await teardownIntegrationHarness(harness, createdResources)
   })
 

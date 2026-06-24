@@ -127,7 +127,12 @@ export function registerTools(server, options = {}, sessionState) {
     registerCheckAndEnableCepApiTool(server, { ...commonOpts, serviceUsageClient }, state)
   }
   registerEnableChromeEnterpriseConnectorsTool(server, { ...commonOpts, chromePolicyClient }, state)
-  registerSearchOrganizationsTool(server, { ...commonOpts, cloudResourceManagerClient }, state)
+  if (flags.isEnabled(FLAGS.SEARCH_ORGANIZATIONS_TOOL_ENABLED)) {
+    logger.debug(
+      `${TAGS.MCP} Registering 'search_organizations' tool (EXPERIMENT_SEARCH_ORGANIZATIONS_TOOL_ENABLED is active)`,
+    )
+    registerSearchOrganizationsTool(server, { ...commonOpts, cloudResourceManagerClient }, state)
+  }
 
   if (flags.isEnabled(FLAGS.DIAGNOSE_TOOL_ENABLED)) {
     logger.debug(`${TAGS.MCP} Registering diagnose tool (EXPERIMENT_DIAGNOSE_TOOL_ENABLED is active)`)
