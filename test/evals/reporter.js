@@ -125,13 +125,12 @@ function run() {
     console.log()
   }
 
-  // 2. Golden Run Comparison
-  const goldenRunInfo = runFiles.find(runInfo => runInfo.version && runInfo.version !== currentVersion)
   const latestRunInfo = runFiles[0]
+  const goldenRunInfo = runFiles.find(runInfo => runInfo.version && runInfo.version !== latestRunInfo.version)
 
   if (latestRunInfo && goldenRunInfo) {
     console.log(`## 🏆 Golden Run Comparison`)
-    console.log(`- **Latest Run (Current Version ${currentVersion}):** ${latestRunInfo.file}`)
+    console.log(`- **Latest Run (Current Version ${latestRunInfo.version || currentVersion}):** ${latestRunInfo.file}`)
     console.log(`- **Golden Run (Previous Version ${goldenRunInfo.version}):** ${goldenRunInfo.file}\n`)
 
     try {
