@@ -20,10 +20,53 @@ limitations under the License.
 
 import fs from 'node:fs'
 import path from 'node:path'
+import { execSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const RUNS_DIR = path.resolve(__dirname, 'runs')
+
+/**
+ * Retrieves the IDs of evaluations added in the last N days.
+ * @param {string} casesDir - Path to evals cases directory.
+ * @param {string} projectRoot - Path to git project root.
+ * @param {number} daysLimit - Number of days to look back.
+ * @returns {Set<string>} Set of new evaluation IDs.
+ */
+function getNewEvalIds(casesDir, projectRoot, daysLimit = 14) {
+  const newIds = new Set()
+  try {
+    const gitCmd = `git log --name-only --diff-filter=A --since="${daysLimit} days ago" --format="" -- "${casesDir}"`
+    const output = execSync(gitCmd, {
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'ignore'],
+      cwd: projectRoot,
+    }).trim()
+
+    if (!output) {
+      return newIds
+    }
+
+    const files = output.split('\n').filter(Boolean)
+    files.forEach(file => {
+      const fullPath = path.resolve(projectRoot, file)
+      if (fs.existsSync(fullPath) && fs.statSync(fullPath).isFile()) {
+        try {
+          const content = fs.readFileSync(fullPath, 'utf8')
+          const match = content.match(/id:\s*['"]([A-Za-z0-9_]+)['"]/)
+          if (match) {
+            newIds.add(match[1])
+          }
+        } catch (_err) {
+          // Ignore
+        }
+      }
+    })
+  } catch (err) {
+    console.error('Failed to check git logs for new evals:', err.message)
+  }
+  return newIds
+}
 
 // Read package.json to get version
 const packageJsonPath = path.resolve(__dirname, '../../package.json')
@@ -78,6 +121,10 @@ function run() {
   const lastRuns = runFiles.slice(0, 7)
   console.log(`Analyzing last ${lastRuns.length} run(s) from history...\n`)
 
+  const projectRoot = path.resolve(__dirname, '../..')
+  const CASES_DIR = path.resolve(__dirname, 'cases')
+  const newEvalIds = getNewEvalIds(CASES_DIR, projectRoot, 14)
+
   const failCounts = {}
   const totalCounts = {}
   const evalCategories = {}
@@ -101,7 +148,7 @@ function run() {
     }
   })
 
-  // Filter evals that failed more than 3 times
+  // Filter evals that failed more than 3 times and are not newly added
   const persistentFailures = Object.keys(failCounts)
     .map(id => ({
       id,
@@ -109,7 +156,7 @@ function run() {
       failures: failCounts[id],
       totalRuns: totalCounts[id],
     }))
-    .filter(item => item.failures > 3)
+    .filter(item => !newEvalIds.has(item.id) && item.failures > 3)
     .sort((a, b) => b.failures - a.failures)
 
   // Print persistent failures
@@ -121,6 +168,37 @@ function run() {
     console.log('| :--- | :--- | :--- | :--- |')
     persistentFailures.forEach(item => {
       console.log(`| **${item.id}** | ${item.category} | ${item.failures} | ${item.totalRuns} |`)
+    })
+    console.log()
+  }
+
+  // Print newly added evals tracking
+  console.log('## 🆕 Newly Added Evals (Last 14 days)')
+  if (newEvalIds.size === 0) {
+    console.log('No new evaluations added in the last 14 days.\n')
+  } else {
+    console.log('| Eval ID | Category | Status | Failures / Runs |')
+    console.log('| :--- | :--- | :--- | :--- |')
+
+    const sortedNewIds = Array.from(newEvalIds).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+
+    sortedNewIds.forEach(id => {
+      const category = evalCategories[id] || 'Unknown'
+      const failures = failCounts[id] || 0
+      const totalRuns = totalCounts[id] || 0
+
+      let status = '⚪ NO RUNS'
+      if (totalRuns > 0) {
+        if (failures === 0) {
+          status = '🟢 PASS'
+        } else if (failures === totalRuns) {
+          status = '🔴 FAIL'
+        } else {
+          status = '🟡 FLAKY'
+        }
+      }
+
+      console.log(`| **${id}** | ${category} | ${status} | ${failures} / ${totalRuns} |`)
     })
     console.log()
   }

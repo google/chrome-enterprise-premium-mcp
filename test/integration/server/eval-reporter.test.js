@@ -78,6 +78,7 @@ test('Daily Trend Reporter', async t => {
     // Check golden comparison outputs
     assert.match(stdout, /Golden Run Comparison/)
     assert.match(stdout, /Golden Run \(Previous Version 1.8.0-beta\)/)
+    assert.match(stdout, /Newly Added Evals/)
 
     // Cleanup fake runs
     const files = fs.readdirSync(RUNS_DIR).filter(f => f.startsWith('run-') && f.endsWith('.json'))
@@ -119,6 +120,9 @@ test('Daily Trend Reporter', async t => {
     // Check persistent failure alert on m03
     assert.match(stdout, /Persistent Failures Alert/)
     assert.match(stdout, /m03/)
+
+    // Check newly added evals tracking
+    assert.match(stdout, /Newly Added Evals/)
 
     // Check golden comparison
     assert.match(stdout, /Golden Run Comparison/)
