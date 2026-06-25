@@ -21,11 +21,11 @@ export default {
   fixtures: ['customer-default.json'],
   expectedTools: ['create_secure_gateway'],
   forbiddenPatterns: [],
-  requiredPatterns: ['my-new-gateway'],
+  requiredPatterns: ['re:my(-|\\s)new(-|\\s)gateway', 'my-project-123'],
   experiments: {
     SECURE_GATEWAY_ENABLED: true,
   },
   prompt:
-    'Create a new BeyondCorp Secure Gateway named my-new-gateway in Google Cloud project my-project-123. Set the display name to "My New Gateway" and make sure service discovery is enabled.',
+    'Create a new BeyondCorp Secure Gateway named my-new-gateway in Google Cloud project my-project-123. Set the display name to "My New Gateway" and make sure service discovery is enabled. Please confirm the gateway details (including name and project) in your response.',
   goldenResponse: 'Secure gateway my-new-gateway has been successfully created/initiated under project my-project-123.',
 }
