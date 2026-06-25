@@ -1089,6 +1089,26 @@ export function createFakeApp() {
     } else if (data.kind === 'cloudresourcemanager#organizations') {
       state.organizations = data.organizations
     }
+    if (data.securityGateways) {
+      for (const [key, val] of Object.entries(data.securityGateways)) {
+        state.securityGateways[key] = val
+      }
+    }
+    if (data.securityGatewayApplications) {
+      for (const [key, val] of Object.entries(data.securityGatewayApplications)) {
+        state.securityGatewayApplications[key] = val
+      }
+    }
+    if (data.securityGatewayIamPolicies) {
+      for (const [key, val] of Object.entries(data.securityGatewayIamPolicies)) {
+        state.securityGatewayIamPolicies[key] = val
+      }
+    }
+    if (data.securityGatewayApplicationIamPolicies) {
+      for (const [key, val] of Object.entries(data.securityGatewayApplicationIamPolicies)) {
+        state.securityGatewayApplicationIamPolicies[key] = val
+      }
+    }
   }
 
   /**
