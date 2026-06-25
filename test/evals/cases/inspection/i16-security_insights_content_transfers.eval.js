@@ -19,8 +19,12 @@ export default {
   priority: 'P1',
   tags: ['inspection'],
   scenario: 'security-insights-telemetry',
+  experiments: {
+    SECURITY_INSIGHTS_DATA_TOOL_ENABLED: true,
+  },
   expectedTools: ['security_insights_data'],
-  prompt: 'Can you give me a summary of the content transfers in my domain?',
+  prompt:
+    'Can you give me a summary of the content transfers in my domain, including the top users contributing to them?',
   goldenResponse:
     'Based on the security telemetry for your domain (securityinsights-e2e-readonly-prod.apollo-df.dev),\n' +
     'there have been a total of 12,500 content transfers recorded in the last 4 weeks.\n' +

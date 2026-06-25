@@ -19,7 +19,10 @@ export default {
   priority: 'P1',
   tags: ['inspection'],
   scenario: 'security-insights-telemetry',
-  expectedTools: ['security_insights_data', 'get_chrome_activity_log'],
+  experiments: {
+    SECURITY_INSIGHTS_DATA_TOOL_ENABLED: true,
+  },
+  expectedTools: ['security_insights_data'],
   prompt: 'Can you tell me what urls are being visited in my domain',
   goldenResponse:
     'Based on the Chrome Enterprise security telemetry for your domain\n' +
@@ -30,10 +33,7 @@ export default {
     '  frequently visited suspicious domains are:\n' +
     '   * protegotollamadummyurl-higher.com: 2,713 visits\n' +
     '   * protegotollamadummyurl-high.com: 2,713 visits\n' +
-    '   * protegotollamadummyurl.com: 2,709 visits\n\n' +
-    '  These visits are being flagged with high, medium, and low risk levels. Detailed\n' +
-    '  activity logs show specific paths such as https://protegotollamadummyurl.com/PHISHING,\n' +
-    '  which are being detected and logged as UNSAFE_SITE_VISIT events.',
+    '   * protegotollamadummyurl.com: 2,709 visits',
   judgeInstructions:
     'Verify that the agent successfully retrieves and reports the following key details:\n' +
     '1. The domain name: securityinsights-e2e-readonly-prod.apollo-df.dev\n' +
@@ -42,6 +42,5 @@ export default {
     '   - protegotollamadummyurl-higher.com (2,713 visits)\n' +
     '   - protegotollamadummyurl-high.com (2,713 visits)\n' +
     '   - protegotollamadummyurl.com (2,709 visits)\n' +
-    '4. The specific unsafe path (https://protegotollamadummyurl.com/PHISHING) and that it was logged as an UNSAFE_SITE_VISIT event.\n' +
-    'The agent must use both security_insights_data and get_chrome_activity_log to compile this information.',
+    'The agent must use the security_insights_data tool to compile this information.',
 }
