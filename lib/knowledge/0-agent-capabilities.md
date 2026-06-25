@@ -27,6 +27,7 @@ The agent can query your environment to help diagnose issues:
 - **Extension Status:** Check if the [Secure Enterprise Browser (SEB) extension](22-dlp-data-masking.md) is force-installed for an OU.
 - **API Status:** Check if required Google Cloud APIs (Admin SDK, Chrome Management, Chrome Policy, Cloud Identity, and Licensing) are enabled for a project. Note that the **Service Usage API** (`serviceusage.googleapis.com`) is also required if any of these five APIs are missing.
 - **URL Filtering:** Check active [URL filtering policies](07-caa-dlp-integration.md).
+- **Secure Gateway Discovery:** List [BeyondCorp secure gateways](35-manage-security-gateway.md), retrieve specific gateway configurations, list applications configured on a gateway, and [troubleshoot secure gateway setup](34-troubleshoot-security-gateway.md).
 
 ### Configuration & Remediation (Mutations)
 
@@ -37,6 +38,7 @@ The agent can actively configure settings to remediate issues or set up new prot
 - **Deploy Extensions:** Force-install the Secure Enterprise Browser (SEB) extension for an OU.
 - **Create DLP Rules & Detectors:** The agent can author and deploy new DLP rules, Regex detectors, Word lists, and URL lists. (See limitations below).
 - **Starter Packs:** Deploy a default set of DLP rules as a "starter pack" for organizations new to CEP.
+- **Configure BeyondCorp Secure Gateways:** The agent can create secure gateways, enable service discovery on them, configure application routing for [SaaS applications](32-security-gateway-saas-apps.md) and [private web applications](33-security-gateway-private-web-apps.md), and manage IAM access policies on those gateway applications.
 
 ## Diagnostic Flows
 
