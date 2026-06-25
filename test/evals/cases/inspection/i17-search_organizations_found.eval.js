@@ -19,6 +19,9 @@ export default {
   priority: 'P1',
   tags: ['inspection', 'discovery', 'crm'],
   scenario: 'healthy',
+  experiments: {
+    SEARCH_ORGANIZATIONS_TOOL_ENABLED: true,
+  },
   expectedTools: ['get_customer_id', 'search_organizations'],
   forbiddenPatterns: [],
   requiredPatterns: ['123456789', 'Test Org'],

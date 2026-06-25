@@ -19,6 +19,9 @@ export default {
   priority: 'P1',
   tags: ['inspection', 'discovery', 'crm'],
   scenario: 'no-gcp-organization',
+  experiments: {
+    SEARCH_ORGANIZATIONS_TOOL_ENABLED: true,
+  },
   expectedTools: ['get_customer_id', 'search_organizations'],
   forbiddenPatterns: ['123456789'], // Should not find the default org!
   requiredPatterns: ['console.cloud.google.com', 'accepting the terms of service'],

@@ -49,7 +49,6 @@ const CORE_TOOLS = [
   'list_detectors',
   'list_dlp_rules',
   'list_org_units',
-  'search_organizations',
   'security_insights',
 ]
 
@@ -58,6 +57,8 @@ const DELETE_EXPERIMENT_TOOLS = ['delete_agent_dlp_rule', 'delete_detector']
 const DIAGNOSE_EXPERIMENT_TOOLS = ['diagnose_environment']
 
 const KNOWLEDGE_SEARCH_EXPERIMENT_TOOLS = ['search_content', 'list_documents']
+
+const SEARCH_ORGANIZATIONS_EXPERIMENT_TOOLS = ['search_organizations']
 
 const SECURE_GATEWAY_EXPERIMENT_TOOLS = [
   'create_secure_gateway_application',
@@ -136,6 +137,18 @@ describe('SEB Tool Registration', () => {
 
     const registeredToolNames = server.registerTool.mock.calls.map(call => call.arguments[0])
     const expected = [...CORE_TOOLS, ...SECURE_GATEWAY_EXPERIMENT_TOOLS].sort()
+    assert.deepStrictEqual(registeredToolNames.sort(), expected)
+  })
+
+  test('When registerTools is called with SEARCH_ORGANIZATIONS_TOOL_ENABLED, then it registers core + search org tools', () => {
+    registerTools(server, {
+      featureFlags: {
+        isEnabled: flag => flag === FLAGS.SEARCH_ORGANIZATIONS_TOOL_ENABLED,
+      },
+    })
+
+    const registeredToolNames = server.registerTool.mock.calls.map(call => call.arguments[0])
+    const expected = [...CORE_TOOLS, ...SEARCH_ORGANIZATIONS_EXPERIMENT_TOOLS].sort()
     assert.deepStrictEqual(registeredToolNames.sort(), expected)
   })
 
