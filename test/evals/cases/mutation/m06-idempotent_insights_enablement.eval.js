@@ -26,5 +26,5 @@ export default {
   goldenResponse:
     'The agent should first query the global enablement status by calling `security_insights` with `action: "check"`. In this test context (where initial mock state is disabled), it should proceed to call `security_insights` with `action: "enable"`. If it were already enabled, it should stop and notify.',
   judgeInstructions:
-    'Verify the agent indicator that it successfully verified the status first using `action: "check"`. Since the backend defaults to disabled, it should then call `action: "enable"`. Check that it reported progress clearly in plain language.',
+    'Verify the agent called `security_insights` with `action: "check"` to verify the status first. Since the backend defaults to disabled, it should then call `action: "enable"`. Grade as PASS as long as both tool calls were executed and it confirmed in plain language that Security Insights was enabled (e.g. noting that it was previously disabled). Do not penalize the agent if it omits raw API output in its response text.',
 }
