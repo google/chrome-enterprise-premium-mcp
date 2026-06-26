@@ -165,10 +165,22 @@ describe('diagnose_environment', () => {
     })
 
     test('When no subscription exists, then it produces a critical issue', async () => {
-      const { handler } = registerAndGetHandler({ subscription: { items: [] } })
+      const { handler } = registerAndGetHandler({ subscription: null })
       const result = await handler({ customerId: 'C0123' }, { requestInfo: {} })
       const critical = result.structuredContent.issues.filter(i => i.severity === 'critical')
       assert.ok(critical.some(i => i.component === 'subscription'))
+      assert.strictEqual(critical[0].message, 'No active Chrome Enterprise Premium subscription found on this domain.')
+    })
+
+    test('When subscription exists but has 0 users assigned, then it produces a warning issue', async () => {
+      const { handler } = registerAndGetHandler({ subscription: { items: [] } })
+      const result = await handler({ customerId: 'C0123' }, { requestInfo: {} })
+      const warning = result.structuredContent.issues.filter(i => i.severity === 'warning')
+      assert.ok(warning.some(i => i.component === 'subscription'))
+      assert.strictEqual(
+        warning[0].message,
+        'Chrome Enterprise Premium subscription is active, but 0 users have licenses assigned. You must assign licenses to users.',
+      )
     })
 
     test('When only a single license is found, then it produces a medium issue', async () => {

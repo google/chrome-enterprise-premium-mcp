@@ -68,9 +68,16 @@ function computeIssues(data) {
     issues.push({
       severity: 'critical',
       component: 'subscription',
-      message: 'No active Chrome Enterprise Premium subscription found.',
+      message: 'No active Chrome Enterprise Premium subscription found on this domain.',
     })
-  } else if (data.subscription?.assignmentCount <= 1) {
+  } else if (data.subscription?.assignmentCount === 0) {
+    issues.push({
+      severity: 'warning',
+      component: 'subscription',
+      message:
+        'Chrome Enterprise Premium subscription is active, but 0 users have licenses assigned. You must assign licenses to users.',
+    })
+  } else if (data.subscription?.assignmentCount === 1) {
     issues.push({
       severity: 'medium',
       component: 'subscription',
@@ -234,6 +241,7 @@ function computeIssues(data) {
     critical: 0,
     high: 1,
     medium: 2,
+    warning: 3,
   }
 
   return issues.sort((a, b) => {
@@ -289,7 +297,10 @@ async function fetchEnvironment(
   ] = await Promise.all([
     adminSdkClient.getCustomerId(authToken),
     adminSdkClient.listOrgUnits({ customerId }, authToken),
-    adminSdkClient.checkCepSubscription(customerId, authToken),
+    adminSdkClient.checkCepSubscription(customerId, authToken).catch(err => {
+      logger.error(`${TAGS.API} Error checking CEP subscription in diagnosis:`, err)
+      return null
+    }),
     cloudIdentityClient.listDlpRules(authToken),
     cloudIdentityClient.listDetectors(authToken),
     chromeManagementClient.countBrowserVersions(customerId, null, authToken),
@@ -317,7 +328,11 @@ async function fetchEnvironment(
   }
 
   const subItems = subscriptionData?.items || []
-  const subscription = { isActive: subItems.length > 0, assignmentCount: subItems.length }
+  // Fix: The subscription is active if the API call succeeded, even if 0 users are assigned
+  const subscription = {
+    isActive: !!subscriptionData,
+    assignmentCount: subItems.length,
+  }
 
   const versions = (Array.isArray(browserVersions) ? browserVersions : []).map(v => ({
     version: v.version,
@@ -538,6 +553,7 @@ function buildSummaryResponse(env) {
   const critical = sc.issues.filter(i => i.severity === 'critical').length
   const high = sc.issues.filter(i => i.severity === 'high').length
   const medium = sc.issues.filter(i => i.severity === 'medium').length
+  const warning = sc.issues.filter(i => i.severity === 'warning').length
 
   let summary = `## Environment Health Check\n\n`
   summary += `> **Scope:** Health check is scoped to the Root Organizational Unit (/). Sub-OU overrides are not included in this summary.\n\n`
@@ -578,7 +594,11 @@ function buildSummaryResponse(env) {
   if (issueCount === 0) {
     summary += `**Result: No issues found.** The environment appears healthy.\n`
   } else {
-    summary += `**Result: ${issueCount} issue(s) found** (${critical} critical, ${high} high, ${medium} medium)\n\n`
+    let countsStr = `${critical} critical, ${high} high, ${medium} medium`
+    if (warning > 0) {
+      countsStr += `, ${warning} warning`
+    }
+    summary += `**Result: ${issueCount} issue(s) found** (${countsStr})\n\n`
     for (const issue of sc.issues) {
       const icon = issue.severity === 'critical' ? '🔴' : issue.severity === 'high' ? '🟠' : '🟡'
       let remediation = ''
