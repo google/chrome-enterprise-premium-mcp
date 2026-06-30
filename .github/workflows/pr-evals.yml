@@ -1,6 +1,12 @@
 name: PR Eval Check
 
 on:
+  push:
+    branches:
+      - 'ci/**'
+    paths:
+      - 'test/evals/cases/**/*.eval.js'
+      - '.github/workflows/pr-evals.yml'
   pull_request:
     branches: [main]
     paths:
@@ -31,8 +37,12 @@ jobs:
       - name: Identify changed eval cases
         id: changed
         run: |
-          git fetch origin "${{ github.base_ref }}" --depth=1 || true
-          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD -- "test/evals/cases/**/*.eval.js" || true)
+          BASE_BRANCH="${{ github.base_ref }}"
+          if [ -z "$BASE_BRANCH" ]; then
+            BASE_BRANCH="main"
+          fi
+          git fetch origin "$BASE_BRANCH" --depth=1 || true
+          CHANGED_FILES=$(git diff --name-only origin/$BASE_BRANCH...HEAD -- "test/evals/cases/**/*.eval.js" || true)
           if [ -z "$CHANGED_FILES" ]; then
             echo "No eval cases added or modified in this PR."
             echo "ids=" >> "$GITHUB_OUTPUT"
