@@ -1,12 +1,6 @@
 name: PR Eval Check
 
 on:
-  push:
-    branches:
-      - 'ci/**'
-    paths:
-      - 'test/evals/cases/**/*.eval.js'
-      - '.github/workflows/pr-evals.yml'
   pull_request:
     branches: [main]
     paths:
