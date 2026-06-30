@@ -27,7 +27,7 @@
       "bindings": [
         {
           "role": "roles/beyondcorp.serviceDiscoveryUser",
-          "members": ["group:all-users@example.com"]
+          "members": ["group:pre-existing-users@example.com"]
         }
       ],
       "etag": "etag-gw-alpha-123"

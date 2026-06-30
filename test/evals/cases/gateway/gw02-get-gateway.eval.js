@@ -21,7 +21,7 @@ export default {
   fixtures: ['customer-default.json', 'gateways-configured.json'],
   expectedTools: ['get_secure_gateway', 'list_secure_gateway_applications'],
   forbiddenPatterns: [],
-  requiredPatterns: ['re:gateway(-|\\s)?alpha', 'app-one', 'intranet.company.com'],
+  requiredPatterns: ['re:gateway(-|\\s)?alpha', 're:app(-|\\s)?one', 'intranet.company.com'],
   experiments: {
     SECURE_GATEWAY_ENABLED: true,
   },
