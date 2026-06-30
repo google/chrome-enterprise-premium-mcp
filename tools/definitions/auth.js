@@ -287,6 +287,10 @@ export function registerAuthTools(server, options, sessionState) {
         handler: async () => {
           const cache = new TokenCache(TokenCache.defaultPath())
           await cache.clear()
+          if (sessionState) {
+            sessionState.customerId = null
+            sessionState.cachedRootOrgUnitId = null
+          }
           return formatToolResponse({
             summary: 'OAuth credentials cleared.',
             data: { cleared: true },

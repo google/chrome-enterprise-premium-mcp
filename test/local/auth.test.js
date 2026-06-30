@@ -203,4 +203,44 @@ describe('Auth', () => {
       assert.match(message, /cep_auth/)
     })
   })
+
+  test('When cep_auth_clear is called, then it clears the token cache and resets sessionState', async () => {
+    let cacheCleared = false
+    const { registerAuthTools } = await esmock('../../tools/definitions/auth.js', {
+      '../../lib/util/credential/token_cache.js': {
+        TokenCache: class {
+          static defaultPath() {
+            return '/tmp/fake-path'
+          }
+          constructor() {}
+          async clear() {
+            cacheCleared = true
+          }
+        },
+      },
+    })
+
+    const handlers = {}
+    const mockServer = {
+      registerTool: (name, schema, handler) => {
+        handlers[name] = handler
+      },
+    }
+
+    const sessionState = {
+      customerId: 'C0123456',
+      cachedRootOrgUnitId: 'id:fakeOUId1',
+    }
+
+    registerAuthTools(mockServer, {}, sessionState)
+
+    const clearHandler = handlers['cep_auth_clear']
+    assert.ok(clearHandler)
+
+    await clearHandler({}, { requestInfo: { headers: { authorization: 'Bearer token' } } })
+
+    assert.ok(cacheCleared)
+    assert.strictEqual(sessionState.customerId, null)
+    assert.strictEqual(sessionState.cachedRootOrgUnitId, null)
+  })
 })
