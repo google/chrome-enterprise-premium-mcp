@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 export default {
-  id: 'i17',
+  id: 'i19',
   priority: 'P1',
   tags: ['inspection', 'browsers', 'profiles'],
   scenario: 'healthy',
