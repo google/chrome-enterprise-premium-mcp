@@ -362,7 +362,29 @@ export function getBaseState() {
       { version: '136.0.7100.3', count: '2', channel: 'CANARY' },
     ],
 
-    profiles: [],
+    profiles: [
+      {
+        name: `customers/${defaultCustomerId}/profiles/p1`,
+        displayName: 'Engineering Profile 1',
+        userEmail: 'alice@example.com',
+        osPlatformType: 'MAC',
+        osVersion: '14.2',
+      },
+      {
+        name: `customers/${defaultCustomerId}/profiles/p2`,
+        displayName: 'Engineering Profile 2',
+        userEmail: 'bob@example.com',
+        osPlatformType: 'LINUX',
+        osVersion: '6.5',
+      },
+      {
+        name: `customers/${defaultCustomerId}/profiles/p3`,
+        displayName: 'Sales Profile 1',
+        userEmail: 'carol@example.com',
+        osPlatformType: 'WINDOWS',
+        osVersion: '11',
+      },
+    ],
 
     licenses: {
       [defaultCustomerId]: {
