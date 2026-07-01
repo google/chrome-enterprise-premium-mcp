@@ -61,9 +61,39 @@ describe('Chrome Management API', () => {
       )
 
       assert.strictEqual(mockCountBrowserVersions.mock.callCount(), 1)
-      assert.ok(result.content[0].text.includes('## Browser Versions (2)'))
+      assert.ok(result.content[0].text.includes('Total Browsers: 15 across 2 version buckets'))
       assert.ok(result.content[0].text.includes('**120.0.6099.71**'))
       assert.ok(result.content[1].text.includes('```json'))
+      assert.ok(result.content[1].text.includes('"totalCount": 15'))
+    })
+
+    test('When no versions found, then it returns 0 totalCount', async () => {
+      const mockCountBrowserVersions = mock.fn(async () => [])
+      const MockChromeManagementClient = class {
+        constructor() {
+          this.countBrowserVersions = mockCountBrowserVersions
+        }
+      }
+
+      const { registerTools } = await esmock(
+        '../../tools/index.js',
+        {},
+        {
+          '../../lib/api/chrome_management_client.js': {
+            ChromeManagementClient: MockChromeManagementClient,
+          },
+        },
+      )
+      registerTools(server, {
+        apiClients: { chromeManagement: new MockChromeManagementClient() },
+      })
+
+      const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'count_browser_versions')
+        .arguments[2]
+
+      const result = await handler({ project: 'test-project', customerId: 'C0123' }, {})
+      assert.ok(result.content[0].text.includes('No browser versions found'))
+      assert.ok(result.content[1].text.includes('"totalCount": 0'))
     })
 
     // Test error handling when the API call fails.
