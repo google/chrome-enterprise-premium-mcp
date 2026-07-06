@@ -29,3 +29,4 @@ jobs:
         uses: googleapis/release-please-action@v4
         with:
           token: ${{ steps.app-token.outputs.token }}
+          target-branch: ${{ github.ref_name }}
