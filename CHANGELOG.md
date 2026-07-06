@@ -1,5 +1,69 @@
 # Changelog
 
+## [1.10.0](https://github.com/google/chrome-enterprise-premium-mcp/compare/chrome-enterprise-premium-mcp-v1.9.0...chrome-enterprise-premium-mcp-v1.10.0) (2026-07-06)
+
+
+### Features
+
+* **acm:** implement AccessContextManagerClient with accessPolicy and accessLevel Methods ([#351](https://github.com/google/chrome-enterprise-premium-mcp/issues/351)) ([9ce3e3e](https://github.com/google/chrome-enterprise-premium-mcp/commit/9ce3e3e45d0e1b15839a984bddf7eadd63ede7b0))
+* add basic secure gateway tools ([#350](https://github.com/google/chrome-enterprise-premium-mcp/issues/350)) ([6381d9a](https://github.com/google/chrome-enterprise-premium-mcp/commit/6381d9acc9150ec5d791411b94dd8569f4ffc473))
+* add Security Insights query methods to ChromeManagementClient ([#329](https://github.com/google/chrome-enterprise-premium-mcp/issues/329)) ([a248b04](https://github.com/google/chrome-enterprise-premium-mcp/commit/a248b04f6cad99a16179598445b9e74f702bf028))
+* **auth:** gate CLOUD_PLATFORM scope behind feature flag ([#345](https://github.com/google/chrome-enterprise-premium-mcp/issues/345)) ([c6f424f](https://github.com/google/chrome-enterprise-premium-mcp/commit/c6f424fd4f7f1e04d9a77a8d8cf59ad4b6d6ce18))
+* **crm:** add Cloud Resource Manager client and integration ([#340](https://github.com/google/chrome-enterprise-premium-mcp/issues/340)) ([fb9e7d4](https://github.com/google/chrome-enterprise-premium-mcp/commit/fb9e7d43e28a0328b5ec4c61425cc1bd988edcf3))
+* **Crm:** Add search_organizations tool to MCP server ([#346](https://github.com/google/chrome-enterprise-premium-mcp/issues/346)) ([3be6196](https://github.com/google/chrome-enterprise-premium-mcp/commit/3be61967b8cba06d372194361d66329767f0d82e))
+* **crm:** gate search_organizations tool behind EXPERIMENT_SEARCH_ORGANIZATIONS_TOOL_ENABLED ([#356](https://github.com/google/chrome-enterprise-premium-mcp/issues/356)) ([ed035df](https://github.com/google/chrome-enterprise-premium-mcp/commit/ed035df2ceff38d932232c888e9fe9cd917653c7))
+* **diagnose:** add structured remediation and connector deep links ([#336](https://github.com/google/chrome-enterprise-premium-mcp/issues/336)) ([d8eae32](https://github.com/google/chrome-enterprise-premium-mcp/commit/d8eae3204201ecb4c9ae1ef55f1a43c667897f87))
+* **diagnose:** escalate Security Insights disabled findings to critical severity ([#335](https://github.com/google/chrome-enterprise-premium-mcp/issues/335)) ([e3b7a44](https://github.com/google/chrome-enterprise-premium-mcp/commit/e3b7a4416bed5f1800c54249879e70d5fbfdd925))
+* **diagnose:** integrate Security Insights Data tool into diagnose_environment ([#337](https://github.com/google/chrome-enterprise-premium-mcp/issues/337)) ([1497320](https://github.com/google/chrome-enterprise-premium-mcp/commit/14973209dbb7dce93700cd09ec6cc525cf64e366))
+* **diagnose:** proactively include Admin Console deep-links in environment health check findings ([#333](https://github.com/google/chrome-enterprise-premium-mcp/issues/333)) ([0c00848](https://github.com/google/chrome-enterprise-premium-mcp/commit/0c008484a7538682263b3194fdba96c4373fb8e4))
+* ensure DLP rule deletion link is provided and add evals ([#349](https://github.com/google/chrome-enterprise-premium-mcp/issues/349)) ([3867e22](https://github.com/google/chrome-enterprise-premium-mcp/commit/3867e22b13848db3462c2e06b838d535ebf259e7))
+* **eval:** implement daily evaluation trend reporter and scheduler ([#332](https://github.com/google/chrome-enterprise-premium-mcp/issues/332)) ([7f0f8be](https://github.com/google/chrome-enterprise-premium-mcp/commit/7f0f8beaf60f34c741148911949d45f770e12727))
+* **eval:** track and report newly added evals separately in daily trend reporter (b/527926026) ([#360](https://github.com/google/chrome-enterprise-premium-mcp/issues/360)) ([a259230](https://github.com/google/chrome-enterprise-premium-mcp/commit/a259230be5358a2f9893daccd2b21832bd79c0fc))
+* **health:** proactively offer to enable Security Insights during health check ([#334](https://github.com/google/chrome-enterprise-premium-mcp/issues/334)) ([e4111fb](https://github.com/google/chrome-enterprise-premium-mcp/commit/e4111fbd82c9044d868bdc3476df8ff45b5f1de8))
+* implement security_insights_data tool and tests ([#331](https://github.com/google/chrome-enterprise-premium-mcp/issues/331)) ([8b3e098](https://github.com/google/chrome-enterprise-premium-mcp/commit/8b3e09804af6d47c441ce11a33cfcd0df3c99bff))
+* suggest proactive follow-ups and clarify plain English descriptions ([#342](https://github.com/google/chrome-enterprise-premium-mcp/issues/342)) ([1e44407](https://github.com/google/chrome-enterprise-premium-mcp/commit/1e44407326b69080d16d6997b1e7584c24c980c8))
+* support test file argument forwarding in integration runner ([#348](https://github.com/google/chrome-enterprise-premium-mcp/issues/348)) ([f85393e](https://github.com/google/chrome-enterprise-premium-mcp/commit/f85393e65451cf0b92c1f2c4e4fdac1ebdb83ef6))
+
+
+### Bug Fixes
+
+* **eval:** add explicit permission to m04 prompt to trigger connector enablement tool (b/527582280) ([#357](https://github.com/google/chrome-enterprise-premium-mcp/issues/357)) ([6bda33d](https://github.com/google/chrome-enterprise-premium-mcp/commit/6bda33db7f4fc6ac2fd5f1948493f930e0b11368))
+* **eval:** allow alternative tool calls in expectedTools for d05 and i04 ([#323](https://github.com/google/chrome-enterprise-premium-mcp/issues/323)) ([10a9627](https://github.com/google/chrome-enterprise-premium-mcp/commit/10a962756242f15f1c4656a31d4cab1f47b24be0))
+* **eval:** clarify m06 judge instructions for idempotent security insights check (b/527597352) ([#358](https://github.com/google/chrome-enterprise-premium-mcp/issues/358)) ([a16ba10](https://github.com/google/chrome-enterprise-premium-mcp/commit/a16ba1037d57393afea57df697272340bfd5efe5))
+* **eval:** clear activities in no-dlp-rules scenario ([#325](https://github.com/google/chrome-enterprise-premium-mcp/issues/325)) ([674bfe2](https://github.com/google/chrome-enterprise-premium-mcp/commit/674bfe25903e787d738311decfc1d13051d41749))
+* **eval:** derive golden run comparison baseline from latest run version ([#353](https://github.com/google/chrome-enterprise-premium-mcp/issues/353)) ([#354](https://github.com/google/chrome-enterprise-premium-mcp/issues/354)) ([2532f26](https://github.com/google/chrome-enterprise-premium-mcp/commit/2532f26a5b308d52cbc59e654b8996fafdfcf37e))
+* **eval:** enable security insights by default in healthy and no-detectors scenarios (b/527496693) ([#355](https://github.com/google/chrome-enterprise-premium-mcp/issues/355)) ([fcd3447](https://github.com/google/chrome-enterprise-premium-mcp/commit/fcd34471c164044c3664ec287396298fcbb69ceb))
+* **eval:** set m07 scenario to security-insights-enabled ([#322](https://github.com/google/chrome-enterprise-premium-mcp/issues/322)) ([11a1f14](https://github.com/google/chrome-enterprise-premium-mcp/commit/11a1f146d2f055adf605635a32fe17ec8aafcc2d))
+* **eval:** simplify judge instructions in i12 ([#318](https://github.com/google/chrome-enterprise-premium-mcp/issues/318)) ([876ec69](https://github.com/google/chrome-enterprise-premium-mcp/commit/876ec69eb54e3419c869b6b6bcd9bdc54645efc3))
+* **evals:** load secure gateway fixtures in fake server ([#361](https://github.com/google/chrome-enterprise-premium-mcp/issues/361)) ([a29b2fd](https://github.com/google/chrome-enterprise-premium-mcp/commit/a29b2fdcdffead48f28d89c3ded7df0f15fb64fd))
+* **eval:** support /chrome prefix routing for mocked help articles ([#324](https://github.com/google/chrome-enterprise-premium-mcp/issues/324)) ([b5ab7ad](https://github.com/google/chrome-enterprise-premium-mcp/commit/b5ab7ada8c6a46bf8426cbe29fdfef01f1ecea3f))
+
+
+### Miscellaneous Chores
+
+* configure release-please and workflows for beta release channel ([a3a954b](https://github.com/google/chrome-enterprise-premium-mcp/commit/a3a954b3979acca6640ab3690c01c12db4882d9e))
+* ignore temporary scratch directories in prettier and git ([cae8dde](https://github.com/google/chrome-enterprise-premium-mcp/commit/cae8dde738bb9e36790d1a82c0ef8dd213c9304a))
+
+
+### Continuous Integration
+
+* set target-branch dynamically in release-please-action ([fcdbe76](https://github.com/google/chrome-enterprise-premium-mcp/commit/fcdbe7639cd963553b8f6b439995eafea29f6d45))
+* upgrade github actions to node 24 ([#339](https://github.com/google/chrome-enterprise-premium-mcp/issues/339)) ([5e3cee4](https://github.com/google/chrome-enterprise-premium-mcp/commit/5e3cee4140cdfe09ca8af877a6db2be96869e084))
+
+
+### Documentation
+
+* add prerequisites to README ([#313](https://github.com/google/chrome-enterprise-premium-mcp/issues/313)) ([1693fbc](https://github.com/google/chrome-enterprise-premium-mcp/commit/1693fbc123c7b239c7a4152790c040d073128b5a))
+* add secure gateway knowledge and evals ([#362](https://github.com/google/chrome-enterprise-premium-mcp/issues/362)) ([f3e041f](https://github.com/google/chrome-enterprise-premium-mcp/commit/f3e041f8b674b5075cc3057726ce4480b15e8360))
+* document headless auth backup in README quickstart ([#311](https://github.com/google/chrome-enterprise-premium-mcp/issues/311)) ([9c59f5b](https://github.com/google/chrome-enterprise-premium-mcp/commit/9c59f5b1f4fe2b293fb623a7889df7535bdc1ad7))
+
+
+### Tests
+
+* **evals:** add security insights data telemetry evals i15 and i16 ([#341](https://github.com/google/chrome-enterprise-premium-mcp/issues/341)) ([aaa1e8d](https://github.com/google/chrome-enterprise-premium-mcp/commit/aaa1e8db3a5be28626e28dcbd8ed2077c084a066))
+* **evals:** fix i15/i16 experiments, expectations, and prompts ([#359](https://github.com/google/chrome-enterprise-premium-mcp/issues/359)) ([2dc73d0](https://github.com/google/chrome-enterprise-premium-mcp/commit/2dc73d0ed87f3b6150fbf30e335a29c170c8c3de))
+* hermetically sanitize custom OAuth client env vars in runners ([#347](https://github.com/google/chrome-enterprise-premium-mcp/issues/347)) ([3e5ae80](https://github.com/google/chrome-enterprise-premium-mcp/commit/3e5ae80d35746df7cec2328dce435e67340ef129))
+
 ## [1.9.0](https://github.com/google/chrome-enterprise-premium-mcp/compare/chrome-enterprise-premium-mcp-v1.8.0...chrome-enterprise-premium-mcp-v1.9.0) (2026-06-04)
 
 
