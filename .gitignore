@@ -35,3 +35,6 @@ session.db
 .adk/
 
 .DS_Store
+
+# Temporary scratch files
+scratch/
