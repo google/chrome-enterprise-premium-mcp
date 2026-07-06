@@ -3,10 +3,13 @@ README.md
 bin/cli.js
 lib/README.md
 lib/api/README.md
+lib/api/access_context_manager_client.js
 lib/api/admin_sdk_client.js
+lib/api/beyondcorp_client.js
 lib/api/chrome_management_client.js
 lib/api/chrome_policy_client.js
 lib/api/cloud_identity_client.js
+lib/api/cloud_resource_manager_client.js
 lib/api/service_usage_client.js
 lib/constants.js
 lib/knowledge/0-agent-capabilities.md
@@ -32,6 +35,11 @@ lib/knowledge/27-url-blocklist-format.md
 lib/knowledge/28-safe-browsing-allowlists.md
 lib/knowledge/29-admin-privilege-definitions.md
 lib/knowledge/30-ev-device-attributes.md
+lib/knowledge/31-security-insights-data.md
+lib/knowledge/32-security-gateway-saas-apps.md
+lib/knowledge/33-security-gateway-private-web-apps.md
+lib/knowledge/34-troubleshoot-security-gateway.md
+lib/knowledge/35-manage-security-gateway.md
 lib/knowledge/98-agent-knowledge-addendum.md
 lib/knowledge/README.md
 lib/knowledge/instructions.js
@@ -96,7 +104,10 @@ tools/definitions/list_customer_profiles.js
 tools/definitions/list_detectors.js
 tools/definitions/list_dlp_rules.js
 tools/definitions/list_org_units.js
+tools/definitions/search_organizations.js
+tools/definitions/secure_gateway.js
 tools/definitions/security_insights.js
+tools/definitions/security_insights_data_tool.js
 tools/definitions/shared.js
 tools/index.js
 tools/utils/detector.js

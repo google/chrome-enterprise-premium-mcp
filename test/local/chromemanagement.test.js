@@ -283,6 +283,144 @@ describe('Chrome Management API', () => {
       assert.strictEqual(observedAuth, 'TEST_BEARER_TOKEN')
       assert.deepStrictEqual(result, { insightsState: 'INSIGHTS_DISABLED' })
     })
+
+    test('When queryContentTransfers is called with options and authToken, then it threads correctly', async () => {
+      const { ChromeManagementClient } = await import('../../lib/api/chrome_management_client.js')
+      const client = new ChromeManagementClient()
+      let observedAuth = 'sentinel-not-set'
+      let observedParams = null
+      let observedUrl = null
+      client.resolveCustomerId = async (_customerId, _authToken) => {
+        return 'C0123'
+      }
+      client.getClient = async authToken => {
+        observedAuth = authToken
+        return {
+          context: {
+            _options: {
+              auth: {
+                request: async req => {
+                  observedParams = req.params
+                  observedUrl = req.url
+                  return { data: { summaries: [] } }
+                },
+              },
+            },
+          },
+        }
+      }
+      const result = await client.queryContentTransfers(
+        'my_customer',
+        { filter: 'event_time >= "2024-01-01T00:00:00Z"' },
+        'TEST_BEARER_TOKEN',
+      )
+      assert.strictEqual(observedAuth, 'TEST_BEARER_TOKEN')
+      assert.ok(observedUrl.includes('v1alpha1/customers/C0123/enterprise/securityInsights:queryContentTransfers'))
+      assert.deepStrictEqual(observedParams, { filter: 'event_time >= "2024-01-01T00:00:00Z"' })
+      assert.deepStrictEqual(result, { summaries: [] })
+    })
+
+    test('When queryContentTransfersBreakdowns is called with options and authToken, then it threads correctly', async () => {
+      const { ChromeManagementClient } = await import('../../lib/api/chrome_management_client.js')
+      const client = new ChromeManagementClient()
+      let observedAuth = 'sentinel-not-set'
+      let observedParams = null
+      let observedUrl = null
+      client.resolveCustomerId = async (_customerId, _authToken) => {
+        return 'C0123'
+      }
+      client.getClient = async authToken => {
+        observedAuth = authToken
+        return {
+          context: {
+            _options: {
+              auth: {
+                request: async req => {
+                  observedParams = req.params
+                  observedUrl = req.url
+                  return { data: { contentTransfersBreakdowns: [], nextPageToken: 'next' } }
+                },
+              },
+            },
+          },
+        }
+      }
+      const result = await client.queryContentTransfersBreakdowns('my_customer', { pageSize: 10 }, 'TEST_BEARER_TOKEN')
+      assert.strictEqual(observedAuth, 'TEST_BEARER_TOKEN')
+      assert.ok(
+        observedUrl.includes('v1alpha1/customers/C0123/enterprise/securityInsights:queryContentTransfersBreakdowns'),
+      )
+      assert.deepStrictEqual(observedParams, { pageSize: 10 })
+      assert.deepStrictEqual(result, { contentTransfersBreakdowns: [], nextPageToken: 'next' })
+    })
+
+    test('When queryUrlVisits is called with options and authToken, then it threads correctly', async () => {
+      const { ChromeManagementClient } = await import('../../lib/api/chrome_management_client.js')
+      const client = new ChromeManagementClient()
+      let observedAuth = 'sentinel-not-set'
+      let observedParams = null
+      let observedUrl = null
+      client.resolveCustomerId = async (_customerId, _authToken) => {
+        return 'C0123'
+      }
+      client.getClient = async authToken => {
+        observedAuth = authToken
+        return {
+          context: {
+            _options: {
+              auth: {
+                request: async req => {
+                  observedParams = req.params
+                  observedUrl = req.url
+                  return { data: { summaries: [] } }
+                },
+              },
+            },
+          },
+        }
+      }
+      const result = await client.queryUrlVisits(
+        'my_customer',
+        { filter: 'event_time >= "2024-01-01T00:00:00Z"' },
+        'TEST_BEARER_TOKEN',
+      )
+      assert.strictEqual(observedAuth, 'TEST_BEARER_TOKEN')
+      assert.ok(observedUrl.includes('v1alpha1/customers/C0123/enterprise/securityInsights:queryUrlVisits'))
+      assert.deepStrictEqual(observedParams, { filter: 'event_time >= "2024-01-01T00:00:00Z"' })
+      assert.deepStrictEqual(result, { summaries: [] })
+    })
+
+    test('When queryUrlVisitsBreakdowns is called with options and authToken, then it threads correctly', async () => {
+      const { ChromeManagementClient } = await import('../../lib/api/chrome_management_client.js')
+      const client = new ChromeManagementClient()
+      let observedAuth = 'sentinel-not-set'
+      let observedParams = null
+      let observedUrl = null
+      client.resolveCustomerId = async (_customerId, _authToken) => {
+        return 'C0123'
+      }
+      client.getClient = async authToken => {
+        observedAuth = authToken
+        return {
+          context: {
+            _options: {
+              auth: {
+                request: async req => {
+                  observedParams = req.params
+                  observedUrl = req.url
+                  return { data: { urlVisitsBreakdowns: [], nextPageToken: 'next' } }
+                },
+              },
+            },
+          },
+        }
+      }
+      const result = await client.queryUrlVisitsBreakdowns('my_customer', { pageSize: 10 }, 'TEST_BEARER_TOKEN')
+      assert.strictEqual(observedAuth, 'TEST_BEARER_TOKEN')
+      assert.ok(observedUrl.includes('v1alpha1/customers/C0123/enterprise/securityInsights:queryUrlVisitsBreakdowns'))
+      assert.deepStrictEqual(observedParams, { pageSize: 10 })
+      assert.deepStrictEqual(result, { urlVisitsBreakdowns: [], nextPageToken: 'next' })
+    })
   })
 
   describe('security_insights Tool', () => {

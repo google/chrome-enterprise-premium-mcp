@@ -18,7 +18,8 @@ limitations under the License.
  * @file Wrapper utilities to guard and transform MCP tool calls.
  */
 
-import { TAGS, SCOPES } from '../../lib/constants.js'
+import { TAGS } from '../../lib/constants.js'
+import { getActiveScopes } from '../../lib/util/feature_flags.js'
 import { logger } from '../../lib/util/logger.js'
 import { validateAndGetOrgUnitId } from './org-unit.js'
 import { isTokenLocallyValid } from '../../lib/util/credential/auth_login.js'
@@ -162,7 +163,7 @@ export function safeFormatResponse({ rawData, formatFn, toolName }) {
  * @returns {(...args: unknown[]) => unknown} The wrapped tool handler function
  */
 export function guardedToolCall(
-  { validate, transform, handler, skipAutoResolve = false, skipAuthCheck = false, scopes = Object.values(SCOPES) },
+  { validate, transform, handler, skipAutoResolve = false, skipAuthCheck = false, scopes = getActiveScopes() },
   options = {},
   sessionState = { customerId: null, cachedRootOrgUnitId: null },
 ) {

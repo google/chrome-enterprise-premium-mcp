@@ -25,11 +25,18 @@ jobs:
       CEP_BACKEND: fake
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
       - run: npm ci
+
+      - name: Download history
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node test/evals/download_history.js
 
       # The runner exits 1 on any FAIL. We let it; the diff step is what
       # decides whether the workflow goes red, so the runner's own exit code
@@ -39,6 +46,18 @@ jobs:
         run: |
           mkdir -p results
           node test/evals/run.js --output results/eval-latest.json
+
+      - name: Run Trend Reporter
+        run: |
+          if [ -f results/eval-latest.json ]; then
+            TIMESTAMP=$(date +%s)
+            VERSION=$(node --input-type=module -e "import fs from 'fs'; console.log(JSON.parse(fs.readFileSync('package.json', 'utf8')).version);")
+            mkdir -p test/evals/runs
+            cp results/eval-latest.json "test/evals/runs/run-${VERSION}-${TIMESTAMP}000.json"
+            node test/evals/reporter.js | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Latest evaluation result not found. Skipping trend reporter."
+          fi
 
       - name: Upload eval results
         if: always()

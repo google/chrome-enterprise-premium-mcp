@@ -25,6 +25,7 @@ limitations under the License.
 
 /** @param {object} state - Cloned base state. */
 export function mutate(state) {
+  state.insightsState = 'INSIGHTS_ENABLED'
   const detectorTypes = new Set([
     'settings/detector',
     'settings/detector.regex',

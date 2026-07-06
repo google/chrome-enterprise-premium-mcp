@@ -1,0 +1,47 @@
+{
+  "securityGateways": {
+    "projects/my-project-123/locations/global/securityGateways/gateway-alpha": {
+      "name": "projects/my-project-123/locations/global/securityGateways/gateway-alpha",
+      "displayName": "Gateway Alpha",
+      "state": "ACTIVE"
+    }
+  },
+  "securityGatewayApplications": {
+    "projects/my-project-123/locations/global/securityGateways/gateway-alpha/applications/app-one": {
+      "name": "projects/my-project-123/locations/global/securityGateways/gateway-alpha/applications/app-one",
+      "displayName": "App One",
+      "endpointMatchers": [
+        {
+          "hostname": "intranet.company.com"
+        }
+      ],
+      "upstreams": [
+        {
+          "upstreamUri": "http://10.0.0.5:80"
+        }
+      ]
+    }
+  },
+  "securityGatewayIamPolicies": {
+    "projects/my-project-123/locations/global/securityGateways/gateway-alpha": {
+      "bindings": [
+        {
+          "role": "roles/beyondcorp.serviceDiscoveryUser",
+          "members": ["group:pre-existing-users@example.com"]
+        }
+      ],
+      "etag": "etag-gw-alpha-123"
+    }
+  },
+  "securityGatewayApplicationIamPolicies": {
+    "projects/my-project-123/locations/global/securityGateways/gateway-alpha/applications/app-one": {
+      "bindings": [
+        {
+          "role": "roles/beyondcorp.sgApplicationUser",
+          "members": ["user:alice@example.com"]
+        }
+      ],
+      "etag": "etag-app-one-123"
+    }
+  }
+}

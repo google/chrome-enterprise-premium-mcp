@@ -18,6 +18,8 @@ coverage/
 results/
 eval_results*
 results*.json
+test/evals/runs/*
+!test/evals/runs/.gitkeep
 
 # Commit messages
 .commitmsg
