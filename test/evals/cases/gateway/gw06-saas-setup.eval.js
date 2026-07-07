@@ -30,9 +30,8 @@ export default {
   requiredPatterns: [
     're:gw(-|\\s)saas',
     're:salesforce',
-    'salesforce.com',
     'roles/beyondcorp.sgApplicationUser',
-    'user:sales@company.com',
+    're:(user:)?sales@company\\.com',
     're:root\\s+(ou|org|unit|\\/)',
   ],
   experiments: {
