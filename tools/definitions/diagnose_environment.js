@@ -302,6 +302,48 @@ function computeIssues(data) {
                 }
               }
             }
+
+            const hasPrivateWebApps = gateway.applications.some(app => {
+              const upstreams = app.upstreams || []
+              return upstreams.some(u => Boolean(u.network))
+            })
+
+            const saEmail = gateway.delegatingServiceAccount || gateway.delegating_service_account
+            if (hasPrivateWebApps && saEmail && data.secureGateway.projectIamPolicy) {
+              const bindings = data.secureGateway.projectIamPolicy.bindings || []
+              const formattedMember = saEmail.startsWith('serviceAccount:') ? saEmail : `serviceAccount:${saEmail}`
+
+              const hasUpstreamRole = bindings.some(b => {
+                if (b.role !== 'roles/beyondcorp.upstreamAccess' && b.role !== 'roles/beyondcorp.serviceAgent') {
+                  return false
+                }
+                const members = b.members || []
+                return members.includes(formattedMember) || members.includes(saEmail)
+              })
+
+              if (!hasUpstreamRole) {
+                issues.push({
+                  severity: 'high',
+                  component: 'secureGateway.iam',
+                  message: `Delegating service account (${saEmail}) on gateway ${gateway.displayName || gateway.name} is missing 'roles/beyondcorp.upstreamAccess' on project ${data.secureGateway.projectId}. Private web application routing into VPC upstreams will fail.`,
+                  remediation: {
+                    actionLabel: 'Manage GCP IAM Roles',
+                    url: `https://console.cloud.google.com/iam-admin/iam?project=${data.secureGateway.projectId}`,
+                  },
+                })
+              }
+            }
+          }
+          if (data.secureGateway.projectIamPolicyError) {
+            issues.push({
+              severity: 'medium',
+              component: 'secureGateway.iam',
+              message: `Unable to automatically verify delegating service account permissions on project ${data.secureGateway.projectId} (${data.secureGateway.projectIamPolicyError}). Please manually verify that the delegating service account has 'roles/beyondcorp.upstreamAccess'.`,
+              remediation: {
+                actionLabel: 'Verify GCP IAM Roles Manually',
+                url: `https://console.cloud.google.com/iam-admin/iam?project=${data.secureGateway.projectId}`,
+              },
+            })
           }
           if (gateway.applicationsError) {
             issues.push({
@@ -365,7 +407,7 @@ async function fetchEnvironment(
   authToken,
   options = {},
 ) {
-  const { beyondcorpClient, projectId, flags } = options
+  const { beyondcorpClient, cloudResourceManagerClient, projectId, flags } = options
 
   const [
     customerData,
@@ -503,6 +545,16 @@ async function fetchEnvironment(
     } else if (beyondcorpClient) {
       try {
         const rawGateways = await beyondcorpClient.listGateways(projectId, authToken)
+        let projectIamPolicy = null
+        let projectIamPolicyError = null
+        if (cloudResourceManagerClient) {
+          try {
+            projectIamPolicy = await cloudResourceManagerClient.getProjectIamPolicy(projectId, authToken)
+          } catch (err) {
+            logger.error(`${TAGS.API} Error fetching project IAM policy for ${projectId} in diagnosis:`, err)
+            projectIamPolicyError = err.message
+          }
+        }
         const gateways = await Promise.all(
           (rawGateways || []).map(async gw => {
             const gatewayId = gw.name ? gw.name.split('/').pop() : gw.displayName
@@ -515,7 +567,7 @@ async function fetchEnvironment(
             }
           }),
         )
-        secureGateway = { projectId, gateways, error: null }
+        secureGateway = { projectId, gateways, projectIamPolicy, projectIamPolicyError, error: null }
       } catch (err) {
         logger.error(`${TAGS.API} Error fetching secure gateways in diagnosis:`, err)
         secureGateway = { projectId, gateways: [], error: err.message }
@@ -554,6 +606,7 @@ export function registerDiagnoseEnvironmentTool(server, options, sessionState) {
     featureFlags: flags = defaultFeatureFlags,
   } = options
   const beyondcorpClient = options.beyondcorpClient || options.apiClients?.beyondcorp
+  const cloudResourceManagerClient = options.cloudResourceManagerClient || options.apiClients?.cloudResourceManager
 
   const isSecureGatewayEnabled = flags.isEnabled(FLAGS.SECURE_GATEWAY_ENABLED)
 
@@ -598,7 +651,7 @@ Use 'limit' and 'offset' for pagination on large datasets.`,
             cloudIdentityClient,
             customerId,
             authToken,
-            { beyondcorpClient, projectId, flags },
+            { beyondcorpClient, cloudResourceManagerClient, projectId, flags },
           )
 
           // Detail mode: return paginated section data

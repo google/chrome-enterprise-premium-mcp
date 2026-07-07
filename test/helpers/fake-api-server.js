@@ -277,6 +277,7 @@ function getInitialState() {
     securityGatewayApplications: nullProtoMap({}),
     securityGatewayIamPolicies: nullProtoMap({}),
     securityGatewayApplicationIamPolicies: nullProtoMap({}),
+    projectIamPolicies: nullProtoMap({}),
   }
 }
 
@@ -1021,6 +1022,13 @@ export function createFakeApp() {
       res.status(404).json({ error: { message: `Application ${name} not found` } })
     },
   )
+
+  // CRM: Get Project IAM Policy
+  app.post('/v1/projects/:projectId\\:getIamPolicy', (req, res) => {
+    const { projectId } = req.params
+    const policy = state.projectIamPolicies[projectId] || { bindings: [] }
+    res.json(policy)
+  })
 
   // Test Helper: Reset State
   app.post('/test/reset', (_req, res) => {
