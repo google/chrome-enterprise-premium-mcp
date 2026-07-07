@@ -24,6 +24,7 @@ import { logger } from '../../lib/util/logger.js'
 import { validateAndGetOrgUnitId } from './org-unit.js'
 import { isTokenLocallyValid } from '../../lib/util/credential/auth_login.js'
 import { cliInvocation } from '../../lib/util/cli_invocation.js'
+import { getAuthErrorMessage, resolveCredentialsSource } from '../../lib/util/auth-error.js'
 
 /**
  * Builds an MCP tool response signalling that sign-in is needed before any tool can run.
@@ -53,35 +54,6 @@ function buildAuthRequiredResponse({ reason, expiresAt }) {
     // By using unstructured text, we keep data schemas strict while maintaining agent utility.
     isError: true,
   }
-}
-
-/**
- * Generates a proactive remediation message for authentication errors.
- * @param {number} status - HTTP status code (401 or 403)
- * @param {boolean} bearerInbound - True if request used inbound Bearer auth
- * @returns {string} Human-readable remediation instructions
- */
-function getAuthRemediationMessage(status, bearerInbound = false) {
-  if (bearerInbound) {
-    if (status === 401) {
-      return `Authentication required. The inbound Bearer token has expired or is invalid. Re-authenticate through your MCP client to refresh the token.`
-    }
-    return `Permission denied. The authenticated principal lacks the required permissions, or the necessary Google Cloud APIs are not enabled.
-
-1. **Re-authenticate:** Refresh the inbound Bearer token through your MCP client.
-2. **Verify APIs are enabled:** Run the \`check_and_enable_cep_api\` tool against your project, or enable the API set listed in \`lib/constants.js#SERVICE_NAMES\`.`
-  }
-
-  const manualLogin = cliInvocation('auth login')
-  if (status === 401) {
-    return `Authentication required. Run the \`cep_auth\` tool to sign in, or run \`${manualLogin}\` at the shell to authorize the server (it caches the access token at ~/.config/cep-mcp/tokens.json). To use a service account, set GOOGLE_APPLICATION_CREDENTIALS to a service-account key file.`
-  }
-
-  return `Permission denied. Your account lacks the required permissions or the necessary Google Cloud APIs are not enabled.
-
-1. **Re-authenticate with all required scopes:** Run the \`cep_auth\` tool, or run \`${manualLogin}\` at the shell, to re-consent. The required scope set is defined in lib/constants.js#SCOPES.
-2. **Verify APIs are enabled:** Run the \`check_and_enable_cep_api\` tool against your project, or enable the API set listed in lib/constants.js#SERVICE_NAMES.
-`
 }
 
 /**
@@ -279,8 +251,9 @@ export function guardedToolCall(
           errorMessage.includes('invalid_grant')
             ? 401
             : 403)
-        const bearerInbound = !!context?.authToken || !!context?.requestInfo?.headers?.authorization
-        const remediationMessage = getAuthRemediationMessage(resolvedStatus, bearerInbound)
+        error.status = resolvedStatus
+        const source = options.apiOptions?.auth ? 'provided' : resolveCredentialsSource(authToken)
+        const remediationMessage = getAuthErrorMessage(error, source)
         return {
           content: [{ type: 'text', text: remediationMessage }],
           isError: true,
