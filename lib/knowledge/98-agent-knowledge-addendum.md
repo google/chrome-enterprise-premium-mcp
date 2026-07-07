@@ -1,5 +1,5 @@
 ---
-summary: 'Mandatory Technical "Golden Facts" and operational memory for Chrome Enterprise Premium. Covers Extension IDs for EV and SEB, Windows Certificate Store requirements for CBA, URL filtering syntax rules, and troubleshooting "Something went wrong" errors for Security Insights using specific privileges. Keywords: callobklhcbilhphinckomhgkigmfocg, ekajlcmdfcigmdbphhifahdfjbkciflj, Windows Store requirements, Security Insights Error, Chrome DLP insight setting management, SafeBrowsingAllowlistDomains.'
+summary: 'Mandatory Technical "Golden Facts" and operational memory for Chrome Enterprise Premium. Covers Extension IDs for EV and SEB, Windows Certificate Store requirements for CBA, URL filtering syntax rules, troubleshooting "Something went wrong" errors for Security Insights, Secure Gateway HTTPS requirements, and SEB extension log locations. Keywords: callobklhcbilhphinckomhgkigmfocg, ekajlcmdfcigmdbphhifahdfjbkciflj, Windows Store requirements, Security Insights Error, Chrome DLP insight setting management, SafeBrowsingAllowlistDomains, Secure Gateway HTTPS, 401 Unauthorized, SEB extension logs.'
 title: 'CEP Technical Addendum (Agent Memory)'
 articleId: 98
 ---
@@ -55,3 +55,8 @@ To successfully implement CBA, you **MUST** complete all three steps:
 - **Server-Side:** Use the **Investigation Tool** with the **Rule log events** data source.
 - **Client-Side:** Direct users to `chrome://policy` to verify rule receipt.
 - **SIEM:** Streaming events require the **Chrome Reporting Connector** and OU-level **Event Reporting** policy enablement.
+
+## 8. Secure Gateway Requirements & Troubleshooting
+
+- **HTTPS Required for Browser Access:** While the Security Gateway API allows configuring arbitrary ports for non-browser ZTNA TCP clients, **Google Chrome and the SEB Extension require access over HTTPS (`https://`) on any configured TLS port (such as `443`, `8443`, etc.)**. Accessing an internal app over unencrypted HTTP (e.g. port 80) in Chrome causes the extension to send direct `GET` requests instead of establishing a `CONNECT` tunnel, resulting in a **`401 Unauthorized` error**. Terminate TLS in your VPC (e.g., via an Internal Load Balancer) if the web app only supports plain HTTP on port 80.
+- **SEB Extension Logs Location:** SEB extension logs are **NOT** part of Chrome Reporting Connector or Chrome log events. Client-side extension logs are accessed via the extension options page at `chrome://extensions/?options=ekajlcmdfcigmdbphhifahdfjbkciflj` by navigating to the **Troubleshooting** section and clicking **Show Log**.
