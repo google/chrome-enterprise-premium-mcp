@@ -138,7 +138,7 @@ export function registerTools(server, options = {}, sessionState) {
     logger.debug(`${TAGS.MCP} Registering diagnose tool (EXPERIMENT_DIAGNOSE_TOOL_ENABLED is active)`)
     registerDiagnoseEnvironmentTool(
       server,
-      { ...commonOpts, chromeManagementClient, chromePolicyClient, cloudIdentityClient },
+      { ...commonOpts, chromeManagementClient, chromePolicyClient, cloudIdentityClient, featureFlags: flags },
       state,
     )
   }

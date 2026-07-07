@@ -24,6 +24,7 @@ limitations under the License.
 import { describe, test, before, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { createIntegrationHarness, teardownIntegrationHarness } from '../../helpers/integration/tools/harness.js'
+import { FeatureFlags } from '../../../lib/util/feature_flags.js'
 
 const EXPECTED_CONNECTOR_COUNT = 6
 
@@ -136,4 +137,32 @@ describe('Diagnose Environment Integration', () => {
       }
     },
   )
+})
+
+describe('Diagnose Environment Integration (Secure Gateway Enabled)', () => {
+  let harness
+
+  before(async () => {
+    harness = await createIntegrationHarness({
+      featureFlags: new FeatureFlags({
+        EXPERIMENT_SECURE_GATEWAY_ENABLED: 'true',
+      }),
+    })
+  })
+
+  after(async () => {
+    await teardownIntegrationHarness(harness, [])
+  })
+
+  test('When SECURE_GATEWAY_ENABLED is active and projectId is passed, diagnose_environment queries secure gateways', async () => {
+    const { client } = harness
+    const result = await client.callTool({
+      name: 'diagnose_environment',
+      arguments: { projectId: 'test-project-sg' },
+    })
+    const sc = result.structuredContent
+    assert.ok(sc.secureGateway)
+    assert.strictEqual(sc.secureGateway.projectId, 'test-project-sg')
+    assert.ok(Array.isArray(sc.secureGateway.gateways))
+  })
 })
