@@ -40,6 +40,7 @@ import { registerCreateUrlListDetectorTool } from './definitions/create_url_list
 import { registerCreateWordListDetectorTool } from './definitions/create_word_list_detector.js'
 import { registerCreateDefaultDlpRulesTool } from './definitions/create_default_dlp_rules.js'
 import { registerCheckSebExtensionStatusTool } from './definitions/check_seb_extension_status.js'
+import { registerCheckEvExtensionStatusTool } from './definitions/check_ev_extension_status.js'
 import { registerInstallSebExtensionTool } from './definitions/install_seb_extension.js'
 import { registerCheckAndEnableCepApiTool } from './definitions/check_and_enable_cep_api.js'
 import { registerEnableChromeEnterpriseConnectorsTool } from './definitions/enable_chrome_enterprise_connectors.js'
@@ -122,6 +123,7 @@ export function registerTools(server, options = {}, sessionState) {
   registerCreateWordListDetectorTool(server, { ...commonOpts, cloudIdentityClient }, state)
   registerCreateDefaultDlpRulesTool(server, { ...commonOpts, cloudIdentityClient }, state)
   registerCheckSebExtensionStatusTool(server, { ...commonOpts, chromePolicyClient }, state)
+  registerCheckEvExtensionStatusTool(server, { ...commonOpts, chromePolicyClient }, state)
   registerInstallSebExtensionTool(server, { ...commonOpts, chromePolicyClient }, state)
   if (registerEnableApi) {
     registerCheckAndEnableCepApiTool(server, { ...commonOpts, serviceUsageClient }, state)
