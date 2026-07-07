@@ -34,9 +34,8 @@ export default {
     ' - bob@securityinsights-e2e-readonly-prod.apollo-df.dev (92 transfers)',
   judgeInstructions:
     'Verify that the agent successfully retrieves and reports the following key details:\n' +
-    '1. The domain name: securityinsights-e2e-readonly-prod.apollo-df.dev\n' +
-    '2. The total count of 12,500 content transfers.\n' +
-    '3. The sensitive transfers count of 450.\n' +
-    '4. The top users contributing to these transfers: alice (150) and bob (92).\n' +
+    '1. The total count of 12,500 content transfers.\n' +
+    '2. The sensitive transfers count of 450.\n' +
+    '3. The top users contributing to these transfers: alice (150) and bob (92).\n' +
     'The agent must use the security_insights_data tool to retrieve this information.',
 }

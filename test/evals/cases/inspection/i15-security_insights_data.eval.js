@@ -36,9 +36,8 @@ export default {
     '   * protegotollamadummyurl.com: 2,709 visits',
   judgeInstructions:
     'Verify that the agent successfully retrieves and reports the following key details:\n' +
-    '1. The domain name: securityinsights-e2e-readonly-prod.apollo-df.dev\n' +
-    '2. The total count of 8,627 suspicious URL visits.\n' +
-    '3. The top 3 suspicious domains with their exact visit counts:\n' +
+    '1. The total count of 8,627 suspicious URL visits.\n' +
+    '2. The top 3 suspicious domains with their exact visit counts:\n' +
     '   - protegotollamadummyurl-higher.com (2,713 visits)\n' +
     '   - protegotollamadummyurl-high.com (2,713 visits)\n' +
     '   - protegotollamadummyurl.com (2,709 visits)\n' +
