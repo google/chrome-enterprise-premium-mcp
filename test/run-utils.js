@@ -39,5 +39,7 @@ export function findTestFiles(dir) {
 export function sanitizeOauthClientEnv(env = process.env) {
   env.CEP_OAUTH_CLIENT_ID = ''
   env.CEP_OAUTH_CLIENT_SECRET = ''
+  delete env.GOOGLE_APPLICATION_CREDENTIALS
+  delete env.CEP_IMPERSONATE_SUBJECT
   return env
 }

@@ -83,7 +83,7 @@ describe('Tool Utils', () => {
       const failHandler = mock.fn(async () => {
         throw err
       })
-      const tool = guardedToolCall({ handler: failHandler })
+      const tool = guardedToolCall({ handler: failHandler, skipAuthCheck: true })
       const result = await tool({}, {})
       assert.strictEqual(result.isError, true)
       assert.match(result.content[0].text, /cep_auth/)
@@ -96,7 +96,7 @@ describe('Tool Utils', () => {
       const failHandler = mock.fn(async () => {
         throw err
       })
-      const tool = guardedToolCall({ handler: failHandler })
+      const tool = guardedToolCall({ handler: failHandler, skipAuthCheck: true })
       const result = await tool({}, {})
       assert.strictEqual(result.isError, true)
       assert.match(result.content[0].text, /cep_auth/)
@@ -109,7 +109,7 @@ describe('Tool Utils', () => {
       const failHandler = mock.fn(async () => {
         throw err
       })
-      const tool = guardedToolCall({ handler: failHandler })
+      const tool = guardedToolCall({ handler: failHandler, skipAuthCheck: true })
       const result = await tool({}, {})
       assert.strictEqual(result.isError, true)
       assert.match(result.content[0].text, /auth login/)
@@ -309,6 +309,43 @@ describe('Tool Utils', () => {
           delete process.env[homeKey]
         } else {
           process.env[homeKey] = saved
+        }
+
+        await fs.rm(emptyHome, { recursive: true, force: true })
+      }
+    })
+
+    test('When guardedToolCall runs with GOOGLE_APPLICATION_CREDENTIALS set and no cached token, then it bypasses pre-flight and invokes the handler', async () => {
+      const handler = mock.fn(async () => ({ content: [{ type: 'text', text: 'ok' }] }))
+      const homeKey = process.platform === 'win32' ? 'APPDATA' : 'HOME'
+      const saved = process.env[homeKey]
+      const emptyHome = path.join(
+        os.tmpdir(),
+        `cep-mcp-empty-home-sa-${process.pid}-${Math.random().toString(16).slice(2)}`,
+      )
+
+      await fs.mkdir(emptyHome, { recursive: true })
+      process.env[homeKey] = emptyHome
+
+      const previousCreds = process.env.GOOGLE_APPLICATION_CREDENTIALS
+      process.env.GOOGLE_APPLICATION_CREDENTIALS = '/nonexistent-sa.json'
+
+      try {
+        const tool = guardedToolCall({ handler })
+        const result = await tool({}, {})
+        assert.strictEqual(result.content[0].text, 'ok')
+        assert.strictEqual(handler.mock.callCount(), 1)
+      } finally {
+        if (saved === undefined) {
+          delete process.env[homeKey]
+        } else {
+          process.env[homeKey] = saved
+        }
+
+        if (previousCreds === undefined) {
+          delete process.env.GOOGLE_APPLICATION_CREDENTIALS
+        } else {
+          process.env.GOOGLE_APPLICATION_CREDENTIALS = previousCreds
         }
 
         await fs.rm(emptyHome, { recursive: true, force: true })
