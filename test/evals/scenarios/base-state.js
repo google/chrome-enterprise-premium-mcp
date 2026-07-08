@@ -229,7 +229,7 @@ export function getBaseState() {
               onBulkTextEntryAnalysisConnectorConfiguration: {
                 bulkTextEntryConfiguration: {
                   serviceProvider: 'SERVICE_PROVIDER_CHROME_ENTERPRISE_PREMIUM',
-                  delayDeliveryUntilVerdict: false,
+                  delayDeliveryUntilVerdict: true,
                 },
               },
             },
@@ -280,6 +280,8 @@ export function getBaseState() {
                     'sensitiveDataEvent',
                     'urlFilteringInterstitialEvent',
                     'suspiciousUrlEvent',
+                    'unscannedFileEvent',
+                    'interstitialEvent',
                   ],
                 },
               },
