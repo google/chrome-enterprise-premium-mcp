@@ -19,6 +19,7 @@ import { describe, test, mock, beforeEach } from 'node:test'
 import esmock from 'esmock'
 
 const SEB_EXTENSION_ID = 'ekajlcmdfcigmdbphhifahdfjbkciflj'
+const EV_EXTENSION_ID = 'callobklhcbilhphinckomhgkigmfocg'
 const INSTALL_TYPE_SCHEMA = 'chrome.users.apps.InstallType'
 
 describe('Extension Tools', () => {
@@ -186,5 +187,87 @@ describe('Extension Tools', () => {
     assert.strictEqual(passedRequests[0].policyValue.value.appInstallType, 'FORCED')
     assert.strictEqual(passedRequests[0].policyTargetKey.additionalTargetKeys.app_id, `chrome:${SEB_EXTENSION_ID}`)
     assert.ok(result.content[0].text.includes('Successfully force-installed SEB extension on this OU.'))
+  })
+
+  test('When check_ev_extension_status is called and extension is installed, then it returns success', async () => {
+    const mockResolvePolicy = mock.fn(async () => [
+      {
+        targetKey: {
+          additionalTargetKeys: { app_id: `chrome:${EV_EXTENSION_ID}` },
+        },
+        value: {
+          policySchema: INSTALL_TYPE_SCHEMA,
+          value: {
+            appInstallType: 'FORCED',
+          },
+        },
+      },
+    ])
+
+    const MockChromePolicyClient = class {
+      constructor() {
+        this.resolvePolicy = mockResolvePolicy
+      }
+    }
+
+    const { registerTools } = await esmock(
+      '../../tools/index.js',
+      {},
+      {
+        '../../lib/api/chrome_policy_client.js': {
+          ChromePolicyClient: MockChromePolicyClient,
+        },
+      },
+    )
+
+    registerTools(server, {
+      apiClients: { chromePolicy: new MockChromePolicyClient() },
+    })
+
+    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_ev_extension_status')
+      .arguments[2]
+
+    const result = await handler({ customerId: 'C123', orgUnitId: 'ou1' }, { requestInfo: {} })
+
+    assert.strictEqual(mockResolvePolicy.mock.callCount(), 1)
+    assert.ok(
+      result.content[0].text.includes(
+        `Endpoint Verification extension (\`${EV_EXTENSION_ID}\`) is force-installed on this OU.`,
+      ),
+    )
+  })
+
+  test('When check_ev_extension_status is called and extension is missing, then it returns an error indicator', async () => {
+    const mockResolvePolicy = mock.fn(async () => [])
+
+    const MockChromePolicyClient = class {
+      constructor() {
+        this.resolvePolicy = mockResolvePolicy
+      }
+    }
+
+    const { registerTools } = await esmock(
+      '../../tools/index.js',
+      {},
+      {
+        '../../lib/api/chrome_policy_client.js': {
+          ChromePolicyClient: MockChromePolicyClient,
+        },
+      },
+    )
+
+    registerTools(server, {
+      apiClients: { chromePolicy: new MockChromePolicyClient() },
+    })
+
+    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_ev_extension_status')
+      .arguments[2]
+
+    const result = await handler({ customerId: 'C123', orgUnitId: 'ou1' }, { requestInfo: {} })
+
+    assert.ok(
+      result.content[0].text.includes('Endpoint Verification extension') &&
+        result.content[0].text.includes('NOT force-installed'),
+    )
   })
 })

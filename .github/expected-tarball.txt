@@ -82,6 +82,7 @@ tools/README.md
 tools/definitions/auth.js
 tools/definitions/check_and_enable_cep_api.js
 tools/definitions/check_cep_subscription.js
+tools/definitions/check_ev_extension_status.js
 tools/definitions/check_seb_extension_status.js
 tools/definitions/check_user_cep_license.js
 tools/definitions/count_browser_versions.js

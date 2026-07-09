@@ -81,6 +81,7 @@ describe('MCP Server in stdio mode', () => {
         'cep_auth_clear',
         'cep_auth_status',
         'check_cep_subscription',
+        'check_ev_extension_status',
         'check_seb_extension_status',
         'check_user_cep_license',
         'count_browser_versions',

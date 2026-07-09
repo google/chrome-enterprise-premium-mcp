@@ -30,6 +30,7 @@ const CORE_TOOLS = [
   'cep_auth_status',
   'check_and_enable_cep_api',
   'check_cep_subscription',
+  'check_ev_extension_status',
   'check_seb_extension_status',
   'check_user_cep_license',
   'count_browser_versions',
