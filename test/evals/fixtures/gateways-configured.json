@@ -3,7 +3,7 @@
     "projects/my-project-123/locations/global/securityGateways/gateway-alpha": {
       "name": "projects/my-project-123/locations/global/securityGateways/gateway-alpha",
       "displayName": "Gateway Alpha",
-      "state": "ACTIVE"
+      "state": "RUNNING"
     }
   },
   "securityGatewayApplications": {

@@ -28,5 +28,5 @@ export default {
   prompt:
     'What are the details and configured applications for secure gateway gateway-alpha in project my-project-123?',
   goldenResponse:
-    'Gateway Alpha (gateway-alpha) is ACTIVE. It has 1 configured application called App One (app-one) routing to intranet.company.com.',
+    'Gateway Alpha (gateway-alpha) is RUNNING. It has 1 configured application called App One (app-one) routing to intranet.company.com.',
 }
