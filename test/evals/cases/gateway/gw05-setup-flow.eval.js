@@ -32,7 +32,7 @@ export default {
     're:crm(-|\\s)app',
     'crm.internal',
     'roles/beyondcorp.sgApplicationUser',
-    'user:sales@company.com',
+    're:(user:)?sales@company\\.com',
     're:root\\s+(ou|org|unit|\\/)',
   ],
   experiments: {
