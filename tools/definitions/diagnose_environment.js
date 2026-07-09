@@ -309,28 +309,36 @@ function computeIssues(data) {
             })
 
             const saEmail = gateway.delegatingServiceAccount || gateway.delegating_service_account
-            if (hasPrivateWebApps && saEmail && data.secureGateway.projectIamPolicy) {
-              const bindings = data.secureGateway.projectIamPolicy.bindings || []
-              const formattedMember = saEmail.startsWith('serviceAccount:') ? saEmail : `serviceAccount:${saEmail}`
-
-              const hasUpstreamRole = bindings.some(b => {
-                if (b.role !== 'roles/beyondcorp.upstreamAccess' && b.role !== 'roles/beyondcorp.serviceAgent') {
-                  return false
-                }
-                const members = b.members || []
-                return members.includes(formattedMember) || members.includes(saEmail)
-              })
-
-              if (!hasUpstreamRole) {
+            if (hasPrivateWebApps) {
+              if (!saEmail) {
                 issues.push({
                   severity: 'high',
                   component: 'secureGateway.iam',
-                  message: `Delegating service account (${saEmail}) on gateway ${gateway.displayName || gateway.name} is missing 'roles/beyondcorp.upstreamAccess' on project ${data.secureGateway.projectId}. Private web application routing into VPC upstreams will fail.`,
-                  remediation: {
-                    actionLabel: 'Manage GCP IAM Roles',
-                    url: `https://console.cloud.google.com/iam-admin/iam?project=${data.secureGateway.projectId}`,
-                  },
+                  message: `Secure Gateway ${gateway.displayName || gateway.name} has private web applications configured, but no delegating service account is specified on the gateway. Private application routing into VPC upstreams will fail.`,
                 })
+              } else if (data.secureGateway.projectIamPolicy) {
+                const bindings = data.secureGateway.projectIamPolicy.bindings || []
+                const formattedMember = saEmail.startsWith('serviceAccount:') ? saEmail : `serviceAccount:${saEmail}`
+
+                const hasUpstreamRole = bindings.some(b => {
+                  if (b.role !== 'roles/beyondcorp.upstreamAccess' && b.role !== 'roles/beyondcorp.serviceAgent') {
+                    return false
+                  }
+                  const members = b.members || []
+                  return members.includes(formattedMember) || members.includes(saEmail)
+                })
+
+                if (!hasUpstreamRole) {
+                  issues.push({
+                    severity: 'high',
+                    component: 'secureGateway.iam',
+                    message: `Delegating service account (${saEmail}) on gateway ${gateway.displayName || gateway.name} is not directly granted 'roles/beyondcorp.upstreamAccess' on project ${data.secureGateway.projectId}. If permission is not inherited from a parent Folder or Organization, private web application routing into VPC upstreams will fail.`,
+                    remediation: {
+                      actionLabel: 'Verify or Grant GCP IAM Roles',
+                      url: `https://console.cloud.google.com/iam-admin/iam?project=${data.secureGateway.projectId}`,
+                    },
+                  })
+                }
               }
             }
           }

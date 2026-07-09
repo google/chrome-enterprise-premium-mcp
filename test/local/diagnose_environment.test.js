@@ -797,11 +797,43 @@ describe('diagnose_environment', () => {
       const iamIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.iam')
       assert.strictEqual(iamIssues.length, 1)
       assert.strictEqual(iamIssues[0].severity, 'high')
-      assert.ok(iamIssues[0].message.includes("missing 'roles/beyondcorp.upstreamAccess'"))
+      assert.ok(iamIssues[0].message.includes("is not directly granted 'roles/beyondcorp.upstreamAccess'"))
       assert.deepStrictEqual(iamIssues[0].remediation, {
-        actionLabel: 'Manage GCP IAM Roles',
+        actionLabel: 'Verify or Grant GCP IAM Roles',
         url: 'https://console.cloud.google.com/iam-admin/iam?project=p1',
       })
+    })
+
+    test('When private web app is configured but delegating SA is missing on gateway resource, then it produces a high issue', async () => {
+      const { handler } = registerAndGetHandler(
+        {
+          gateways: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1',
+              displayName: 'Gateway 1',
+              state: 'ACTIVE',
+              serviceDiscovery: {},
+            },
+          ],
+          applications: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1/applications/app1',
+              displayName: 'Private Web App',
+              upstreams: [{ network: { name: 'projects/p1/global/networks/prod-vpc' } }],
+            },
+          ],
+          projectIamPolicy: {
+            bindings: [{ role: 'roles/viewer', members: ['user:alice@company.com'] }],
+          },
+        },
+        { featureFlags: enabledFlags },
+      )
+
+      const result = await handler({ customerId: 'C0123', projectId: 'p1' }, { requestInfo: {} })
+      const iamIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.iam')
+      assert.strictEqual(iamIssues.length, 1)
+      assert.strictEqual(iamIssues[0].severity, 'high')
+      assert.ok(iamIssues[0].message.includes('no delegating service account is specified'))
     })
 
     test('When private web app is configured and delegating SA HAS roles/beyondcorp.upstreamAccess, then no IAM issue is raised', async () => {
