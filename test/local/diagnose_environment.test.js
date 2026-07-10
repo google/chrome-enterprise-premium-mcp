@@ -24,6 +24,7 @@ limitations under the License.
 import { test, describe, mock } from 'node:test'
 import assert from 'node:assert/strict'
 import { registerDiagnoseEnvironmentTool } from '../../tools/definitions/diagnose_environment.js'
+import { FeatureFlags } from '../../lib/util/feature_flags.js'
 
 /**
  * Creates mock API clients that return configurable test data.
@@ -52,6 +53,8 @@ function createMockClients(overrides = {}) {
     urlVisits: {
       summaries: [{ metric: 'URL_VISITS_METRIC_TOTAL_SUSPICIOUS_URL_VISITS', count: '5' }],
     },
+    gateways: [],
+    applications: [],
   }
 
   const cfg = { ...defaults, ...overrides }
@@ -76,6 +79,10 @@ function createMockClients(overrides = {}) {
       listDlpRules: mock.fn(async () => cfg.dlpRules),
       listDetectors: mock.fn(async () => cfg.detectors),
     },
+    beyondcorpClient: {
+      listGateways: mock.fn(async () => cfg.gateways),
+      listApplications: mock.fn(async () => cfg.applications),
+    },
     apiClients: {
       adminSdk: { getCustomerId: mock.fn(async () => cfg.customer) },
     },
@@ -99,11 +106,12 @@ function createMockServer(handlers) {
   }
 }
 
-function registerAndGetHandler(clientOverrides = {}) {
+function registerAndGetHandler(clientOverrides = {}, options = {}) {
   const handlers = {}
   const server = createMockServer(handlers)
   const clients = createMockClients(clientOverrides)
-  registerDiagnoseEnvironmentTool(server, clients, { customerId: null, cachedRootOrgUnitId: null })
+  const fullOptions = { ...clients, ...options }
+  registerDiagnoseEnvironmentTool(server, fullOptions, { customerId: null, cachedRootOrgUnitId: null })
   return { handler: handlers['diagnose_environment'], clients }
 }
 
@@ -514,6 +522,241 @@ describe('diagnose_environment', () => {
       const { handler } = registerAndGetHandler({ orgUnits: { organizationUnits: [] } })
       const result = await handler({ customerId: 'C0123' }, { requestInfo: {} })
       assert.strictEqual(result.structuredContent.orgUnitCount, 0)
+    })
+  })
+
+  describe('Secure Gateway Diagnostics', () => {
+    const enabledFlags = new FeatureFlags({ EXPERIMENT_SECURE_GATEWAY_ENABLED: 'true' })
+    const disabledFlags = new FeatureFlags({ EXPERIMENT_SECURE_GATEWAY_ENABLED: 'false' })
+
+    test('When experiment flag is disabled, then secureGateway section and checks are omitted', async () => {
+      const { handler, clients } = registerAndGetHandler(
+        { gateways: [{ name: 'projects/p1/locations/global/securityGateways/gw1', state: 'RUNNING' }] },
+        { featureFlags: disabledFlags },
+      )
+      const result = await handler({ customerId: 'C0123', projectId: 'p1' }, { requestInfo: {} })
+      assert.strictEqual(result.structuredContent.secureGateway, null)
+      assert.strictEqual(clients.beyondcorpClient.listGateways.mock.callCount(), 0)
+      assert.ok(!result.content[0].text.includes('Secure Gateways'))
+    })
+
+    test('When experiment flag is enabled but no projectId is provided, then secureGateway is reported as skipped', async () => {
+      const { handler, clients } = registerAndGetHandler({}, { featureFlags: enabledFlags })
+      const result = await handler({ customerId: 'C0123' }, { requestInfo: {} })
+      assert.deepStrictEqual(result.structuredContent.secureGateway, { projectId: null, gateways: [], skipped: true })
+      assert.strictEqual(clients.beyondcorpClient.listGateways.mock.callCount(), 0)
+      assert.ok(result.content[0].text.includes("**Secure Gateways:** Not checked (provide 'projectId'"))
+    })
+
+    test('When experiment flag is enabled and healthy gateway exists, then zero issues are produced', async () => {
+      const { handler } = registerAndGetHandler(
+        {
+          connectorPolicy: [{ value: {} }],
+          gateways: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1',
+              displayName: 'Gateway 1',
+              state: 'RUNNING',
+              serviceDiscovery: {},
+            },
+          ],
+          applications: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1/applications/app1',
+              displayName: 'App 1',
+            },
+          ],
+        },
+        { featureFlags: enabledFlags },
+      )
+
+      const result = await handler({ customerId: 'C0123', projectId: 'p1' }, { requestInfo: {} })
+      const sg = result.structuredContent.secureGateway
+      assert.ok(sg)
+      assert.strictEqual(sg.gateways.length, 1)
+      assert.strictEqual(sg.gateways[0].applications.length, 1)
+
+      const sgIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway')
+      assert.strictEqual(sgIssues.length, 0)
+      assert.ok(
+        result.content[0].text.includes(
+          '**Secure Gateways (project: p1):** 1 total (1 active, 1 with Service Discovery, 1 app(s))',
+        ),
+      )
+    })
+
+    test('When gateway has non-ACTIVE state, missing service discovery, and zero apps, then corresponding issues are produced', async () => {
+      const { handler } = registerAndGetHandler(
+        {
+          gateways: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1',
+              displayName: 'Bad Gateway',
+              state: 'ERROR',
+            },
+          ],
+          applications: [],
+        },
+        { featureFlags: enabledFlags },
+      )
+
+      const result = await handler({ customerId: 'C0123', projectId: 'p1' }, { requestInfo: {} })
+      const sgIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway')
+
+      assert.ok(sgIssues.some(i => i.severity === 'critical' && i.message.includes('ERROR state')))
+      assert.ok(sgIssues.some(i => i.severity === 'medium' && i.message.includes('Service Discovery')))
+      assert.ok(sgIssues.some(i => i.severity === 'medium' && i.message.includes('no application routing')))
+    })
+
+    test('When gateway is in RUNNING state, then it is treated as healthy', async () => {
+      const { handler } = registerAndGetHandler(
+        {
+          connectorPolicy: [{ value: {} }],
+          gateways: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1',
+              displayName: 'Running Gateway',
+              state: 'RUNNING',
+              serviceDiscovery: {},
+            },
+          ],
+          applications: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1/applications/app1',
+              displayName: 'App 1',
+            },
+          ],
+        },
+        { featureFlags: enabledFlags },
+      )
+
+      const result = await handler({ customerId: 'C0123', projectId: 'p1' }, { requestInfo: {} })
+      const sgIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway')
+      assert.strictEqual(sgIssues.length, 0)
+    })
+
+    test('When gateway is in ERROR, DOWN, or CREATING state, then appropriate severity issues are reported', async () => {
+      const { handler } = registerAndGetHandler(
+        {
+          gateways: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1',
+              displayName: 'Err Gateway',
+              state: 'ERROR',
+              serviceDiscovery: {},
+            },
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw2',
+              displayName: 'Down Gateway',
+              state: 'DOWN',
+              serviceDiscovery: {},
+            },
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw3',
+              displayName: 'Creating Gateway',
+              state: 'CREATING',
+              serviceDiscovery: {},
+            },
+          ],
+          applications: [],
+        },
+        { featureFlags: enabledFlags },
+      )
+
+      const result = await handler({ customerId: 'C0123', projectId: 'p1' }, { requestInfo: {} })
+      const sgIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway')
+
+      assert.ok(sgIssues.some(i => i.severity === 'critical' && i.message.includes('ERROR state')))
+      assert.ok(sgIssues.some(i => i.severity === 'high' && i.message.includes('DOWN state')))
+      assert.ok(sgIssues.some(i => i.severity === 'medium' && i.message.includes('CREATING state')))
+    })
+
+    test('When application routes non-HTTPS ports (e.g. 80 without 443), then an issue is produced according to Knowledge Addendum #8', async () => {
+      const { handler } = registerAndGetHandler(
+        {
+          gateways: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1',
+              displayName: 'Gateway 1',
+              state: 'RUNNING',
+              serviceDiscovery: {},
+            },
+          ],
+          applications: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1/applications/app1',
+              displayName: 'HTTP App',
+              endpointMatchers: [{ hostname: 'app.local', ports: [80] }],
+            },
+          ],
+        },
+        { featureFlags: enabledFlags },
+      )
+
+      const result = await handler({ customerId: 'C0123', projectId: 'p1' }, { requestInfo: {} })
+      const appIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.application')
+      assert.strictEqual(appIssues.length, 1)
+      assert.strictEqual(appIssues[0].severity, 'medium')
+      assert.ok(appIssues[0].message.includes('routes port 80'))
+    })
+
+    test('When listGateways API fails, then it produces a medium issue and reports query failure', async () => {
+      const clients = createMockClients()
+      clients.beyondcorpClient.listGateways = mock.fn(async () => {
+        throw new Error('API unavailable')
+      })
+
+      const handlers = {}
+      const server = createMockServer(handlers)
+      registerDiagnoseEnvironmentTool(
+        server,
+        { ...clients, featureFlags: enabledFlags },
+        { customerId: null, cachedRootOrgUnitId: null },
+      )
+
+      const result = await handlers['diagnose_environment'](
+        { customerId: 'C0123', projectId: 'p1' },
+        { requestInfo: {} },
+      )
+      const sgIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway')
+      assert.strictEqual(sgIssues.length, 1)
+      assert.strictEqual(sgIssues[0].severity, 'medium')
+      assert.ok(sgIssues[0].message.includes('API unavailable'))
+      assert.ok(result.content[0].text.includes('**Secure Gateways (project: p1):** ⚠️ Query failed'))
+    })
+
+    test('When detail section secureGateways is requested, then paginated gateways are returned', async () => {
+      const { handler } = registerAndGetHandler(
+        {
+          gateways: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1',
+              displayName: 'Gateway 1',
+              state: 'RUNNING',
+              serviceDiscovery: {},
+            },
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw2',
+              displayName: 'Gateway 2',
+              state: 'RUNNING',
+            },
+          ],
+          applications: [],
+        },
+        { featureFlags: enabledFlags },
+      )
+
+      const result = await handler(
+        { customerId: 'C0123', projectId: 'p1', section: 'secureGateways', limit: 1, offset: 0 },
+        { requestInfo: {} },
+      )
+      const sc = result.structuredContent
+      assert.strictEqual(sc.section, 'secureGateways')
+      assert.strictEqual(sc.items.length, 1)
+      assert.strictEqual(sc.total, 2)
+      assert.strictEqual(sc.hasMore, true)
+      assert.strictEqual(sc.items[0].displayName, 'Gateway 1')
+      assert.strictEqual(sc.items[0].serviceDiscovery, true)
     })
   })
 })

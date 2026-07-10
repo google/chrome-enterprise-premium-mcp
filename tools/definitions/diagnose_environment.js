@@ -31,6 +31,7 @@ import { logger } from '../../lib/util/logger.js'
 import { ConnectorPolicyFilter } from '../../lib/api/chrome_policy_client.js'
 import { CHROME_ACTION_TYPES } from '../../lib/util/chrome_dlp_constants.js'
 import { analyzeConnectorPolicy } from '../../lib/util/connector_policy_helper.js'
+import { FLAGS, featureFlags as defaultFeatureFlags } from '../../lib/util/feature_flags.js'
 
 const CONNECTOR_TYPES = {
   uploadAnalysis: 'ON_FILE_ATTACHED',
@@ -237,11 +238,89 @@ function computeIssues(data) {
     })
   }
 
+  if (data.secureGateway) {
+    if (data.secureGateway.skipped) {
+      issues.push({
+        severity: 'info',
+        component: 'secureGateway',
+        message:
+          'Secure Gateway health check was skipped because no GCP projectId was provided. Pass a `projectId` parameter to diagnose Secure Gateways, application routing, and IAM permissions.',
+      })
+    } else if (data.secureGateway.error) {
+      issues.push({
+        severity: 'medium',
+        component: 'secureGateway',
+        message: `Failed to query Secure Gateways for project ${data.secureGateway.projectId}: ${data.secureGateway.error}`,
+      })
+    } else {
+      if (data.secureGateway.gateways.length === 0) {
+        issues.push({
+          severity: 'medium',
+          component: 'secureGateway',
+          message: `No Secure Gateways found in project ${data.secureGateway.projectId}.`,
+        })
+      } else {
+        for (const gateway of data.secureGateway.gateways) {
+          const state = gateway.state || 'STATE_UNSPECIFIED'
+          if (state !== 'RUNNING') {
+            const isCritical = state === 'ERROR'
+            const isHigh = state === 'DOWN'
+            const isMedium = ['CREATING', 'UPDATING', 'DELETING'].includes(state)
+            const severity = isCritical ? 'critical' : isHigh ? 'high' : isMedium ? 'medium' : 'high'
+
+            issues.push({
+              severity,
+              component: 'secureGateway',
+              message: `Secure Gateway ${gateway.displayName || gateway.name} is in ${state} state.`,
+            })
+          }
+          if (!gateway.serviceDiscovery) {
+            issues.push({
+              severity: 'medium',
+              component: 'secureGateway',
+              message: `Secure Gateway ${gateway.displayName || gateway.name} does not have Service Discovery enabled.`,
+            })
+          }
+          if (gateway.applications && gateway.applications.length === 0) {
+            issues.push({
+              severity: 'medium',
+              component: 'secureGateway',
+              message: `Secure Gateway ${gateway.displayName || gateway.name} has no application routing configured.`,
+            })
+          }
+          if (gateway.applications && gateway.applications.length > 0) {
+            for (const app of gateway.applications) {
+              const matchers = app.endpointMatchers || app.endpoint_matchers || []
+              for (const matcher of matchers) {
+                const ports = matcher.ports || []
+                if (ports.includes(80)) {
+                  issues.push({
+                    severity: 'medium',
+                    component: 'secureGateway.application',
+                    message: `Application ${app.displayName || app.name} on gateway ${gateway.displayName || gateway.name} routes port 80. If accessed over unencrypted HTTP (http://), Chrome and SEB extension send direct GET requests instead of establishing a CONNECT tunnel, resulting in 401 Unauthorized errors. Ensure traffic is served over HTTPS.`,
+                  })
+                }
+              }
+            }
+          }
+          if (gateway.applicationsError) {
+            issues.push({
+              severity: 'medium',
+              component: 'secureGateway',
+              message: `Failed to list applications for Secure Gateway ${gateway.displayName || gateway.name}: ${gateway.applicationsError}`,
+            })
+          }
+        }
+      }
+    }
+  }
+
   const SEVERITY_ORDER = {
     critical: 0,
     high: 1,
     medium: 2,
     warning: 3,
+    info: 4,
   }
 
   return issues.sort((a, b) => {
@@ -274,6 +353,7 @@ function classifyAction(action) {
  * @param {import('../../lib/api/cloud_identity_client.js').CloudIdentityClient} cloudIdentityClient - Client for listing DLP rules and detectors
  * @param {string} customerId - The Chrome customer ID used for scoping requests
  * @param {string} authToken - The Bearer token for authorized API access
+ * @param {object} [options] - Additional options including beyondcorpClient, projectId, and flags
  * @returns {Promise<object>} A consolidated object containing raw data from all services
  */
 async function fetchEnvironment(
@@ -283,7 +363,10 @@ async function fetchEnvironment(
   cloudIdentityClient,
   customerId,
   authToken,
+  options = {},
 ) {
+  const { beyondcorpClient, projectId, flags } = options
+
   const [
     customerData,
     orgUnitsData,
@@ -413,6 +496,33 @@ async function fetchEnvironment(
     normalizedUrlVisits = null
   }
 
+  let secureGateway = null
+  if (flags?.isEnabled(FLAGS.SECURE_GATEWAY_ENABLED)) {
+    if (!projectId) {
+      secureGateway = { projectId: null, gateways: [], skipped: true }
+    } else if (beyondcorpClient) {
+      try {
+        const rawGateways = await beyondcorpClient.listGateways(projectId, authToken)
+        const gateways = await Promise.all(
+          (rawGateways || []).map(async gw => {
+            const gatewayId = gw.name ? gw.name.split('/').pop() : gw.displayName
+            try {
+              const apps = await beyondcorpClient.listApplications(projectId, gatewayId, authToken)
+              return { ...gw, applications: apps || [] }
+            } catch (err) {
+              logger.error(`${TAGS.API} Error fetching applications for gateway ${gatewayId} in diagnosis:`, err)
+              return { ...gw, applications: [], applicationsError: err.message }
+            }
+          }),
+        )
+        secureGateway = { projectId, gateways, error: null }
+      } catch (err) {
+        logger.error(`${TAGS.API} Error fetching secure gateways in diagnosis:`, err)
+        secureGateway = { projectId, gateways: [], error: err.message }
+      }
+    }
+  }
+
   return {
     customer,
     orgUnits,
@@ -425,6 +535,7 @@ async function fetchEnvironment(
     securityInsights,
     contentTransfers: normalizedContentTransfers,
     urlVisits: normalizedUrlVisits,
+    secureGateway,
   }
 }
 
@@ -435,7 +546,16 @@ async function fetchEnvironment(
  * @param {object} sessionState - State object for the current session
  */
 export function registerDiagnoseEnvironmentTool(server, options, sessionState) {
-  const { adminSdkClient, chromeManagementClient, chromePolicyClient, cloudIdentityClient } = options
+  const {
+    adminSdkClient,
+    chromeManagementClient,
+    chromePolicyClient,
+    cloudIdentityClient,
+    featureFlags: flags = defaultFeatureFlags,
+  } = options
+  const beyondcorpClient = options.beyondcorpClient || options.apiClients?.beyondcorp
+
+  const isSecureGatewayEnabled = flags.isEnabled(FLAGS.SECURE_GATEWAY_ENABLED)
 
   server.registerTool(
     'diagnose_environment',
@@ -448,13 +568,17 @@ To drill into detail, pass a 'section' parameter:
 - "orgUnits" — paginated list of organizational units
 - "dlpRules" — paginated list of DLP rules with action types
 - "detectors" — paginated list of content detectors
-- "browserVersions" — all browser version counts
+- "browserVersions" — all browser version counts${isSecureGatewayEnabled ? '\n- "secureGateways" — paginated list of secure gateways' : ''}
 
 Use 'limit' and 'offset' for pagination on large datasets.`,
       inputSchema: z.object({
         customerId: z.string().optional().describe('The Chrome customer ID. Auto-resolved if omitted.'),
+        projectId: z
+          .string()
+          .optional()
+          .describe('The Google Cloud project ID (required to diagnose Secure Gateways).'),
         section: z
-          .enum(['orgUnits', 'dlpRules', 'detectors', 'browserVersions'])
+          .enum(['orgUnits', 'dlpRules', 'detectors', 'browserVersions', 'secureGateways'])
           .optional()
           .describe('Drill into a specific section with paginated results. Omit for summary.'),
         limit: z.number().int().min(1).max(200).optional().describe('Page size for detail sections (default 50).'),
@@ -464,7 +588,7 @@ Use 'limit' and 'offset' for pagination on large datasets.`,
     },
     guardedToolCall(
       {
-        handler: async ({ customerId, section, limit, offset }, { _requestInfo, authToken }) => {
+        handler: async ({ customerId, projectId, section, limit, offset }, { _requestInfo, authToken }) => {
           logger.info(`${TAGS.MCP} diagnose_environment: starting (section=${section || 'summary'})`)
 
           const env = await fetchEnvironment(
@@ -474,6 +598,7 @@ Use 'limit' and 'offset' for pagination on large datasets.`,
             cloudIdentityClient,
             customerId,
             authToken,
+            { beyondcorpClient, projectId, flags },
           )
 
           // Detail mode: return paginated section data
@@ -513,6 +638,7 @@ function buildSummaryResponse(env) {
     securityInsights,
     contentTransfers,
     urlVisits,
+    secureGateway,
   } = env
 
   const activeRules = allDlpRules.filter(r => r.state === 'ACTIVE')
@@ -544,6 +670,7 @@ function buildSummaryResponse(env) {
     securityInsights,
     contentTransfers,
     urlVisits,
+    secureGateway,
     browserVersions: { total: versions.length, deviceCount: totalDevices },
     issues: [],
   }
@@ -589,7 +716,23 @@ function buildSummaryResponse(env) {
   summary += `**DLP Rules:** ${allDlpRules.length} total (${activeRules.length} active: ${dlpRuleSummary.byAction.block} block, ${dlpRuleSummary.byAction.warn} warn, ${dlpRuleSummary.byAction.audit} audit, ${dlpRuleSummary.byAction.watermark} watermark)\n`
   summary += `**Detectors:** ${allDetectors.length}\n`
   summary += `**Browser Versions:** ${versions.length} versions across ${totalDevices} devices\n`
-  summary += `**SEB Extension:** ${sebExtension.isInstalled ? 'Force-installed' : 'Not installed'}\n\n`
+  summary += `**SEB Extension:** ${sebExtension.isInstalled ? 'Force-installed' : 'Not installed'}\n`
+
+  if (secureGateway) {
+    if (secureGateway.skipped) {
+      summary += `**Secure Gateways:** Not checked (provide 'projectId' parameter to diagnose Secure Gateways)\n`
+    } else if (secureGateway.error) {
+      summary += `**Secure Gateways (project: ${secureGateway.projectId}):** ⚠️ Query failed (see issues below)\n`
+    } else {
+      const gateways = secureGateway.gateways || []
+      const activeCount = gateways.filter(g => g.state === 'RUNNING').length
+      const sdCount = gateways.filter(g => Boolean(g.serviceDiscovery)).length
+      const appCount = gateways.reduce((sum, g) => sum + (g.applications ? g.applications.length : 0), 0)
+      summary += `**Secure Gateways (project: ${secureGateway.projectId}):** ${gateways.length} total (${activeCount} active, ${sdCount} with Service Discovery, ${appCount} app(s))\n`
+    }
+  }
+
+  summary += `\n`
 
   if (issueCount === 0) {
     summary += `**Result: No issues found.** The environment appears healthy.\n`
@@ -600,7 +743,14 @@ function buildSummaryResponse(env) {
     }
     summary += `**Result: ${issueCount} issue(s) found** (${countsStr})\n\n`
     for (const issue of sc.issues) {
-      const icon = issue.severity === 'critical' ? '🔴' : issue.severity === 'high' ? '🟠' : '🟡'
+      const icon =
+        issue.severity === 'critical'
+          ? '🔴'
+          : issue.severity === 'high'
+            ? '🟠'
+            : issue.severity === 'medium'
+              ? '🟡'
+              : 'ℹ️'
       let remediation = ''
       if (issue.component === 'securityInsights' && issue.severity === 'critical') {
         remediation =
@@ -613,7 +763,11 @@ function buildSummaryResponse(env) {
     }
   }
 
-  summary += `\nTo drill into details, call diagnose_environment again with section="orgUnits", "dlpRules", "detectors", or "browserVersions".`
+  const sectionsList = ['"orgUnits"', '"dlpRules"', '"detectors"', '"browserVersions"']
+  if (secureGateway) {
+    sectionsList.push('"secureGateways"')
+  }
+  summary += `\nTo drill into details, call diagnose_environment again with section=${sectionsList.join(', ')}.`
 
   logger.info(`${TAGS.MCP} diagnose_environment: summary complete (${issueCount} issues)`)
 
@@ -646,6 +800,15 @@ function buildDetailResponse(env, section, limit, offset) {
     case 'browserVersions':
       allItems = env.versions
       break
+    case 'secureGateways':
+      allItems = (env.secureGateway?.gateways || []).map(gw => ({
+        name: gw.name,
+        displayName: gw.displayName,
+        state: gw.state,
+        serviceDiscovery: Boolean(gw.serviceDiscovery),
+        applicationCount: gw.applications ? gw.applications.length : 0,
+      }))
+      break
     default:
       allItems = []
   }
@@ -676,6 +839,14 @@ function buildDetailResponse(env, section, limit, offset) {
         break
       case 'browserVersions':
         summary += items.map(v => `- **${v.version}** (${v.channel || 'UNKNOWN'}): ${v.count} devices`).join('\n')
+        break
+      case 'secureGateways':
+        summary += items
+          .map(
+            (gw, i) =>
+              `${offset + i + 1}. **${gw.displayName || gw.name}** — ${gw.state}, Service Discovery: ${gw.serviceDiscovery ? 'enabled' : 'disabled'}, Applications: ${gw.applicationCount}`,
+          )
+          .join('\n')
         break
     }
   }

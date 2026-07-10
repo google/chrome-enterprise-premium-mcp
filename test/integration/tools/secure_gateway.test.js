@@ -88,7 +88,7 @@ describe('Secure Gateway Lifecycle Integration', () => {
     }
     assert.ok(gwDetails.name)
     assert.strictEqual(gwDetails.displayName, 'My Test Gateway')
-    assert.strictEqual(gwDetails.state, 'ACTIVE')
+    assert.strictEqual(gwDetails.state, 'RUNNING')
     assert.ok(gwDetails.delegatingServiceAccount)
     assert.strictEqual(gwDetails.serviceDiscovery, undefined) // Service discovery should be absent
 

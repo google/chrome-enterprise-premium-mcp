@@ -854,7 +854,7 @@ export function createFakeApp() {
     const gateway = {
       name,
       displayName: display_name,
-      state: 'ACTIVE',
+      state: 'RUNNING',
       delegatingServiceAccount: `service-${projectId}-beyondcorp@gcp-sa-beyondcorp.iam.gserviceaccount.com`,
       ...(service_discovery ? { serviceDiscovery: service_discovery } : {}),
     }
