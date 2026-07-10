@@ -279,4 +279,34 @@ describe('Auth', () => {
       }
     })
   })
+
+  describe('Step 2 mode-aware error remediation', () => {
+    test('When DWD unauthorized_client error occurs, then getAuthErrorMessage returns DWD admin console instructions', async () => {
+      const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
+      const error = new Error(
+        '401 unauthorized_client: Client is unauthorized to retrieve access tokens using this method.',
+      )
+      const message = getAuthErrorMessage(error)
+      assert.match(message, /Domain-Wide Delegation \(DWD\) authorization failed/)
+      assert.match(message, /admin\.google\.com/)
+    })
+
+    test('When running in Service Account mode, then getAuthErrorMessage for insufficient scopes never mentions cep_auth', async () => {
+      const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
+      const prevCred = process.env.GOOGLE_APPLICATION_CREDENTIALS
+      process.env.GOOGLE_APPLICATION_CREDENTIALS = '/tmp/fake-key.json'
+      try {
+        const error = new Error('Request had insufficient authentication scopes.')
+        const message = getAuthErrorMessage(error)
+        assert.match(message, /Verify the Domain-Wide Delegation OAuth scopes/)
+        assert.doesNotMatch(message, /cep_auth/)
+      } finally {
+        if (prevCred === undefined) {
+          delete process.env.GOOGLE_APPLICATION_CREDENTIALS
+        } else {
+          process.env.GOOGLE_APPLICATION_CREDENTIALS = prevCred
+        }
+      }
+    })
+  })
 })

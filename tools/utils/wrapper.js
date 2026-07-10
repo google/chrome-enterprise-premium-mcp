@@ -72,6 +72,14 @@ function getAuthRemediationMessage(status, bearerInbound = false) {
 2. **Verify APIs are enabled:** Run the \`check_and_enable_cep_api\` tool against your project, or enable the API set listed in \`lib/constants.js#SERVICE_NAMES\`.`
   }
 
+  const isSaMode = !!process.env.GOOGLE_APPLICATION_CREDENTIALS
+  if (isSaMode) {
+    if (status === 401) {
+      return `Authentication required. The Service Account credentials configured in GOOGLE_APPLICATION_CREDENTIALS are invalid or domain-wide delegation failed. Ensure the Service Account JSON key is valid and domain-wide delegation (CEP_IMPERSONATE_SUBJECT) is configured in Google Workspace Admin Console.`
+    }
+    return `Permission denied. The Service Account lacks required Google Workspace / Chrome Enterprise permissions or domain-wide delegation OAuth scopes. Verify that the Service Account has required IAM roles and that Domain-Wide Delegation in Google Workspace Admin Console includes the necessary scopes.`
+  }
+
   const manualLogin = cliInvocation('auth login')
   if (status === 401) {
     return `Authentication required. Run the \`cep_auth\` tool to sign in, or run \`${manualLogin}\` at the shell to authorize the server (it caches the access token at ~/.config/cep-mcp/tokens.json). To use a service account, set GOOGLE_APPLICATION_CREDENTIALS to a service-account key file.`
