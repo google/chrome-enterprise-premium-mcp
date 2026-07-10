@@ -189,10 +189,15 @@ describe('Extension Tools', () => {
     assert.ok(result.content[0].text.includes('Successfully force-installed SEB extension on this OU.'))
   })
 
-  test('When check_ev_extension_status is called and extension is installed, then it returns success', async () => {
+  test('When check_ev_extension_status is called and extension is installed directly, then it returns success and indicates direct application', async () => {
     const mockResolvePolicy = mock.fn(async () => [
       {
         targetKey: {
+          targetResource: 'orgunits/ou1',
+          additionalTargetKeys: { app_id: `chrome:${EV_EXTENSION_ID}` },
+        },
+        sourceKey: {
+          targetResource: 'orgunits/ou1',
           additionalTargetKeys: { app_id: `chrome:${EV_EXTENSION_ID}` },
         },
         value: {
@@ -232,7 +237,60 @@ describe('Extension Tools', () => {
     assert.strictEqual(mockResolvePolicy.mock.callCount(), 1)
     assert.ok(
       result.content[0].text.includes(
-        `Endpoint Verification extension (\`${EV_EXTENSION_ID}\`) is force-installed on this OU.`,
+        `Endpoint Verification extension (\`${EV_EXTENSION_ID}\`) is force-installed on this OU. (Directly applied to this OU)`,
+      ),
+    )
+  })
+
+  test('When check_ev_extension_status is called and extension is inherited, then it returns success and indicates inherited state', async () => {
+    const mockResolvePolicy = mock.fn(async () => [
+      {
+        targetKey: {
+          targetResource: 'orgunits/ou1',
+          additionalTargetKeys: { app_id: `chrome:${EV_EXTENSION_ID}` },
+        },
+        sourceKey: {
+          targetResource: 'orgunits/parent_ou',
+          additionalTargetKeys: { app_id: `chrome:${EV_EXTENSION_ID}` },
+        },
+        value: {
+          policySchema: INSTALL_TYPE_SCHEMA,
+          value: {
+            appInstallType: 'FORCED',
+          },
+        },
+      },
+    ])
+
+    const MockChromePolicyClient = class {
+      constructor() {
+        this.resolvePolicy = mockResolvePolicy
+      }
+    }
+
+    const { registerTools } = await esmock(
+      '../../tools/index.js',
+      {},
+      {
+        '../../lib/api/chrome_policy_client.js': {
+          ChromePolicyClient: MockChromePolicyClient,
+        },
+      },
+    )
+
+    registerTools(server, {
+      apiClients: { chromePolicy: new MockChromePolicyClient() },
+    })
+
+    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_ev_extension_status')
+      .arguments[2]
+
+    const result = await handler({ customerId: 'C123', orgUnitId: 'ou1' }, { requestInfo: {} })
+
+    assert.strictEqual(mockResolvePolicy.mock.callCount(), 1)
+    assert.ok(
+      result.content[0].text.includes(
+        `Endpoint Verification extension (\`${EV_EXTENSION_ID}\`) is force-installed on this OU. (Inherited from parent OU: \`parent_ou\`)`,
       ),
     )
   })
