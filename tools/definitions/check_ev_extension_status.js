@@ -50,6 +50,9 @@ The EV extension is REQUIRED for gathering device posture to use Context-Aware A
       outputSchema: z.looseObject({
         isInstalled: z.boolean(),
         extensionId: z.string(),
+        inherited: z.boolean().optional(),
+        sourceOrgUnitId: z.string().optional(),
+        targetOrgUnitId: z.string().optional(),
         policies: z.array(z.looseObject({})),
       }),
     },
@@ -69,10 +72,31 @@ The EV extension is REQUIRED for gathering device posture to use Context-Aware A
           )
           const isInstalled = evPolicy?.value?.value?.appInstallType === 'FORCED'
 
-          const sc = { isInstalled, extensionId: EV_EXTENSION_ID, policies: policies || [] }
-          const summary = isInstalled
+          const targetResource = evPolicy?.targetKey?.targetResource
+          const sourceResource = evPolicy?.sourceKey?.targetResource
+
+          const targetOrgUnitId = targetResource ? targetResource.split('/').pop() : undefined
+          const sourceOrgUnitId = sourceResource ? sourceResource.split('/').pop() : undefined
+          const inherited = targetOrgUnitId && sourceOrgUnitId ? targetOrgUnitId !== sourceOrgUnitId : undefined
+
+          const sc = {
+            isInstalled,
+            extensionId: EV_EXTENSION_ID,
+            inherited,
+            sourceOrgUnitId,
+            targetOrgUnitId,
+            policies: policies || [],
+          }
+          let summary = isInstalled
             ? `Endpoint Verification extension (\`${EV_EXTENSION_ID}\`) is force-installed on this OU.`
             : `Endpoint Verification extension (\`${EV_EXTENSION_ID}\`) is NOT force-installed on this OU. Device posture sync may not work.`
+
+          if (isInstalled && inherited !== undefined) {
+            summary += inherited
+              ? ` (Inherited from parent OU: \`${sourceOrgUnitId}\`)`
+              : ` (Directly applied to this OU)`
+          }
+
           return formatToolResponse({ summary, data: sc, structuredContent: sc })
         },
       },
