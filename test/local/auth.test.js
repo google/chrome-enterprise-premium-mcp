@@ -203,4 +203,80 @@ describe('Auth', () => {
       assert.match(message, /cep_auth/)
     })
   })
+
+  describe('guardedToolCall delegation guard', () => {
+    test('When running in SA mode and calling a tool with requiresDelegation=true without CEP_IMPERSONATE_SUBJECT, then it returns pre-flight error', async () => {
+      const { guardedToolCall } = await import('../../tools/utils/wrapper.js')
+      const prevCred = process.env.GOOGLE_APPLICATION_CREDENTIALS
+      const prevSub = process.env.CEP_IMPERSONATE_SUBJECT
+      process.env.GOOGLE_APPLICATION_CREDENTIALS = '/tmp/fake-key.json'
+      delete process.env.CEP_IMPERSONATE_SUBJECT
+      try {
+        const wrapped = guardedToolCall(
+          {
+            requiresDelegation: true,
+            skipAutoResolve: true,
+            handler: async () => ({ content: [{ type: 'text', text: 'should not run' }] }),
+          },
+          {},
+          {},
+        )
+        const result = await wrapped({}, {})
+        assert.strictEqual(result.isError, true)
+        assert.match(result.content[0].text, /requires domain-wide delegation/)
+      } finally {
+        if (prevCred === undefined) {
+          delete process.env.GOOGLE_APPLICATION_CREDENTIALS
+        } else {
+          // eslint-disable-next-line require-atomic-updates
+          process.env.GOOGLE_APPLICATION_CREDENTIALS = prevCred
+        }
+        if (prevSub === undefined) {
+          delete process.env.CEP_IMPERSONATE_SUBJECT
+        } else {
+          // eslint-disable-next-line require-atomic-updates
+          process.env.CEP_IMPERSONATE_SUBJECT = prevSub
+        }
+      }
+    })
+
+    test('When running in SA mode and calling a tool with requiresDelegation=false without CEP_IMPERSONATE_SUBJECT, then it runs handler and skips OAuth check', async () => {
+      const { guardedToolCall } = await import('../../tools/utils/wrapper.js')
+      const prevCred = process.env.GOOGLE_APPLICATION_CREDENTIALS
+      const prevSub = process.env.CEP_IMPERSONATE_SUBJECT
+      process.env.GOOGLE_APPLICATION_CREDENTIALS = '/tmp/fake-key.json'
+      delete process.env.CEP_IMPERSONATE_SUBJECT
+      try {
+        let handlerRan = false
+        const wrapped = guardedToolCall(
+          {
+            requiresDelegation: false,
+            skipAutoResolve: true,
+            handler: async () => {
+              handlerRan = true
+              return { content: [{ type: 'text', text: 'ok' }] }
+            },
+          },
+          {},
+          {},
+        )
+        const result = await wrapped({}, {})
+        assert.strictEqual(handlerRan, true)
+        assert.strictEqual(result.content[0].text, 'ok')
+      } finally {
+        if (prevCred === undefined) {
+          delete process.env.GOOGLE_APPLICATION_CREDENTIALS
+        } else {
+          // eslint-disable-next-line require-atomic-updates
+          process.env.GOOGLE_APPLICATION_CREDENTIALS = prevCred
+        }
+        if (prevSub === undefined) {
+          delete process.env.CEP_IMPERSONATE_SUBJECT
+        } else {
+          // eslint-disable-next-line require-atomic-updates
+          process.env.CEP_IMPERSONATE_SUBJECT = prevSub
+        }
+      }
+    })
+  })
 })

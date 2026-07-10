@@ -155,6 +155,7 @@ To ensure technical accuracy and verify trigger compatibility, you should retrie
 
     guardedToolCall(
       {
+        requiresDelegation: true,
         transform: params => {
           const prefix = AGENT_DISPLAY_NAME_PREFIX
           const newDisplayName = params.displayName.startsWith(prefix)

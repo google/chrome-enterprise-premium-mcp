@@ -154,6 +154,7 @@ export function safeFormatResponse({ rawData, formatFn, toolName }) {
  * @param {(...args: unknown[]) => unknown} toolDef.handler - The main tool handler function
  * @param {boolean} [toolDef.skipAutoResolve] - Whether to skip auto-resolving customerId
  * @param {boolean} [toolDef.skipAuthCheck] - Whether to skip checking if tokens are valid.
+ * @param {boolean} [toolDef.requiresDelegation] - Whether this tool requires domain-wide delegation in SA mode.
  * @param {string[]} [toolDef.scopes] - Scopes required for this tool. Defaults to all SCOPES.
  * @param {object} options - Configuration options for the wrapper
  * @param {object} [options.apiClients] - Collection of API clients
@@ -163,13 +164,34 @@ export function safeFormatResponse({ rawData, formatFn, toolName }) {
  * @returns {(...args: unknown[]) => unknown} The wrapped tool handler function
  */
 export function guardedToolCall(
-  { validate, transform, handler, skipAutoResolve = false, skipAuthCheck = false, scopes = getActiveScopes() },
+  {
+    validate,
+    transform,
+    handler,
+    skipAutoResolve = false,
+    skipAuthCheck = false,
+    requiresDelegation = false,
+    scopes = getActiveScopes(),
+  },
   options = {},
   sessionState = { customerId: null, cachedRootOrgUnitId: null },
 ) {
   const wrapped = async (params, context) => {
-    const authToken = getAuthToken(context?.requestInfo)
-    if (!authToken && !skipAuthCheck) {
+    const authToken = params?.accessToken || getAuthToken(context?.requestInfo)
+    const isServiceAccountMode = !!process.env.GOOGLE_APPLICATION_CREDENTIALS
+
+    if (isServiceAccountMode && !authToken && requiresDelegation && !process.env.CEP_IMPERSONATE_SUBJECT) {
+      const text =
+        'Error: Calling this DLP tool in Service Account mode requires domain-wide delegation. ' +
+        'GOOGLE_APPLICATION_CREDENTIALS is set, but CEP_IMPERSONATE_SUBJECT is not specified. ' +
+        'Set CEP_IMPERSONATE_SUBJECT to the email address of a Google Workspace admin with privileges to manage DLP rules.'
+      return {
+        content: [{ type: 'text', text }],
+        isError: true,
+      }
+    }
+
+    if (!authToken && !skipAuthCheck && !isServiceAccountMode) {
       const validity = await isTokenLocallyValid({ scopes })
       if (!validity.ok) {
         return buildAuthRequiredResponse(validity)
@@ -192,6 +214,7 @@ export function guardedToolCall(
       }
       const { apiClients } = options
       let currentParams = { ...params }
+      delete currentParams.accessToken
       if (sessionState && currentParams.customerId) {
         sessionState.customerId = currentParams.customerId
       }
