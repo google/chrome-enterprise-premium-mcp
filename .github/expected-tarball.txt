@@ -99,6 +99,7 @@ tools/definitions/get_chrome_activity_log.js
 tools/definitions/get_connector_policy.js
 tools/definitions/get_customer_id.js
 tools/definitions/get_dlp_rule.js
+tools/definitions/install_ev_extension.js
 tools/definitions/install_seb_extension.js
 tools/definitions/knowledge.js
 tools/definitions/list_customer_profiles.js

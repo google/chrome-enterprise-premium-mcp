@@ -328,4 +328,87 @@ describe('Extension Tools', () => {
         result.content[0].text.includes('NOT force-installed'),
     )
   })
+
+  test('When install_ev_extension is called and extension is already installed, then it skips modification', async () => {
+    const mockResolvePolicy = mock.fn(async () => [
+      {
+        targetKey: {
+          additionalTargetKeys: { app_id: `chrome:${EV_EXTENSION_ID}` },
+        },
+        value: {
+          policySchema: INSTALL_TYPE_SCHEMA,
+          value: { appInstallType: 'FORCED' },
+        },
+      },
+    ])
+    const mockBatchModifyPolicy = mock.fn()
+
+    const MockChromePolicyClient = class {
+      constructor() {
+        this.resolvePolicy = mockResolvePolicy
+        this.batchModifyPolicy = mockBatchModifyPolicy
+      }
+    }
+
+    const { registerTools } = await esmock(
+      '../../tools/index.js',
+      {},
+      {
+        '../../lib/api/chrome_policy_client.js': {
+          ChromePolicyClient: MockChromePolicyClient,
+        },
+      },
+    )
+
+    registerTools(server, {
+      apiClients: { chromePolicy: new MockChromePolicyClient() },
+    })
+
+    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'install_ev_extension')
+      .arguments[2]
+
+    const result = await handler({ customerId: 'C123', orgUnitId: 'ou1' }, { requestInfo: {} })
+
+    assert.strictEqual(mockBatchModifyPolicy.mock.callCount(), 0)
+    assert.ok(result.content[0].text.includes('Endpoint Verification extension is already force-installed on this OU.'))
+  })
+
+  test('When install_ev_extension is called and extension is missing, then it force-installs it', async () => {
+    const mockResolvePolicy = mock.fn(async () => [])
+    const mockBatchModifyPolicy = mock.fn()
+
+    const MockChromePolicyClient = class {
+      constructor() {
+        this.resolvePolicy = mockResolvePolicy
+        this.batchModifyPolicy = mockBatchModifyPolicy
+      }
+    }
+
+    const { registerTools } = await esmock(
+      '../../tools/index.js',
+      {},
+      {
+        '../../lib/api/chrome_policy_client.js': {
+          ChromePolicyClient: MockChromePolicyClient,
+        },
+      },
+    )
+
+    registerTools(server, {
+      apiClients: { chromePolicy: new MockChromePolicyClient() },
+    })
+
+    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'install_ev_extension')
+      .arguments[2]
+
+    const result = await handler({ customerId: 'C123', orgUnitId: 'ou1' }, { requestInfo: {} })
+
+    assert.strictEqual(mockBatchModifyPolicy.mock.callCount(), 1)
+    const passedRequests = mockBatchModifyPolicy.mock.calls[0].arguments[2]
+    assert.strictEqual(passedRequests[0].policyValue.value.appInstallType, 'FORCED')
+    assert.strictEqual(passedRequests[0].policyTargetKey.additionalTargetKeys.app_id, `chrome:${EV_EXTENSION_ID}`)
+    assert.ok(
+      result.content[0].text.includes('Successfully force-installed Endpoint Verification extension on this OU.'),
+    )
+  })
 })

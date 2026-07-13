@@ -42,6 +42,7 @@ import { registerCreateDefaultDlpRulesTool } from './definitions/create_default_
 import { registerCheckSebExtensionStatusTool } from './definitions/check_seb_extension_status.js'
 import { registerCheckEvExtensionStatusTool } from './definitions/check_ev_extension_status.js'
 import { registerInstallSebExtensionTool } from './definitions/install_seb_extension.js'
+import { registerInstallEvExtensionTool } from './definitions/install_ev_extension.js'
 import { registerCheckAndEnableCepApiTool } from './definitions/check_and_enable_cep_api.js'
 import { registerEnableChromeEnterpriseConnectorsTool } from './definitions/enable_chrome_enterprise_connectors.js'
 import { registerDiagnoseEnvironmentTool } from './definitions/diagnose_environment.js'
@@ -125,6 +126,7 @@ export function registerTools(server, options = {}, sessionState) {
   registerCheckSebExtensionStatusTool(server, { ...commonOpts, chromePolicyClient }, state)
   registerCheckEvExtensionStatusTool(server, { ...commonOpts, chromePolicyClient }, state)
   registerInstallSebExtensionTool(server, { ...commonOpts, chromePolicyClient }, state)
+  registerInstallEvExtensionTool(server, { ...commonOpts, chromePolicyClient }, state)
   if (registerEnableApi) {
     registerCheckAndEnableCepApiTool(server, { ...commonOpts, serviceUsageClient }, state)
   }
