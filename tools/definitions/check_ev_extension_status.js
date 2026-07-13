@@ -42,7 +42,8 @@ export function registerCheckEvExtensionStatusTool(server, options, sessionState
     'check_ev_extension_status',
     {
       description: `Checks if the Endpoint Verification (EV) extension is force-installed for a given Organizational Unit.
-The EV extension is REQUIRED for gathering device posture to use Context-Aware Access (CAA) levels.`,
+The EV extension is REQUIRED for gathering device posture to use Context-Aware Access (CAA) levels.
+If the extension is NOT force-installed, you MUST recommend that the administrator force-installs it and explain that it is required for Context-Aware Access (CAA) levels to be enforced.`,
       inputSchema: {
         customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345).'),
         orgUnitId: z.string().describe('The ID of the organizational unit to check.'),
