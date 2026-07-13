@@ -264,7 +264,6 @@ describe('Auth', () => {
         if (prevMode === undefined) {
           delete process.env.CEP_AUTH_MODE
         } else {
-          // eslint-disable-next-line require-atomic-updates
           process.env.CEP_AUTH_MODE = prevMode
         }
       }
@@ -286,13 +285,11 @@ describe('Auth', () => {
         if (prevMode === undefined) {
           delete process.env.CEP_AUTH_MODE
         } else {
-          // eslint-disable-next-line require-atomic-updates
           process.env.CEP_AUTH_MODE = prevMode
         }
         if (prevCred === undefined) {
           delete process.env.GOOGLE_APPLICATION_CREDENTIALS
         } else {
-          // eslint-disable-next-line require-atomic-updates
           process.env.GOOGLE_APPLICATION_CREDENTIALS = prevCred
         }
       }
@@ -322,7 +319,6 @@ describe('Auth', () => {
       process.env.CEP_AUTH_MODE = 'service-account-only'
       process.env.GOOGLE_APPLICATION_CREDENTIALS = '/tmp/fake-key.json'
       try {
-        // Pass a token, but it should be ignored in favor of SA
         const client = await getAuthClient([], 'ignored-token')
         assert.ok(client)
         assert.ok(jwtInstantiated)
@@ -330,13 +326,11 @@ describe('Auth', () => {
         if (prevMode === undefined) {
           delete process.env.CEP_AUTH_MODE
         } else {
-          // eslint-disable-next-line require-atomic-updates
           process.env.CEP_AUTH_MODE = prevMode
         }
         if (prevCred === undefined) {
           delete process.env.GOOGLE_APPLICATION_CREDENTIALS
         } else {
-          // eslint-disable-next-line require-atomic-updates
           process.env.GOOGLE_APPLICATION_CREDENTIALS = prevCred
         }
       }
@@ -354,13 +348,11 @@ describe('Auth', () => {
         if (prevMode === undefined) {
           delete process.env.CEP_AUTH_MODE
         } else {
-          // eslint-disable-next-line require-atomic-updates
           process.env.CEP_AUTH_MODE = prevMode
         }
         if (prevCred === undefined) {
           delete process.env.GOOGLE_APPLICATION_CREDENTIALS
         } else {
-          // eslint-disable-next-line require-atomic-updates
           process.env.GOOGLE_APPLICATION_CREDENTIALS = prevCred
         }
       }
@@ -376,8 +368,109 @@ describe('Auth', () => {
         if (prevMode === undefined) {
           delete process.env.CEP_AUTH_MODE
         } else {
-          // eslint-disable-next-line require-atomic-updates
           process.env.CEP_AUTH_MODE = prevMode
+        }
+      }
+    })
+  })
+
+  describe('guardedToolCall delegation guard', () => {
+    test('When running in SA mode and calling a tool with requiresDelegation=true without CEP_IMPERSONATE_SUBJECT, then it returns pre-flight error', async () => {
+      const { guardedToolCall } = await import('../../tools/utils/wrapper.js')
+      const prevCred = process.env.GOOGLE_APPLICATION_CREDENTIALS
+      const prevSub = process.env.CEP_IMPERSONATE_SUBJECT
+      process.env.GOOGLE_APPLICATION_CREDENTIALS = '/tmp/fake-key.json'
+      delete process.env.CEP_IMPERSONATE_SUBJECT
+      try {
+        const wrapped = guardedToolCall(
+          {
+            requiresDelegation: true,
+            skipAutoResolve: true,
+            handler: async () => ({ content: [{ type: 'text', text: 'should not run' }] }),
+          },
+          {},
+          {},
+        )
+        const result = await wrapped({}, {})
+        assert.strictEqual(result.isError, true)
+        assert.match(result.content[0].text, /requires domain-wide delegation/)
+      } finally {
+        if (prevCred === undefined) {
+          delete process.env.GOOGLE_APPLICATION_CREDENTIALS
+        } else {
+          process.env.GOOGLE_APPLICATION_CREDENTIALS = prevCred
+        }
+        if (prevSub === undefined) {
+          delete process.env.CEP_IMPERSONATE_SUBJECT
+        } else {
+          process.env.CEP_IMPERSONATE_SUBJECT = prevSub
+        }
+      }
+    })
+
+    test('When running in SA mode and calling a tool with requiresDelegation=false without CEP_IMPERSONATE_SUBJECT, then it runs handler and skips OAuth check', async () => {
+      const { guardedToolCall } = await import('../../tools/utils/wrapper.js')
+      const prevCred = process.env.GOOGLE_APPLICATION_CREDENTIALS
+      const prevSub = process.env.CEP_IMPERSONATE_SUBJECT
+      process.env.GOOGLE_APPLICATION_CREDENTIALS = '/tmp/fake-key.json'
+      delete process.env.CEP_IMPERSONATE_SUBJECT
+      try {
+        let handlerRan = false
+        const wrapped = guardedToolCall(
+          {
+            requiresDelegation: false,
+            skipAutoResolve: true,
+            handler: async () => {
+              handlerRan = true
+              return { content: [{ type: 'text', text: 'ok' }] }
+            },
+          },
+          {},
+          {},
+        )
+        const result = await wrapped({}, {})
+        assert.strictEqual(handlerRan, true)
+        assert.strictEqual(result.content[0].text, 'ok')
+      } finally {
+        if (prevCred === undefined) {
+          delete process.env.GOOGLE_APPLICATION_CREDENTIALS
+        } else {
+          process.env.GOOGLE_APPLICATION_CREDENTIALS = prevCred
+        }
+        if (prevSub === undefined) {
+          delete process.env.CEP_IMPERSONATE_SUBJECT
+        } else {
+          process.env.CEP_IMPERSONATE_SUBJECT = prevSub
+        }
+      }
+    })
+  })
+
+  describe('Step 2 mode-aware error remediation', () => {
+    test('When DWD unauthorized_client error occurs, then getAuthErrorMessage returns DWD admin console instructions', async () => {
+      const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
+      const error = new Error(
+        '401 unauthorized_client: Client is unauthorized to retrieve access tokens using this method.',
+      )
+      const message = getAuthErrorMessage(error)
+      assert.match(message, /Domain-Wide Delegation \(DWD\) authorization failed/)
+      assert.match(message, /admin\.google\.com/)
+    })
+
+    test('When running in Service Account mode, then getAuthErrorMessage for insufficient scopes never mentions cep_auth', async () => {
+      const { getAuthErrorMessage } = await import('../../lib/util/auth-error.js')
+      const prevCred = process.env.GOOGLE_APPLICATION_CREDENTIALS
+      process.env.GOOGLE_APPLICATION_CREDENTIALS = '/tmp/fake-key.json'
+      try {
+        const error = new Error('Request had insufficient authentication scopes.')
+        const message = getAuthErrorMessage(error)
+        assert.match(message, /Verify the Domain-Wide Delegation OAuth scopes/)
+        assert.doesNotMatch(message, /cep_auth/)
+      } finally {
+        if (prevCred === undefined) {
+          delete process.env.GOOGLE_APPLICATION_CREDENTIALS
+        } else {
+          process.env.GOOGLE_APPLICATION_CREDENTIALS = prevCred
         }
       }
     })

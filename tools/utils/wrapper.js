@@ -73,6 +73,14 @@ function getAuthRemediationMessage(status, bearerInbound = false) {
 2. **Verify APIs are enabled:** Run the \`check_and_enable_cep_api\` tool against your project, or enable the API set listed in \`lib/constants.js#SERVICE_NAMES\`.`
   }
 
+  const isSaMode = !!process.env.GOOGLE_APPLICATION_CREDENTIALS
+  if (isSaMode) {
+    if (status === 401) {
+      return `Authentication required. The Service Account credentials configured in GOOGLE_APPLICATION_CREDENTIALS are invalid or domain-wide delegation failed. Ensure the Service Account JSON key is valid and domain-wide delegation (CEP_IMPERSONATE_SUBJECT) is configured in Google Workspace Admin Console.`
+    }
+    return `Permission denied. The Service Account lacks required Google Workspace / Chrome Enterprise permissions or domain-wide delegation OAuth scopes. Verify that the Service Account has required IAM roles and that Domain-Wide Delegation in Google Workspace Admin Console includes the necessary scopes.`
+  }
+
   const manualLogin = cliInvocation('auth login')
   if (status === 401) {
     return `Authentication required. Run the \`cep_auth\` tool to sign in, or run \`${manualLogin}\` at the shell to authorize the server (it caches the access token at ~/.config/cep-mcp/tokens.json). To use a service account, set GOOGLE_APPLICATION_CREDENTIALS to a service-account key file.`
@@ -155,6 +163,7 @@ export function safeFormatResponse({ rawData, formatFn, toolName }) {
  * @param {(...args: unknown[]) => unknown} toolDef.handler - The main tool handler function
  * @param {boolean} [toolDef.skipAutoResolve] - Whether to skip auto-resolving customerId
  * @param {boolean} [toolDef.skipAuthCheck] - Whether to skip checking if tokens are valid.
+ * @param {boolean} [toolDef.requiresDelegation] - Whether this tool requires domain-wide delegation in SA mode.
  * @param {string[]} [toolDef.scopes] - Scopes required for this tool. Defaults to all SCOPES.
  * @param {object} options - Configuration options for the wrapper
  * @param {object} [options.apiClients] - Collection of API clients
@@ -164,12 +173,20 @@ export function safeFormatResponse({ rawData, formatFn, toolName }) {
  * @returns {(...args: unknown[]) => unknown} The wrapped tool handler function
  */
 export function guardedToolCall(
-  { validate, transform, handler, skipAutoResolve = false, skipAuthCheck = false, scopes = getActiveScopes() },
+  {
+    validate,
+    transform,
+    handler,
+    skipAutoResolve = false,
+    skipAuthCheck = false,
+    requiresDelegation = false,
+    scopes = getActiveScopes(),
+  },
   options = {},
   sessionState = { customerId: null, cachedRootOrgUnitId: null },
 ) {
   const wrapped = async (params, context) => {
-    const authToken = getAuthToken(context?.requestInfo)
+    const authToken = params?.accessToken || getAuthToken(context?.requestInfo)
     if (!skipAuthCheck) {
       if (authToken) {
         // Inbound Bearer token present: skip local disk checks and forward directly to Google APIs
@@ -182,16 +199,28 @@ export function guardedToolCall(
           structuredContent: { status: 'error', code: 'BEARER_ONLY_REQUIRED', message: msg },
           isError: true,
         }
-      } else if (isServiceAccountMode() && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-        const msg =
-          'Authentication failed: Server is configured in strict "service-account-only" mode, ' +
-          'but GOOGLE_APPLICATION_CREDENTIALS is not set.'
-        return {
-          content: [{ type: 'text', text: msg }],
-          structuredContent: { status: 'error', code: 'SERVICE_ACCOUNT_REQUIRED', message: msg },
-          isError: true,
+      } else if (isServiceAccountMode() || (isDynamicMode() && process.env.GOOGLE_APPLICATION_CREDENTIALS)) {
+        if (isServiceAccountMode() && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+          const msg =
+            'Authentication failed: Server is configured in strict "service-account-only" mode, ' +
+            'but GOOGLE_APPLICATION_CREDENTIALS is not set.'
+          return {
+            content: [{ type: 'text', text: msg }],
+            structuredContent: { status: 'error', code: 'SERVICE_ACCOUNT_REQUIRED', message: msg },
+            isError: true,
+          }
         }
-      } else if (isDynamicMode() && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+        if (requiresDelegation && !process.env.CEP_IMPERSONATE_SUBJECT) {
+          const text =
+            'Error: Calling this DLP tool in Service Account mode requires domain-wide delegation. ' +
+            'GOOGLE_APPLICATION_CREDENTIALS is set, but CEP_IMPERSONATE_SUBJECT is not specified. ' +
+            'Set CEP_IMPERSONATE_SUBJECT to the email address of a Google Workspace admin with privileges to manage DLP rules.'
+          return {
+            content: [{ type: 'text', text }],
+            isError: true,
+          }
+        }
+      } else {
         const validity = await isTokenLocallyValid({ scopes })
         if (!validity.ok) {
           return buildAuthRequiredResponse(validity)
@@ -215,6 +244,7 @@ export function guardedToolCall(
       }
       const { apiClients } = options
       let currentParams = { ...params }
+      delete currentParams.accessToken
       if (sessionState && currentParams.customerId) {
         sessionState.customerId = currentParams.customerId
       }
