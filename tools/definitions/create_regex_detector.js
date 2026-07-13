@@ -58,6 +58,7 @@ Detectors are building blocks for DLP rules. After creating a detector, you must
     },
     guardedToolCall(
       {
+        requiresDelegation: true,
         /**
          * Handler for creating a regular expression detector.
          * @param {object} params - The tool parameters.

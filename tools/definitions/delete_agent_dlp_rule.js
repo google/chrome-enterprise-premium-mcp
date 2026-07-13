@@ -54,6 +54,7 @@ export function registerDeleteAgentDlpRuleTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
+        requiresDelegation: true,
         /**
          * Handler for deleting an agent-created DLP rule.
          * @param {object} params - The tool parameters.

@@ -20,6 +20,7 @@ limitations under the License.
 
 import { TAGS } from '../lib/constants.js'
 import { logger } from '../lib/util/logger.js'
+import { isStdioMode } from '../lib/util/gcp.js'
 
 import { registerGetCustomerIdTool } from './definitions/get_customer_id.js'
 import { registerListOrgUnitsTool } from './definitions/list_org_units.js'
@@ -148,5 +149,9 @@ export function registerTools(server, options = {}, sessionState) {
     registerSecureGatewayTools(server, options, state)
   }
   registerKnowledgeTools(server, { ...options, featureFlags: flags }, state)
-  registerAuthTools(server, commonOpts, state)
+  const isInteractiveOauthMode =
+    isStdioMode() && !process.env.GOOGLE_APPLICATION_CREDENTIALS && !process.env.CEP_ACCESS_TOKEN
+  if (isInteractiveOauthMode) {
+    registerAuthTools(server, commonOpts, state)
+  }
 }

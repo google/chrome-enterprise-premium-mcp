@@ -200,6 +200,9 @@ export function createSseHandler(gcpInfo, sseTransports, getServerImpl = getServ
  */
 function shouldRegisterEnableApi() {
   try {
+    if (process.env.GOOGLE_APPLICATION_CREDENTIALS || !isStdioMode()) {
+      return true
+    }
     const config = resolveOAuthClientConfig()
     return config.source !== 'managed'
   } catch {
