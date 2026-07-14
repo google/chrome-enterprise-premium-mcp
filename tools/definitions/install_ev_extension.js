@@ -42,7 +42,8 @@ export function registerInstallEvExtensionTool(server, options, sessionState) {
     'install_ev_extension',
     {
       description: `Force-installs the Endpoint Verification (EV) extension for a given Organizational Unit.
-The EV extension is REQUIRED for gathering device posture to use Context-Aware Access (CAA) levels.`,
+The EV extension is REQUIRED for gathering device posture to use Context-Aware Access (CAA) levels.
+If the user requests to UNINSTALL or REMOVE the Endpoint Verification extension, you MUST decline to do so programmatically. Instead, instruct them to remove it manually in the Google Admin Console at https://admin.google.com/ac/apps/chrome/apps`,
       inputSchema: {
         customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345).'),
         orgUnitId: z
