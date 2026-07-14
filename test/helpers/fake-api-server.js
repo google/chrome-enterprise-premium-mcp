@@ -1038,6 +1038,7 @@ export function createFakeApp() {
     },
   )
 
+<<<<<<< HEAD
   // Access Context Manager: List Access Policies
   app.get('/v1/accessPolicies', (req, res) => {
     const parent = req.query.parent
@@ -1091,6 +1092,35 @@ export function createFakeApp() {
     const op = state.acmOperations[opName] || { name: opName, done: true }
     res.json(op)
   })
+
+  // BeyondCorp: Patch Application
+  app.patch(
+    '/v1/projects/:projectId/locations/global/securityGateways/:gatewayId/applications/:applicationId',
+    (req, res) => {
+      const { projectId, gatewayId, applicationId } = req.params
+      const name = `projects/${projectId}/locations/global/securityGateways/${gatewayId}/applications/${applicationId}`
+      const application = state.securityGatewayApplications[name]
+      if (!application) {
+        return res.status(404).json({ error: { message: `Application ${name} not found` } })
+      }
+      const updateMask = Array.isArray(req.query.updateMask)
+        ? req.query.updateMask.join(',')
+        : typeof req.query.updateMask === 'string'
+          ? req.query.updateMask
+          : ''
+      if (updateMask.includes('display_name') || req.body.display_name) {
+        application.displayName = req.body.display_name
+      }
+      if (updateMask.includes('endpoint_matchers') || req.body.endpoint_matchers) {
+        application.endpointMatchers = req.body.endpoint_matchers
+      }
+      if (updateMask.includes('upstreams') || req.body.upstreams) {
+        application.upstreams = req.body.upstreams
+      }
+      state.securityGatewayApplications[name] = application
+      res.json(application)
+    },
+  )
 
   // CRM: Get Project IAM Policy
   app.post('/v1/projects/:projectId\\:getIamPolicy', (req, res) => {
