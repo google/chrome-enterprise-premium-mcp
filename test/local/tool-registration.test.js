@@ -74,6 +74,8 @@ const SECURE_GATEWAY_EXPERIMENT_TOOLS = [
   'list_secure_gateways',
   'set_secure_gateway_application_iam_policy',
   'set_secure_gateway_iam_policy',
+  'update_secure_gateway',
+  'update_secure_gateway_application',
 ]
 
 // Tests for SEB tool registration and individual tool handler logic.

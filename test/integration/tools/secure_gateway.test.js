@@ -133,6 +133,19 @@ describe('Secure Gateway Lifecycle Integration', () => {
     const updatedGwDetails = parseToolOutput(enableSdResult).details
     assert.ok(updatedGwDetails.serviceDiscovery) // Service discovery should now be present
 
+    // 3b. Update Gateway
+    const updateGwResult = await client.callTool({
+      name: 'update_secure_gateway',
+      arguments: {
+        projectId,
+        gatewayId,
+        displayName: 'Updated Test Gateway Name',
+      },
+    })
+
+    const patchedGwDetails = parseToolOutput(updateGwResult).details
+    assert.strictEqual(patchedGwDetails.displayName, 'Updated Test Gateway Name')
+
     // 4. Create Secure Gateway Application Routing
     const applicationId = 'my-internal-app'
     const createAppResult = await client.callTool({
@@ -176,6 +189,25 @@ describe('Secure Gateway Lifecycle Integration', () => {
     assert.strictEqual(gotAppDetails.name, appDetails.name)
     assert.strictEqual(gotAppDetails.displayName, 'My Internal Web App')
     assert.deepStrictEqual(gotAppDetails.endpointMatchers, [{ hostname: 'internal.example.com', ports: [443, 80] }])
+
+    // 4c. Update Secure Gateway Application Routing
+    const updateAppResult = await client.callTool({
+      name: 'update_secure_gateway_application',
+      arguments: {
+        projectId,
+        gatewayId,
+        applicationId,
+        displayName: 'Updated Internal Web App',
+        hostName: 'updated-internal.example.com',
+        ports: [8443],
+      },
+    })
+
+    const patchedAppDetails = parseToolOutput(updateAppResult).details
+    assert.strictEqual(patchedAppDetails.displayName, 'Updated Internal Web App')
+    assert.deepStrictEqual(patchedAppDetails.endpointMatchers, [
+      { hostname: 'updated-internal.example.com', ports: [8443] },
+    ])
 
     // 5. List Secure Gateway Applications
     const listAppsResult = await client.callTool({

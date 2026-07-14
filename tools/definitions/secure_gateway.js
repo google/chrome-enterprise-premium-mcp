@@ -183,6 +183,59 @@ export function registerSecureGatewayTools(server, options, sessionState) {
     ),
   )
 
+  // 4. update_secure_gateway
+  server.registerTool(
+    'update_secure_gateway',
+    {
+      description: 'Updates configuration fields (such as display name) of an existing BeyondCorp Secure Gateway.',
+      inputSchema: {
+        projectId: z.string().describe('The Google Cloud project ID.'),
+        gatewayId: z.string().describe('The secure gateway ID.'),
+        displayName: z.string().optional().describe('A new human-readable display name for the gateway.'),
+      },
+      outputSchema: z.looseObject({
+        name: z.string().optional(),
+        displayName: z.string().optional(),
+        state: z.string().optional(),
+        delegatingServiceAccount: z.string().optional(),
+      }),
+    },
+    guardedToolCall(
+      {
+        skipAutoResolve: true,
+        handler: async (params, { authToken }) => {
+          const { projectId, gatewayId, displayName } = params
+          const gatewayConfig = {}
+          const updateMask = []
+
+          if (displayName !== undefined) {
+            gatewayConfig.display_name = displayName
+            updateMask.push('display_name')
+          }
+
+          if (updateMask.length === 0) {
+            throw new Error('At least one field to update must be provided.')
+          }
+
+          const result = await beyondcorp.patchGateway(
+            projectId,
+            gatewayId,
+            gatewayConfig,
+            updateMask.join(','),
+            authToken,
+          )
+          return formatToolResponse({
+            summary: `Successfully updated secure gateway ${gatewayId}.`,
+            data: result,
+            structuredContent: result,
+          })
+        },
+      },
+      options,
+      sessionState,
+    ),
+  )
+
   // 4. create_secure_gateway_application
   server.registerTool(
     'create_secure_gateway_application',
@@ -316,6 +369,91 @@ export function registerSecureGatewayTools(server, options, sessionState) {
             summary: `Successfully listed applications for gateway ${gatewayId}.`,
             data: { applications },
             structuredContent: { applications },
+          })
+        },
+      },
+      options,
+      sessionState,
+    ),
+  )
+
+  // update_secure_gateway_application
+  server.registerTool(
+    'update_secure_gateway_application',
+    {
+      description:
+        'Updates configuration (display name, endpoint matchers, or upstream routing) of an application on a BeyondCorp Secure Gateway.',
+      inputSchema: {
+        projectId: z.string().describe('The Google Cloud project ID.'),
+        gatewayId: z.string().describe('The secure gateway ID.'),
+        applicationId: z.string().describe('The application ID to update.'),
+        displayName: z.string().optional().describe('A new display name for the application.'),
+        hostName: z.string().optional().describe('The primary hostname users access (e.g. "private-app.local").'),
+        ports: z.array(z.number()).optional().describe('Ports to route through the gateway (e.g. [443]).'),
+        privateNetwork: z
+          .string()
+          .optional()
+          .describe('The full VPC network resource name (e.g. "projects/my-project/global/networks/my-network").'),
+        egressRegions: z
+          .array(z.string())
+          .optional()
+          .describe('Google Cloud regions for regional static routing (e.g. ["us-central1"]).'),
+      },
+      outputSchema: z.looseObject({
+        name: z.string().optional(),
+        displayName: z.string().optional(),
+        endpointMatchers: z.array(z.looseObject({})).optional(),
+        upstreams: z.array(z.looseObject({})).optional(),
+      }),
+    },
+    guardedToolCall(
+      {
+        skipAutoResolve: true,
+        handler: async (params, { authToken }) => {
+          const { projectId, gatewayId, applicationId, displayName, hostName, ports, privateNetwork, egressRegions } =
+            params
+
+          const appConfig = {}
+          const updateMask = []
+
+          if (displayName !== undefined) {
+            appConfig.display_name = displayName
+            updateMask.push('display_name')
+          }
+
+          if (hostName !== undefined || ports !== undefined) {
+            appConfig.endpoint_matchers = [{ hostname: hostName, ports: ports || [443] }]
+            updateMask.push('endpoint_matchers')
+          }
+
+          if (privateNetwork !== undefined || egressRegions !== undefined) {
+            const upstreamConfig = {}
+            if (privateNetwork !== undefined) {
+              upstreamConfig.network = { name: privateNetwork }
+            }
+            if (egressRegions !== undefined && egressRegions.length > 0) {
+              upstreamConfig.egress_policy = { regions: egressRegions }
+            }
+            appConfig.upstreams = [upstreamConfig]
+            updateMask.push('upstreams')
+          }
+
+          if (updateMask.length === 0) {
+            throw new Error('At least one field to update must be provided.')
+          }
+
+          const result = await beyondcorp.patchApplication(
+            projectId,
+            gatewayId,
+            applicationId,
+            appConfig,
+            updateMask.join(','),
+            authToken,
+          )
+          return formatToolResponse({
+            summary: `Successfully updated application ${applicationId} on gateway ${gatewayId}.`,
+            data: result,
+            structuredContent: result,
           })
         },
       },
