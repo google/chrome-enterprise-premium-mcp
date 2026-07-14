@@ -154,7 +154,12 @@ Explicitly mention the required permissions as listed in the public API docs or 
               const createOp = await accessContextManagerClient.createAccessPolicy(policyPayload, authToken)
               logger.debug(`${TAGS.MCP} Access Policy creation initiated. Operation: ${createOp.name}`)
               const createdPolicy = await accessContextManagerClient.waitForOperation(createOp.name, authToken)
-              policyName = createdPolicy.name
+              policyName = createdPolicy?.name || createOp.response?.name
+              if (!policyName) {
+                throw new Error(
+                  `Failed to resolve Access Policy name after creation. Operation response: ${JSON.stringify(createdPolicy)}`,
+                )
+              }
               logger.debug(`${TAGS.MCP} Created new Access Policy: ${policyName}`)
             } else {
               // Use the first policy found
@@ -203,13 +208,21 @@ Explicitly mention the required permissions as listed in the public API docs or 
           // Wait for operation to complete
           const createdAccessLevel = await accessContextManagerClient.waitForOperation(operation.name, authToken)
 
-          logger.debug(`${TAGS.MCP} Access level created successfully.`)
+          logger.debug(
+            `${TAGS.MCP} Access level operation completed. Response:`,
+            JSON.stringify(createdAccessLevel, null, 2),
+          )
+
+          const levelTitle = createdAccessLevel?.title || title
+          const levelName = createdAccessLevel?.name || fullAccessLevelName
+          const levelDesc = createdAccessLevel?.description || description
+          const levelResource = createdAccessLevel || accessLevelPayload
 
           const summary =
             `## Access Level Created\n\n` +
-            `- **Title**: ${createdAccessLevel.title}\n` +
-            `- **Name**: \`${createdAccessLevel.name}\`\n` +
-            (createdAccessLevel.description ? `- **Description**: ${createdAccessLevel.description}\n` : '') +
+            `- **Title**: ${levelTitle}\n` +
+            `- **Name**: \`${levelName}\`\n` +
+            (levelDesc ? `- **Description**: ${levelDesc}\n` : '') +
             `\n### Device restrictions configured:\n` +
             `- Require Screenlock: ${requireScreenlock ? 'Yes' : 'No'}\n` +
             `- Require Corp Owned: ${requireCorpOwned ? 'Yes' : 'No'}\n` +
@@ -223,8 +236,8 @@ Explicitly mention the required permissions as listed in the public API docs or 
 
           return formatToolResponse({
             summary,
-            data: { accessLevel: createdAccessLevel },
-            structuredContent: { accessLevel: createdAccessLevel },
+            data: { accessLevel: levelResource },
+            structuredContent: { accessLevel: levelResource },
           })
         },
       },
