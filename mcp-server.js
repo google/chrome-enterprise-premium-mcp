@@ -59,6 +59,7 @@ import { ChromeManagementClient } from './lib/api/chrome_management_client.js'
 import { ServiceUsageClient } from './lib/api/service_usage_client.js'
 import { CloudResourceManagerClient } from './lib/api/cloud_resource_manager_client.js'
 import { BeyondCorpClient } from './lib/api/beyondcorp_client.js'
+import { AccessContextManagerClient } from './lib/api/access_context_manager_client.js'
 
 /**
  * Redirects console.log to console.error for compatibility with Stdio transport.
@@ -259,6 +260,7 @@ export async function getServer(gcpInfo, sharedSessionState, principal = null) {
     serviceUsage: new ServiceUsageClient(apiOptions),
     cloudResourceManager: new CloudResourceManagerClient(apiOptions),
     beyondcorp: new BeyondCorpClient(apiOptions),
+    accessContextManager: new AccessContextManagerClient(apiOptions),
   }
 
   const toolOptions = {
