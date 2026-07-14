@@ -96,6 +96,7 @@ describe('MCP Server in stdio mode', () => {
         'get_connector_policy',
         'get_customer_id',
         'get_dlp_rule',
+        'install_ev_extension',
         'install_seb_extension',
         'list_customer_profiles',
         'list_detectors',

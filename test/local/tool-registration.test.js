@@ -45,6 +45,7 @@ const CORE_TOOLS = [
   'get_customer_id',
   'get_dlp_rule',
   'get_document',
+  'install_ev_extension',
   'install_seb_extension',
   'list_customer_profiles',
   'list_detectors',
