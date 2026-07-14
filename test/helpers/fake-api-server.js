@@ -1038,7 +1038,6 @@ export function createFakeApp() {
     },
   )
 
-<<<<<<< HEAD
   // Access Context Manager: List Access Policies
   app.get('/v1/accessPolicies', (req, res) => {
     const parent = req.query.parent

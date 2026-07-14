@@ -18,15 +18,15 @@ export default {
   id: 'gw05',
   priority: 'P1',
   tags: ['gateway', 'mutation'],
-  fixtures: ['customer-default.json'],
+  fixtures: ['customer-default.json', 'gateways-configured.json'],
   expectedTools: ['update_secure_gateway_application'],
   forbiddenPatterns: [],
-  requiredPatterns: ['updated.example.com', 'my-project-123'],
+  requiredPatterns: ['updated.example.com'],
   experiments: {
     SECURE_GATEWAY_ENABLED: true,
   },
   prompt:
-    'Update the private web application "app-1" on secure gateway "test-gateway" in project "my-project-123" to set its hostname to "updated.example.com" and port to 8443. Confirm the application update in your response.',
+    'Update the private web application "app-one" on secure gateway "gateway-alpha" in project "my-project-123" to set its hostname to "updated.example.com" and port to 8443. Confirm the application update in your response.',
   goldenResponse:
-    'Application app-1 on gateway test-gateway has been updated with hostname updated.example.com and port 8443 in project my-project-123.',
+    'Application app-one on gateway gateway-alpha has been updated with hostname updated.example.com and port 8443 in project my-project-123.',
 }

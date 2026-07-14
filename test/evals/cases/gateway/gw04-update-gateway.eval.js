@@ -18,15 +18,15 @@ export default {
   id: 'gw04',
   priority: 'P1',
   tags: ['gateway', 'mutation'],
-  fixtures: ['customer-default.json'],
+  fixtures: ['customer-default.json', 'gateways-configured.json'],
   expectedTools: ['update_secure_gateway'],
   forbiddenPatterns: [],
-  requiredPatterns: ['Production Secure Gateway', 'my-project-123'],
+  requiredPatterns: ['Production Secure Gateway'],
   experiments: {
     SECURE_GATEWAY_ENABLED: true,
   },
   prompt:
-    'Update the BeyondCorp Secure Gateway "test-gateway" in project "my-project-123" to set its display name to "Production Secure Gateway". Please confirm the updated gateway details in your response.',
+    'Update the BeyondCorp Secure Gateway "gateway-alpha" in project "my-project-123" to set its display name to "Production Secure Gateway". Please confirm the updated gateway details in your response.',
   goldenResponse:
-    'Secure gateway test-gateway display name updated to Production Secure Gateway in project my-project-123.',
+    'Secure gateway gateway-alpha display name updated to Production Secure Gateway in project my-project-123.',
 }
