@@ -53,6 +53,9 @@ The EV extension is REQUIRED for gathering device posture to use Context-Aware A
         success: z.boolean(),
         alreadyInstalled: z.boolean(),
         newlyInstalled: z.boolean(),
+        inherited: z.boolean().optional(),
+        sourceOrgUnitId: z.string().optional(),
+        targetOrgUnitId: z.string().optional(),
       }),
     },
     guardedToolCall(
@@ -86,10 +89,25 @@ The EV extension is REQUIRED for gathering device posture to use Context-Aware A
               p.targetKey?.additionalTargetKeys?.app_id === `chrome:${EV_EXTENSION_ID}`,
           )
 
-          if (evPolicy?.value?.value?.appInstallType === 'FORCED') {
-            const sc = { success: true, alreadyInstalled: true, newlyInstalled: false }
+          const isInstalled = evPolicy?.value?.value?.appInstallType === 'FORCED'
+          const targetResource = evPolicy?.targetKey?.targetResource
+          const sourceResource = evPolicy?.sourceKey?.targetResource
+
+          const targetOrgUnitId = targetResource ? targetResource.split('/').pop() : undefined
+          const sourceOrgUnitId = sourceResource ? sourceResource.split('/').pop() : undefined
+          const inherited = targetOrgUnitId && sourceOrgUnitId ? targetOrgUnitId !== sourceOrgUnitId : undefined
+
+          if (isInstalled && !inherited) {
+            const sc = {
+              success: true,
+              alreadyInstalled: true,
+              newlyInstalled: false,
+              inherited,
+              sourceOrgUnitId,
+              targetOrgUnitId,
+            }
             return formatToolResponse({
-              summary: 'Endpoint Verification extension is already force-installed on this OU.',
+              summary: 'Endpoint Verification extension is already force-installed directly on this OU.',
               data: sc,
               structuredContent: sc,
             })
@@ -116,10 +134,18 @@ The EV extension is REQUIRED for gathering device posture to use Context-Aware A
 
           await chromePolicyClient.batchModifyPolicy(customerId, orgUnitId, requests, authToken)
 
-          const sc = { success: true, alreadyInstalled: false, newlyInstalled: true }
+          const sc = {
+            success: true,
+            alreadyInstalled: false,
+            newlyInstalled: true,
+            inherited: false,
+            sourceOrgUnitId: orgUnitId,
+            targetOrgUnitId: orgUnitId,
+          }
           return formatToolResponse({
-            summary:
-              'Successfully force-installed Endpoint Verification extension on this OU. Policy propagation may take time.',
+            summary: `Successfully force-installed Endpoint Verification extension directly on this OU${
+              inherited ? ` (previously inherited from parent OU: \`${sourceOrgUnitId}\`)` : ''
+            }. Policy propagation may take time.`,
             data: sc,
             structuredContent: sc,
           })
