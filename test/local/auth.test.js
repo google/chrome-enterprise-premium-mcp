@@ -393,7 +393,7 @@ describe('Auth', () => {
         )
         const result = await wrapped({}, {})
         assert.strictEqual(result.isError, true)
-        assert.match(result.content[0].text, /requires domain-wide delegation/)
+        assert.match(result.content[0].text, /requires domain-wide delegation/i)
       } finally {
         if (prevCred === undefined) {
           delete process.env.GOOGLE_APPLICATION_CREDENTIALS

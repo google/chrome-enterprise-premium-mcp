@@ -212,9 +212,11 @@ export function guardedToolCall(
         }
         if (requiresDelegation && !process.env.CEP_IMPERSONATE_SUBJECT) {
           const text =
-            'Error: Calling this DLP tool in Service Account mode requires domain-wide delegation. ' +
-            'GOOGLE_APPLICATION_CREDENTIALS is set, but CEP_IMPERSONATE_SUBJECT is not specified. ' +
-            'Set CEP_IMPERSONATE_SUBJECT to the email address of a Google Workspace admin with privileges to manage DLP rules.'
+            'Error: Tool requires Domain-Wide Delegation (requiresDelegation: true) to access user-scoped directory or policy data. ' +
+            'You are authenticated in Service Account mode (GOOGLE_APPLICATION_CREDENTIALS is set), but CEP_IMPERSONATE_SUBJECT is not specified. ' +
+            'To use this tool, set CEP_IMPERSONATE_SUBJECT to the email address of a Google Workspace user account with delegated privileges (Option 1). ' +
+            'Alternatively, if you are using direct Admin Console role assignments without user impersonation (Option 2), ' +
+            'use Option 2 compatible tools such as list_org_units, security_insights, or count_browser_versions with an explicit customerId.'
           return {
             content: [{ type: 'text', text }],
             isError: true,
