@@ -56,13 +56,72 @@ function buildAuthRequiredResponse({ reason, expiresAt }) {
   }
 }
 
+const TOOL_PRIVILEGES_MAP = {
+  list_org_units: {
+    privilege: 'Services > Google Workspace > Directory > Read organizational units',
+    roleUrl: 'https://admin.google.com/ac/roles',
+  },
+  security_insights: {
+    privilege:
+      'Services > Chrome Management > Manage ChromeOS Devices (Read-only) + Services > Chrome Enterprise Security Insights',
+    roleUrl: 'https://admin.google.com/ac/roles',
+  },
+  count_browser_versions: {
+    privilege: 'Services > Chrome Management > Manage ChromeOS Devices (Read-only)',
+    roleUrl: 'https://admin.google.com/ac/roles',
+  },
+  list_customer_profiles: {
+    privilege:
+      'Services > Chrome Management > Manage ChromeOS Devices (Read-only) + Services > Chrome Management > Settings > Managed Browsers',
+    roleUrl: 'https://admin.google.com/ac/roles',
+  },
+  get_chrome_activity_log: {
+    privilege: 'Services > Chrome Management > Manage ChromeOS Devices (Read-only) + Reports > Audit Reports',
+    roleUrl: 'https://admin.google.com/ac/roles',
+  },
+  check_cep_subscription: {
+    privilege: 'Services > License Management > License Read',
+    roleUrl: 'https://admin.google.com/ac/roles',
+  },
+  check_user_cep_license: {
+    privilege: 'Services > License Management > License Read',
+    roleUrl: 'https://admin.google.com/ac/roles',
+  },
+  list_dlp_rules: {
+    privilege: 'Services > Cloud Identity > Security > View / Manage Data Loss Prevention (DLP) rules and detectors',
+    roleUrl: 'https://admin.google.com/ac/roles',
+  },
+  get_dlp_rule: {
+    privilege: 'Services > Cloud Identity > Security > View / Manage Data Loss Prevention (DLP) rules and detectors',
+    roleUrl: 'https://admin.google.com/ac/roles',
+  },
+  list_detectors: {
+    privilege: 'Services > Cloud Identity > Security > View / Manage Data Loss Prevention (DLP) rules and detectors',
+    roleUrl: 'https://admin.google.com/ac/roles',
+  },
+  create_chrome_dlp_rule: {
+    privilege: 'Services > Cloud Identity > Security > View / Manage Data Loss Prevention (DLP) rules and detectors',
+    roleUrl: 'https://admin.google.com/ac/roles',
+  },
+  create_regex_detector: {
+    privilege: 'Services > Cloud Identity > Security > View / Manage Data Loss Prevention (DLP) rules and detectors',
+    roleUrl: 'https://admin.google.com/ac/roles',
+  },
+}
+
 /**
  * Generates a proactive remediation message for authentication errors.
  * @param {number} status - HTTP status code (401 or 403)
  * @param {boolean} bearerInbound - True if request used inbound Bearer auth
+ * @param {string} [toolName] - Name of the tool being executed
  * @returns {string} Human-readable remediation instructions
  */
-function getAuthRemediationMessage(status, bearerInbound = false) {
+function getAuthRemediationMessage(status, bearerInbound = false, toolName = '') {
+  if (status === 403 && toolName && TOOL_PRIVILEGES_MAP[toolName]) {
+    const info = TOOL_PRIVILEGES_MAP[toolName]
+    return `Permission denied (403 Forbidden) while calling tool '${toolName}'. Your authenticated principal lacks the required Google Workspace / Chrome Enterprise permissions for this resource.\n\n🛠️ Required Workspace Admin Console Privileges for '${toolName}':\n- ${info.privilege}\n\n🔗 How to fix: Open Workspace Admin Roles Console (${info.roleUrl}), create or edit an admin role with the privileges listed above, and assign it to your authenticated Service Account or user email.`
+  }
+
   if (bearerInbound) {
     if (status === 401) {
       return `Authentication required. The inbound Bearer token has expired or is invalid. Re-authenticate through your MCP client to refresh the token.`
@@ -335,7 +394,7 @@ export function guardedToolCall(
             ? 401
             : 403)
         const bearerInbound = !!context?.authToken || !!context?.requestInfo?.headers?.authorization
-        const remediationMessage = getAuthRemediationMessage(resolvedStatus, bearerInbound)
+        const remediationMessage = getAuthRemediationMessage(resolvedStatus, bearerInbound, context?.name)
         return {
           content: [{ type: 'text', text: remediationMessage }],
           isError: true,
