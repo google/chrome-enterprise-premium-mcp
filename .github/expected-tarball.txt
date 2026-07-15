@@ -102,6 +102,7 @@ tools/definitions/get_dlp_rule.js
 tools/definitions/install_ev_extension.js
 tools/definitions/install_seb_extension.js
 tools/definitions/knowledge.js
+tools/definitions/list_caa_access_levels.js
 tools/definitions/list_customer_profiles.js
 tools/definitions/list_detectors.js
 tools/definitions/list_dlp_rules.js
