@@ -169,7 +169,7 @@ export function guardedToolCall(
 ) {
   const wrapped = async (params, context) => {
     const authToken = getAuthToken(context?.requestInfo)
-    if (!authToken && !skipAuthCheck) {
+    if (!authToken && !skipAuthCheck && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
       const validity = await isTokenLocallyValid({ scopes })
       if (!validity.ok) {
         return buildAuthRequiredResponse(validity)
