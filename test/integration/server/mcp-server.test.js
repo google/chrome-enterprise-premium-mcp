@@ -119,6 +119,79 @@ describe('MCP Server in stdio mode', () => {
     )
   })
 
+  describe('Service Account Tool Filtering', () => {
+    let saTransport
+    let saClient
+
+    before(async () => {
+      saTransport = new StdioClientTransport({
+        command: 'node',
+        args: ['mcp-server.js'],
+        env: sanitizeOauthClientEnv({
+          ...process.env,
+          GCP_STDIO: 'true',
+          GOOGLE_APPLICATION_CREDENTIALS: '/fake/path/to/sa-key.json',
+          CEP_IMPERSONATE_SUBJECT: '',
+          EXPERIMENT_KNOWLEDGE_SEARCH_ENABLED: 'true',
+          EXPERIMENT_SECURE_GATEWAY_ENABLED: 'true',
+          EXPERIMENT_DELETE_TOOL_ENABLED: 'false',
+        }),
+      })
+      saClient = new Client({
+        name: 'test-sa-client',
+        version: '1.0.0',
+      })
+      await saClient.connect(saTransport)
+    })
+
+    after(async () => {
+      if (saClient) {
+        await saClient.close()
+      }
+      if (saTransport) {
+        await saTransport.close()
+      }
+    })
+
+    test('When listTools is called in un-impersonated Service Account mode, then DWD-requiring tools are absent', async () => {
+      const response = await saClient.listTools()
+      const tools = response.tools
+      assert(Array.isArray(tools))
+      const toolNames = tools.map(t => t.name)
+
+      assert.deepStrictEqual(
+        toolNames.sort(),
+        [
+          'check_and_enable_cep_api',
+          'check_seb_extension_status',
+          'count_browser_versions',
+          'diagnose_environment',
+          'enable_chrome_enterprise_connectors',
+          'get_chrome_activity_log',
+          'get_connector_policy',
+          'install_seb_extension',
+          'list_customer_profiles',
+          'list_org_units',
+          'security_insights',
+          'search_content',
+          'list_documents',
+          'get_document',
+          'create_secure_gateway_application',
+          'create_secure_gateway',
+          'enable_service_discovery',
+          'get_secure_gateway',
+          'get_secure_gateway_application',
+          'get_secure_gateway_application_iam_policy',
+          'get_secure_gateway_iam_policy',
+          'list_secure_gateway_applications',
+          'list_secure_gateways',
+          'set_secure_gateway_application_iam_policy',
+          'set_secure_gateway_iam_policy',
+        ].sort(),
+      )
+    })
+  })
+
   describe('MCP Server Startup Logs', () => {
     // A non-routable API root puts the server in fake-API mode so the boot
     // path never makes a real Google call.

@@ -92,10 +92,16 @@ export function registerTools(server, options = {}, sessionState) {
 
   const state = sessionState || {}
 
-  registerGetCustomerIdTool(server, commonOpts, state)
+  const isServiceAccountNoImpersonation =
+    Boolean(options.isServiceAccountNoImpersonation) ||
+    (!!process.env.GOOGLE_APPLICATION_CREDENTIALS && !process.env.CEP_IMPERSONATE_SUBJECT)
+
+  if (!isServiceAccountNoImpersonation) {
+    registerGetCustomerIdTool(server, commonOpts, state)
+    registerCheckCepSubscriptionTool(server, commonOpts, state)
+    registerCheckUserCepLicenseTool(server, commonOpts, state)
+  }
   registerListOrgUnitsTool(server, commonOpts, state)
-  registerCheckCepSubscriptionTool(server, commonOpts, state)
-  registerCheckUserCepLicenseTool(server, commonOpts, state)
   registerCountBrowserVersionsTool(server, { ...commonOpts, chromeManagementClient }, state)
   registerCustomerProfileTool(server, { ...commonOpts, chromeManagementClient }, state)
   registerSecurityInsightsTool(server, { ...commonOpts, chromeManagementClient }, state)
@@ -107,21 +113,24 @@ export function registerTools(server, options = {}, sessionState) {
   }
   registerGetConnectorPolicyTool(server, { chromePolicyClient }, state)
   registerGetChromeActivityLogTool(server, { ...commonOpts, chromeManagementClient }, state)
-  registerListDlpRulesTool(server, { cloudIdentityClient }, state)
-  registerGetDlpRuleTool(server, { cloudIdentityClient }, state)
-  registerListDetectorsTool(server, { cloudIdentityClient }, state)
-  registerCreateChromeDlpRuleTool(server, { ...commonOpts, cloudIdentityClient }, state)
 
-  if (flags.isEnabled(FLAGS.DELETE_TOOL_ENABLED)) {
-    logger.debug(`${TAGS.MCP} Registering delete tools (EXPERIMENT_DELETE_TOOL_ENABLED is active)`)
-    registerDeleteAgentDlpRuleTool(server, { cloudIdentityClient }, state)
-    registerDeleteDetectorTool(server, { cloudIdentityClient }, state)
+  if (!isServiceAccountNoImpersonation) {
+    registerListDlpRulesTool(server, { cloudIdentityClient }, state)
+    registerGetDlpRuleTool(server, { cloudIdentityClient }, state)
+    registerListDetectorsTool(server, { cloudIdentityClient }, state)
+    registerCreateChromeDlpRuleTool(server, { ...commonOpts, cloudIdentityClient }, state)
+
+    if (flags.isEnabled(FLAGS.DELETE_TOOL_ENABLED)) {
+      logger.debug(`${TAGS.MCP} Registering delete tools (EXPERIMENT_DELETE_TOOL_ENABLED is active)`)
+      registerDeleteAgentDlpRuleTool(server, { cloudIdentityClient }, state)
+      registerDeleteDetectorTool(server, { cloudIdentityClient }, state)
+    }
+
+    registerCreateRegexDetectorTool(server, { ...commonOpts, cloudIdentityClient }, state)
+    registerCreateUrlListDetectorTool(server, { ...commonOpts, cloudIdentityClient }, state)
+    registerCreateWordListDetectorTool(server, { ...commonOpts, cloudIdentityClient }, state)
+    registerCreateDefaultDlpRulesTool(server, { ...commonOpts, cloudIdentityClient }, state)
   }
-
-  registerCreateRegexDetectorTool(server, { ...commonOpts, cloudIdentityClient }, state)
-  registerCreateUrlListDetectorTool(server, { ...commonOpts, cloudIdentityClient }, state)
-  registerCreateWordListDetectorTool(server, { ...commonOpts, cloudIdentityClient }, state)
-  registerCreateDefaultDlpRulesTool(server, { ...commonOpts, cloudIdentityClient }, state)
   registerCheckSebExtensionStatusTool(server, { ...commonOpts, chromePolicyClient }, state)
   registerInstallSebExtensionTool(server, { ...commonOpts, chromePolicyClient }, state)
   if (registerEnableApi) {
