@@ -367,7 +367,7 @@ export function registerSecureGatewayTools(server, options, sessionState) {
             role: z
               .string()
               .describe(
-                'The GCP IAM role to grant. Must be a fully-qualified role name (e.g. "roles/beyondcorp.appConnectionUser", "roles/viewer").',
+                'The GCP IAM role to grant. Must be a fully-qualified role name (e.g. "roles/beyondcorp.serviceDiscoveryUser", "roles/beyondcorp.sgApplicationUser").',
               ),
             members: z
               .array(z.string())
