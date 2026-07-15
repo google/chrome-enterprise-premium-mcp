@@ -278,6 +278,7 @@ function getInitialState() {
     securityGatewayIamPolicies: nullProtoMap({}),
     securityGatewayApplicationIamPolicies: nullProtoMap({}),
     projectIamPolicies: nullProtoMap({}),
+    firewalls: nullProtoMap({}),
   }
 }
 
@@ -838,6 +839,17 @@ export function createFakeApp() {
       .filter(([, stateVal]) => stateVal === 'ENABLED')
       .map(([serviceName]) => ({ serviceName, producerProjectId: 'google.com' }))
     res.json({ services })
+  })
+
+  // Compute Engine: List Firewalls
+  app.get('/compute/v1/projects/:projectId/global/firewalls', (req, res) => {
+    const { projectId } = req.params
+    if (mockErrors.listFirewalls) {
+      const err = mockErrors.listFirewalls
+      return res.status(err.code || 500).json({ error: { message: err.message || 'Error listing firewalls' } })
+    }
+    const firewalls = state.firewalls[projectId] || []
+    res.json({ kind: 'compute#firewallList', items: firewalls })
   })
 
   // BeyondCorp: Create Security Gateway

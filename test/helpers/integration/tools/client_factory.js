@@ -21,6 +21,7 @@ import { ChromePolicyClient } from '../../../../lib/api/chrome_policy_client.js'
 import { ChromeManagementClient } from '../../../../lib/api/chrome_management_client.js'
 import { ServiceUsageClient } from '../../../../lib/api/service_usage_client.js'
 import { CloudResourceManagerClient } from '../../../../lib/api/cloud_resource_manager_client.js'
+import { ComputeClient } from '../../../../lib/api/compute_client.js'
 import { BeyondCorpClient } from '../../../../lib/api/beyondcorp_client.js'
 
 export function getApiClients(options = {}) {
@@ -36,6 +37,7 @@ export function getApiClients(options = {}) {
       chromeManagement: new ChromeManagementClient(),
       serviceUsage: new ServiceUsageClient(),
       cloudResourceManager: new CloudResourceManagerClient(),
+      compute: new ComputeClient(),
       beyondcorp: new BeyondCorpClient(),
     }
   }
@@ -50,6 +52,7 @@ export function getApiClients(options = {}) {
     chromeManagement: new ChromeManagementClient({ rootUrl, auth: fakeAuth }),
     serviceUsage: new ServiceUsageClient({ rootUrl, auth: fakeAuth }),
     cloudResourceManager: new CloudResourceManagerClient({ rootUrl, auth: fakeAuth }),
+    compute: new ComputeClient({ rootUrl, auth: fakeAuth }),
     beyondcorp: new BeyondCorpClient({ rootUrl, auth: fakeAuth }),
   }
 }
