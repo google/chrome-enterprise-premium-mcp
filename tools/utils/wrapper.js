@@ -62,8 +62,7 @@ const TOOL_PRIVILEGES_MAP = {
     roleUrl: 'https://admin.google.com/ac/roles',
   },
   security_insights: {
-    privilege:
-      'Services > Chrome Management > Manage ChromeOS Devices (Read-only) + Services > Chrome Enterprise Security Insights',
+    privilege: 'Services > Chrome Enterprise Security Insights (or Chrome Management)',
     roleUrl: 'https://admin.google.com/ac/roles',
   },
   count_browser_versions: {
@@ -71,12 +70,11 @@ const TOOL_PRIVILEGES_MAP = {
     roleUrl: 'https://admin.google.com/ac/roles',
   },
   list_customer_profiles: {
-    privilege:
-      'Services > Chrome Management > Manage ChromeOS Devices (Read-only) + Services > Chrome Management > Settings > Managed Browsers',
+    privilege: 'Services > Chrome Management > Settings > Managed Browsers',
     roleUrl: 'https://admin.google.com/ac/roles',
   },
   get_chrome_activity_log: {
-    privilege: 'Services > Chrome Management > Manage ChromeOS Devices (Read-only) + Reports > Audit Reports',
+    privilege: 'Services > Chrome Management > Manage ChromeOS Devices (and Reports > Audit Reports)',
     roleUrl: 'https://admin.google.com/ac/roles',
   },
   check_cep_subscription: {
@@ -119,7 +117,7 @@ const TOOL_PRIVILEGES_MAP = {
 function getAuthRemediationMessage(status, bearerInbound = false, toolName = '') {
   if (status === 403 && toolName && TOOL_PRIVILEGES_MAP[toolName]) {
     const info = TOOL_PRIVILEGES_MAP[toolName]
-    return `Permission denied (403 Forbidden) while calling tool '${toolName}'. Your authenticated principal lacks the required Google Workspace / Chrome Enterprise permissions for this resource.\n\n🛠️ Required Workspace Admin Console Privileges for '${toolName}':\n- ${info.privilege}\n\n🔗 How to fix: Open Workspace Admin Roles Console (${info.roleUrl}), create or edit an admin role with the privileges listed above, and assign it to your authenticated Service Account or user email.`
+    return `Permission denied (403 Forbidden) while calling \`${toolName}\`. Your account lacks the required Google Workspace Admin Console privilege:\n• **${info.privilege}**\n\n**To fix:** Open [Workspace Admin Roles](${info.roleUrl}) and assign any role (or custom role) granting this privilege to your account (e.g., *Delegated Admin* or *Super Admin*).`
   }
 
   if (bearerInbound) {
