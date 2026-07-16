@@ -53,6 +53,7 @@ import { registerSecurityInsightsDataTool } from './definitions/security_insight
 import { registerSearchOrganizationsTool } from './definitions/search_organizations.js'
 import { registerSecureGatewayTools } from './definitions/secure_gateway.js'
 import { registerListCaaAccessLevelsTool } from './definitions/list_caa_access_levels.js'
+import { registerCreateCaaAccessLevelTool } from './definitions/create_caa_access_level.js'
 import { featureFlags, FLAGS } from '../lib/util/feature_flags.js'
 
 /**
@@ -157,6 +158,7 @@ export function registerTools(server, options = {}, sessionState) {
   if (flags.isEnabled(FLAGS.ACM_TOOLS_ENABLED)) {
     logger.debug(`${TAGS.MCP} Registering ACM tools (EXPERIMENT_ACM_TOOLS_ENABLED is active)`)
     registerListCaaAccessLevelsTool(server, { ...commonOpts, accessContextManagerClient }, state)
+    registerCreateCaaAccessLevelTool(server, { ...commonOpts, accessContextManagerClient }, state)
   }
 
   registerKnowledgeTools(server, { ...options, featureFlags: flags }, state)

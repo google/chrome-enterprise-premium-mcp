@@ -277,6 +277,11 @@ function getInitialState() {
     securityGatewayApplications: nullProtoMap({}),
     securityGatewayIamPolicies: nullProtoMap({}),
     securityGatewayApplicationIamPolicies: nullProtoMap({}),
+    accessPolicies: nullProtoMap({}),
+    accessLevels: nullProtoMap({}),
+    acmOperations: nullProtoMap({}),
+    projectIamPolicies: nullProtoMap({}),
+    firewalls: nullProtoMap({}),
   }
 }
 
@@ -839,6 +844,17 @@ export function createFakeApp() {
     res.json({ services })
   })
 
+  // Compute Engine: List Firewalls
+  app.get('/compute/v1/projects/:projectId/global/firewalls', (req, res) => {
+    const { projectId } = req.params
+    if (mockErrors.listFirewalls) {
+      const err = mockErrors.listFirewalls
+      return res.status(err.code || 500).json({ error: { message: err.message || 'Error listing firewalls' } })
+    }
+    const firewalls = state.firewalls[projectId] || []
+    res.json({ kind: 'compute#firewallList', items: firewalls })
+  })
+
   // BeyondCorp: Create Security Gateway
   app.post('/v1/projects/:projectId/locations/global/securityGateways', (req, res) => {
     const { projectId } = req.params
@@ -1022,6 +1038,67 @@ export function createFakeApp() {
     },
   )
 
+  // Access Context Manager: List Access Policies
+  app.get('/v1/accessPolicies', (req, res) => {
+    const parent = req.query.parent
+    const list = Object.values(state.accessPolicies).filter(p => !parent || p.parent === parent)
+    res.json({ accessPolicies: list })
+  })
+
+  // Access Context Manager: Create Access Policy
+  app.post('/v1/accessPolicies', (req, res) => {
+    const id = Object.keys(state.accessPolicies).length + 10000
+    const name = `accessPolicies/${id}`
+    const policy = {
+      name,
+      parent: req.body.parent,
+      title: req.body.title || 'Default Access Policy',
+    }
+    state.accessPolicies[name] = policy
+    const opName = `operations/accessPolicies.create.${id}`
+    const op = { name: opName, done: true, response: policy }
+    state.acmOperations[opName] = op
+    res.json(op)
+  })
+
+  // Access Context Manager: List Access Levels
+  app.get('/v1/accessPolicies/:policyId/accessLevels', (req, res) => {
+    const { policyId } = req.params
+    const parent = `accessPolicies/${policyId}`
+    const list = Object.values(state.accessLevels).filter(l => l.name?.startsWith(`${parent}/accessLevels/`))
+    res.json({ accessLevels: list })
+  })
+
+  // Access Context Manager: Create Access Level
+  app.post('/v1/accessPolicies/:policyId/accessLevels', (req, res) => {
+    const { policyId } = req.params
+    const level = req.body
+    if (!level.name) {
+      level.name = `accessPolicies/${policyId}/accessLevels/level_1`
+    }
+    state.accessLevels[level.name] = level
+    const levelId = level.name.split('/').pop()
+    const opName = `operations/accessLevels.create.${levelId}`
+    const op = { name: opName, done: true, response: level }
+    state.acmOperations[opName] = op
+    res.json(op)
+  })
+
+  // Access Context Manager: Get Operation
+  app.get(/^\/v1\/operations\/(.*)$/, (req, res) => {
+    const rawPath = req.params[0]
+    const opName = rawPath ? `operations/${rawPath}` : req.path.substring(1)
+    const op = state.acmOperations[opName] || { name: opName, done: true }
+    res.json(op)
+  })
+
+  // CRM: Get Project IAM Policy
+  app.post('/v1/projects/:projectId\\:getIamPolicy', (req, res) => {
+    const { projectId } = req.params
+    const policy = state.projectIamPolicies[projectId] || { bindings: [] }
+    res.json(policy)
+  })
+
   // Test Helper: Reset State
   app.post('/test/reset', (_req, res) => {
     state = getInitialState()
@@ -1107,6 +1184,21 @@ export function createFakeApp() {
     if (data.securityGatewayApplicationIamPolicies) {
       for (const [key, val] of Object.entries(data.securityGatewayApplicationIamPolicies)) {
         state.securityGatewayApplicationIamPolicies[key] = val
+      }
+    }
+    if (data.accessPolicies) {
+      for (const [key, val] of Object.entries(data.accessPolicies)) {
+        state.accessPolicies[key] = val
+      }
+    }
+    if (data.accessLevels) {
+      for (const [key, val] of Object.entries(data.accessLevels)) {
+        state.accessLevels[key] = val
+      }
+    }
+    if (data.acmOperations) {
+      for (const [key, val] of Object.entries(data.acmOperations)) {
+        state.acmOperations[key] = val
       }
     }
   }

@@ -10,6 +10,7 @@ lib/api/chrome_management_client.js
 lib/api/chrome_policy_client.js
 lib/api/cloud_identity_client.js
 lib/api/cloud_resource_manager_client.js
+lib/api/compute_client.js
 lib/api/service_usage_client.js
 lib/constants.js
 lib/knowledge/0-agent-capabilities.md
@@ -86,6 +87,7 @@ tools/definitions/check_ev_extension_status.js
 tools/definitions/check_seb_extension_status.js
 tools/definitions/check_user_cep_license.js
 tools/definitions/count_browser_versions.js
+tools/definitions/create_caa_access_level.js
 tools/definitions/create_chrome_dlp_rule.js
 tools/definitions/create_default_dlp_rules.js
 tools/definitions/create_regex_detector.js

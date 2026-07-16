@@ -83,6 +83,14 @@ function createMockClients(overrides = {}) {
       listGateways: mock.fn(async () => cfg.gateways),
       listApplications: mock.fn(async () => cfg.applications),
     },
+    cloudResourceManagerClient: {
+      getProjectIamPolicy: mock.fn(async () => {
+        if (cfg.projectIamPolicyError) {
+          throw new Error(cfg.projectIamPolicyError)
+        }
+        return cfg.projectIamPolicy || { bindings: [] }
+      }),
+    },
     apiClients: {
       adminSdk: { getCustomerId: mock.fn(async () => cfg.customer) },
     },
@@ -576,7 +584,7 @@ describe('diagnose_environment', () => {
       assert.strictEqual(sg.gateways.length, 1)
       assert.strictEqual(sg.gateways[0].applications.length, 1)
 
-      const sgIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway')
+      const sgIssues = result.structuredContent.issues.filter(i => i.component.startsWith('secureGateway'))
       assert.strictEqual(sgIssues.length, 0)
       assert.ok(
         result.content[0].text.includes(
@@ -757,6 +765,528 @@ describe('diagnose_environment', () => {
       assert.strictEqual(sc.hasMore, true)
       assert.strictEqual(sc.items[0].displayName, 'Gateway 1')
       assert.strictEqual(sc.items[0].serviceDiscovery, true)
+    })
+
+    test('When private web app is configured and delegating SA is missing roles/beyondcorp.upstreamAccess, then it produces a high issue', async () => {
+      const { handler } = registerAndGetHandler(
+        {
+          gateways: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1',
+              displayName: 'Gateway 1',
+              state: 'ACTIVE',
+              serviceDiscovery: {},
+              delegatingServiceAccount: 'sa-123@gcp-sa-beyondcorp.iam.gserviceaccount.com',
+            },
+          ],
+          applications: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1/applications/app1',
+              displayName: 'Private Web App',
+              upstreams: [{ network: { name: 'projects/p1/global/networks/prod-vpc' } }],
+            },
+          ],
+          projectIamPolicy: {
+            bindings: [{ role: 'roles/viewer', members: ['user:alice@company.com'] }],
+          },
+        },
+        { featureFlags: enabledFlags },
+      )
+
+      const result = await handler({ customerId: 'C0123', projectId: 'p1' }, { requestInfo: {} })
+      const iamIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.iam')
+      assert.strictEqual(iamIssues.length, 1)
+      assert.strictEqual(iamIssues[0].severity, 'high')
+      assert.ok(iamIssues[0].message.includes("is not directly granted 'roles/beyondcorp.upstreamAccess'"))
+      assert.deepStrictEqual(iamIssues[0].remediation, {
+        actionLabel: 'Verify or Grant GCP IAM Roles',
+        url: 'https://console.cloud.google.com/iam-admin/iam?project=p1',
+      })
+    })
+
+    test('When private web app is configured but delegating SA is missing on gateway resource, then it produces a high issue', async () => {
+      const { handler } = registerAndGetHandler(
+        {
+          gateways: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1',
+              displayName: 'Gateway 1',
+              state: 'ACTIVE',
+              serviceDiscovery: {},
+            },
+          ],
+          applications: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1/applications/app1',
+              displayName: 'Private Web App',
+              upstreams: [{ network: { name: 'projects/p1/global/networks/prod-vpc' } }],
+            },
+          ],
+          projectIamPolicy: {
+            bindings: [{ role: 'roles/viewer', members: ['user:alice@company.com'] }],
+          },
+        },
+        { featureFlags: enabledFlags },
+      )
+
+      const result = await handler({ customerId: 'C0123', projectId: 'p1' }, { requestInfo: {} })
+      const iamIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.iam')
+      assert.strictEqual(iamIssues.length, 1)
+      assert.strictEqual(iamIssues[0].severity, 'high')
+      assert.ok(iamIssues[0].message.includes('no delegating service account is specified'))
+    })
+
+    test('When private web app is configured and delegating SA HAS roles/beyondcorp.upstreamAccess, then no IAM issue is raised', async () => {
+      const { handler } = registerAndGetHandler(
+        {
+          gateways: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1',
+              displayName: 'Gateway 1',
+              state: 'ACTIVE',
+              serviceDiscovery: {},
+              delegatingServiceAccount: 'sa-123@gcp-sa-beyondcorp.iam.gserviceaccount.com',
+            },
+          ],
+          applications: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1/applications/app1',
+              displayName: 'Private Web App',
+              upstreams: [{ network: { name: 'projects/p1/global/networks/prod-vpc' } }],
+            },
+          ],
+          projectIamPolicy: {
+            bindings: [
+              {
+                role: 'roles/beyondcorp.upstreamAccess',
+                members: ['serviceAccount:sa-123@gcp-sa-beyondcorp.iam.gserviceaccount.com'],
+              },
+            ],
+          },
+        },
+        { featureFlags: enabledFlags },
+      )
+
+      const result = await handler({ customerId: 'C0123', projectId: 'p1' }, { requestInfo: {} })
+      const iamIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.iam')
+      assert.strictEqual(iamIssues.length, 0)
+    })
+
+    test('When project IAM policy query fails with 403, then it produces a medium issue with manual remediation link', async () => {
+      const { handler } = registerAndGetHandler(
+        {
+          gateways: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1',
+              displayName: 'Gateway 1',
+              state: 'ACTIVE',
+            },
+          ],
+          projectIamPolicyError: '403 Forbidden',
+        },
+        { featureFlags: enabledFlags },
+      )
+
+      const result = await handler({ customerId: 'C0123', projectId: 'p1' }, { requestInfo: {} })
+      const iamIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.iam')
+      assert.strictEqual(iamIssues.length, 1)
+      assert.strictEqual(iamIssues[0].severity, 'medium')
+      assert.ok(iamIssues[0].message.includes('Unable to automatically verify delegating service account permissions'))
+      assert.deepStrictEqual(iamIssues[0].remediation, {
+        actionLabel: 'Verify GCP IAM Roles Manually',
+        url: 'https://console.cloud.google.com/iam-admin/iam?project=p1',
+      })
+    })
+
+    test('When Private Web App is present and ingress firewall rule for secure gateway is missing, then it produces a high severity firewall issue', async () => {
+      const mockComputeClient = {
+        listFirewalls: mock.fn(async () => ({ items: [] })),
+      }
+      const handlers = {}
+      const server = createMockServer(handlers)
+      const mockClients = createMockClients()
+      mockClients.beyondcorpClient.listGateways = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1',
+          displayName: 'Gateway 1',
+          state: 'RUNNING',
+          delegatingServiceAccount: 'sa@gcp.iam.gserviceaccount.com',
+          serviceDiscovery: {},
+        },
+      ])
+      mockClients.beyondcorpClient.listApplications = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1/applications/app1',
+          displayName: 'App 1',
+          endpointMatchers: [{ ports: [443] }],
+          upstreams: [{ network: 'projects/p1/global/networks/vpc1' }],
+        },
+      ])
+
+      registerDiagnoseEnvironmentTool(
+        server,
+        { ...mockClients, computeClient: mockComputeClient, featureFlags: enabledFlags },
+        { customerId: null, cachedRootOrgUnitId: null },
+      )
+
+      const result = await handlers['diagnose_environment'](
+        { customerId: 'C0123', projectId: 'p1' },
+        { requestInfo: {} },
+      )
+
+      const fwIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.firewall')
+      assert.strictEqual(fwIssues.length, 1)
+      assert.strictEqual(fwIssues[0].severity, 'high')
+      assert.ok(fwIssues[0].message.includes('Ingress firewall rule allowing TCP traffic from secure gateway range'))
+      assert.ok(fwIssues[0].remediation.command.includes('gcloud compute firewall-rules create'))
+    })
+
+    test('When App has multiple upstreams on the same VPC network, then it produces exactly 1 firewall issue per network', async () => {
+      const mockComputeClient = {
+        listFirewalls: mock.fn(async () => ({ items: [] })),
+      }
+      const handlers = {}
+      const server = createMockServer(handlers)
+      const mockClients = createMockClients()
+      mockClients.beyondcorpClient.listGateways = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1',
+          displayName: 'Gateway 1',
+          state: 'RUNNING',
+          delegatingServiceAccount: 'sa@gcp.iam.gserviceaccount.com',
+          serviceDiscovery: {},
+        },
+      ])
+      mockClients.beyondcorpClient.listApplications = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1/applications/app1',
+          displayName: 'App 1',
+          endpointMatchers: [{ ports: [443] }],
+          upstreams: [
+            { network: 'projects/p1/global/networks/vpc1', upstreamUri: '10.0.0.5:443' },
+            { network: 'projects/p1/global/networks/vpc1', upstreamUri: '10.0.0.6:443' },
+          ],
+        },
+      ])
+
+      registerDiagnoseEnvironmentTool(
+        server,
+        { ...mockClients, computeClient: mockComputeClient, featureFlags: enabledFlags },
+        { customerId: null, cachedRootOrgUnitId: null },
+      )
+
+      const result = await handlers['diagnose_environment'](
+        { customerId: 'C0123', projectId: 'p1' },
+        { requestInfo: {} },
+      )
+
+      const fwIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.firewall')
+      assert.strictEqual(fwIssues.length, 1, 'Should deduplicate missing firewall rules per unique network')
+      assert.ok(fwIssues[0].message.includes('vpc1'))
+    })
+
+    test('When matching allow firewall rule is disabled, then it ignores it and produces missing firewall issue', async () => {
+      const mockComputeClient = {
+        listFirewalls: mock.fn(async () => ({
+          items: [
+            {
+              direction: 'INGRESS',
+              action: 'ALLOW',
+              disabled: true,
+              network: 'projects/p1/global/networks/vpc1',
+              sourceRanges: ['136.124.16.0/20'],
+              allowed: [{ IPProtocol: 'tcp', ports: ['443'] }],
+            },
+          ],
+        })),
+      }
+      const handlers = {}
+      const server = createMockServer(handlers)
+      const mockClients = createMockClients()
+      mockClients.beyondcorpClient.listGateways = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1',
+          displayName: 'Gateway 1',
+          state: 'RUNNING',
+          delegatingServiceAccount: 'sa@gcp.iam.gserviceaccount.com',
+          serviceDiscovery: {},
+        },
+      ])
+      mockClients.beyondcorpClient.listApplications = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1/applications/app1',
+          displayName: 'App 1',
+          endpointMatchers: [{ ports: [443] }],
+          upstreams: [{ network: 'projects/p1/global/networks/vpc1' }],
+        },
+      ])
+
+      registerDiagnoseEnvironmentTool(
+        server,
+        { ...mockClients, computeClient: mockComputeClient, featureFlags: enabledFlags },
+        { customerId: null, cachedRootOrgUnitId: null },
+      )
+
+      const result = await handlers['diagnose_environment'](
+        { customerId: 'C0123', projectId: 'p1' },
+        { requestInfo: {} },
+      )
+
+      const fwIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.firewall')
+      assert.strictEqual(fwIssues.length, 1, 'Disabled rule should be ignored')
+    })
+
+    test('When firewall rule specifies port ranges like 80-443, then it recognizes port 443 as allowed', async () => {
+      const mockComputeClient = {
+        listFirewalls: mock.fn(async () => ({
+          items: [
+            {
+              direction: 'INGRESS',
+              action: 'ALLOW',
+              disabled: false,
+              network: 'projects/p1/global/networks/vpc1',
+              sourceRanges: ['136.124.16.0/20'],
+              allowed: [{ IPProtocol: 'tcp', ports: ['80-443'] }],
+            },
+          ],
+        })),
+      }
+      const handlers = {}
+      const server = createMockServer(handlers)
+      const mockClients = createMockClients()
+      mockClients.beyondcorpClient.listGateways = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1',
+          displayName: 'Gateway 1',
+          state: 'RUNNING',
+          delegatingServiceAccount: 'sa@gcp.iam.gserviceaccount.com',
+          serviceDiscovery: {},
+        },
+      ])
+      mockClients.beyondcorpClient.listApplications = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1/applications/app1',
+          displayName: 'App 1',
+          endpointMatchers: [{ ports: [443] }],
+          upstreams: [{ network: 'projects/p1/global/networks/vpc1' }],
+        },
+      ])
+
+      registerDiagnoseEnvironmentTool(
+        server,
+        { ...mockClients, computeClient: mockComputeClient, featureFlags: enabledFlags },
+        { customerId: null, cachedRootOrgUnitId: null },
+      )
+
+      const result = await handlers['diagnose_environment'](
+        { customerId: 'C0123', projectId: 'p1' },
+        { requestInfo: {} },
+      )
+
+      const fwIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.firewall')
+      assert.strictEqual(fwIssues.length, 0, 'Port 443 within 80-443 range should be recognized as allowed')
+    })
+
+    test('When u.network is an object with full URI containing project number, then it matches compute firewall rule with project ID', async () => {
+      const mockComputeClient = {
+        listFirewalls: mock.fn(async () => ({
+          items: [
+            {
+              direction: 'INGRESS',
+              action: 'ALLOW',
+              disabled: false,
+              network: 'projects/brett-public-preview/global/networks/default',
+              sourceRanges: ['136.124.16.0/20'],
+              allowed: [{ IPProtocol: 'tcp', ports: ['443'] }],
+            },
+          ],
+        })),
+      }
+      const handlers = {}
+      const server = createMockServer(handlers)
+      const mockClients = createMockClients()
+      mockClients.beyondcorpClient.listGateways = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1',
+          displayName: 'Gateway 1',
+          state: 'RUNNING',
+          delegatingServiceAccount: 'sa@gcp.iam.gserviceaccount.com',
+          serviceDiscovery: {},
+        },
+      ])
+      mockClients.beyondcorpClient.listApplications = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1/applications/app1',
+          displayName: 'App 1',
+          endpointMatchers: [{ ports: [443] }],
+          upstreams: [
+            {
+              network: {
+                name: 'projects/498461174898/global/networks/default',
+              },
+            },
+          ],
+        },
+      ])
+
+      registerDiagnoseEnvironmentTool(
+        server,
+        { ...mockClients, computeClient: mockComputeClient, featureFlags: enabledFlags },
+        { customerId: null, cachedRootOrgUnitId: null },
+      )
+
+      const result = await handlers['diagnose_environment'](
+        { customerId: 'C0123', projectId: 'brett-public-preview' },
+        { requestInfo: {} },
+      )
+
+      const fwIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.firewall')
+      assert.strictEqual(
+        fwIssues.length,
+        0,
+        'Project number in u.network.name object should correctly resolve basename default',
+      )
+    })
+
+    test('When matching allow firewall rule has targetTags, then it ignores it and reports missing network-wide firewall rule', async () => {
+      const mockComputeClient = {
+        listFirewalls: mock.fn(async () => ({
+          items: [
+            {
+              direction: 'INGRESS',
+              action: 'ALLOW',
+              disabled: false,
+              network: 'projects/p1/global/networks/vpc1',
+              targetTags: ['http-server'],
+              sourceRanges: ['136.124.16.0/20'],
+              allowed: [{ IPProtocol: 'tcp', ports: ['443'] }],
+            },
+          ],
+        })),
+      }
+      const handlers = {}
+      const server = createMockServer(handlers)
+      const mockClients = createMockClients()
+      mockClients.beyondcorpClient.listGateways = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1',
+          displayName: 'Gateway 1',
+          state: 'RUNNING',
+          delegatingServiceAccount: 'sa@gcp.iam.gserviceaccount.com',
+          serviceDiscovery: {},
+        },
+      ])
+      mockClients.beyondcorpClient.listApplications = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1/applications/app1',
+          displayName: 'App 1',
+          endpointMatchers: [{ ports: [443] }],
+          upstreams: [{ network: 'projects/p1/global/networks/vpc1' }],
+        },
+      ])
+
+      registerDiagnoseEnvironmentTool(
+        server,
+        { ...mockClients, computeClient: mockComputeClient, featureFlags: enabledFlags },
+        { customerId: null, cachedRootOrgUnitId: null },
+      )
+
+      const result = await handlers['diagnose_environment'](
+        { customerId: 'C0123', projectId: 'p1' },
+        { requestInfo: {} },
+      )
+
+      const fwIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.firewall')
+      assert.strictEqual(fwIssues.length, 1, 'Rule with targetTags should be skipped to require a network-wide rule')
+    })
+
+    test('When compute listFirewalls throws error, then it produces a medium severity firewall issue with manual remediation link', async () => {
+      const mockComputeClient = {
+        listFirewalls: mock.fn(async () => {
+          throw new Error('403 Forbidden: Missing compute.firewalls.list')
+        }),
+      }
+      const handlers = {}
+      const server = createMockServer(handlers)
+      const mockClients = createMockClients()
+      mockClients.beyondcorpClient.listGateways = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1',
+          displayName: 'Gateway 1',
+          state: 'RUNNING',
+          delegatingServiceAccount: 'sa@gcp.iam.gserviceaccount.com',
+          serviceDiscovery: {},
+        },
+      ])
+      mockClients.beyondcorpClient.listApplications = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1/applications/app1',
+          displayName: 'App 1',
+          endpointMatchers: [{ ports: [443] }],
+          upstreams: [{ network: 'projects/p1/global/networks/vpc1' }],
+        },
+      ])
+
+      registerDiagnoseEnvironmentTool(
+        server,
+        { ...mockClients, computeClient: mockComputeClient, featureFlags: enabledFlags },
+        { customerId: null, cachedRootOrgUnitId: null },
+      )
+
+      const result = await handlers['diagnose_environment'](
+        { customerId: 'C0123', projectId: 'p1' },
+        { requestInfo: {} },
+      )
+
+      const fwIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.firewall')
+      assert.strictEqual(fwIssues.length, 1)
+      assert.strictEqual(fwIssues[0].severity, 'medium')
+      assert.ok(fwIssues[0].message.includes('Unable to automatically verify VPC ingress firewall rules'))
+      assert.ok(fwIssues[0].remediation.url.includes('console.cloud.google.com/net-security/firewall-manager'))
+    })
+
+    test('When upstream URI is CGNAT IP (100.10.1.1) without network, then it is excluded from private VPC firewall checks', async () => {
+      const mockComputeClient = {
+        listFirewalls: mock.fn(async () => ({ items: [] })),
+      }
+      const handlers = {}
+      const server = createMockServer(handlers)
+      const mockClients = createMockClients()
+      mockClients.beyondcorpClient.listGateways = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1',
+          displayName: 'Gateway 1',
+          state: 'RUNNING',
+          delegatingServiceAccount: 'sa@gcp.iam.gserviceaccount.com',
+          serviceDiscovery: {},
+        },
+      ])
+      mockClients.beyondcorpClient.listApplications = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1/applications/app1',
+          displayName: 'App 1',
+          endpointMatchers: [{ ports: [8080] }],
+          upstreams: [{ upstreamUri: '100.10.1.1:8080' }],
+        },
+      ])
+
+      registerDiagnoseEnvironmentTool(
+        server,
+        { ...mockClients, computeClient: mockComputeClient, featureFlags: enabledFlags },
+        { customerId: null, cachedRootOrgUnitId: null },
+      )
+
+      const result = await handlers['diagnose_environment'](
+        { customerId: 'C0123', projectId: 'p1' },
+        { requestInfo: {} },
+      )
+
+      const fwIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.firewall')
+      assert.strictEqual(
+        fwIssues.length,
+        0,
+        'CGNAT IP without network should be treated as non-private and excluded from firewall checks',
+      )
     })
   })
 })
