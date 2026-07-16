@@ -22,6 +22,7 @@ import { ChromeManagementClient } from '../../../../lib/api/chrome_management_cl
 import { ServiceUsageClient } from '../../../../lib/api/service_usage_client.js'
 import { CloudResourceManagerClient } from '../../../../lib/api/cloud_resource_manager_client.js'
 import { BeyondCorpClient } from '../../../../lib/api/beyondcorp_client.js'
+import { AccessContextManagerClient } from '../../../../lib/api/access_context_manager_client.js'
 
 export function getApiClients(options = {}) {
   const backend = options.backend || process.env.CEP_BACKEND || (process.env.GOOGLE_API_ROOT_URL ? 'fake' : 'real')
@@ -37,6 +38,7 @@ export function getApiClients(options = {}) {
       serviceUsage: new ServiceUsageClient(),
       cloudResourceManager: new CloudResourceManagerClient(),
       beyondcorp: new BeyondCorpClient(),
+      accessContextManager: new AccessContextManagerClient(),
     }
   }
 
@@ -51,5 +53,6 @@ export function getApiClients(options = {}) {
     serviceUsage: new ServiceUsageClient({ rootUrl, auth: fakeAuth }),
     cloudResourceManager: new CloudResourceManagerClient({ rootUrl, auth: fakeAuth }),
     beyondcorp: new BeyondCorpClient({ rootUrl, auth: fakeAuth }),
+    accessContextManager: new AccessContextManagerClient({ rootUrl, auth: fakeAuth }),
   }
 }
