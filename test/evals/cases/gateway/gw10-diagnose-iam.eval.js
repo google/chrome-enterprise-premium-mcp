@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 export default {
-  id: 'gw08',
+  id: 'gw10',
   priority: 'P1',
   tags: ['gateway', 'inspection', 'diagnose', 'iam'],
   fixtures: ['customer-default.json', 'license-valid.json', 'gateways-configured.json'],

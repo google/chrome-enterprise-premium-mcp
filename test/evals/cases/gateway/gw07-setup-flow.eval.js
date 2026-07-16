@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 export default {
-  id: 'gw05',
+  id: 'gw07',
   priority: 'P1',
   tags: ['gateway', 'mutation'],
   fixtures: ['customer-default.json', 'org-units-complex.json'],

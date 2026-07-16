@@ -15,7 +15,7 @@ limitations under the License.
 */
 
 export default {
-  id: 'gw09',
+  id: 'gw11',
   priority: 'P1',
   tags: ['gateway', 'inspection', 'diagnose', 'firewall'],
   fixtures: ['customer-default.json', 'license-valid.json', 'gateways-configured.json'],
