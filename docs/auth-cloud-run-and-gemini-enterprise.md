@@ -30,6 +30,8 @@ For the full set of HTTP-mode variables, see [`configuration.md`](configuration.
 
 ### Cloud Run setup sketch
 
+Cloud Run automatically detects and uses the provided `Dockerfile` when deploying from source.
+
 ```bash
 gcloud run deploy cep-mcp \
   --source=. \
