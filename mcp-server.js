@@ -58,6 +58,7 @@ import { ChromePolicyClient } from './lib/api/chrome_policy_client.js'
 import { ChromeManagementClient } from './lib/api/chrome_management_client.js'
 import { ServiceUsageClient } from './lib/api/service_usage_client.js'
 import { CloudResourceManagerClient } from './lib/api/cloud_resource_manager_client.js'
+import { ComputeClient } from './lib/api/compute_client.js'
 import { BeyondCorpClient } from './lib/api/beyondcorp_client.js'
 import { AccessContextManagerClient } from './lib/api/access_context_manager_client.js'
 
@@ -259,6 +260,7 @@ export async function getServer(gcpInfo, sharedSessionState, principal = null) {
     chromeManagement: new ChromeManagementClient(apiOptions),
     serviceUsage: new ServiceUsageClient(apiOptions),
     cloudResourceManager: new CloudResourceManagerClient(apiOptions),
+    compute: new ComputeClient(apiOptions),
     beyondcorp: new BeyondCorpClient(apiOptions),
     accessContextManager: new AccessContextManagerClient(apiOptions),
   }
