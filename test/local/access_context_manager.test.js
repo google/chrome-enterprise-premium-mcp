@@ -162,4 +162,109 @@ describe('AccessContextManagerClient', () => {
       /Missing required parameter: policyName/,
     )
   })
+
+  test('When getOperation is called, then it calls the googleapi operations.get method', async () => {
+    const mockGetOp = mock.fn(async () => ({ data: { name: 'operations/op1', done: true } }))
+    const mockAcm = {
+      operations: {
+        get: mockGetOp,
+      },
+    }
+
+    const { AccessContextManagerClient } = await esmock('../../lib/api/access_context_manager_client.js', {
+      '../../lib/util/api-client.js': {
+        createApiClient: async () => mockAcm,
+      },
+      '../../lib/util/helpers.js': mockHelpers,
+    })
+
+    const client = new AccessContextManagerClient()
+    const result = await client.getOperation('operations/op1', 'mock-token')
+
+    assert.strictEqual(mockGetOp.mock.callCount(), 1)
+    const callArgs = mockGetOp.mock.calls[0].arguments[0]
+    assert.strictEqual(callArgs.name, 'operations/op1')
+    assert.deepStrictEqual(result, { name: 'operations/op1', done: true })
+  })
+
+  test('When getOperation is called without operationName, then it throws an error', async () => {
+    const { AccessContextManagerClient } = await esmock('../../lib/api/access_context_manager_client.js', {})
+    const client = new AccessContextManagerClient()
+    await assert.rejects(() => client.getOperation(null, 'mock-token'), /Missing required parameter: operationName/)
+  })
+
+  test('When waitForOperation is called and operation completes successfully, then it returns the response', async () => {
+    let callCount = 0
+    const mockGetOp = mock.fn(async () => {
+      callCount++
+      if (callCount === 1) {
+        return { data: { name: 'operations/op1', done: false } }
+      }
+      return { data: { name: 'operations/op1', done: true, response: { doneResult: 'ok' } } }
+    })
+    const mockAcm = {
+      operations: {
+        get: mockGetOp,
+      },
+    }
+
+    const { AccessContextManagerClient } = await esmock('../../lib/api/access_context_manager_client.js', {
+      '../../lib/util/api-client.js': {
+        createApiClient: async () => mockAcm,
+      },
+      '../../lib/util/helpers.js': mockHelpers,
+    })
+
+    const client = new AccessContextManagerClient()
+    const result = await client.waitForOperation('operations/op1', 'mock-token', 10, 100)
+
+    assert.strictEqual(mockGetOp.mock.callCount(), 2)
+    assert.deepStrictEqual(result, { doneResult: 'ok' })
+  })
+
+  test('When waitForOperation is called and operation fails, then it throws an error', async () => {
+    const mockGetOp = mock.fn(async () => ({
+      data: { name: 'operations/op1', done: true, error: { code: 3, message: 'invalid arg' } },
+    }))
+    const mockAcm = {
+      operations: {
+        get: mockGetOp,
+      },
+    }
+
+    const { AccessContextManagerClient } = await esmock('../../lib/api/access_context_manager_client.js', {
+      '../../lib/util/api-client.js': {
+        createApiClient: async () => mockAcm,
+      },
+      '../../lib/util/helpers.js': mockHelpers,
+    })
+
+    const client = new AccessContextManagerClient()
+    await assert.rejects(
+      () => client.waitForOperation('operations/op1', 'mock-token', 10, 100),
+      /Operation failed: invalid arg \(code: 3\)/,
+    )
+  })
+
+  test('When waitForOperation is called and times out, then it throws a timeout error', async () => {
+    const mockGetOp = mock.fn(async () => ({ data: { name: 'operations/op1', done: false } }))
+    const mockAcm = {
+      operations: {
+        get: mockGetOp,
+      },
+    }
+
+    const { AccessContextManagerClient } = await esmock('../../lib/api/access_context_manager_client.js', {
+      '../../lib/util/api-client.js': {
+        createApiClient: async () => mockAcm,
+      },
+      '../../lib/util/helpers.js': mockHelpers,
+    })
+
+    const client = new AccessContextManagerClient()
+    await assert.rejects(
+      () => client.waitForOperation('operations/op1', 'mock-token', 10, 50),
+      /Operation timed out after 0.05 seconds/,
+    )
+  })
 })

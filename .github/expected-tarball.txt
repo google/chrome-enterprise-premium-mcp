@@ -86,6 +86,7 @@ tools/definitions/check_ev_extension_status.js
 tools/definitions/check_seb_extension_status.js
 tools/definitions/check_user_cep_license.js
 tools/definitions/count_browser_versions.js
+tools/definitions/create_caa_access_level.js
 tools/definitions/create_chrome_dlp_rule.js
 tools/definitions/create_default_dlp_rules.js
 tools/definitions/create_regex_detector.js
