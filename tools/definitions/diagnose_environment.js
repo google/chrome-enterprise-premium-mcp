@@ -56,6 +56,41 @@ const SEB_EXTENSION_ID = 'chrome:ekajlcmdfcigmdbphhifahdfjbkciflj'
 const DEFAULT_PAGE_SIZE = 50
 
 /**
+ * Helper to check if an upstream destination is a private network or internal IP.
+ * @param {object} u - Upstream definition object
+ * @returns {boolean} True if the upstream is in a private network or IP block
+ */
+function isPrivateUpstream(u) {
+  if (u.network) {
+    return true
+  }
+  if (u.upstreamUri) {
+    const uri = String(u.upstreamUri).toLowerCase()
+    return /\b(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})\b|\.internal\b/.test(
+      uri,
+    )
+  }
+  return false
+}
+
+/**
+ * Checks if a target port is matched by a GCP firewall port spec (e.g. "443" or "80-443").
+ * @param {string|number} spec - Port specification string or number
+ * @param {number} targetPort - Target port number to check
+ * @returns {boolean} True if targetPort falls within spec
+ */
+function matchesPortSpec(spec, targetPort) {
+  const strSpec = String(spec)
+  if (strSpec.includes('-')) {
+    const [startStr, endStr] = strSpec.split('-')
+    const start = Number(startStr)
+    const end = Number(endStr)
+    return !isNaN(start) && !isNaN(end) && targetPort >= start && targetPort <= end
+  }
+  return String(spec) === String(targetPort)
+}
+
+/**
  * Computes deterministic issues from the environment summary.
  * Validates subscription status, connector configurations, DLP rule enforcement,
  * and force-installation of required extensions.
@@ -291,21 +326,19 @@ function computeIssues(data) {
           if (gateway.applications && gateway.applications.length > 0) {
             for (const app of gateway.applications) {
               const matchers = app.endpointMatchers || app.endpoint_matchers || []
-              for (const matcher of matchers) {
-                const ports = matcher.ports || []
-                if (ports.includes(80)) {
-                  issues.push({
-                    severity: 'medium',
-                    component: 'secureGateway.application',
-                    message: `Application ${app.displayName || app.name} on gateway ${gateway.displayName || gateway.name} routes port 80. If accessed over unencrypted HTTP (http://), Chrome and SEB extension send direct GET requests instead of establishing a CONNECT tunnel, resulting in 401 Unauthorized errors. Ensure traffic is served over HTTPS.`,
-                  })
-                }
+              const appPorts = matchers.flatMap(m => m.ports || [])
+              if (appPorts.includes(80)) {
+                issues.push({
+                  severity: 'medium',
+                  component: 'secureGateway.application',
+                  message: `Application ${app.displayName || app.name} on gateway ${gateway.displayName || gateway.name} routes port 80. If accessed over unencrypted HTTP (http://), Chrome and SEB extension send direct GET requests instead of establishing a CONNECT tunnel, resulting in 401 Unauthorized errors. Ensure traffic is served over HTTPS.`,
+                })
               }
             }
 
             const hasPrivateWebApps = gateway.applications.some(app => {
               const upstreams = app.upstreams || []
-              return upstreams.some(u => Boolean(u.network))
+              return upstreams.some(isPrivateUpstream)
             })
 
             const saEmail = gateway.delegatingServiceAccount || gateway.delegating_service_account
@@ -341,25 +374,137 @@ function computeIssues(data) {
                 }
               }
             }
+
+            if (gateway.applicationsError) {
+              issues.push({
+                severity: 'medium',
+                component: 'secureGateway',
+                message: `Failed to list applications for Secure Gateway ${gateway.displayName || gateway.name}: ${gateway.applicationsError}`,
+              })
+            }
           }
-          if (data.secureGateway.projectIamPolicyError) {
-            issues.push({
-              severity: 'medium',
-              component: 'secureGateway.iam',
-              message: `Unable to automatically verify delegating service account permissions on project ${data.secureGateway.projectId} (${data.secureGateway.projectIamPolicyError}). Please manually verify that the delegating service account has 'roles/beyondcorp.upstreamAccess'.`,
-              remediation: {
-                actionLabel: 'Verify GCP IAM Roles Manually',
-                url: `https://console.cloud.google.com/iam-admin/iam?project=${data.secureGateway.projectId}`,
-              },
+        }
+
+        if (data.secureGateway.firewalls) {
+          const networkRequirements = new Map()
+
+          for (const gateway of data.secureGateway.gateways) {
+            if (!gateway.applications) {
+              continue
+            }
+
+            for (const app of gateway.applications) {
+              const matchers = app.endpointMatchers || app.endpoint_matchers || []
+              const appPorts = matchers.flatMap(m => m.ports || [])
+              const portsToUse = appPorts.length > 0 ? appPorts : [443]
+
+              const upstreams = app.upstreams || []
+              const privateUpstreams = upstreams.filter(isPrivateUpstream)
+
+              for (const u of privateUpstreams) {
+                const network = u.network
+                const rawName = typeof network === 'string' ? network : network?.name || 'default'
+                const networkName = rawName.split('/').pop() || 'default'
+
+                if (!networkRequirements.has(networkName)) {
+                  networkRequirements.set(networkName, new Set())
+                }
+                const portSet = networkRequirements.get(networkName)
+                for (const p of portsToUse) {
+                  portSet.add(p)
+                }
+              }
+            }
+          }
+
+          const firewalls = data.secureGateway.firewalls
+          for (const [networkName, portSet] of networkRequirements.entries()) {
+            const firewallPorts = [...portSet]
+
+            const hasAllowRule = firewalls.some(fw => {
+              if (fw.disabled) {
+                return false
+              }
+              if (fw.direction && fw.direction !== 'INGRESS') {
+                return false
+              }
+              if (fw.action && fw.action !== 'ALLOW') {
+                return false
+              }
+
+              const hasTargetTags =
+                (fw.targetTags && fw.targetTags.length > 0) || (fw.target_tags && fw.target_tags.length > 0)
+              const hasTargetSAs =
+                (fw.targetServiceAccounts && fw.targetServiceAccounts.length > 0) ||
+                (fw.target_service_accounts && fw.target_service_accounts.length > 0)
+              if (hasTargetTags || hasTargetSAs) {
+                return false
+              }
+
+              if (fw.network && !fw.network.endsWith(`/${networkName}`)) {
+                return false
+              }
+
+              const sources = fw.sourceRanges || fw.source_ranges || []
+              const matchesSource = sources.includes('136.124.16.0/20') || sources.includes('0.0.0.0/0')
+              if (!matchesSource) {
+                return false
+              }
+
+              const allowedList = fw.allowed || []
+              if (allowedList.length === 0) {
+                return true
+              }
+              return allowedList.some(allow => {
+                const proto = (allow.IPProtocol || allow.ipProtocol || '').toLowerCase()
+                if (proto !== 'tcp' && proto !== 'all') {
+                  return false
+                }
+                const ports = allow.ports || []
+                if (ports.length === 0) {
+                  return true
+                }
+                return firewallPorts.some(p => ports.some(spec => matchesPortSpec(spec, p)))
+              })
             })
+
+            if (!hasAllowRule) {
+              const displayRange = '136.124.16.0/20'
+              issues.push({
+                severity: 'high',
+                component: 'secureGateway.firewall',
+                message: `Ingress firewall rule allowing TCP traffic from secure gateway range (${displayRange}) on port(s) ${firewallPorts.join(', ')} is missing on VPC network '${networkName}' in project ${data.secureGateway.projectId}. Private application routing will fail with gateway timeout errors.`,
+                remediation: {
+                  actionLabel: 'Create Ingress Firewall Rule',
+                  command: `gcloud compute firewall-rules create allow-secure-gateway-${networkName} --project=${data.secureGateway.projectId} --network=${networkName} --allow=tcp:${firewallPorts.join(',')} --source-ranges=${displayRange}`,
+                },
+              })
+            }
           }
-          if (gateway.applicationsError) {
-            issues.push({
-              severity: 'medium',
-              component: 'secureGateway',
-              message: `Failed to list applications for Secure Gateway ${gateway.displayName || gateway.name}: ${gateway.applicationsError}`,
-            })
-          }
+        }
+
+        if (data.secureGateway.firewallsError) {
+          issues.push({
+            severity: 'medium',
+            component: 'secureGateway.firewall',
+            message: `Unable to automatically verify VPC ingress firewall rules on project ${data.secureGateway.projectId} (${data.secureGateway.firewallsError}). Ensure an ingress firewall rule allows TCP traffic from gateway proxy ranges.`,
+            remediation: {
+              actionLabel: 'Verify Firewall Rules Manually',
+              url: `https://console.cloud.google.com/net-security/firewall-manager/firewall-policies/list?project=${data.secureGateway.projectId}`,
+            },
+          })
+        }
+
+        if (data.secureGateway.projectIamPolicyError) {
+          issues.push({
+            severity: 'medium',
+            component: 'secureGateway.iam',
+            message: `Unable to automatically verify delegating service account permissions on project ${data.secureGateway.projectId} (${data.secureGateway.projectIamPolicyError}). Please manually verify that the delegating service account has 'roles/beyondcorp.upstreamAccess'.`,
+            remediation: {
+              actionLabel: 'Verify GCP IAM Roles Manually',
+              url: `https://console.cloud.google.com/iam-admin/iam?project=${data.secureGateway.projectId}`,
+            },
+          })
         }
       }
     }
@@ -415,7 +560,7 @@ async function fetchEnvironment(
   authToken,
   options = {},
 ) {
-  const { beyondcorpClient, cloudResourceManagerClient, projectId, flags } = options
+  const { beyondcorpClient, cloudResourceManagerClient, computeClient, projectId, flags } = options
 
   const [
     customerData,
@@ -563,6 +708,17 @@ async function fetchEnvironment(
             projectIamPolicyError = err.message
           }
         }
+        let firewalls = null
+        let firewallsError = null
+        if (computeClient) {
+          try {
+            const firewallData = await computeClient.listFirewalls(projectId, {}, authToken)
+            firewalls = firewallData.items || []
+          } catch (err) {
+            logger.error(`${TAGS.API} Error fetching firewall rules for ${projectId} in diagnosis:`, err)
+            firewallsError = err.message
+          }
+        }
         const gateways = await Promise.all(
           (rawGateways || []).map(async gw => {
             const gatewayId = gw.name ? gw.name.split('/').pop() : gw.displayName
@@ -575,7 +731,15 @@ async function fetchEnvironment(
             }
           }),
         )
-        secureGateway = { projectId, gateways, projectIamPolicy, projectIamPolicyError, error: null }
+        secureGateway = {
+          projectId,
+          gateways,
+          projectIamPolicy,
+          projectIamPolicyError,
+          firewalls,
+          firewallsError,
+          error: null,
+        }
       } catch (err) {
         logger.error(`${TAGS.API} Error fetching secure gateways in diagnosis:`, err)
         secureGateway = { projectId, gateways: [], error: err.message }
@@ -615,6 +779,7 @@ export function registerDiagnoseEnvironmentTool(server, options, sessionState) {
   } = options
   const beyondcorpClient = options.beyondcorpClient || options.apiClients?.beyondcorp
   const cloudResourceManagerClient = options.cloudResourceManagerClient || options.apiClients?.cloudResourceManager
+  const computeClient = options.computeClient || options.apiClients?.compute
 
   const isSecureGatewayEnabled = flags.isEnabled(FLAGS.SECURE_GATEWAY_ENABLED)
 
@@ -659,7 +824,7 @@ Use 'limit' and 'offset' for pagination on large datasets.`,
             cloudIdentityClient,
             customerId,
             authToken,
-            { beyondcorpClient, cloudResourceManagerClient, projectId, flags },
+            { beyondcorpClient, cloudResourceManagerClient, computeClient, projectId, flags },
           )
 
           // Detail mode: return paginated section data
@@ -813,7 +978,11 @@ function buildSummaryResponse(env) {
               ? '🟡'
               : 'ℹ️'
       let remediation = ''
-      if (issue.component === 'securityInsights' && issue.severity === 'critical') {
+      if (issue.remediation?.command) {
+        remediation = `\n  ↳ **Remediation:** Run \`${issue.remediation.command}\``
+      } else if (issue.remediation?.url) {
+        remediation = `\n  ↳ **Remediation:** ${issue.remediation.actionLabel ? issue.remediation.actionLabel + ': ' : ''}${issue.remediation.url}`
+      } else if (issue.component === 'securityInsights' && issue.severity === 'critical') {
         remediation =
           ' -> Action: Use the `security_insights` tool to enable this feature (e.g. `security_insights enable`).'
       } else if (issue.component === 'securityInsightsData' && issue.severity === 'medium') {
