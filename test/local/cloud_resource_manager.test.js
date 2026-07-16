@@ -78,4 +78,33 @@ describe('CloudResourceManagerClient', () => {
     assert.deepStrictEqual(callArgs.requestBody, { filter: 'domain:test.com', pageSize: 10 })
     assert.deepStrictEqual(result, { organizations: [] })
   })
+
+  test('When getProjectIamPolicy is called, then it passes resource and empty requestBody to projects.getIamPolicy', async () => {
+    const mockGetIamPolicy = mock.fn(async () => ({ data: { bindings: [] } }))
+    const mockCloudresourcemanager = {
+      projects: {
+        getIamPolicy: mockGetIamPolicy,
+      },
+    }
+
+    const { CloudResourceManagerClient } = await esmock('../../lib/api/cloud_resource_manager_client.js', {
+      '../../lib/util/api-client.js': {
+        createApiClient: async () => mockCloudresourcemanager,
+      },
+      '../../lib/util/helpers.js': {
+        callWithRetry: async fn => fn(),
+        handleApiError: err => {
+          throw err
+        },
+      },
+    })
+
+    const client = new CloudResourceManagerClient()
+    const result = await client.getProjectIamPolicy('my-project', 'mock-token')
+
+    assert.strictEqual(mockGetIamPolicy.mock.callCount(), 1)
+    const callArgs = mockGetIamPolicy.mock.calls[0].arguments[0]
+    assert.deepStrictEqual(callArgs, { resource: 'my-project', requestBody: {} })
+    assert.deepStrictEqual(result, { bindings: [] })
+  })
 })

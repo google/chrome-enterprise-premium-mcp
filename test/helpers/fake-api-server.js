@@ -280,6 +280,7 @@ function getInitialState() {
     accessPolicies: nullProtoMap({}),
     accessLevels: nullProtoMap({}),
     acmOperations: nullProtoMap({}),
+    projectIamPolicies: nullProtoMap({}),
   }
 }
 
@@ -1077,6 +1078,11 @@ export function createFakeApp() {
     const opName = rawPath ? `operations/${rawPath}` : req.path.substring(1)
     const op = state.acmOperations[opName] || { name: opName, done: true }
     res.json(op)
+  // CRM: Get Project IAM Policy
+  app.post('/v1/projects/:projectId\\:getIamPolicy', (req, res) => {
+    const { projectId } = req.params
+    const policy = state.projectIamPolicies[projectId] || { bindings: [] }
+    res.json(policy)
   })
 
   // Test Helper: Reset State
