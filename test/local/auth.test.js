@@ -243,4 +243,143 @@ describe('Auth', () => {
     assert.strictEqual(sessionState.customerId, null)
     assert.strictEqual(sessionState.cachedRootOrgUnitId, null)
   })
+
+  describe('CEP_AUTH_MODE configuration', () => {
+    test('When CEP_AUTH_MODE is bearer-only and token is provided, then it returns OAuth2 client', async () => {
+      const { getAuthClient } = await esmock('../../lib/util/auth.js', {
+        'google-auth-library': {
+          OAuth2Client: class {
+            setCredentials(credentials) {
+              assert.deepStrictEqual(credentials, { access_token: 'test-token' })
+            }
+          },
+        },
+      })
+      const prevMode = process.env.CEP_AUTH_MODE
+      process.env.CEP_AUTH_MODE = 'bearer-only'
+      try {
+        const client = await getAuthClient([], 'test-token')
+        assert.ok(client)
+      } finally {
+        if (prevMode === undefined) {
+          delete process.env.CEP_AUTH_MODE
+        } else {
+          // eslint-disable-next-line require-atomic-updates
+          process.env.CEP_AUTH_MODE = prevMode
+        }
+      }
+    })
+
+    test('When CEP_AUTH_MODE is bearer-only and token is missing, then it throws even if SA credentials exist', async () => {
+      const { getAuthClient } = await esmock('../../lib/util/auth.js', {
+        'node:fs/promises': {
+          readFile: async () => JSON.stringify({ type: 'service_account', client_email: 'x', private_key: 'y' }),
+        },
+      })
+      const prevMode = process.env.CEP_AUTH_MODE
+      const prevCred = process.env.GOOGLE_APPLICATION_CREDENTIALS
+      process.env.CEP_AUTH_MODE = 'bearer-only'
+      process.env.GOOGLE_APPLICATION_CREDENTIALS = '/tmp/fake-key.json'
+      try {
+        await assert.rejects(() => getAuthClient([]), /strict "bearer-only" mode/)
+      } finally {
+        if (prevMode === undefined) {
+          delete process.env.CEP_AUTH_MODE
+        } else {
+          // eslint-disable-next-line require-atomic-updates
+          process.env.CEP_AUTH_MODE = prevMode
+        }
+        if (prevCred === undefined) {
+          delete process.env.GOOGLE_APPLICATION_CREDENTIALS
+        } else {
+          // eslint-disable-next-line require-atomic-updates
+          process.env.GOOGLE_APPLICATION_CREDENTIALS = prevCred
+        }
+      }
+    })
+
+    test('When CEP_AUTH_MODE is service-account-only and SA key exists, then it returns JWT client even if token is provided', async () => {
+      let jwtInstantiated = false
+      const fakeKey = {
+        type: 'service_account',
+        client_email: 'svc@example.iam.gserviceaccount.com',
+        private_key: '-----BEGIN PRIVATE KEY-----\nstub\n-----END PRIVATE KEY-----\n',
+      }
+      const { getAuthClient } = await esmock('../../lib/util/auth.js', {
+        'node:fs/promises': {
+          readFile: async () => JSON.stringify(fakeKey),
+        },
+        'google-auth-library': {
+          JWT: class {
+            constructor() {
+              jwtInstantiated = true
+            }
+          },
+        },
+      })
+      const prevMode = process.env.CEP_AUTH_MODE
+      const prevCred = process.env.GOOGLE_APPLICATION_CREDENTIALS
+      process.env.CEP_AUTH_MODE = 'service-account-only'
+      process.env.GOOGLE_APPLICATION_CREDENTIALS = '/tmp/fake-key.json'
+      try {
+        // Pass a token, but it should be ignored in favor of SA
+        const client = await getAuthClient([], 'ignored-token')
+        assert.ok(client)
+        assert.ok(jwtInstantiated)
+      } finally {
+        if (prevMode === undefined) {
+          delete process.env.CEP_AUTH_MODE
+        } else {
+          // eslint-disable-next-line require-atomic-updates
+          process.env.CEP_AUTH_MODE = prevMode
+        }
+        if (prevCred === undefined) {
+          delete process.env.GOOGLE_APPLICATION_CREDENTIALS
+        } else {
+          // eslint-disable-next-line require-atomic-updates
+          process.env.GOOGLE_APPLICATION_CREDENTIALS = prevCred
+        }
+      }
+    })
+
+    test('When CEP_AUTH_MODE is service-account-only and SA key is missing, then it throws', async () => {
+      const { getAuthClient } = await esmock('../../lib/util/auth.js', {})
+      const prevMode = process.env.CEP_AUTH_MODE
+      const prevCred = process.env.GOOGLE_APPLICATION_CREDENTIALS
+      process.env.CEP_AUTH_MODE = 'service-account-only'
+      delete process.env.GOOGLE_APPLICATION_CREDENTIALS
+      try {
+        await assert.rejects(() => getAuthClient([]), /GOOGLE_APPLICATION_CREDENTIALS is not set/)
+      } finally {
+        if (prevMode === undefined) {
+          delete process.env.CEP_AUTH_MODE
+        } else {
+          // eslint-disable-next-line require-atomic-updates
+          process.env.CEP_AUTH_MODE = prevMode
+        }
+        if (prevCred === undefined) {
+          delete process.env.GOOGLE_APPLICATION_CREDENTIALS
+        } else {
+          // eslint-disable-next-line require-atomic-updates
+          process.env.GOOGLE_APPLICATION_CREDENTIALS = prevCred
+        }
+      }
+    })
+
+    test('When CEP_AUTH_MODE is invalid, then it throws during client acquisition', async () => {
+      const { getAuthClient } = await esmock('../../lib/util/auth.js', {})
+      const prevMode = process.env.CEP_AUTH_MODE
+      process.env.CEP_AUTH_MODE = 'invalid-mode'
+      try {
+        await assert.rejects(() => getAuthClient([]), /Invalid CEP_AUTH_MODE/)
+      } finally {
+        if (prevMode === undefined) {
+          delete process.env.CEP_AUTH_MODE
+        } else {
+          // eslint-disable-next-line require-atomic-updates
+          process.env.CEP_AUTH_MODE = prevMode
+        }
+      }
+    })
+  })
 })

@@ -31,6 +31,7 @@ import { TAGS, OAUTH_SCOPE_REGISTRY, getUniqueScopeCategories } from '../../lib/
 import { guardedToolCall, formatToolResponse } from '../utils/wrapper.js'
 import { cliInvocation } from '../../lib/util/cli_invocation.js'
 import { getActiveScopes } from '../../lib/util/feature_flags.js'
+import { getAuthMode, shouldRegisterAuthTools } from '../../lib/util/auth_mode.js'
 
 const TOOL_NAME = 'cep_auth'
 
@@ -164,72 +165,74 @@ export function registerAuthTools(server, options, sessionState) {
 
   const scopeSummary = getUniqueScopeCategories(getActiveScopes()).join(', ')
 
-  server.registerTool(
-    TOOL_NAME,
-    {
-      description:
-        'Sign in to Google for the Chrome Enterprise Premium (CEP) MCP server. ' +
-        'Before calling this tool, you MUST warn the user that this will open a browser tab or prompt them to sign in, and ask for their confirmation. ' +
-        'Use this tool ONLY for the CEP MCP server. The Google Workspace MCP server has its own separate auth tool—do not use this one for that. ' +
-        `Requests the CEP scope set: ${scopeSummary}. ` +
-        'Call with no arguments to start the sign-in. ' +
-        'If the response sets `nextAction` to `paste-redirect-url`, ask the user to paste the URL the browser was redirected to, then call `cep_auth` again with that string as the `redirectUrl` argument.',
-      inputSchema: {
-        redirectUrl: z
-          .string()
-          .optional()
-          .describe(
-            'The full URL the browser was redirected to after consent (looks like http://127.0.0.1:PORT/?code=...&state=...). Omit to start a fresh sign-in.',
-          ),
-        authMethod: z
-          .enum(['auto', 'browser', 'manual'])
-          .optional()
-          .default('auto')
-          .describe(
-            'The authentication method to use: "auto" (attempts browser, falls back to manual), ' +
-              '"browser" (forces opening browser), "manual" (skips browser and directly provides URL for manual copy-paste).',
-          ),
+  if (shouldRegisterAuthTools()) {
+    server.registerTool(
+      TOOL_NAME,
+      {
+        description:
+          'Sign in to Google for the Chrome Enterprise Premium (CEP) MCP server. ' +
+          'Before calling this tool, you MUST warn the user that this will open a browser tab or prompt them to sign in, and ask for their confirmation. ' +
+          'Use this tool ONLY for the CEP MCP server. The Google Workspace MCP server has its own separate auth tool—do not use this one for that. ' +
+          `Requests the CEP scope set: ${scopeSummary}. ` +
+          'Call with no arguments to start the sign-in. ' +
+          'If the response sets `nextAction` to `paste-redirect-url`, ask the user to paste the URL the browser was redirected to, then call `cep_auth` again with that string as the `redirectUrl` argument.',
+        inputSchema: {
+          redirectUrl: z
+            .string()
+            .optional()
+            .describe(
+              'The full URL the browser was redirected to after consent (looks like http://127.0.0.1:PORT/?code=...&state=...). Omit to start a fresh sign-in.',
+            ),
+          authMethod: z
+            .enum(['auto', 'browser', 'manual'])
+            .optional()
+            .default('auto')
+            .describe(
+              'The authentication method to use: "auto" (attempts browser, falls back to manual), ' +
+                '"browser" (forces opening browser), "manual" (skips browser and directly provides URL for manual copy-paste).',
+            ),
+        },
+        outputSchema: z.looseObject({
+          status: z.enum(['completed', 'awaiting', 'error']),
+          authUrl: z.string().optional(),
+          nextAction: z.string().optional(),
+          message: z.string().optional(),
+          expiresAt: z.string().optional(),
+        }),
       },
-      outputSchema: z.looseObject({
-        status: z.enum(['completed', 'awaiting', 'error']),
-        authUrl: z.string().optional(),
-        nextAction: z.string().optional(),
-        message: z.string().optional(),
-        expiresAt: z.string().optional(),
-      }),
-    },
-    async ({ redirectUrl, authMethod }, context) => {
-      if (context?.requestInfo?.headers?.authorization) {
-        const msg =
-          'This server received an inbound Bearer token, so sign-in via cep_auth does not apply. ' +
-          'Refresh the Bearer token through your MCP client.'
-        return {
-          content: [{ type: 'text', text: msg }],
-          structuredContent: { status: 'error', code: 'BEARER_INBOUND', message: msg },
-          isError: true,
+      async ({ redirectUrl, authMethod }, context) => {
+        if (context?.requestInfo?.headers?.authorization) {
+          const msg =
+            'This server received an inbound Bearer token, so sign-in via cep_auth does not apply. ' +
+            'Refresh the Bearer token through your MCP client.'
+          return {
+            content: [{ type: 'text', text: msg }],
+            structuredContent: { status: 'error', code: 'BEARER_INBOUND', message: msg },
+            isError: true,
+          }
         }
-      }
-      try {
-        if (redirectUrl !== undefined && redirectUrl !== '') {
-          const result = await completeToolAuth({ redirectUrl })
-          return successResponse(result)
+        try {
+          if (redirectUrl !== undefined && redirectUrl !== '') {
+            const result = await completeToolAuth({ redirectUrl })
+            return successResponse(result)
+          }
+          const result = await startToolAuth({ authMethod })
+          if (result.status === 'completed') {
+            return successResponse(result)
+          }
+          return awaitingResponse(result)
+        } catch (err) {
+          logger.error(`${TAGS.MCP} cep_auth failed:`, err?.message || err)
+          const message = err?.message || String(err)
+          return {
+            content: [{ type: 'text', text: `Sign-in failed: ${message}` }],
+            structuredContent: { status: 'error', code: err?.code, message },
+            isError: true,
+          }
         }
-        const result = await startToolAuth({ authMethod })
-        if (result.status === 'completed') {
-          return successResponse(result)
-        }
-        return awaitingResponse(result)
-      } catch (err) {
-        logger.error(`${TAGS.MCP} cep_auth failed:`, err?.message || err)
-        const message = err?.message || String(err)
-        return {
-          content: [{ type: 'text', text: `Sign-in failed: ${message}` }],
-          structuredContent: { status: 'error', code: err?.code, message },
-          isError: true,
-        }
-      }
-    },
-  )
+      },
+    )
+  }
 
   server.registerTool(
     'cep_auth_status',
@@ -244,7 +247,81 @@ export function registerAuthTools(server, options, sessionState) {
     },
     guardedToolCall(
       {
-        handler: async () => {
+        handler: async (params, { authToken }) => {
+          const authMode = getAuthMode()
+
+          if (authMode === 'bearer-only') {
+            const hasToken = !!authToken
+            const statusReport = {
+              ok: hasToken,
+              authMode: 'bearer-only',
+              source: 'inbound-bearer',
+              message: hasToken
+                ? 'Server is running in strict bearer-only mode. Inbound Bearer token is present.'
+                : 'Server is running in strict bearer-only mode. Inbound Bearer token is missing.',
+            }
+            return formatToolResponse({
+              summary: statusReport.message,
+              data: { status: statusReport },
+              structuredContent: { status: statusReport },
+            })
+          }
+
+          if (authMode === 'service-account-only') {
+            const keyPath = process.env.GOOGLE_APPLICATION_CREDENTIALS
+            const subject = process.env.CEP_IMPERSONATE_SUBJECT
+            const hasSa = !!keyPath
+            const statusReport = {
+              ok: hasSa,
+              authMode: 'service-account-only',
+              source: 'service-account',
+              keyPath: keyPath || null,
+              impersonatedSubject: subject || null,
+              message: hasSa
+                ? `Server is running in service-account-only mode using key file ${keyPath}.`
+                : 'Server is running in service-account-only mode, but GOOGLE_APPLICATION_CREDENTIALS is not set.',
+            }
+            return formatToolResponse({
+              summary: statusReport.message,
+              data: { status: statusReport },
+              structuredContent: { status: statusReport },
+            })
+          }
+
+          if (authToken) {
+            const statusReport = {
+              ok: true,
+              authMode: 'dynamic',
+              source: 'inbound-bearer',
+              canLaunchBrowser: canLaunchBrowser(),
+              message: 'Inbound Bearer token is present and active.',
+            }
+            return formatToolResponse({
+              summary: statusReport.message,
+              data: { status: statusReport },
+              structuredContent: { status: statusReport },
+            })
+          }
+
+          if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+            const keyPath = process.env.GOOGLE_APPLICATION_CREDENTIALS
+            const subject = process.env.CEP_IMPERSONATE_SUBJECT
+            const statusReport = {
+              ok: true,
+              authMode: 'dynamic',
+              source: 'service-account',
+              canLaunchBrowser: canLaunchBrowser(),
+              keyPath,
+              impersonatedSubject: subject || null,
+              message: `Using Service Account key file ${keyPath}.`,
+            }
+            return formatToolResponse({
+              summary: statusReport.message,
+              data: { status: statusReport },
+              structuredContent: { status: statusReport },
+            })
+          }
+
           const requiredScopes = getActiveScopes()
           const cred = oauthFlowCredential({ requiredScopes })
           const probe = await cred.probe()
@@ -252,6 +329,7 @@ export function registerAuthTools(server, options, sessionState) {
           // Enhance the probe data with friendly names for the user/agent
           const statusReport = {
             ...probe,
+            authMode: 'dynamic',
             canLaunchBrowser: canLaunchBrowser(),
             granted: (probe.grantedScopes || []).map(url => OAUTH_SCOPE_REGISTRY[url]?.name || url),
             missing: (probe.missingScopes || []).map(url => OAUTH_SCOPE_REGISTRY[url]?.name || url),

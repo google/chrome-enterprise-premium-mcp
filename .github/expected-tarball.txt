@@ -49,6 +49,7 @@ lib/util/api-client.js
 lib/util/auth-error.js
 lib/util/auth.js
 lib/util/auth_messages.js
+lib/util/auth_mode.js
 lib/util/banner-logo.js
 lib/util/banner.js
 lib/util/cel_validator.js

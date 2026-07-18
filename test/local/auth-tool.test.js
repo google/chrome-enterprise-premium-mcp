@@ -279,4 +279,65 @@ describe('cep_auth Tool', () => {
     assert.strictEqual(result.structuredContent.status.canLaunchBrowser, true)
     assert.strictEqual(canLaunchBrowserMock.mock.callCount(), 1)
   })
+
+  test('When CEP_AUTH_MODE is bearer-only, then cep_auth is not registered', async () => {
+    await withClientEnv({ CEP_AUTH_MODE: 'bearer-only' }, async () => {
+      const { registerAuthTool } = await loadToolWithMocks({
+        startToolAuth: mock.fn(),
+        completeToolAuth: mock.fn(),
+        canLaunchBrowser: mock.fn(),
+      })
+      const mockServer = { registerTool: mock.fn() }
+      registerAuthTool(mockServer)
+      const call = mockServer.registerTool.mock.calls.find(c => c.arguments[0] === 'cep_auth')
+      assert.strictEqual(call, undefined, 'cep_auth should not be registered in bearer-only mode')
+    })
+  })
+
+  test('When CEP_AUTH_MODE is service-account-only, then cep_auth is not registered', async () => {
+    await withClientEnv({ CEP_AUTH_MODE: 'service-account-only' }, async () => {
+      const { registerAuthTool } = await loadToolWithMocks({
+        startToolAuth: mock.fn(),
+        completeToolAuth: mock.fn(),
+        canLaunchBrowser: mock.fn(),
+      })
+      const mockServer = { registerTool: mock.fn() }
+      registerAuthTool(mockServer)
+      const call = mockServer.registerTool.mock.calls.find(c => c.arguments[0] === 'cep_auth')
+      assert.strictEqual(call, undefined, 'cep_auth should not be registered in service-account-only mode')
+    })
+  })
+
+  test('When cep_auth_status is called in bearer-only mode, then it reports bearer-only status', async () => {
+    await withClientEnv({ CEP_AUTH_MODE: 'bearer-only' }, async () => {
+      const statusHandler = await getHandler('cep_auth_status', {
+        canLaunchBrowser: mock.fn(),
+        startToolAuth: mock.fn(),
+        completeToolAuth: mock.fn(),
+      })
+
+      const result = await statusHandler({}, { requestInfo: { headers: { authorization: 'Bearer test-token' } } })
+      assert.strictEqual(result.structuredContent.status.ok, true)
+      assert.strictEqual(result.structuredContent.status.authMode, 'bearer-only')
+      assert.strictEqual(result.structuredContent.status.source, 'inbound-bearer')
+    })
+  })
+
+  test('When cep_auth_status is called in service-account-only mode, then it reports service-account status', async () => {
+    await withClientEnv(
+      { CEP_AUTH_MODE: 'service-account-only', GOOGLE_APPLICATION_CREDENTIALS: '/path/to/key.json' },
+      async () => {
+        const statusHandler = await getHandler('cep_auth_status', {
+          canLaunchBrowser: mock.fn(),
+          startToolAuth: mock.fn(),
+          completeToolAuth: mock.fn(),
+        })
+
+        const result = await statusHandler({}, {})
+        assert.strictEqual(result.structuredContent.status.ok, true)
+        assert.strictEqual(result.structuredContent.status.authMode, 'service-account-only')
+        assert.strictEqual(result.structuredContent.status.keyPath, '/path/to/key.json')
+      },
+    )
+  })
 })
