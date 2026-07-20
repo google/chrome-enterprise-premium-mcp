@@ -40,6 +40,9 @@ lib/knowledge/32-security-gateway-saas-apps.md
 lib/knowledge/33-security-gateway-private-web-apps.md
 lib/knowledge/34-troubleshoot-security-gateway.md
 lib/knowledge/35-manage-security-gateway.md
+lib/knowledge/36-caa-access-levels-overview.md
+lib/knowledge/37-creating-a-basic-access-level.md
+lib/knowledge/38-access-level-examples.md
 lib/knowledge/98-agent-knowledge-addendum.md
 lib/knowledge/README.md
 lib/knowledge/instructions.js
