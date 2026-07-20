@@ -108,7 +108,7 @@ function computeIssues(data) {
     })
   } else if (data.subscription?.assignmentCount === 0) {
     issues.push({
-      severity: 'warning',
+      severity: 'high',
       component: 'subscription',
       message:
         'Chrome Enterprise Premium subscription is active, but 0 users have licenses assigned. You must assign licenses to users.',
