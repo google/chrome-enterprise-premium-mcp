@@ -72,11 +72,31 @@ Most workstation users want the OAuth flow. Most hosted deployments (Cloud Run, 
 
 If you're not sure which path applies to you, see the [Which auth path should I use?](faq.md#which-auth-path-should-i-use) FAQ entry for the common deployment shapes.
 
-| Setup                      | Transport | Credential source                           | Setup walkthrough                                                                               |
-| :------------------------- | :-------- | :------------------------------------------ | :---------------------------------------------------------------------------------------------- |
-| `auth login` (recommended) | stdio     | OAuth token cache                           | [`auth-bring-your-own-oauth-client.md`](auth-bring-your-own-oauth-client.md)                    |
-| Bearer pass-through        | HTTP      | per-request `Authorization: Bearer <token>` | The caller sets the header; the server forwards it to Google verbatim.                          |
-| Service account + DWD      | stdio     | Service account with domain-wide delegation | [FAQ entry on service accounts](faq.md#can-i-use-a-service-account-instead-of-user-credentials) |
+| Setup                      | Transport | Credential source                           | Setup walkthrough                                                                                  |
+| :------------------------- | :-------- | :------------------------------------------ | :------------------------------------------------------------------------------------------------- |
+| `auth login` (recommended) | stdio     | OAuth token cache                           | [`auth-bring-your-own-oauth-client.md`](auth-bring-your-own-oauth-client.md)                       |
+| Bearer pass-through        | HTTP      | per-request `Authorization: Bearer <token>` | The caller sets the header; the server forwards it to Google verbatim.                             |
+| Service account + DWD      | stdio     | Service account with domain-wide delegation | See [Service Account & Domain-Wide Delegation](#service-account--domain-wide-delegation-dwd) below |
+
+### Service Account & Domain-Wide Delegation (DWD)
+
+When running in Service Account mode without per-user OAuth, set `GOOGLE_APPLICATION_CREDENTIALS` to your Service Account JSON key path. For Workspace APIs (DLP, Org Units, Customer ID), set `CEP_IMPERSONATE_SUBJECT` to a domain admin user email (e.g., `admin@example.com`).
+
+**Google Workspace Admin Console Authorization Steps:**
+
+1. Open the [Domain-Wide Delegation Page](https://admin.google.com/ac/owl/domainwidedelegation) in Google Workspace Admin Console.
+2. Click **Add new** and enter your Service Account's numeric **Client ID** (found in your JSON key file under `"client_id"`).
+3. Add the required API scopes (comma-separated):
+   ```
+   https://www.googleapis.com/auth/chrome.management.policy,
+   https://www.googleapis.com/auth/chrome.management.reports.readonly,
+   https://www.googleapis.com/auth/chrome.management.profiles.readonly,
+   https://www.googleapis.com/auth/admin.directory.customer.readonly,
+   https://www.googleapis.com/auth/admin.directory.orgunit.readonly,
+   https://www.googleapis.com/auth/cloud-identity.policies,
+   https://www.googleapis.com/auth/apps.licensing
+   ```
+4. Click **Authorize**. Set `CEP_IMPERSONATE_SUBJECT=admin@example.com` in your environment.
 
 > [!IMPORTANT]
 > The HTTP-mode default has no network-layer authentication. Bind the listener to a trusted interface only, or set `CEP_BEARER_AUDIENCE` (HTTP mode only) for per-request ID-token verification.
