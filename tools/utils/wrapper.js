@@ -24,6 +24,7 @@ import { logger } from '../../lib/util/logger.js'
 import { validateAndGetOrgUnitId } from './org-unit.js'
 import { isTokenLocallyValid } from '../../lib/util/credential/auth_login.js'
 import { cliInvocation } from '../../lib/util/cli_invocation.js'
+import { isBearerMode, isServiceAccountMode, isDynamicMode } from '../../lib/util/auth_mode.js'
 
 /**
  * Builds an MCP tool response signalling that sign-in is needed before any tool can run.
@@ -169,10 +170,32 @@ export function guardedToolCall(
 ) {
   const wrapped = async (params, context) => {
     const authToken = getAuthToken(context?.requestInfo)
-    if (!authToken && !skipAuthCheck) {
-      const validity = await isTokenLocallyValid({ scopes })
-      if (!validity.ok) {
-        return buildAuthRequiredResponse(validity)
+    if (!skipAuthCheck) {
+      if (authToken) {
+        // Inbound Bearer token present: skip local disk checks and forward directly to Google APIs
+      } else if (isBearerMode()) {
+        const msg =
+          'Authentication failed: Server is configured in strict "bearer-only" mode, ' +
+          'but no Authorization token was passed in the request.'
+        return {
+          content: [{ type: 'text', text: msg }],
+          structuredContent: { status: 'error', code: 'BEARER_ONLY_REQUIRED', message: msg },
+          isError: true,
+        }
+      } else if (isServiceAccountMode() && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+        const msg =
+          'Authentication failed: Server is configured in strict "service-account-only" mode, ' +
+          'but GOOGLE_APPLICATION_CREDENTIALS is not set.'
+        return {
+          content: [{ type: 'text', text: msg }],
+          structuredContent: { status: 'error', code: 'SERVICE_ACCOUNT_REQUIRED', message: msg },
+          isError: true,
+        }
+      } else if (isDynamicMode() && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+        const validity = await isTokenLocallyValid({ scopes })
+        if (!validity.ok) {
+          return buildAuthRequiredResponse(validity)
+        }
       }
     }
     try {

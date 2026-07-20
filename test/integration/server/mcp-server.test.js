@@ -128,12 +128,20 @@ describe('MCP Server in stdio mode', () => {
     // path never makes a real Google call.
     const FAKE_API_ROOT = 'http://localhost:1'
 
-    test('When server starts with custom PORT, then it logs the correct port', () => {
+    test('When server starts with custom PORT, then it logs the correct port', async () => {
+      const net = await import('node:net')
+      const freePort = await new Promise(resolve => {
+        const s = net.createServer()
+        s.listen(0, () => {
+          const port = s.address().port
+          s.close(() => resolve(port))
+        })
+      })
       const serverPath = path.resolve(__dirname, '../../../mcp-server.js')
       const result = spawnSync(process.execPath, [serverPath], {
         env: {
           ...process.env,
-          PORT: '4000',
+          PORT: String(freePort),
           GCP_STDIO: 'false',
           CEP_LOG_LEVEL: 'info',
           GOOGLE_API_ROOT_URL: FAKE_API_ROOT,
@@ -143,13 +151,20 @@ describe('MCP Server in stdio mode', () => {
 
       const output = result.stderr.toString() + result.stdout.toString()
       const cleanOutput = output.replace(ANSI_RE, '')
-      assert.match(cleanOutput, /Port:\s+4000/)
+      assert.match(cleanOutput, new RegExp(`Port:\\s+${freePort}`))
     })
 
     test('When server starts without PORT, then it assigns a random port', () => {
       const serverPath = path.resolve(__dirname, '../../../mcp-server.js')
+      const env = {
+        ...process.env,
+        GCP_STDIO: 'false',
+        PORT: '0',
+        CEP_LOG_LEVEL: 'info',
+        GOOGLE_API_ROOT_URL: FAKE_API_ROOT,
+      }
       const result = spawnSync(process.execPath, [serverPath], {
-        env: { ...process.env, GCP_STDIO: 'false', CEP_LOG_LEVEL: 'info', GOOGLE_API_ROOT_URL: FAKE_API_ROOT },
+        env,
         timeout: 12000,
       })
 
