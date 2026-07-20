@@ -12,13 +12,13 @@ These criteria help the agent decide what to recommend after running `diagnose_e
 
 Look for missing CEP licenses, unconfigured Content Analysis Connectors, or a missing Secure Enterprise Browser (SEB) extension.
 
-**Directive**: If any prerequisite is missing, the agent MUST recommend closing those gaps before suggesting any DLP rule work. DLP rules cannot scan content while connectors are off, and data-masking features depend on the SEB extension. Surface this dependency explicitly; do not list rule recommendations alongside foundation gaps.
+**Directive**: If any prerequisite is missing, the agent MUST recommend closing those gaps before suggesting any DLP rule work or concluding Secure Gateway client configuration. DLP rules cannot scan content while connectors are off, data-masking features depend on the SEB extension, and Zero-Trust browser routing for Secure Gateway applications (both SaaS and private web apps) requires the SEB extension to be force-installed on managed devices. Surface this dependency explicitly; do not list rule recommendations or client policy instructions alongside foundation gaps.
 
 **Remediation Goals**:
 
 1.  **Licenses**: Assign CEP licenses to all managed users.
 2.  **Connectors**: Enable and configure all Content Analysis Connectors (Upload, Download, Paste, Print, URL Check) at the Root OU.
-3.  **SEB extension**: Force-install the Secure Enterprise Browser extension (ID: `ekajlcmdfcigmdbphhifahdfjbkciflj`) so the environment can use advanced features like data masking.
+3.  **SEB extension**: Force-install the Secure Enterprise Browser extension (ID: `ekajlcmdfcigmdbphhifahdfjbkciflj`) so the environment can use advanced features like data masking and Zero-Trust routing for Secure Gateway applications.
 
 ## Step 2: Are there any DLP rules?
 
