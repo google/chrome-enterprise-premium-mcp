@@ -55,6 +55,7 @@ Note: This will not automatically remove the detector from any DLP rules that re
     },
     guardedToolCall(
       {
+        requiresDelegation: true,
         /**
          * Handler for deleting a DLP detector.
          * @param {object} params - The tool parameters.

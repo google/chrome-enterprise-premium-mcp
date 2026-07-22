@@ -32,6 +32,14 @@ describe('delete_agent_dlp_rule tool handler', () => {
     return registeredHandler
   }
 
+  const mockContext = {
+    requestInfo: {
+      headers: {
+        authorization: 'Bearer token-abc',
+      },
+    },
+  }
+
   test('When rule is agent-created, then deleteDlpRule (with re-validation) is NOT called', async () => {
     let getCalls = 0
     let preValidatedCalls = 0
@@ -52,7 +60,7 @@ describe('delete_agent_dlp_rule tool handler', () => {
     }
 
     const handler = getHandler(mockCloudIdentityClient)
-    await handler({ policyName: 'policies/akabc123' }, { authToken: 'token-abc' })
+    await handler({ policyName: 'policies/akabc123' }, mockContext)
 
     assert.strictEqual(getCalls, 1, 'getDlpRule should be called exactly once (no double policies.get)')
     assert.strictEqual(preValidatedCalls, 1, 'deleteDlpRulePreValidated should be called once')
@@ -72,7 +80,7 @@ describe('delete_agent_dlp_rule tool handler', () => {
     }
 
     const handler = getHandler(mockCloudIdentityClient)
-    const result = await handler({ policyName: 'policies/akabc123' }, { authToken: 'token-abc' })
+    const result = await handler({ policyName: 'policies/akabc123' }, mockContext)
 
     assert.ok(deleteCalled, 'deleteDlpRulePreValidated should have been called')
     assert.ok(result.content[0].text.includes('has been successfully deleted'))
@@ -92,7 +100,7 @@ describe('delete_agent_dlp_rule tool handler', () => {
     }
 
     const handler = getHandler(mockCloudIdentityClient)
-    const result = await handler({ policyName: 'policies/akabc123' }, { authToken: 'token-abc' })
+    const result = await handler({ policyName: 'policies/akabc123' }, mockContext)
 
     assert.ok(!deleteCalled, 'deleteDlpRulePreValidated should NOT have been called')
     assert.ok(result.content[0].text.includes('Admin Console'))
@@ -114,7 +122,7 @@ describe('delete_agent_dlp_rule tool handler', () => {
     }
 
     const handler = getHandler(mockCloudIdentityClient)
-    const result = await handler({ policyName: 'policies/akabc123' }, { authToken: 'token-abc' })
+    const result = await handler({ policyName: 'policies/akabc123' }, mockContext)
 
     assert.ok(result.isError, 'result should be an error response')
     assert.ok(result.content[0].text.includes('Rule not found'), 'error text should mention rule not found')
@@ -133,7 +141,7 @@ describe('delete_agent_dlp_rule tool handler', () => {
     }
 
     const handler = getHandler(mockCloudIdentityClient)
-    const result = await handler({ policyName: 'policies/akabc123' }, { authToken: 'token-abc' })
+    const result = await handler({ policyName: 'policies/akabc123' }, mockContext)
 
     assert.ok(result.isError, 'result should be an error response')
     assert.ok(result.content[0].text.includes('Rule not found'), 'error text should mention rule not found')
@@ -152,7 +160,7 @@ describe('delete_agent_dlp_rule tool handler', () => {
     }
 
     const handler = getHandler(mockCloudIdentityClient)
-    const result = await handler({ policyName: 'policies/akabc123' }, { authToken: 'token-abc' })
+    const result = await handler({ policyName: 'policies/akabc123' }, mockContext)
 
     assert.ok(result.isError, 'result should be an error response')
     assert.ok(
