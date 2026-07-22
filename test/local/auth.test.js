@@ -355,4 +355,54 @@ describe('Auth', () => {
       assert.doesNotMatch(message, /cep_auth/)
     })
   })
+
+  describe('guardedToolCall error mapping regressions', () => {
+    test('When handler throws unauthorized_client with status 400 in SA mode, then it returns DWD instructions', async () => {
+      const { guardedToolCall } = await import('../../tools/utils/wrapper.js')
+      process.env.GOOGLE_APPLICATION_CREDENTIALS = '/tmp/fake-key.json'
+      process.env.CEP_IMPERSONATE_SUBJECT = 'admin@example.com'
+      const wrapped = guardedToolCall(
+        {
+          requiresDelegation: true,
+          skipAutoResolve: true,
+          handler: async () => {
+            const error = new Error(
+              '400 unauthorized_client: Client is unauthorized to retrieve access tokens using this method.',
+            )
+            error.status = 400
+            throw error
+          },
+        },
+        {},
+        {},
+      )
+      const result = await wrapped({}, { name: 'test_tool' })
+      assert.strictEqual(result.isError, true)
+      // It should return the DWD instructions (which mention Domain-Wide Delegation)
+      assert.match(result.content[0].text, /Domain-Wide Delegation/i)
+    })
+
+    test('When handler throws invalid_grant with status 400 in SA mode, then it returns 401 SA credentials error message', async () => {
+      const { guardedToolCall } = await import('../../tools/utils/wrapper.js')
+      process.env.GOOGLE_APPLICATION_CREDENTIALS = '/tmp/fake-key.json'
+      process.env.CEP_IMPERSONATE_SUBJECT = 'admin@example.com'
+      const wrapped = guardedToolCall(
+        {
+          requiresDelegation: true,
+          skipAutoResolve: true,
+          handler: async () => {
+            const error = new Error('400 invalid_grant: Invalid JWT Signature.')
+            error.status = 400
+            throw error
+          },
+        },
+        {},
+        {},
+      )
+      const result = await wrapped({}, { name: 'test_tool' })
+      assert.strictEqual(result.isError, true)
+      // It should return the 401 SA credentials error (mentioning invalid credentials or DWD failed)
+      assert.match(result.content[0].text, /Service Account credentials.*invalid.*domain-wide delegation failed/i)
+    })
+  })
 })

@@ -25,6 +25,7 @@ import { validateAndGetOrgUnitId } from './org-unit.js'
 import { isTokenLocallyValid } from '../../lib/util/credential/auth_login.js'
 import { cliInvocation } from '../../lib/util/cli_invocation.js'
 import { isBearerMode, isServiceAccountMode, isDynamicMode } from '../../lib/util/auth_mode.js'
+import { getAuthErrorMessage } from '../../lib/util/auth-error.js'
 
 /**
  * Builds an MCP tool response signalling that sign-in is needed before any tool can run.
@@ -109,12 +110,13 @@ const TOOL_PRIVILEGES_MAP = {
 
 /**
  * Generates a proactive remediation message for authentication errors.
- * @param {number} status - HTTP status code (401 or 403)
+ * @param {number} status - HTTP status code (401 or 403) or resolved equivalent.
+ * @param {Error|null} error - The original error thrown.
  * @param {boolean} bearerInbound - True if request used inbound Bearer auth
  * @param {string} [toolName] - Name of the tool being executed
  * @returns {string} Human-readable remediation instructions
  */
-function getAuthRemediationMessage(status, bearerInbound = false, toolName = '') {
+function getAuthRemediationMessage(status, error, bearerInbound = false, toolName = '') {
   if (status === 403 && toolName && TOOL_PRIVILEGES_MAP[toolName]) {
     const info = TOOL_PRIVILEGES_MAP[toolName]
     return `Permission denied (403 Forbidden) while calling \`${toolName}\`. Your account lacks the required Google Workspace Admin Console privilege:\n• **${info.privilege}**\n\n**To fix:** Open [Workspace Admin Roles](${info.roleUrl}) and assign any role (or custom role) granting this privilege to your account (e.g., *Delegated Admin* or *Super Admin*).`
@@ -131,15 +133,26 @@ function getAuthRemediationMessage(status, bearerInbound = false, toolName = '')
   }
 
   const isSaMode = !!process.env.GOOGLE_APPLICATION_CREDENTIALS
+  const errorMessage = error?.message || ''
+  const isCredentialFailure =
+    status === 401 ||
+    errorMessage.includes('invalid_grant') ||
+    errorMessage.includes('unauthorized_client') ||
+    errorMessage.includes('UNAUTHENTICATED')
+
   if (isSaMode) {
-    if (status === 401) {
-      return `Authentication required. The Service Account credentials configured in GOOGLE_APPLICATION_CREDENTIALS are invalid or domain-wide delegation failed. Ensure the Service Account JSON key is valid and domain-wide delegation (CEP_IMPERSONATE_SUBJECT) is configured in Google Workspace Admin Console.`
+    if (isCredentialFailure) {
+      const detailedMessage = getAuthErrorMessage(error)
+      if (detailedMessage.startsWith('ERROR: Authentication failed')) {
+        return `Authentication required. The Service Account credentials configured in GOOGLE_APPLICATION_CREDENTIALS are invalid or domain-wide delegation failed. Ensure the Service Account JSON key is valid and domain-wide delegation (CEP_IMPERSONATE_SUBJECT) is configured in Google Workspace Admin Console.\n\nOriginal error: ${errorMessage}`
+      }
+      return detailedMessage
     }
     return `Permission denied. The Service Account lacks required Google Workspace / Chrome Enterprise permissions or domain-wide delegation OAuth scopes. Verify that the Service Account has required IAM roles and that Domain-Wide Delegation in Google Workspace Admin Console includes the necessary scopes.`
   }
 
   const manualLogin = cliInvocation('auth login')
-  if (status === 401) {
+  if (isCredentialFailure) {
     return `Authentication required. Run the \`cep_auth\` tool to sign in, or run \`${manualLogin}\` at the shell to authorize the server (it caches the access token at ~/.config/cep-mcp/tokens.json). To use a service account, set GOOGLE_APPLICATION_CREDENTIALS to a service-account key file.`
   }
 
@@ -381,18 +394,20 @@ export function guardedToolCall(
         errorMessage.includes('API Error 403') ||
         errorMessage.includes('UNAUTHENTICATED') ||
         errorMessage.includes('PERMISSION_DENIED') ||
-        errorMessage.includes('invalid_grant')
+        errorMessage.includes('invalid_grant') ||
+        errorMessage.includes('unauthorized_client')
 
       if (isAuthError) {
         const resolvedStatus =
           status ||
           (errorMessage.includes('401') ||
           errorMessage.includes('UNAUTHENTICATED') ||
-          errorMessage.includes('invalid_grant')
+          errorMessage.includes('invalid_grant') ||
+          errorMessage.includes('unauthorized_client')
             ? 401
             : 403)
         const bearerInbound = !!context?.authToken || !!context?.requestInfo?.headers?.authorization
-        const remediationMessage = getAuthRemediationMessage(resolvedStatus, bearerInbound, context?.name)
+        const remediationMessage = getAuthRemediationMessage(resolvedStatus, error, bearerInbound, context?.name)
         return {
           content: [{ type: 'text', text: remediationMessage }],
           isError: true,
