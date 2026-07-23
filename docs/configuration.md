@@ -80,7 +80,7 @@ If you're not sure which path applies to you, see the [Which auth path should I 
 
 ### Service Account & Domain-Wide Delegation (DWD)
 
-When running in Service Account mode without per-user OAuth, set `GOOGLE_APPLICATION_CREDENTIALS` to your Service Account JSON key path. For Workspace APIs (DLP, Org Units, Customer ID), set `CEP_IMPERSONATE_SUBJECT` to a domain admin user email (e.g., `admin@example.com`).
+When running in Service Account mode without per-user OAuth, set `GOOGLE_APPLICATION_CREDENTIALS` to your Service Account JSON key path. For Workspace APIs (such as DLP rules, Organizational Units, and Customer ID retrieval), you must also set `CEP_IMPERSONATE_SUBJECT` to the email address of a Google Workspace administrator (e.g., `admin@example.com`). This is because Google Workspace APIs do not allow direct machine-identity access from Service Accounts; the Service Account must use Domain-Wide Delegation to impersonate a human administrator who has the necessary privileges to read or manage those resources.
 
 **Google Workspace Admin Console Authorization Steps:**
 
