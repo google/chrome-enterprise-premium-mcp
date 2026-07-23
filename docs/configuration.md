@@ -87,17 +87,19 @@ When running in Service Account mode without per-user OAuth, set `GOOGLE_APPLICA
 1. Open the [Domain-Wide Delegation Page](https://admin.google.com/ac/owl/domainwidedelegation) in Google Workspace Admin Console.
 2. Click **Add new** and enter your Service Account's numeric **Client ID** (found in your JSON key file under `"client_id"`).
 3. Add the required API scopes (comma-separated):
+   <!-- START_DWD_SCOPES -->
    ```
-   https://www.googleapis.com/auth/chrome.management.policy,
-   https://www.googleapis.com/auth/chrome.management.reports.readonly,
-   https://www.googleapis.com/auth/chrome.management.profiles.readonly,
-   https://www.googleapis.com/auth/chrome.management.securityinsights,
    https://www.googleapis.com/auth/admin.directory.customer.readonly,
    https://www.googleapis.com/auth/admin.directory.orgunit.readonly,
    https://www.googleapis.com/auth/admin.reports.audit.readonly,
-   https://www.googleapis.com/auth/cloud-identity.policies,
-   https://www.googleapis.com/auth/apps.licensing
+   https://www.googleapis.com/auth/apps.licensing,
+   https://www.googleapis.com/auth/chrome.management.policy,
+   https://www.googleapis.com/auth/chrome.management.profiles.readonly,
+   https://www.googleapis.com/auth/chrome.management.reports.readonly,
+   https://www.googleapis.com/auth/chrome.management.securityinsights,
+   https://www.googleapis.com/auth/cloud-identity.policies
    ```
+   <!-- END_DWD_SCOPES -->
 4. Click **Authorize**. Set `CEP_IMPERSONATE_SUBJECT=admin@example.com` in your environment.
 
 > [!IMPORTANT]
