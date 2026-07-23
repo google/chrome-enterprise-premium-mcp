@@ -109,14 +109,32 @@ const TOOL_PRIVILEGES_MAP = {
 }
 
 /**
+ * Helper to dynamically retrieve all tools requiring delegation.
+ * @param {object} server - The McpServer instance.
+ * @returns {string[]} List of tool names requiring DWD.
+ */
+function getDwdTools(server) {
+  const dwdTools = []
+  if (server && server._registeredTools) {
+    for (const [name, tool] of Object.entries(server._registeredTools)) {
+      if (tool.handler && tool.handler.requiresDelegation) {
+        dwdTools.push(name)
+      }
+    }
+  }
+  return dwdTools
+}
+
+/**
  * Generates a proactive remediation message for authentication errors.
  * @param {number} status - HTTP status code (401 or 403) or resolved equivalent.
  * @param {Error|null} error - The original error thrown.
  * @param {boolean} bearerInbound - True if request used inbound Bearer auth
  * @param {string} [toolName] - Name of the tool being executed
+ * @param {object} [server] - The McpServer instance.
  * @returns {string} Human-readable remediation instructions
  */
-function getAuthRemediationMessage(status, error, bearerInbound = false, toolName = '') {
+function getAuthRemediationMessage(status, error, bearerInbound = false, toolName = '', server = null) {
   if (status === 403 && toolName && TOOL_PRIVILEGES_MAP[toolName]) {
     const info = TOOL_PRIVILEGES_MAP[toolName]
     return `Permission denied (403 Forbidden) while calling \`${toolName}\`. Your account lacks the required Google Workspace Admin Console privilege:\n• **${info.privilege}**\n\n**To fix:** Open [Workspace Admin Roles](${info.roleUrl}) and assign any role (or custom role) granting this privilege to your account (e.g., *Delegated Admin* or *Super Admin*).`
@@ -124,7 +142,16 @@ function getAuthRemediationMessage(status, error, bearerInbound = false, toolNam
 
   if (bearerInbound) {
     if (status === 401) {
-      return `Authentication required. The inbound Bearer token has expired or is invalid. Re-authenticate through your MCP client to refresh the token.`
+      let dwdToolsList = ''
+      if (server) {
+        const dwdTools = getDwdTools(server)
+        if (dwdTools.length > 0) {
+          dwdToolsList =
+            '\n\nNote: The following tools require Domain-Wide Delegation (impersonation) and might also fail in this mode:\n' +
+            dwdTools.map(t => `- ${t}`).join('\n')
+        }
+      }
+      return `Authentication required. The inbound Bearer token has expired, is invalid, or lacks Domain-Wide Delegation (impersonation) required for Workspace APIs. Re-authenticate through your MCP client to refresh the token, or configure Domain-Wide Delegation (impersonation) in your Service Account setup.${dwdToolsList}`
     }
     return `Permission denied. The authenticated principal lacks the required permissions, or the necessary Google Cloud APIs are not enabled.
 
@@ -395,19 +422,27 @@ export function guardedToolCall(
         errorMessage.includes('UNAUTHENTICATED') ||
         errorMessage.includes('PERMISSION_DENIED') ||
         errorMessage.includes('invalid_grant') ||
-        errorMessage.includes('unauthorized_client')
+        errorMessage.includes('unauthorized_client') ||
+        errorMessage.includes('Invalid Customer Id')
 
       if (isAuthError) {
-        const resolvedStatus =
-          status ||
-          (errorMessage.includes('401') ||
-          errorMessage.includes('UNAUTHENTICATED') ||
-          errorMessage.includes('invalid_grant') ||
-          errorMessage.includes('unauthorized_client')
-            ? 401
-            : 403)
+        const resolvedStatus = errorMessage.includes('Invalid Customer Id')
+          ? 401
+          : status ||
+            (errorMessage.includes('401') ||
+            errorMessage.includes('UNAUTHENTICATED') ||
+            errorMessage.includes('invalid_grant') ||
+            errorMessage.includes('unauthorized_client')
+              ? 401
+              : 403)
         const bearerInbound = !!context?.authToken || !!context?.requestInfo?.headers?.authorization
-        const remediationMessage = getAuthRemediationMessage(resolvedStatus, error, bearerInbound, context?.name)
+        const remediationMessage = getAuthRemediationMessage(
+          resolvedStatus,
+          error,
+          bearerInbound,
+          context?.name,
+          options.server,
+        )
         return {
           content: [{ type: 'text', text: remediationMessage }],
           isError: true,
@@ -422,5 +457,6 @@ export function guardedToolCall(
   }
 
   wrapped._scopes = scopes
+  wrapped.requiresDelegation = requiresDelegation
   return wrapped
 }
