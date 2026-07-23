@@ -91,9 +91,10 @@ When running in Service Account mode without per-user OAuth, set `GOOGLE_APPLICA
    https://www.googleapis.com/auth/chrome.management.policy,
    https://www.googleapis.com/auth/chrome.management.reports.readonly,
    https://www.googleapis.com/auth/chrome.management.profiles.readonly,
+   https://www.googleapis.com/auth/chrome.management.securityinsights,
    https://www.googleapis.com/auth/admin.directory.customer.readonly,
    https://www.googleapis.com/auth/admin.directory.orgunit.readonly,
-   https://www.googleapis.com/auth/admin.directory.user.readonly,
+   https://www.googleapis.com/auth/admin.reports.audit.readonly,
    https://www.googleapis.com/auth/cloud-identity.policies,
    https://www.googleapis.com/auth/apps.licensing
    ```
