@@ -119,6 +119,7 @@ tools/definitions/security_insights.js
 tools/definitions/security_insights_data_tool.js
 tools/definitions/shared.js
 tools/index.js
+tools/scripts/generate-dwd-scopes.js
 tools/utils/detector.js
 tools/utils/dynamic_docs.js
 tools/utils/org-unit.js
