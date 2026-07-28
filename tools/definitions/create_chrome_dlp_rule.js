@@ -202,8 +202,14 @@ To ensure technical accuracy and verify trigger compatibility, you should retrie
             if (!validationResult.isValid) {
               throw new Error(`CEL condition validation failed:\n- ${validationResult.errors.join('\n- ')}`)
             }
-            ruleConfig.condition = {
-              contentCondition: condition,
+            if (condition.includes('access_levels')) {
+              ruleConfig.condition = {
+                contextCondition: condition,
+              }
+            } else {
+              ruleConfig.condition = {
+                contentCondition: condition,
+              }
             }
           }
 

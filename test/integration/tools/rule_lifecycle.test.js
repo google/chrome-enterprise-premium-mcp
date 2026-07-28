@@ -118,6 +118,40 @@ describe('Rule Lifecycle Integration', () => {
     }
   })
 
+  test('When a DLP rule with a CAA access level condition is created, then it sets contextCondition', async () => {
+    const { client, testContext } = harness
+    const caaCondition =
+      "access_levels.meets_access_requirements(['accessPolicies/12345/accessLevels/device_trust_level'])"
+    const ruleConfig = {
+      customerId: testContext.customerId,
+      orgUnitId: testContext.orgUnitId,
+      displayName: `CAA_DLP_RULE_${Date.now()}`,
+      description: 'Rule with CAA access level requirement.',
+      triggers: ['URL_NAVIGATION'],
+      condition: caaCondition,
+      action: 'WARN',
+    }
+
+    const result = await client.callTool({
+      name: 'create_chrome_dlp_rule',
+      arguments: ruleConfig,
+    })
+
+    const { text, details } = parseToolOutput(result)
+    assert.match(text, /Successfully created Chrome DLP rule/)
+
+    const rule = details.dlpRule
+    const ruleName = rule.name
+    createdResources.push(ruleName)
+
+    const settings = rule.setting?.value || rule
+    assertObjectMatches(settings, {
+      condition: {
+        contextCondition: caaCondition,
+      },
+    })
+  })
+
   test('When a non-agent rule deletion is attempted, then it refuses to delete it', async () => {
     const { client, apiClients, testContext } = harness
     const ruleConfig = {
