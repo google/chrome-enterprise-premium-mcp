@@ -97,7 +97,17 @@ To ensure technical accuracy and verify trigger compatibility, you should retrie
           .string()
           .optional()
           .describe(
-            "CEL condition string. To ensure technical accuracy and verify trigger compatibility, you should retrieve the full technical reference using 'get_document' for '11-dlp-rule-reference' before formulating a condition.",
+            "CEL condition string. Supports combined expressions or single conditions. Retrieve the full technical reference using 'get_document' for '11-dlp-rule-reference' before formulating a condition.",
+          ),
+        contentCondition: z
+          .string()
+          .optional()
+          .describe('Optional explicit content CEL condition string (e.g. all_content.contains(...)).'),
+        contextCondition: z
+          .string()
+          .optional()
+          .describe(
+            'Optional explicit context CEL condition string (e.g. access_levels.meets_access_requirements(...)).',
           ),
         action: z
           .enum([CHROME_ACTION_TYPES.BLOCK.value, CHROME_ACTION_TYPES.WARN.value, CHROME_ACTION_TYPES.AUDIT.value])
@@ -171,6 +181,8 @@ To ensure technical accuracy and verify trigger compatibility, you should retrie
             description,
             triggers,
             condition,
+            contentCondition,
+            contextCondition,
             action,
             state,
             customMessage,
@@ -196,20 +208,47 @@ To ensure technical accuracy and verify trigger compatibility, you should retrie
             state: state || POLICY_STATES.ACTIVE.value,
           }
 
-          // Validate the CEL expression against the selected triggers
+          let finalContentCond = contentCondition
+          let finalContextCond = contextCondition
+
           if (condition) {
             const validationResult = validateCelCondition(condition, triggers)
             if (!validationResult.isValid) {
               throw new Error(`CEL condition validation failed:\n- ${validationResult.errors.join('\n- ')}`)
             }
-            if (condition.includes('access_levels')) {
-              ruleConfig.condition = {
-                contextCondition: condition,
-              }
-            } else {
-              ruleConfig.condition = {
-                contentCondition: condition,
-              }
+            const parts = condition.split(/\s+&&\s+/)
+            const contextParts = parts.filter(p => p.includes('access_levels'))
+            const contentParts = parts.filter(p => !p.includes('access_levels'))
+
+            if (contentParts.length > 0 && !finalContentCond) {
+              finalContentCond = contentParts.join(' && ')
+            }
+            if (contextParts.length > 0 && !finalContextCond) {
+              finalContextCond = contextParts.join(' && ')
+            }
+          }
+
+          if (finalContentCond) {
+            const val = validateCelCondition(finalContentCond, triggers)
+            if (!val.isValid) {
+              throw new Error(`CEL contentCondition validation failed:\n- ${val.errors.join('\n- ')}`)
+            }
+          }
+
+          if (finalContextCond) {
+            const val = validateCelCondition(finalContextCond, triggers)
+            if (!val.isValid) {
+              throw new Error(`CEL contextCondition validation failed:\n- ${val.errors.join('\n- ')}`)
+            }
+          }
+
+          if (finalContentCond || finalContextCond) {
+            ruleConfig.condition = {}
+            if (finalContentCond) {
+              ruleConfig.condition.contentCondition = finalContentCond
+            }
+            if (finalContextCond) {
+              ruleConfig.condition.contextCondition = finalContextCond
             }
           }
 

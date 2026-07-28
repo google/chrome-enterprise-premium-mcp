@@ -152,6 +152,42 @@ describe('Rule Lifecycle Integration', () => {
     })
   })
 
+  test('When a DLP rule with both content and context conditions is created, then it sets both contentCondition and contextCondition', async () => {
+    const { client, testContext } = harness
+    const contentCond = "all_content.contains('test_string')"
+    const caaCondition =
+      "access_levels.meets_access_requirements(['accessPolicies/80111837285/accessLevels/require_screenlock'])"
+    const ruleConfig = {
+      customerId: testContext.customerId,
+      orgUnitId: testContext.orgUnitId,
+      displayName: `BOTH_COND_DLP_RULE_${Date.now()}`,
+      description: 'Rule with both content and CAA access level requirement.',
+      triggers: ['FILE_UPLOAD'],
+      condition: `${contentCond} && ${caaCondition}`,
+      action: 'WARN',
+    }
+
+    const result = await client.callTool({
+      name: 'create_chrome_dlp_rule',
+      arguments: ruleConfig,
+    })
+
+    const { text, details } = parseToolOutput(result)
+    assert.match(text, /Successfully created Chrome DLP rule/)
+
+    const rule = details.dlpRule
+    const ruleName = rule.name
+    createdResources.push(ruleName)
+
+    const settings = rule.setting?.value || rule
+    assertObjectMatches(settings, {
+      condition: {
+        contentCondition: contentCond,
+        contextCondition: caaCondition,
+      },
+    })
+  })
+
   test('When a non-agent rule deletion is attempted, then it refuses to delete it', async () => {
     const { client, apiClients, testContext } = harness
     const ruleConfig = {
