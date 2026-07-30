@@ -40,7 +40,7 @@ describe('Rule Lifecycle Integration', () => {
       displayName: `INTEGRATION_TEST_RULE_${Date.now()}`,
       description: 'Human-readable verified integration test rule.',
       triggers: ['URL_NAVIGATION'],
-      condition: "url.contains('integration-test.com')",
+      contentCondition: "url.contains('integration-test.com')",
       action: 'WARN',
     }
 
@@ -68,7 +68,7 @@ describe('Rule Lifecycle Integration', () => {
       description: ruleConfig.description,
       state: 'ACTIVE',
       condition: {
-        contentCondition: ruleConfig.condition,
+        contentCondition: ruleConfig.contentCondition,
       },
       action: {
         chromeAction: {
@@ -128,7 +128,7 @@ describe('Rule Lifecycle Integration', () => {
       displayName: `CAA_DLP_RULE_${Date.now()}`,
       description: 'Rule with CAA access level requirement.',
       triggers: ['URL_NAVIGATION'],
-      condition: caaCondition,
+      contextCondition: caaCondition,
       action: 'WARN',
     }
 
@@ -163,7 +163,8 @@ describe('Rule Lifecycle Integration', () => {
       displayName: `BOTH_COND_DLP_RULE_${Date.now()}`,
       description: 'Rule with both content and CAA access level requirement.',
       triggers: ['FILE_UPLOAD'],
-      condition: `${contentCond} && ${caaCondition}`,
+      contentCondition: contentCond,
+      contextCondition: caaCondition,
       action: 'WARN',
     }
 

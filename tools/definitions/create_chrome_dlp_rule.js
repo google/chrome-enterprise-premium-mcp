@@ -93,21 +93,17 @@ To ensure technical accuracy and verify trigger compatibility, you should retrie
           .optional()
           .describe('Description of the rule.'),
         triggers: z.array(z.enum(Object.keys(CHROME_TRIGGERS))).describe(`List of Chrome triggers:\n${triggerList}`),
-        condition: z
-          .string()
-          .optional()
-          .describe(
-            "CEL condition string. Supports combined expressions or single conditions. Retrieve the full technical reference using 'get_document' for '11-dlp-rule-reference' before formulating a condition.",
-          ),
         contentCondition: z
           .string()
           .optional()
-          .describe('Optional explicit content CEL condition string (e.g. all_content.contains(...)).'),
+          .describe(
+            "Content CEL condition string evaluating text, detector, file, or URL content (e.g. all_content.contains('secret')). Retrieve '11-dlp-rule-reference' for syntax.",
+          ),
         contextCondition: z
           .string()
           .optional()
           .describe(
-            'Optional explicit context CEL condition string (e.g. access_levels.meets_access_requirements(...)).',
+            "Context CEL condition string evaluating CAA posture requirements (e.g. access_levels.meets_access_requirements(['accessPolicies/123/accessLevels/level'])). Retrieve '11-dlp-rule-reference' for syntax.",
           ),
         action: z
           .enum([CHROME_ACTION_TYPES.BLOCK.value, CHROME_ACTION_TYPES.WARN.value, CHROME_ACTION_TYPES.AUDIT.value])
@@ -180,7 +176,6 @@ To ensure technical accuracy and verify trigger compatibility, you should retrie
             displayName,
             description,
             triggers,
-            condition,
             contentCondition,
             contextCondition,
             action,
@@ -208,47 +203,27 @@ To ensure technical accuracy and verify trigger compatibility, you should retrie
             state: state || POLICY_STATES.ACTIVE.value,
           }
 
-          let finalContentCond = contentCondition
-          let finalContextCond = contextCondition
-
-          if (condition) {
-            const validationResult = validateCelCondition(condition, triggers)
-            if (!validationResult.isValid) {
-              throw new Error(`CEL condition validation failed:\n- ${validationResult.errors.join('\n- ')}`)
-            }
-            const parts = condition.split(/\s+&&\s+/)
-            const contextParts = parts.filter(p => p.includes('access_levels'))
-            const contentParts = parts.filter(p => !p.includes('access_levels'))
-
-            if (contentParts.length > 0 && !finalContentCond) {
-              finalContentCond = contentParts.join(' && ')
-            }
-            if (contextParts.length > 0 && !finalContextCond) {
-              finalContextCond = contextParts.join(' && ')
-            }
-          }
-
-          if (finalContentCond) {
-            const val = validateCelCondition(finalContentCond, triggers)
+          if (contentCondition) {
+            const val = validateCelCondition(contentCondition, triggers)
             if (!val.isValid) {
               throw new Error(`CEL contentCondition validation failed:\n- ${val.errors.join('\n- ')}`)
             }
           }
 
-          if (finalContextCond) {
-            const val = validateCelCondition(finalContextCond, triggers)
+          if (contextCondition) {
+            const val = validateCelCondition(contextCondition, triggers)
             if (!val.isValid) {
               throw new Error(`CEL contextCondition validation failed:\n- ${val.errors.join('\n- ')}`)
             }
           }
 
-          if (finalContentCond || finalContextCond) {
+          if (contentCondition || contextCondition) {
             ruleConfig.condition = {}
-            if (finalContentCond) {
-              ruleConfig.condition.contentCondition = finalContentCond
+            if (contentCondition) {
+              ruleConfig.condition.contentCondition = contentCondition
             }
-            if (finalContextCond) {
-              ruleConfig.condition.contextCondition = finalContextCond
+            if (contextCondition) {
+              ruleConfig.condition.contextCondition = contextCondition
             }
           }
 

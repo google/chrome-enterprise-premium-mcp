@@ -67,7 +67,7 @@ describe('Cloud Identity API', () => {
           orgUnitId: 'ou1',
           displayName: 'Test Rule',
           triggers: ['FILE_UPLOAD'],
-          condition: "url.contains('test')",
+          contentCondition: "url.contains('test')",
           action: 'WARN',
         },
         { requestInfo: {} },
@@ -89,7 +89,7 @@ describe('Cloud Identity API', () => {
           orgUnitId: 'ou1',
           displayName: 'Test Rule',
           triggers: ['FILE_UPLOAD'],
-          condition: "url.contains('test')",
+          contentCondition: "url.contains('test')",
           action: 'WARN',
         },
         { requestInfo: {} },
@@ -117,7 +117,7 @@ describe('Cloud Identity API', () => {
           orgUnitId: 'ou1',
           displayName: 'Masking Rule',
           triggers: ['URL_NAVIGATION'],
-          condition: "url.contains('test')",
+          contentCondition: "url.contains('test')",
           action: 'AUDIT',
           dataMasking: {
             regexDetectors: [
@@ -157,7 +157,7 @@ describe('Cloud Identity API', () => {
           orgUnitId: 'ou1',
           displayName: 'Masking Rule Predefined',
           triggers: ['URL_NAVIGATION'],
-          condition: "url.contains('test')",
+          contentCondition: "url.contains('test')",
           action: 'AUDIT',
           dataMasking: {
             regexDetectors: [
