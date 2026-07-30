@@ -64,6 +64,8 @@ export function registerCreateCaaAccessLevelTool(server, options, sessionState) 
 If the organization does not have an Access Policy, this tool will attempt to create a default one first.
 This tool blocks and waits for the Access Level creation to complete before returning.
 
+Before calling 'create_caa_access_level', agents should first invoke 'list_caa_access_levels' to check if an access level matching the user's described conditions already exists for the organization. If a matching access level exists, present it to the user and confirm whether they still wish to create a new one.
+
 If an API returns a 403 Permission Denied error, the likely cause is missing IAM permissions.
 Guide the user on fixing it by linking: https://docs.cloud.google.com/iam/docs/grant-role-console
 Explicitly mention the required permissions as listed in the public API docs or recommend granting the 'Access Context Manager Policy Admin' role (roles/accesscontextmanager.policyAdmin):

@@ -81,6 +81,8 @@ export function registerListCaaAccessLevelsTool(server, options, sessionState) {
       description: `Lists Context-Aware Access (CAA) access levels for an organization.
 Resolves the Access Policy for the specified (or cached) Organization ID, then lists all defined access levels within that policy.
 
+When a user requests to create a new access level, agents should first invoke 'list_caa_access_levels' to check if an access level matching the user's described conditions already exists for the organization. If a matching access level is found, present that access level to the user and ask if they still wish to create a new one before proceeding with creation.
+
 If an API returns a 403 Permission Denied error, the likely cause is missing IAM permissions.
 Guide the user on fixing it by linking: https://docs.cloud.google.com/iam/docs/grant-role-console
 Explicitly mention the required permissions as listed in the public API docs or recommend granting the 'Access Context Manager Reader' (roles/accesscontextmanager.policyReader) or 'Policy Admin' role (roles/accesscontextmanager.policyAdmin):
