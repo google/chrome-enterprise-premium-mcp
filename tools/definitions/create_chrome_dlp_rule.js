@@ -93,11 +93,17 @@ To ensure technical accuracy and verify trigger compatibility, you should retrie
           .optional()
           .describe('Description of the rule.'),
         triggers: z.array(z.enum(Object.keys(CHROME_TRIGGERS))).describe(`List of Chrome triggers:\n${triggerList}`),
-        condition: z
+        contentCondition: z
           .string()
           .optional()
           .describe(
-            "CEL condition string. To ensure technical accuracy and verify trigger compatibility, you should retrieve the full technical reference using 'get_document' for '11-dlp-rule-reference' before formulating a condition.",
+            "Content CEL condition string evaluating text, detector, file, or URL content (e.g. all_content.contains('secret')). Retrieve '11-dlp-rule-reference' for syntax.",
+          ),
+        contextCondition: z
+          .string()
+          .optional()
+          .describe(
+            "Context CEL condition string evaluating CAA posture requirements (e.g. access_levels.meets_access_requirements(['accessPolicies/123/accessLevels/level'])). Retrieve '11-dlp-rule-reference' for syntax.",
           ),
         action: z
           .enum([CHROME_ACTION_TYPES.BLOCK.value, CHROME_ACTION_TYPES.WARN.value, CHROME_ACTION_TYPES.AUDIT.value])
@@ -170,7 +176,8 @@ To ensure technical accuracy and verify trigger compatibility, you should retrie
             displayName,
             description,
             triggers,
-            condition,
+            contentCondition,
+            contextCondition,
             action,
             state,
             customMessage,
@@ -196,14 +203,27 @@ To ensure technical accuracy and verify trigger compatibility, you should retrie
             state: state || POLICY_STATES.ACTIVE.value,
           }
 
-          // Validate the CEL expression against the selected triggers
-          if (condition) {
-            const validationResult = validateCelCondition(condition, triggers)
-            if (!validationResult.isValid) {
-              throw new Error(`CEL condition validation failed:\n- ${validationResult.errors.join('\n- ')}`)
+          if (contentCondition) {
+            const val = validateCelCondition(contentCondition, triggers)
+            if (!val.isValid) {
+              throw new Error(`CEL contentCondition validation failed:\n- ${val.errors.join('\n- ')}`)
             }
-            ruleConfig.condition = {
-              contentCondition: condition,
+          }
+
+          if (contextCondition) {
+            const val = validateCelCondition(contextCondition, triggers)
+            if (!val.isValid) {
+              throw new Error(`CEL contextCondition validation failed:\n- ${val.errors.join('\n- ')}`)
+            }
+          }
+
+          if (contentCondition || contextCondition) {
+            ruleConfig.condition = {}
+            if (contentCondition) {
+              ruleConfig.condition.contentCondition = contentCondition
+            }
+            if (contextCondition) {
+              ruleConfig.condition.contextCondition = contextCondition
             }
           }
 
