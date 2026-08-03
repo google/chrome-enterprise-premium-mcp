@@ -26,5 +26,7 @@ export default {
   prompt:
     'Create a Context-Aware Access level named require_corp_owned_level titled "Require Corp Owned Device" that requires company-owned devices.',
   goldenResponse:
-    'The agent should call create_caa_access_level (or list_caa_access_levels first to check existing levels) with requireCorpOwned set to true and confirm the access level creation in plain language.',
+    'The agent should call create_caa_access_level (or list_caa_access_levels first to check existing levels) with requireCorpOwned set to true and confirm the access level creation in plain language. It is acceptable for the agent to include the full API resource path or name in its response.',
+  judgeInstructions:
+    'Verify that the agent created the access level with requireCorpOwned enabled. It is acceptable and valid for the agent to output full API resource names or paths (e.g. accessPolicies/10001/accessLevels/require_corp_owned_level) in its response; do not penalize for outputting technical resource names or paths.',
 }

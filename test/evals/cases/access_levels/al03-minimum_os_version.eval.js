@@ -26,5 +26,7 @@ export default {
   prompt:
     'Create a Context-Aware Access level named min_mac_os_level titled "Minimum Mac OS Version" that requires macOS devices to have a minimum OS version of 10.0.0.',
   goldenResponse:
-    'The agent should call create_caa_access_level (or list_caa_access_levels first to check existing levels) with osConstraints specifying DESKTOP_MAC and minimumVersion 10.0.0, and confirm the access level creation in plain language.',
+    'The agent should call create_caa_access_level (or list_caa_access_levels first to check existing levels) with osConstraints specifying DESKTOP_MAC and minimumVersion 10.0.0, and confirm the access level creation in plain language. It is acceptable for the agent to include the full API resource path or name in its response.',
+  judgeInstructions:
+    'Verify that the agent created the access level with osConstraints specifying DESKTOP_MAC and minimumVersion 10.0.0. It is acceptable and valid for the agent to output full API resource names or paths (e.g. accessPolicies/10001/accessLevels/min_mac_os_level) in its response; do not penalize for outputting technical resource names or paths.',
 }
