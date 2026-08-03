@@ -128,24 +128,7 @@ Explicitly mention the required permissions as listed in the public API docs or 
           let policyName = inputPolicyName
 
           if (!policyName) {
-            let orgId = inputOrgId || sessionState.organizationId
-            if (!orgId && options.cloudResourceManagerClient) {
-              try {
-                const res = await options.cloudResourceManagerClient.searchOrganizations({}, authToken)
-                const orgs = res?.organizations || []
-                if (orgs.length > 0) {
-                  const fetchedOrgId = orgs[0].name.split('/').pop()
-                  const fetchedOrgName = orgs[0].name
-                  if (sessionState) {
-                    sessionState.organizationId = fetchedOrgId
-                    sessionState.organizationName = fetchedOrgName
-                  }
-                  orgId = fetchedOrgId
-                }
-              } catch (e) {
-                logger.debug(`${TAGS.MCP} Failed to auto-resolve organization ID: ${e.message}`)
-              }
-            }
+            const orgId = inputOrgId || sessionState.organizationId
             if (!orgId) {
               throw new Error(
                 'Organization ID is required. Please provide organizationId or run search_organizations first to cache it.',
