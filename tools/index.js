@@ -158,8 +158,16 @@ export function registerTools(server, options = {}, sessionState) {
 
   if (flags.isEnabled(FLAGS.ACM_TOOLS_ENABLED)) {
     logger.debug(`${TAGS.MCP} Registering ACM tools (EXPERIMENT_ACM_TOOLS_ENABLED is active)`)
-    registerListCaaAccessLevelsTool(server, { ...commonOpts, accessContextManagerClient }, state)
-    registerCreateCaaAccessLevelTool(server, { ...commonOpts, accessContextManagerClient }, state)
+    registerListCaaAccessLevelsTool(
+      server,
+      { ...commonOpts, accessContextManagerClient, cloudResourceManagerClient },
+      state,
+    )
+    registerCreateCaaAccessLevelTool(
+      server,
+      { ...commonOpts, accessContextManagerClient, cloudResourceManagerClient },
+      state,
+    )
   }
 
   registerKnowledgeTools(server, { ...options, featureFlags: flags }, state)
