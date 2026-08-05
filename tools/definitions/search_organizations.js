@@ -70,6 +70,7 @@ export function registerSearchOrganizationsTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
+        isMutating: false,
         handler: async ({ customerId }, { authToken }) => {
           logger.debug(`${TAGS.MCP} Calling 'search_organizations' with customerId: ${customerId}`)
 

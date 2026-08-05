@@ -58,6 +58,7 @@ Use this to check, enable, or disable the security insights feature customer-wid
     },
     guardedToolCall(
       {
+        isMutating: false,
         handler: async ({ action, targetOus, customerId = 'my_customer' }, { _requestInfo, authToken }) => {
           logger.debug(
             `${TAGS.MCP} Calling 'security_insights' with action: ${action}, targetOus: ${targetOus}, customerId: ${customerId}`,

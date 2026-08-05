@@ -57,6 +57,7 @@ The SEB extension is REQUIRED for advanced Chrome Enterprise Premium features li
     },
     guardedToolCall(
       {
+        isMutating: true,
         /**
          * Handler for force-installing the SEB extension.
          * @param {object} params - The tool parameters.

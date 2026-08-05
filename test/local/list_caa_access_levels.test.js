@@ -50,7 +50,11 @@ describe('list_caa_access_levels Tool', () => {
           AccessContextManagerClient: MockAcmClient,
         },
         '../../tools/utils/wrapper.js': {
-          guardedToolCall: handlerConfig => handlerConfig.handler,
+          guardedToolCall: handlerConfig => {
+            const h = handlerConfig.handler
+            h.isMutating = handlerConfig.isMutating
+            return h
+          },
           formatToolResponse: mockHelpers.formatToolResponse,
         },
       },

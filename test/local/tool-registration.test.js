@@ -220,6 +220,74 @@ describe('SEB Tool Registration', () => {
     assert.deepStrictEqual(callArgs[0], { customerId: 'C_SHARED_123' })
   })
 
+  describe('Read-Only Mode', () => {
+    test('When READ_ONLY is active, then mutating tools have prefix in description', () => {
+      const server = {
+        registerTool: mock.fn(),
+      }
+      registerTools(server, {
+        featureFlags: {
+          isEnabled: flag => flag === FLAGS.READ_ONLY,
+        },
+      })
+
+      const registerCalls = server.registerTool.mock.calls
+      const createRuleCall = registerCalls.find(call => call.arguments[0] === 'create_chrome_dlp_rule')
+      assert.ok(createRuleCall, 'create_chrome_dlp_rule should be registered')
+      const spec = createRuleCall.arguments[1]
+      assert.ok(
+        spec.description.startsWith('[DISABLED (due to READ_ONLY startup flag)]'),
+        `Description should start with prefix. Got: ${spec.description}`,
+      )
+    })
+
+    test('When READ_ONLY is active, then calling a mutating tool handler returns an error', async () => {
+      const server = {
+        registerTool: mock.fn(),
+      }
+      registerTools(server, {
+        featureFlags: {
+          isEnabled: flag => flag === FLAGS.READ_ONLY,
+        },
+      })
+
+      const registerCalls = server.registerTool.mock.calls
+      const createRuleCall = registerCalls.find(call => call.arguments[0] === 'create_chrome_dlp_rule')
+      const handler = createRuleCall.arguments[2]
+
+      const result = await handler({}, { requestInfo: {} })
+      assert.ok(result.isError, 'Handler should return error')
+      assert.ok(
+        result.content[0].text.includes('disabled because the server was started with the READ_ONLY flag'),
+        `Unexpected error message: ${result.content[0].text}`,
+      )
+    })
+
+    test('When READ_ONLY is active, then check_and_enable_cep_api rejects enable: true', async () => {
+      const server = {
+        registerTool: mock.fn(),
+      }
+      registerTools(server, {
+        featureFlags: {
+          isEnabled: flag => flag === FLAGS.READ_ONLY,
+        },
+      })
+
+      const registerCalls = server.registerTool.mock.calls
+      const checkApiCall = registerCalls.find(call => call.arguments[0] === 'check_and_enable_cep_api')
+      const handler = checkApiCall.arguments[2]
+
+      const result = await handler({ projectId: 'test-project', enable: true }, { requestInfo: {} })
+      assert.ok(result.isError, 'Handler should return error')
+      assert.ok(
+        result.content[0].text.includes(
+          'Enabling APIs is disabled because the server was started with the READ_ONLY flag',
+        ),
+        `Unexpected error message: ${result.content[0].text}`,
+      )
+    })
+  })
+
   describe('Scope Registry Integrity', () => {
     test('Every scope URL in the SCOPES constant must have an entry in OAUTH_SCOPE_REGISTRY', () => {
       for (const [id, url] of Object.entries(SCOPES)) {

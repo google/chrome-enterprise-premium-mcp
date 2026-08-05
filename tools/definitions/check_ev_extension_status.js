@@ -59,6 +59,7 @@ If the extension is NOT force-installed, you MUST recommend that the administrat
     },
     guardedToolCall(
       {
+        isMutating: false,
         handler: async ({ customerId, orgUnitId }, { _requestInfo, authToken }) => {
           logger.debug(
             `${TAGS.MCP} Calling 'check_ev_extension_status' with customerId: ${customerId}, orgUnitId: ${orgUnitId}`,

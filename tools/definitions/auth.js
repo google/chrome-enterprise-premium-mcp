@@ -247,6 +247,7 @@ export function registerAuthTools(server, options, sessionState) {
     },
     guardedToolCall(
       {
+        isMutating: false,
         handler: async (params, { authToken }) => {
           const authMode = getAuthMode()
 
@@ -362,6 +363,7 @@ export function registerAuthTools(server, options, sessionState) {
     },
     guardedToolCall(
       {
+        isMutating: false,
         handler: async () => {
           const cache = new TokenCache(TokenCache.defaultPath())
           await cache.clear()

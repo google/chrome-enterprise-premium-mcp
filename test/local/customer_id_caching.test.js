@@ -35,6 +35,7 @@ describe('Customer ID Caching and Auto-Resolution', () => {
     const sessionState = { customerId: null }
     const listOrgUnitsHandler = guardedToolCall(
       {
+        isMutating: false,
         handler: async params => {
           return adminSdkClientInstance.listOrgUnits(params)
         },
@@ -70,6 +71,7 @@ describe('Customer ID Caching and Auto-Resolution', () => {
     const sessionState = { customerId: null }
     const listOrgUnitsHandler = guardedToolCall(
       {
+        isMutating: false,
         handler: async params => {
           return adminSdkClientInstance.listOrgUnits(params)
         },
@@ -99,7 +101,7 @@ describe('Customer ID Caching and Auto-Resolution', () => {
 
     const sessionState = { customerId: null }
     const tool = guardedToolCall(
-      { handler: mockHandler },
+      { isMutating: false, handler: mockHandler },
       { apiClients: { adminSdk: adminSdkClientInstance } },
       sessionState,
     )
