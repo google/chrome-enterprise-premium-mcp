@@ -562,6 +562,18 @@ async function fetchEnvironment(
 ) {
   const { beyondcorpClient, cloudResourceManagerClient, computeClient, projectId, flags } = options
 
+  const safeFetch = async (promise, fallback) => {
+    try {
+      return await promise
+    } catch (e) {
+      if (e?.status === 401 || e?.message?.includes('UNAUTHENTICATED') || e?.code === 'unauthenticated') {
+        throw e
+      }
+      logger.warn(`${TAGS.MCP} diagnose_environment: safeFetch failed: ${e.message || e}`)
+      return fallback
+    }
+  }
+
   const [
     customerData,
     orgUnitsData,
@@ -575,25 +587,16 @@ async function fetchEnvironment(
   ] = await Promise.all([
     adminSdkClient.getCustomerId(authToken),
     adminSdkClient.listOrgUnits({ customerId }, authToken),
-    adminSdkClient.checkCepSubscription(customerId, authToken).catch(err => {
-      logger.error(`${TAGS.API} Error checking CEP subscription in diagnosis:`, err)
-      return null
-    }),
+    safeFetch(adminSdkClient.checkCepSubscription(customerId, authToken), null),
     cloudIdentityClient.listDlpRules(authToken),
     cloudIdentityClient.listDetectors(authToken),
-    chromeManagementClient.countBrowserVersions(customerId, null, authToken),
-    chromeManagementClient.checkSecurityInsightsStatus(customerId, authToken).catch(err => {
-      logger.error(`${TAGS.API} Error fetching security insights status in diagnosis:`, err)
-      return { insightsState: 'INSIGHTS_ENABLEMENT_STATE_UNSPECIFIED', error: true }
+    safeFetch(chromeManagementClient.countBrowserVersions(customerId, null, authToken), []),
+    safeFetch(chromeManagementClient.checkSecurityInsightsStatus(customerId, authToken), {
+      insightsState: 'INSIGHTS_ENABLEMENT_STATE_UNSPECIFIED',
+      error: true,
     }),
-    chromeManagementClient.queryContentTransfers(customerId, {}, authToken).catch(err => {
-      logger.error(`${TAGS.API} Error fetching content transfers in diagnosis:`, err)
-      return { error: true, message: err.message }
-    }),
-    chromeManagementClient.queryUrlVisits(customerId, {}, authToken).catch(err => {
-      logger.error(`${TAGS.API} Error fetching URL visits in diagnosis:`, err)
-      return { error: true, message: err.message }
-    }),
+    safeFetch(chromeManagementClient.queryContentTransfers(customerId, {}, authToken), { error: true }),
+    safeFetch(chromeManagementClient.queryUrlVisits(customerId, {}, authToken), { error: true }),
   ])
 
   const orgUnits = orgUnitsData?.organizationUnits || []
