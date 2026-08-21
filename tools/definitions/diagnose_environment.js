@@ -662,7 +662,8 @@ async function fetchEnvironment(
         const uiLink = page ? `https://admin.google.com/ac/chrome/settings/user/details/${page}` : null
         try {
           const schema = ConnectorPolicyFilter[policyKey]
-          const policies = await chromePolicyClient.getConnectorPolicy(customerId, rootOUId, schema, authToken)
+          const targetCustId = customerId && customerId !== 'unknown' ? customerId : 'my_customer'
+          const policies = await chromePolicyClient.getConnectorPolicy(targetCustId, rootOUId, schema, authToken)
           const analysis = analyzeConnectorPolicy(policyKey, policies)
           return [
             key,
@@ -688,7 +689,13 @@ async function fetchEnvironment(
   let sebExtension = { isInstalled: false }
   if (rootOUId && chromePolicyClient) {
     try {
-      const sebPolicies = await chromePolicyClient.resolvePolicy(customerId, rootOUId, SEB_EXTENSION_SCHEMA, authToken)
+      const targetCustId = customerId && customerId !== 'unknown' ? customerId : 'my_customer'
+      const sebPolicies = await chromePolicyClient.resolvePolicy(
+        targetCustId,
+        rootOUId,
+        SEB_EXTENSION_SCHEMA,
+        authToken,
+      )
       const sebEntry = sebPolicies.find(p => p.targetKey?.additionalTargetKeys?.app_id === SEB_EXTENSION_ID)
       sebExtension = { isInstalled: sebEntry?.value?.value?.appInstallType === 'FORCED' }
     } catch {
