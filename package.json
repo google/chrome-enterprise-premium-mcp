@@ -55,7 +55,7 @@
     "cheerio": "^1.2.0",
     "express": "^5.2.1",
     "google-auth-library": "^10.6.2",
-    "googleapis": "^171.4.0",
+    "googleapis": "^173.0.0",
     "gray-matter": "^4.0.3",
     "open": "^10.2.0",
     "zod": "^4.4.3"
