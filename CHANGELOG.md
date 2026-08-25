@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.11.0](https://github.com/google/chrome-enterprise-premium-mcp/compare/chrome-enterprise-premium-mcp-v1.10.0...chrome-enterprise-premium-mcp-v1.11.0) (2026-08-25)
+
+
+### Features
+
+* **dlp:** add CAA access level support to DLP rule condition ([#397](https://github.com/google/chrome-enterprise-premium-mcp/issues/397)) ([a157475](https://github.com/google/chrome-enterprise-premium-mcp/commit/a157475f1fd54e1d0d396bf466e67af95e84ef4d))
+* **gateway:** support SEB client routing and proxy diagnostics ([#408](https://github.com/google/chrome-enterprise-premium-mcp/issues/408)) ([0d3f64c](https://github.com/google/chrome-enterprise-premium-mcp/commit/0d3f64c7b92f947ab30d4c4e957229e68bf0325b))
+
+
+### Bug Fixes
+
+* **diagnose:** escalate zero assigned licenses to high severity ([#409](https://github.com/google/chrome-enterprise-premium-mcp/issues/409)) ([1dcdd63](https://github.com/google/chrome-enterprise-premium-mcp/commit/1dcdd630d65949fffe8a7d367d6c4f9cf3b9643a))
+
+
+### Documentation
+
+* **acm:** update list_caa_access_levels tool description to check existing levels before creation ([#392](https://github.com/google/chrome-enterprise-premium-mcp/issues/392)) ([3fd477e](https://github.com/google/chrome-enterprise-premium-mcp/commit/3fd477ef8e3c1db0a2e6ee6c255ec2289ce01c8a))
+* clarify SEB extension requirement for Secure Gateway apps ([#407](https://github.com/google/chrome-enterprise-premium-mcp/issues/407)) ([508295b](https://github.com/google/chrome-enterprise-premium-mcp/commit/508295bc56b7ec7055eff93eec818e8c94890fdc))
+
 ## [1.10.0](https://github.com/google/chrome-enterprise-premium-mcp/compare/chrome-enterprise-premium-mcp-v1.9.0...chrome-enterprise-premium-mcp-v1.10.0) (2026-07-24)
 
 
