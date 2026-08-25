@@ -1288,5 +1288,291 @@ describe('diagnose_environment', () => {
         'CGNAT IP without network should be treated as non-private and excluded from firewall checks',
       )
     })
+
+    test('When SEB extension is installed but missing securityGateway routing policy, then it produces a high issue', async () => {
+      const handlers = {}
+      const server = createMockServer(handlers)
+      const mockClients = createMockClients()
+      mockClients.chromePolicyClient.resolvePolicy = mock.fn(async (c, ou, schema) => {
+        if (schema === 'chrome.users.apps.InstallType') {
+          return [
+            {
+              targetKey: { additionalTargetKeys: { app_id: 'chrome:ekajlcmdfcigmdbphhifahdfjbkciflj' } },
+              value: { value: { appInstallType: 'FORCED' } },
+            },
+          ]
+        }
+        return []
+      })
+      mockClients.beyondcorpClient.listGateways = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1',
+          displayName: 'Gateway 1',
+          state: 'RUNNING',
+          serviceDiscovery: {},
+        },
+      ])
+
+      registerDiagnoseEnvironmentTool(
+        server,
+        { ...mockClients, featureFlags: enabledFlags },
+        { customerId: null, cachedRootOrgUnitId: null },
+      )
+
+      const result = await handlers['diagnose_environment'](
+        { customerId: 'C0123', projectId: 'p1' },
+        { requestInfo: {} },
+      )
+
+      const clientPolicyIssues = result.structuredContent.issues.filter(
+        i => i.component === 'secureGateway.clientPolicy',
+      )
+      assert.strictEqual(clientPolicyIssues.length, 1)
+      assert.strictEqual(clientPolicyIssues[0].severity, 'high')
+      assert.ok(clientPolicyIssues[0].message.includes('no securityGateway routing policy is configured'))
+    })
+
+    test('When SEB extension policy points to an unknown gateway resource, then it produces a medium issue', async () => {
+      const handlers = {}
+      const server = createMockServer(handlers)
+      const mockClients = createMockClients()
+      mockClients.chromePolicyClient.resolvePolicy = mock.fn(async (c, ou, schema) => {
+        if (schema === 'chrome.users.apps.InstallType') {
+          return [
+            {
+              targetKey: { additionalTargetKeys: { app_id: 'chrome:ekajlcmdfcigmdbphhifahdfjbkciflj' } },
+              value: { value: { appInstallType: 'FORCED' } },
+            },
+          ]
+        }
+        if (schema === 'chrome.users.apps.ManagedConfiguration') {
+          return [
+            {
+              targetKey: { additionalTargetKeys: { app_id: 'chrome:ekajlcmdfcigmdbphhifahdfjbkciflj' } },
+              value: {
+                value: {
+                  managedConfiguration: JSON.stringify({
+                    securityGateway: {
+                      Value: {
+                        context: { resource: 'projects/p1/locations/global/securityGateways/gw-unknown' },
+                        serviceDiscovery: { routes: {} },
+                      },
+                    },
+                  }),
+                },
+              },
+            },
+          ]
+        }
+        return []
+      })
+      mockClients.beyondcorpClient.listGateways = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1',
+          displayName: 'Gateway 1',
+          state: 'RUNNING',
+          serviceDiscovery: {},
+        },
+      ])
+
+      registerDiagnoseEnvironmentTool(
+        server,
+        { ...mockClients, featureFlags: enabledFlags },
+        { customerId: null, cachedRootOrgUnitId: null },
+      )
+
+      const result = await handlers['diagnose_environment'](
+        { customerId: 'C0123', projectId: 'p1' },
+        { requestInfo: {} },
+      )
+
+      const clientPolicyIssues = result.structuredContent.issues.filter(
+        i => i.component === 'secureGateway.clientPolicy',
+      )
+      assert.strictEqual(clientPolicyIssues.length, 1)
+      assert.strictEqual(clientPolicyIssues[0].severity, 'medium')
+      assert.ok(clientPolicyIssues[0].message.includes('gw-unknown'))
+    })
+
+    test('When SEB extension is missing serviceDiscovery block while gateway has Service Discovery, then it produces a high issue', async () => {
+      const handlers = {}
+      const server = createMockServer(handlers)
+      const mockClients = createMockClients()
+      mockClients.chromePolicyClient.resolvePolicy = mock.fn(async (c, ou, schema) => {
+        if (schema === 'chrome.users.apps.InstallType') {
+          return [
+            {
+              targetKey: { additionalTargetKeys: { app_id: 'chrome:ekajlcmdfcigmdbphhifahdfjbkciflj' } },
+              value: { value: { appInstallType: 'FORCED' } },
+            },
+          ]
+        }
+        if (schema === 'chrome.users.apps.ManagedConfiguration') {
+          return [
+            {
+              targetKey: { additionalTargetKeys: { app_id: 'chrome:ekajlcmdfcigmdbphhifahdfjbkciflj' } },
+              value: {
+                value: {
+                  managedConfiguration: JSON.stringify({
+                    securityGateway: {
+                      Value: {
+                        context: { resource: 'projects/p1/locations/global/securityGateways/gw1' },
+                      },
+                    },
+                  }),
+                },
+              },
+            },
+          ]
+        }
+        return []
+      })
+      mockClients.beyondcorpClient.listGateways = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1',
+          displayName: 'Gateway 1',
+          state: 'RUNNING',
+          serviceDiscovery: {},
+        },
+      ])
+
+      registerDiagnoseEnvironmentTool(
+        server,
+        { ...mockClients, featureFlags: enabledFlags },
+        { customerId: null, cachedRootOrgUnitId: null },
+      )
+
+      const result = await handlers['diagnose_environment'](
+        { customerId: 'C0123', projectId: 'p1' },
+        { requestInfo: {} },
+      )
+
+      const clientPolicyIssues = result.structuredContent.issues.filter(
+        i => i.component === 'secureGateway.clientPolicy',
+      )
+      assert.strictEqual(clientPolicyIssues.length, 1)
+      assert.strictEqual(clientPolicyIssues[0].severity, 'high')
+      assert.ok(clientPolicyIssues[0].message.includes("missing the 'serviceDiscovery' block"))
+    })
+
+    test('When legacy PAC proxy is configured alongside a Service Discovery gateway, then it flags a medium conflict issue', async () => {
+      const handlers = {}
+      const server = createMockServer(handlers)
+      const mockClients = createMockClients()
+      mockClients.chromePolicyClient.resolvePolicy = mock.fn(async (c, ou, schema) => {
+        if (schema === 'chrome.users.SimpleProxySettings') {
+          return [
+            {
+              value: {
+                value: {
+                  simpleProxyMode: 'PROXY_MODE_ENUM_PAC_SCRIPT',
+                  simpleProxyPacUrl: 'https://storage.googleapis.com/pac/wpad.dat',
+                },
+              },
+            },
+          ]
+        }
+        return []
+      })
+      mockClients.beyondcorpClient.listGateways = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1',
+          displayName: 'Gateway 1',
+          state: 'RUNNING',
+          serviceDiscovery: {},
+        },
+      ])
+
+      registerDiagnoseEnvironmentTool(
+        server,
+        { ...mockClients, featureFlags: enabledFlags },
+        { customerId: null, cachedRootOrgUnitId: null },
+      )
+
+      const result = await handlers['diagnose_environment'](
+        { customerId: 'C0123', projectId: 'p1' },
+        { requestInfo: {} },
+      )
+
+      const proxyIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.proxySettings')
+      assert.strictEqual(proxyIssues.length, 1)
+      assert.strictEqual(proxyIssues[0].severity, 'medium')
+      assert.ok(
+        proxyIssues[0].message.includes('The PAC file may conflict with or override SEB extension dynamic routing'),
+      )
+    })
+
+    test('When all gateways are legacy (no Service Discovery) and no PAC file is configured, then it produces a high issue', async () => {
+      const handlers = {}
+      const server = createMockServer(handlers)
+      const mockClients = createMockClients()
+      mockClients.beyondcorpClient.listGateways = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw-legacy',
+          displayName: 'Legacy Gateway',
+          state: 'RUNNING',
+        },
+      ])
+
+      registerDiagnoseEnvironmentTool(
+        server,
+        { ...mockClients, featureFlags: enabledFlags },
+        { customerId: null, cachedRootOrgUnitId: null },
+      )
+
+      const result = await handlers['diagnose_environment'](
+        { customerId: 'C0123', projectId: 'p1' },
+        { requestInfo: {} },
+      )
+
+      const proxyIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.proxySettings')
+      assert.strictEqual(proxyIssues.length, 1)
+      assert.strictEqual(proxyIssues[0].severity, 'high')
+      assert.ok(proxyIssues[0].message.includes('no PAC script proxy policy is configured'))
+    })
+
+    test('When all gateways are legacy (no Service Discovery) and PAC file is configured, then it produces an info notice', async () => {
+      const handlers = {}
+      const server = createMockServer(handlers)
+      const mockClients = createMockClients()
+      mockClients.chromePolicyClient.resolvePolicy = mock.fn(async (c, ou, schema) => {
+        if (schema === 'chrome.users.SimpleProxySettings') {
+          return [
+            {
+              value: {
+                value: {
+                  simpleProxyMode: 'PROXY_MODE_ENUM_PAC_SCRIPT',
+                  simpleProxyPacUrl: 'https://storage.googleapis.com/pac/wpad.dat',
+                },
+              },
+            },
+          ]
+        }
+        return []
+      })
+      mockClients.beyondcorpClient.listGateways = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw-legacy',
+          displayName: 'Legacy Gateway',
+          state: 'RUNNING',
+        },
+      ])
+
+      registerDiagnoseEnvironmentTool(
+        server,
+        { ...mockClients, featureFlags: enabledFlags },
+        { customerId: null, cachedRootOrgUnitId: null },
+      )
+
+      const result = await handlers['diagnose_environment'](
+        { customerId: 'C0123', projectId: 'p1' },
+        { requestInfo: {} },
+      )
+
+      const proxyIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.proxySettings')
+      assert.strictEqual(proxyIssues.length, 1)
+      assert.strictEqual(proxyIssues[0].severity, 'info')
+      assert.ok(proxyIssues[0].message.includes('Legacy PAC proxy setup detected'))
+    })
   })
 })

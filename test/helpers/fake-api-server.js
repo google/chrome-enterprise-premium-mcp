@@ -230,7 +230,7 @@ function getInitialState() {
       ],
       'chrome.users.apps.ManagedConfiguration': [],
       'chrome.users.apps.AppPolicy': [],
-      'chrome.users.ProxySettings': [],
+      'chrome.users.SimpleProxySettings': [],
     },
     activities: [],
     browserVersions: [

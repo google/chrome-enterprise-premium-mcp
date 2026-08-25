@@ -52,6 +52,8 @@ const CONNECTOR_LINK_MAPPING = {
 }
 
 const SEB_EXTENSION_SCHEMA = 'chrome.users.apps.InstallType'
+const SEB_APP_POLICY_SCHEMA = 'chrome.users.apps.ManagedConfiguration'
+const PROXY_SETTINGS_SCHEMA = 'chrome.users.SimpleProxySettings'
 const SEB_EXTENSION_ID = 'chrome:ekajlcmdfcigmdbphhifahdfjbkciflj'
 const DEFAULT_PAGE_SIZE = 50
 
@@ -506,6 +508,84 @@ function computeIssues(data) {
             },
           })
         }
+
+        if (data.sebExtension?.isInstalled) {
+          const sgPolicy = data.sebExtension.securityGatewayPolicy
+          if (!sgPolicy?.configured) {
+            issues.push({
+              severity: 'high',
+              component: 'secureGateway.clientPolicy',
+              message:
+                'Secure Enterprise Browser (SEB) extension is force-installed, but no securityGateway routing policy is configured on the root OU. Chrome will not route traffic to secure gateways. Use `install_seb_extension` with projectId and gatewayId to configure it.',
+              remediation: {
+                actionLabel: 'Configure SEB Extension Policy',
+                url: 'https://admin.google.com/ac/chrome/apps/user',
+              },
+            })
+          } else {
+            const configuredResource = sgPolicy.gatewayResource
+            const matchesGateway = data.secureGateway.gateways.some(
+              gw =>
+                gw.name === configuredResource ||
+                (configuredResource && gw.name?.endsWith(`/${configuredResource.split('/').pop()}`)),
+            )
+            if (configuredResource && !matchesGateway) {
+              issues.push({
+                severity: 'medium',
+                component: 'secureGateway.clientPolicy',
+                message: `SEB extension routing policy points to gateway resource '${configuredResource}', which does not match any Secure Gateway found in project ${data.secureGateway.projectId}.`,
+              })
+            }
+
+            const targetGateway = data.secureGateway.gateways.find(
+              gw =>
+                gw.name === configuredResource ||
+                (configuredResource && gw.name?.endsWith(`/${configuredResource.split('/').pop()}`)),
+            )
+            if (targetGateway?.serviceDiscovery && !sgPolicy.serviceDiscoveryEnabled) {
+              issues.push({
+                severity: 'high',
+                component: 'secureGateway.clientPolicy',
+                message: `Secure Gateway '${targetGateway.displayName || targetGateway.name}' has Service Discovery enabled, but the SEB extension policy on the root OU is missing the 'serviceDiscovery' block. Browser automatic service discovery will not function.`,
+              })
+            }
+          }
+        }
+
+        const mode = (data.proxySettings?.proxyMode || '').toLowerCase()
+        const isPac = Boolean(data.proxySettings && (mode.includes('pac') || Boolean(data.proxySettings.proxyPacUrl)))
+        const pacUrl = data.proxySettings?.proxyPacUrl
+        const hasServiceDiscoveryGateway = data.secureGateway.gateways.some(gw => Boolean(gw.serviceDiscovery))
+        const allLegacyGateways =
+          data.secureGateway.gateways.length > 0 && data.secureGateway.gateways.every(gw => !gw.serviceDiscovery)
+
+        if (isPac && hasServiceDiscoveryGateway) {
+          issues.push({
+            severity: 'medium',
+            component: 'secureGateway.proxySettings',
+            message: `A legacy PAC file proxy policy (${pacUrl || 'pac_script'}) is configured on this OU while Secure Gateway uses Service Discovery. The PAC file may conflict with or override SEB extension dynamic routing.`,
+            remediation: {
+              actionLabel: 'Review Chrome Proxy Settings',
+              url: 'https://admin.google.com/ac/chrome/settings/user',
+            },
+          })
+        } else if (isPac && allLegacyGateways) {
+          issues.push({
+            severity: 'info',
+            component: 'secureGateway.proxySettings',
+            message: `Legacy PAC proxy setup detected (${pacUrl || 'pac_script'}). Secure Gateways without Service Discovery rely on this PAC file for browser routing.`,
+          })
+        } else if (!isPac && allLegacyGateways) {
+          issues.push({
+            severity: 'high',
+            component: 'secureGateway.proxySettings',
+            message: `Secure Gateways in project ${data.secureGateway.projectId} do not have Service Discovery enabled (legacy setup), but no PAC script proxy policy is configured on this OU. Client browser routing will fail without either enabling Service Discovery on the gateway or configuring a PAC file.`,
+            remediation: {
+              actionLabel: 'Configure Proxy PAC script or enable Service Discovery',
+              url: 'https://admin.google.com/ac/chrome/settings/user',
+            },
+          })
+        }
       }
     }
   }
@@ -676,11 +756,60 @@ async function fetchEnvironment(
   let sebExtension = { isInstalled: false }
   if (rootOUId && chromePolicyClient) {
     try {
-      const sebPolicies = await chromePolicyClient.resolvePolicy(customerId, rootOUId, SEB_EXTENSION_SCHEMA, authToken)
+      const [sebPolicies, appPolicies] = await Promise.all([
+        chromePolicyClient.resolvePolicy(customerId, rootOUId, SEB_EXTENSION_SCHEMA, authToken),
+        chromePolicyClient.resolvePolicy(customerId, rootOUId, SEB_APP_POLICY_SCHEMA, authToken).catch(() => []),
+      ])
       const sebEntry = sebPolicies.find(p => p.targetKey?.additionalTargetKeys?.app_id === SEB_EXTENSION_ID)
-      sebExtension = { isInstalled: sebEntry?.value?.value?.appInstallType === 'FORCED' }
+      const isInstalled = sebEntry?.value?.value?.appInstallType === 'FORCED'
+
+      let securityGatewayPolicy = { configured: false }
+      const appPolicyEntry = appPolicies?.find(p => p.targetKey?.additionalTargetKeys?.app_id === SEB_EXTENSION_ID)
+      let rawConfig = appPolicyEntry?.value?.value?.managedConfiguration || appPolicyEntry?.value?.value?.appPolicy
+      if (typeof rawConfig === 'string') {
+        try {
+          rawConfig = JSON.parse(rawConfig)
+        } catch {
+          // ignore parsing error
+        }
+      }
+      const sgValue =
+        rawConfig?.securityGateway?.Value || rawConfig?.securityGateway?.value || rawConfig?.securityGateway
+      if (sgValue) {
+        securityGatewayPolicy = {
+          configured: true,
+          gatewayResource: sgValue?.context?.resource,
+          serviceDiscoveryEnabled: sgValue?.serviceDiscovery !== undefined,
+          policy: rawConfig,
+        }
+      }
+
+      sebExtension = { isInstalled, securityGatewayPolicy }
     } catch {
       sebExtension = { isInstalled: false, error: true }
+    }
+  }
+
+  // Proxy settings on root OU
+  let proxySettings = null
+  if (rootOUId && chromePolicyClient) {
+    try {
+      const proxyPolicies = await chromePolicyClient
+        .resolvePolicy(customerId, rootOUId, PROXY_SETTINGS_SCHEMA, authToken)
+        .catch(() => [])
+      const proxyVal = proxyPolicies[0]?.value?.value || {}
+      const proxyMode = proxyVal.simpleProxyMode || proxyVal.proxyMode
+      const proxyPacUrl = proxyVal.simpleProxyPacUrl || proxyVal.proxyPacUrl
+      const proxyServer = proxyVal.simpleProxyServerUrl || proxyVal.proxyServer
+      if (proxyMode || proxyPacUrl || proxyServer) {
+        proxySettings = {
+          proxyMode,
+          proxyPacUrl,
+          proxyServer,
+        }
+      }
+    } catch (err) {
+      logger.debug(`${TAGS.API} Failed to resolve ${PROXY_SETTINGS_SCHEMA}: ${err.message}`)
     }
   }
 
@@ -756,6 +885,7 @@ async function fetchEnvironment(
     allDetectors,
     connectors,
     sebExtension,
+    proxySettings,
     securityInsights,
     contentTransfers: normalizedContentTransfers,
     urlVisits: normalizedUrlVisits,
@@ -893,6 +1023,7 @@ function buildSummaryResponse(env) {
     detectors: { total: allDetectors.length },
     connectors,
     sebExtension,
+    proxySettings: env.proxySettings,
     securityInsights,
     contentTransfers,
     urlVisits,
@@ -942,7 +1073,18 @@ function buildSummaryResponse(env) {
   summary += `**DLP Rules:** ${allDlpRules.length} total (${activeRules.length} active: ${dlpRuleSummary.byAction.block} block, ${dlpRuleSummary.byAction.warn} warn, ${dlpRuleSummary.byAction.audit} audit, ${dlpRuleSummary.byAction.watermark} watermark)\n`
   summary += `**Detectors:** ${allDetectors.length}\n`
   summary += `**Browser Versions:** ${versions.length} versions across ${totalDevices} devices\n`
-  summary += `**SEB Extension:** ${sebExtension.isInstalled ? 'Force-installed' : 'Not installed'}\n`
+  let sebSummary = `**SEB Extension:** ${sebExtension.isInstalled ? 'Force-installed' : 'Not installed'}`
+  if (sebExtension.isInstalled && sebExtension.securityGatewayPolicy?.configured) {
+    sebSummary += ' (Secure Gateway: configured)'
+  }
+  summary += `${sebSummary}\n`
+
+  if (env.proxySettings) {
+    const rawMode = env.proxySettings.proxyMode || 'unspecified'
+    const mode = rawMode.replace(/^PROXY_MODE_ENUM_/, '').toLowerCase()
+    const pacUrl = env.proxySettings.proxyPacUrl
+    summary += `**Chrome Proxy:** ${mode}${pacUrl ? ` (${pacUrl})` : ''}\n`
+  }
 
   if (secureGateway) {
     if (secureGateway.skipped) {
