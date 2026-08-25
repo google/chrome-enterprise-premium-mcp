@@ -25,6 +25,7 @@ import { logger } from '../../lib/util/logger.js'
 
 const SEB_EXTENSION_ID = 'ekajlcmdfcigmdbphhifahdfjbkciflj'
 const INSTALL_TYPE_SCHEMA = 'chrome.users.apps.InstallType'
+const APP_POLICY_SCHEMA = 'chrome.users.apps.ManagedConfiguration'
 
 /**
  * Registers the 'install_seb_extension' tool with the MCP server.
@@ -42,34 +43,50 @@ export function registerInstallSebExtensionTool(server, options, sessionState) {
     'install_seb_extension',
     {
       description: `Force-installs the Secure Enterprise Browser (SEB) extension for a given Organizational Unit.
-The SEB extension is REQUIRED for advanced Chrome Enterprise Premium features like data masking.`,
+Optionally configures the BeyondCorp Secure Gateway client routing policy if projectId and gatewayId are provided.
+The SEB extension is REQUIRED for advanced Chrome Enterprise Premium features like data masking and Secure Gateway routing.`,
       inputSchema: {
         customerId: z.string().optional().describe('The Chrome customer ID (e.g. C012345).'),
         orgUnitId: z
           .string()
           .describe('The ID of the organizational unit where the extension will be force-installed.'),
+        projectId: z.string().optional().describe('The Google Cloud project ID for Secure Gateway configuration.'),
+        gatewayId: z.string().optional().describe('The Secure Gateway ID to configure for browser routing.'),
+        enableServiceDiscovery: z
+          .boolean()
+          .optional()
+          .default(true)
+          .describe('Whether to enable Service Discovery in the SEB extension policy. Defaults to true.'),
       },
       outputSchema: z.looseObject({
         success: z.boolean(),
         alreadyInstalled: z.boolean(),
         newlyInstalled: z.boolean(),
+        policyConfigured: z.boolean().optional(),
+        securityGatewayPolicy: z.looseObject({}).optional(),
       }),
     },
     guardedToolCall(
       {
         /**
-         * Handler for force-installing the SEB extension.
+         * Handler for force-installing the SEB extension and configuring its policy.
          * @param {object} params - The tool parameters.
          * @param {string} [params.customerId] - The Chrome customer ID.
          * @param {string} params.orgUnitId - The organizational unit ID.
+         * @param {string} [params.projectId] - The GCP project ID for Secure Gateway.
+         * @param {string} [params.gatewayId] - The Secure Gateway ID.
+         * @param {boolean} [params.enableServiceDiscovery] - Whether Service Discovery is enabled.
          * @param {object} context - The tool execution context.
          * @param {object} context._requestInfo - The request info object.
          * @param {string} context.authToken - The OAuth2 access token.
          * @returns {Promise<object>} The formatted tool response.
          */
-        handler: async ({ customerId, orgUnitId }, { _requestInfo, authToken }) => {
+        handler: async (
+          { customerId, orgUnitId, projectId, gatewayId, enableServiceDiscovery = true },
+          { _requestInfo, authToken },
+        ) => {
           logger.debug(
-            `${TAGS.MCP} Calling 'install_seb_extension' with customerId: ${customerId}, orgUnitId: ${orgUnitId}`,
+            `${TAGS.MCP} Calling 'install_seb_extension' with customerId: ${customerId}, orgUnitId: ${orgUnitId}, projectId: ${projectId}, gatewayId: ${gatewayId}`,
           )
 
           // Resolve current policy to see if it's already force-installed
@@ -86,18 +103,11 @@ The SEB extension is REQUIRED for advanced Chrome Enterprise Premium features li
               p.targetKey?.additionalTargetKeys?.app_id === `chrome:${SEB_EXTENSION_ID}`,
           )
 
-          if (sebPolicy?.value?.value?.appInstallType === 'FORCED') {
-            const sc = { success: true, alreadyInstalled: true, newlyInstalled: false }
-            return formatToolResponse({
-              summary: 'SEB extension is already force-installed on this OU.',
-              data: sc,
-              structuredContent: sc,
-            })
-          }
+          const isAlreadyInstalled = sebPolicy?.value?.value?.appInstallType === 'FORCED'
+          const requests = []
 
-          // Update the policy to set it to FORCED
-          const requests = [
-            {
+          if (!isAlreadyInstalled) {
+            requests.push({
               policyTargetKey: {
                 targetResource: `orgunits/${orgUnitId}`,
                 additionalTargetKeys: {
@@ -111,14 +121,71 @@ The SEB extension is REQUIRED for advanced Chrome Enterprise Premium features li
                 },
               },
               updateMask: 'appInstallType',
-            },
-          ]
+            })
+          }
+
+          let securityGatewayConfig = null
+          if (projectId && gatewayId) {
+            securityGatewayConfig = {
+              securityGateway: {
+                Value: {
+                  authentication: {},
+                  context: {
+                    resource: `projects/${projectId}/locations/global/securityGateways/${gatewayId}`,
+                  },
+                  ...(enableServiceDiscovery !== false ? { serviceDiscovery: { routes: {} } } : {}),
+                },
+              },
+            }
+
+            requests.push({
+              policyTargetKey: {
+                targetResource: `orgunits/${orgUnitId}`,
+                additionalTargetKeys: {
+                  app_id: `chrome:${SEB_EXTENSION_ID}`,
+                },
+              },
+              policyValue: {
+                policySchema: APP_POLICY_SCHEMA,
+                value: {
+                  managedConfiguration: JSON.stringify(securityGatewayConfig),
+                },
+              },
+              updateMask: 'managedConfiguration',
+            })
+          }
+
+          if (requests.length === 0) {
+            const sc = { success: true, alreadyInstalled: true, newlyInstalled: false, policyConfigured: false }
+            return formatToolResponse({
+              summary: 'SEB extension is already force-installed on this OU.',
+              data: sc,
+              structuredContent: sc,
+            })
+          }
 
           await chromePolicyClient.batchModifyPolicy(customerId, orgUnitId, requests, authToken)
 
-          const sc = { success: true, alreadyInstalled: false, newlyInstalled: true }
+          const policyConfigured = !!securityGatewayConfig
+          const sc = {
+            success: true,
+            alreadyInstalled: isAlreadyInstalled,
+            newlyInstalled: !isAlreadyInstalled,
+            policyConfigured,
+            ...(securityGatewayConfig ? { securityGatewayPolicy: securityGatewayConfig } : {}),
+          }
+
+          let summary = ''
+          if (!isAlreadyInstalled && policyConfigured) {
+            summary = `Successfully force-installed SEB extension and configured Secure Gateway routing policy for '${gatewayId}' on this OU.`
+          } else if (policyConfigured) {
+            summary = `SEB extension is already force-installed. Successfully updated Secure Gateway routing policy for '${gatewayId}' on this OU.`
+          } else {
+            summary = 'Successfully force-installed SEB extension on this OU. Policy propagation may take time.'
+          }
+
           return formatToolResponse({
-            summary: 'Successfully force-installed SEB extension on this OU. Policy propagation may take time.',
+            summary,
             data: sc,
             structuredContent: sc,
           })

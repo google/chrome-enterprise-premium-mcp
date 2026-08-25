@@ -71,8 +71,92 @@ describe('Extension Tools', () => {
 
     const result = await handler({ customerId: 'C123', orgUnitId: 'ou1' }, { requestInfo: {} })
 
-    assert.strictEqual(mockResolvePolicy.mock.callCount(), 1)
+    assert.strictEqual(mockResolvePolicy.mock.callCount(), 2)
     assert.ok(result.content[0].text.includes(`SEB extension (\`${SEB_EXTENSION_ID}\`) is force-installed on this OU.`))
+  })
+
+  test('When check_seb_extension_status is called and extension has securityGateway policy and inheritance, then it returns details', async () => {
+    const mockResolvePolicy = mock.fn(async (c, ou, schema) => {
+      if (schema === INSTALL_TYPE_SCHEMA) {
+        return [
+          {
+            targetKey: {
+              targetResource: 'orgunits/childOU',
+              additionalTargetKeys: { app_id: `chrome:${SEB_EXTENSION_ID}` },
+            },
+            sourceKey: {
+              targetResource: 'orgunits/parentOU',
+              additionalTargetKeys: { app_id: `chrome:${SEB_EXTENSION_ID}` },
+            },
+            value: {
+              policySchema: INSTALL_TYPE_SCHEMA,
+              value: {
+                appInstallType: 'FORCED',
+              },
+            },
+          },
+        ]
+      }
+      return [
+        {
+          targetKey: {
+            targetResource: 'orgunits/childOU',
+            additionalTargetKeys: { app_id: `chrome:${SEB_EXTENSION_ID}` },
+          },
+          value: {
+            policySchema: 'chrome.users.apps.ManagedConfiguration',
+            value: {
+              managedConfiguration: JSON.stringify({
+                securityGateway: {
+                  Value: {
+                    context: { resource: 'projects/p1/locations/global/securityGateways/gw1' },
+                    serviceDiscovery: { routes: {} },
+                  },
+                },
+              }),
+            },
+          },
+        },
+      ]
+    })
+
+    const MockChromePolicyClient = class {
+      constructor() {
+        this.resolvePolicy = mockResolvePolicy
+      }
+    }
+
+    const { registerTools } = await esmock(
+      '../../tools/index.js',
+      {},
+      {
+        '../../lib/api/chrome_policy_client.js': {
+          ChromePolicyClient: MockChromePolicyClient,
+        },
+      },
+    )
+
+    registerTools(server, {
+      apiClients: { chromePolicy: new MockChromePolicyClient() },
+    })
+
+    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'check_seb_extension_status')
+      .arguments[2]
+
+    const result = await handler({ customerId: 'C123', orgUnitId: 'childOU' }, { requestInfo: {} })
+
+    assert.strictEqual(mockResolvePolicy.mock.callCount(), 2)
+    assert.strictEqual(result.structuredContent.inherited, true)
+    assert.strictEqual(result.structuredContent.sourceOrgUnitId, 'parentOU')
+    assert.strictEqual(result.structuredContent.targetOrgUnitId, 'childOU')
+    assert.strictEqual(result.structuredContent.securityGatewayPolicy.configured, true)
+    assert.strictEqual(
+      result.structuredContent.securityGatewayPolicy.gatewayResource,
+      'projects/p1/locations/global/securityGateways/gw1',
+    )
+    assert.strictEqual(result.structuredContent.securityGatewayPolicy.serviceDiscoveryEnabled, true)
+    assert.ok(result.content[0].text.includes('Inherited from parent OU'))
+    assert.ok(result.content[0].text.includes('Secure Gateway routing is configured'))
   })
 
   test('When check_seb_extension_status is called and extension is missing, then it returns an error indicator', async () => {
@@ -152,6 +236,63 @@ describe('Extension Tools', () => {
     assert.ok(result.content[0].text.includes('SEB extension is already force-installed on this OU.'))
   })
 
+  test('When install_seb_extension is called with projectId and gatewayId on existing extension, then it updates app policy', async () => {
+    const mockResolvePolicy = mock.fn(async () => [
+      {
+        targetKey: {
+          additionalTargetKeys: { app_id: `chrome:${SEB_EXTENSION_ID}` },
+        },
+        value: {
+          policySchema: INSTALL_TYPE_SCHEMA,
+          value: { appInstallType: 'FORCED' },
+        },
+      },
+    ])
+    const mockBatchModifyPolicy = mock.fn()
+
+    const MockChromePolicyClient = class {
+      constructor() {
+        this.resolvePolicy = mockResolvePolicy
+        this.batchModifyPolicy = mockBatchModifyPolicy
+      }
+    }
+
+    const { registerTools } = await esmock(
+      '../../tools/index.js',
+      {},
+      {
+        '../../lib/api/chrome_policy_client.js': {
+          ChromePolicyClient: MockChromePolicyClient,
+        },
+      },
+    )
+
+    registerTools(server, {
+      apiClients: { chromePolicy: new MockChromePolicyClient() },
+    })
+
+    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'install_seb_extension')
+      .arguments[2]
+
+    const result = await handler(
+      { customerId: 'C123', orgUnitId: 'ou1', projectId: 'p1', gatewayId: 'gw1' },
+      { requestInfo: {} },
+    )
+
+    assert.strictEqual(mockBatchModifyPolicy.mock.callCount(), 1)
+    const passedRequests = mockBatchModifyPolicy.mock.calls[0].arguments[2]
+    assert.strictEqual(passedRequests.length, 1)
+    assert.strictEqual(passedRequests[0].policyValue.policySchema, 'chrome.users.apps.ManagedConfiguration')
+    assert.strictEqual(passedRequests[0].updateMask, 'managedConfiguration')
+    const parsed = JSON.parse(passedRequests[0].policyValue.value.managedConfiguration)
+    assert.strictEqual(
+      parsed.securityGateway.Value.context.resource,
+      'projects/p1/locations/global/securityGateways/gw1',
+    )
+    assert.ok(parsed.securityGateway.Value.serviceDiscovery)
+    assert.ok(result.content[0].text.includes('Successfully updated Secure Gateway routing policy'))
+  })
+
   test('When install_seb_extension is called and extension is missing, then it force-installs it', async () => {
     const mockResolvePolicy = mock.fn(async () => [])
     const mockBatchModifyPolicy = mock.fn()
@@ -187,6 +328,58 @@ describe('Extension Tools', () => {
     assert.strictEqual(passedRequests[0].policyValue.value.appInstallType, 'FORCED')
     assert.strictEqual(passedRequests[0].policyTargetKey.additionalTargetKeys.app_id, `chrome:${SEB_EXTENSION_ID}`)
     assert.ok(result.content[0].text.includes('Successfully force-installed SEB extension on this OU.'))
+  })
+
+  test('When install_seb_extension is called with projectId, gatewayId and enableServiceDiscovery=false, then it installs both without serviceDiscovery', async () => {
+    const mockResolvePolicy = mock.fn(async () => [])
+    const mockBatchModifyPolicy = mock.fn()
+
+    const MockChromePolicyClient = class {
+      constructor() {
+        this.resolvePolicy = mockResolvePolicy
+        this.batchModifyPolicy = mockBatchModifyPolicy
+      }
+    }
+
+    const { registerTools } = await esmock(
+      '../../tools/index.js',
+      {},
+      {
+        '../../lib/api/chrome_policy_client.js': {
+          ChromePolicyClient: MockChromePolicyClient,
+        },
+      },
+    )
+
+    registerTools(server, {
+      apiClients: { chromePolicy: new MockChromePolicyClient() },
+    })
+
+    const handler = server.registerTool.mock.calls.find(call => call.arguments[0] === 'install_seb_extension')
+      .arguments[2]
+
+    const result = await handler(
+      { customerId: 'C123', orgUnitId: 'ou1', projectId: 'p1', gatewayId: 'gw-legacy', enableServiceDiscovery: false },
+      { requestInfo: {} },
+    )
+
+    assert.strictEqual(mockBatchModifyPolicy.mock.callCount(), 1)
+    const passedRequests = mockBatchModifyPolicy.mock.calls[0].arguments[2]
+    assert.strictEqual(passedRequests.length, 2)
+    assert.strictEqual(passedRequests[0].policyValue.value.appInstallType, 'FORCED')
+    assert.strictEqual(passedRequests[1].policyValue.policySchema, 'chrome.users.apps.ManagedConfiguration')
+    assert.strictEqual(passedRequests[1].updateMask, 'managedConfiguration')
+    const parsed = JSON.parse(passedRequests[1].policyValue.value.managedConfiguration)
+    assert.strictEqual(
+      parsed.securityGateway.Value.context.resource,
+      'projects/p1/locations/global/securityGateways/gw-legacy',
+    )
+    assert.strictEqual(parsed.securityGateway.Value.serviceDiscovery, undefined)
+    assert.ok(
+      result.content[0].text.includes(
+        'Successfully force-installed SEB extension and configured Secure Gateway routing policy',
+      ),
+    )
   })
 
   test('When check_ev_extension_status is called and extension is installed directly, then it returns success and indicates direct application', async () => {
