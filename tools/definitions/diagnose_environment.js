@@ -108,7 +108,7 @@ function computeIssues(data) {
     })
   } else if (data.subscription?.assignmentCount === 0) {
     issues.push({
-      severity: 'warning',
+      severity: 'high',
       component: 'subscription',
       message:
         'Chrome Enterprise Premium subscription is active, but 0 users have licenses assigned. You must assign licenses to users.',
@@ -514,8 +514,7 @@ function computeIssues(data) {
     critical: 0,
     high: 1,
     medium: 2,
-    warning: 3,
-    info: 4,
+    info: 3,
   }
 
   return issues.sort((a, b) => {
@@ -906,7 +905,7 @@ function buildSummaryResponse(env) {
   const critical = sc.issues.filter(i => i.severity === 'critical').length
   const high = sc.issues.filter(i => i.severity === 'high').length
   const medium = sc.issues.filter(i => i.severity === 'medium').length
-  const warning = sc.issues.filter(i => i.severity === 'warning').length
+  const info = sc.issues.filter(i => i.severity === 'info').length
 
   let summary = `## Environment Health Check\n\n`
   summary += `> **Scope:** Health check is scoped to the Root Organizational Unit (/). Sub-OU overrides are not included in this summary.\n\n`
@@ -964,8 +963,8 @@ function buildSummaryResponse(env) {
     summary += `**Result: No issues found.** The environment appears healthy.\n`
   } else {
     let countsStr = `${critical} critical, ${high} high, ${medium} medium`
-    if (warning > 0) {
-      countsStr += `, ${warning} warning`
+    if (info > 0) {
+      countsStr += `, ${info} info`
     }
     summary += `**Result: ${issueCount} issue(s) found** (${countsStr})\n\n`
     for (const issue of sc.issues) {
