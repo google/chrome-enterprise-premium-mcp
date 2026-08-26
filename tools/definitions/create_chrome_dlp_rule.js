@@ -75,7 +75,6 @@ export function registerCreateChromeDlpRuleTool(server, options, sessionState) {
     {
       description: `Creates a new Chrome DLP rule for a specific Organizational Unit.
 Applies browser-level protection (uploads, downloads, printing).
-${MCP_SAFETY_CONSTRAINTS.ACTIVE_BLOCK_RESTRICTION}
 
 To ensure technical accuracy and verify trigger compatibility, you should retrieve the full technical reference using 'get_document' for '11-dlp-rule-reference' before using this tool.`,
       inputSchema: {
@@ -108,7 +107,7 @@ To ensure technical accuracy and verify trigger compatibility, you should retrie
         action: z
           .enum([CHROME_ACTION_TYPES.BLOCK.value, CHROME_ACTION_TYPES.WARN.value, CHROME_ACTION_TYPES.AUDIT.value])
           .describe(
-            'Action to take when the rule is triggered. AUDIT mode is silent and logs events without notifying or blocking the user.',
+            `Action to take when the rule is triggered. AUDIT mode is silent and logs events without notifying or blocking the user. ${MCP_SAFETY_CONSTRAINTS.ACTIVE_BLOCK_RESTRICTION}`,
           ),
         state: z
           .enum(Object.values(POLICY_STATES).map(s => s.value))
