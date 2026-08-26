@@ -185,21 +185,81 @@ export function commonTransform(params) {
   return newParams
 }
 
+const METADATA_KEYS = new Set(['etag', 'kind', 'selfLink', 'updateTime', 'createTime'])
+const LIST_SUMMARY_LIMIT = 5
+
+/**
+ * Automatically converts a structured data object or array into a clean markdown summary.
+ * Filters out common API-noise keys and limits array lengths to prevent token bloat.
+ * @param {unknown} val - The structured data value to format
+ * @param {string} [indent] - The current line indentation
+ * @returns {string} The formatted markdown narrative
+ */
+function autoGenerateSummary(val, indent = '') {
+  if (val === null || val === undefined) {
+    return '(none)'
+  }
+
+  if (Array.isArray(val)) {
+    if (val.length === 0) {
+      return '[]'
+    }
+    const items = val.slice(0, LIST_SUMMARY_LIMIT).map(item => {
+      if (typeof item === 'object') {
+        return `\n${indent}- ${autoGenerateSummary(item, indent + '  ')}`
+      }
+      return `\n${indent}- ${item}`
+    })
+
+    let summary = items.join('')
+    if (val.length > LIST_SUMMARY_LIMIT) {
+      summary += `\n${indent}... and ${val.length - LIST_SUMMARY_LIMIT} more items (inspect the JSON payload for full list)`
+    }
+    return summary
+  }
+
+  if (typeof val === 'object') {
+    const lines = []
+    for (const [key, value] of Object.entries(val)) {
+      if (METADATA_KEYS.has(key)) {
+        continue
+      }
+
+      if (typeof value === 'object' && value !== null) {
+        lines.push(`${indent}**${key}**:${autoGenerateSummary(value, indent + '  ')}`)
+      } else {
+        lines.push(`${indent}**${key}**: ${value}`)
+      }
+    }
+    return lines.length > 0 ? `\n${lines.join('\n')}` : '(empty object)'
+  }
+
+  return String(val)
+}
+
 /**
  * Formats a tool response with a summary and a fenced JSON block.
+ * Automatically generates a human-readable summary if the summary argument is omitted or empty.
  * @param {object} params - The response parameters
- * @param {string} params.summary - Human-readable summary (markdown)
+ * @param {string} [params.summary] - Human-readable summary (markdown). Optional.
  * @param {object} [params.data] - Data to be serialized in the JSON block
  * @param {object} [params.structuredContent] - Machine-readable content for SDK
  * @returns {object} MCP-compatible tool response
  */
 export function formatToolResponse({ summary, data, structuredContent }) {
+  const payload = structuredContent ?? data
+  let finalSummary = summary
+
+  if (!finalSummary) {
+    finalSummary = autoGenerateSummary(payload)
+  }
+
   return {
     content: [
-      { type: 'text', text: summary },
+      { type: 'text', text: finalSummary },
       { type: 'text', text: '```json\n' + JSON.stringify(data, null, 2) + '\n```' },
     ],
-    structuredContent,
+    structuredContent: payload,
   }
 }
 
