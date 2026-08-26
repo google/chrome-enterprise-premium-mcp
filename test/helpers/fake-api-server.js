@@ -1071,6 +1071,7 @@ export function createFakeApp() {
 
   // Access Context Manager: List Access Policies
   app.get('/v1/accessPolicies', (req, res) => {
+    state.accessPolicies = state.accessPolicies || Object.create(null)
     const parent = req.query.parent
     const list = Object.values(state.accessPolicies).filter(p => !parent || p.parent === parent)
     res.json({ accessPolicies: list })
@@ -1078,6 +1079,8 @@ export function createFakeApp() {
 
   // Access Context Manager: Create Access Policy
   app.post('/v1/accessPolicies', (req, res) => {
+    state.accessPolicies = state.accessPolicies || Object.create(null)
+    state.acmOperations = state.acmOperations || Object.create(null)
     const id = Object.keys(state.accessPolicies).length + 10000
     const name = `accessPolicies/${id}`
     const policy = {
@@ -1094,6 +1097,7 @@ export function createFakeApp() {
 
   // Access Context Manager: List Access Levels
   app.get('/v1/accessPolicies/:policyId/accessLevels', (req, res) => {
+    state.accessLevels = state.accessLevels || Object.create(null)
     const { policyId } = req.params
     const parent = `accessPolicies/${policyId}`
     const list = Object.values(state.accessLevels).filter(l => l.name?.startsWith(`${parent}/accessLevels/`))
@@ -1102,6 +1106,8 @@ export function createFakeApp() {
 
   // Access Context Manager: Create Access Level
   app.post('/v1/accessPolicies/:policyId/accessLevels', (req, res) => {
+    state.accessLevels = state.accessLevels || Object.create(null)
+    state.acmOperations = state.acmOperations || Object.create(null)
     const { policyId } = req.params
     const level = req.body
     if (!level.name) {
@@ -1117,6 +1123,7 @@ export function createFakeApp() {
 
   // Access Context Manager: Get Operation
   app.get(/^\/v1\/operations\/(.*)$/, (req, res) => {
+    state.acmOperations = state.acmOperations || Object.create(null)
     const rawPath = req.params[0]
     const opName = rawPath ? `operations/${rawPath}` : req.path.substring(1)
     const op = state.acmOperations[opName] || { name: opName, done: true }

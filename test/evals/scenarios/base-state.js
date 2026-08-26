@@ -400,6 +400,16 @@ export function getBaseState() {
       },
     ],
 
+    accessPolicies: {
+      'accessPolicies/10001': {
+        name: 'accessPolicies/10001',
+        parent: 'organizations/123456789',
+        title: 'Org 123456789 Policy',
+      },
+    },
+    accessLevels: {},
+    acmOperations: {},
+
     serviceUsage: Object.fromEntries(Object.values(SERVICE_NAMES).map(name => [name, 'ENABLED'])),
   }
 }
