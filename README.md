@@ -18,7 +18,7 @@ Before setting up the MCP server, ensure you have the following:
 1.  **Node.js & npm:** Node.js version `20.0.0` or higher installed locally.
 2.  **Google Workspace Account:**
     - Any Workspace edition with a [Chrome Enterprise Premium](https://docs.cloud.google.com/chrome-enterprise-premium/docs/overview) license.
-    - An administrator role in the [Admin Console](https://admin.google.com/) (Super Admin or delegated with **Chrome Management** and **DLP** permissions). Standard Workspace accounts (or Google Cloud IAM permissions alone) do not grant access and will return `403 Permission Denied` errors with no indication that a Workspace role is missing.
+    - An administrator role in the [Admin Console](https://admin.google.com/). Note that **Super Admin is required** for DLP features and running full diagnostics, while delegated roles with Chrome Management permissions are sufficient for other tools (see [Administrator Role Requirements](docs/configuration.md#administrator-role-requirements) for details). Standard Workspace accounts (or Google Cloud IAM permissions alone) do not grant access.
 3.  **OAuth App Trust (if required):** If your organization restricts third-party app access, a Super Admin must [trust the OAuth client](docs/troubleshooting.md#configure-oauth-app-for-sensitive-scopes) in the Admin Console before you can authenticate.
 4.  **MCP Client:** A compatible MCP host application (such as Gemini CLI, Claude Desktop, Cursor, Windsurf, or VS Code).
 
