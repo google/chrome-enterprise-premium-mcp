@@ -161,6 +161,7 @@ To ensure technical accuracy and verify trigger compatibility, you should retrie
 
     guardedToolCall(
       {
+        isMutating: true,
         requiresDelegation: true,
         transform: params => {
           const prefix = AGENT_DISPLAY_NAME_PREFIX

@@ -64,6 +64,7 @@ Use this for security investigations, auditing user actions, and to help tune DL
     },
     guardedToolCall(
       {
+        isMutating: false,
         /**
          * Transforms input parameters to provide default time ranges.
          * @param {object} params - The tool parameters.

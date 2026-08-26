@@ -64,6 +64,7 @@ Detectors are building blocks for DLP rules. After creating a detector, you must
     },
     guardedToolCall(
       {
+        isMutating: true,
         requiresDelegation: true,
         /**
          * Handler for creating a word list detector.

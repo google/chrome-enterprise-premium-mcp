@@ -61,6 +61,7 @@ export function registerSecureGatewayTools(server, options, sessionState) {
     },
     guardedToolCall(
       {
+        isMutating: true,
         skipAutoResolve: true,
         handler: async (params, { authToken }) => {
           const { projectId, gatewayId, displayName, enableServiceDiscovery } = params
@@ -101,6 +102,7 @@ export function registerSecureGatewayTools(server, options, sessionState) {
     },
     guardedToolCall(
       {
+        isMutating: false,
         skipAutoResolve: true,
         handler: async (params, { authToken }) => {
           const { projectId, gatewayId } = params
@@ -131,6 +133,7 @@ export function registerSecureGatewayTools(server, options, sessionState) {
     },
     guardedToolCall(
       {
+        isMutating: false,
         skipAutoResolve: true,
         handler: async (params, { authToken }) => {
           const { projectId } = params
@@ -161,6 +164,7 @@ export function registerSecureGatewayTools(server, options, sessionState) {
     },
     guardedToolCall(
       {
+        isMutating: true,
         skipAutoResolve: true,
         handler: async (params, { authToken }) => {
           const { projectId, gatewayId } = params
@@ -202,6 +206,7 @@ export function registerSecureGatewayTools(server, options, sessionState) {
     },
     guardedToolCall(
       {
+        isMutating: true,
         skipAutoResolve: true,
         handler: async (params, { authToken }) => {
           const { projectId, gatewayId, displayName } = params
@@ -270,6 +275,7 @@ export function registerSecureGatewayTools(server, options, sessionState) {
     },
     guardedToolCall(
       {
+        isMutating: true,
         skipAutoResolve: true,
         handler: async (params, { authToken }) => {
           const { projectId, gatewayId, applicationId, displayName, hostName, ports, privateNetwork, egressRegions } =
@@ -330,6 +336,7 @@ export function registerSecureGatewayTools(server, options, sessionState) {
     },
     guardedToolCall(
       {
+        isMutating: false,
         skipAutoResolve: true,
         handler: async (params, { authToken }) => {
           const { projectId, gatewayId, applicationId } = params
@@ -361,6 +368,7 @@ export function registerSecureGatewayTools(server, options, sessionState) {
     },
     guardedToolCall(
       {
+        isMutating: false,
         skipAutoResolve: true,
         handler: async (params, { authToken }) => {
           const { projectId, gatewayId } = params
@@ -408,6 +416,7 @@ export function registerSecureGatewayTools(server, options, sessionState) {
     },
     guardedToolCall(
       {
+        isMutating: true,
         skipAutoResolve: true,
         handler: async (params, { authToken }) => {
           const { projectId, gatewayId, applicationId, displayName, hostName, ports, privateNetwork, egressRegions } =
@@ -479,6 +488,7 @@ export function registerSecureGatewayTools(server, options, sessionState) {
       },
       guardedToolCall(
         {
+          isMutating: true,
           skipAutoResolve: true,
           handler: async (params, { authToken }) => {
             const { projectId, gatewayId, applicationId } = params
@@ -554,6 +564,7 @@ export function registerSecureGatewayTools(server, options, sessionState) {
     },
     guardedToolCall(
       {
+        isMutating: false,
         skipAutoResolve: true,
         handler: async (params, { authToken }) => {
           const { projectId, gatewayId } = params
@@ -588,6 +599,7 @@ export function registerSecureGatewayTools(server, options, sessionState) {
     },
     guardedToolCall(
       {
+        isMutating: false,
         skipAutoResolve: true,
         handler: async (params, { authToken }) => {
           const { projectId, gatewayId, applicationId } = params
@@ -622,6 +634,7 @@ export function registerSecureGatewayTools(server, options, sessionState) {
     },
     guardedToolCall(
       {
+        isMutating: true,
         skipAutoResolve: true,
         handler: async (params, { authToken }) => {
           const { projectId, gatewayId, policy } = params
@@ -657,6 +670,7 @@ export function registerSecureGatewayTools(server, options, sessionState) {
     },
     guardedToolCall(
       {
+        isMutating: true,
         skipAutoResolve: true,
         handler: async (params, { authToken }) => {
           const { projectId, gatewayId, applicationId, policy } = params

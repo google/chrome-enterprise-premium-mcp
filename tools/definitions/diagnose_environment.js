@@ -943,6 +943,7 @@ Use 'limit' and 'offset' for pagination on large datasets.`,
     },
     guardedToolCall(
       {
+        isMutating: false,
         handler: async ({ customerId, projectId, section, limit, offset }, { _requestInfo, authToken }) => {
           logger.info(`${TAGS.MCP} diagnose_environment: starting (section=${section || 'summary'})`)
 

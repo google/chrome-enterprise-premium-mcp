@@ -51,6 +51,7 @@ These profiles represent managed browser instances and provide details like OS v
     },
     guardedToolCall(
       {
+        isMutating: false,
         /**
          * Handler for listing customer browser profiles.
          * @param {object} params - The tool parameters.
