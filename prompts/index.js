@@ -22,8 +22,6 @@ limitations under the License.
 
 import { registerHealthPrompt } from './definitions/health.js'
 import { registerOptimizePrompt } from './definitions/optimize.js'
-import { registerExpertPrompt } from './definitions/expert.js'
-import { registerAuthPrompt } from './definitions/auth.js'
 
 /**
  * Registers all prompts with the MCP server.
@@ -32,6 +30,4 @@ import { registerAuthPrompt } from './definitions/auth.js'
 export function registerPrompts(server) {
   registerHealthPrompt(server)
   registerOptimizePrompt(server)
-  registerExpertPrompt(server)
-  registerAuthPrompt(server)
 }

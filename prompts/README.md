@@ -24,10 +24,8 @@ agent through complex diagnostic and optimization workflows.
 - `index.js` — Registers all prompts with the server.
 - `definitions/` — One file per prompt, each exporting a
   `registerXxxPrompt(server)` function.
-- `system-prompt.md` — The agent's behavioral instructions, injected into the
-  first tool response by `tools/utils/wrapper.js`. The `cep:expert` prompt
-  re-injects the same content and serves as a manual override when a client
-  drops context mid-conversation.
+- `system-prompt.md` — The agent's behavioral instructions, injected during
+  MCP server initialization.
 
 ## Current prompts
 
@@ -35,7 +33,6 @@ agent through complex diagnostic and optimization workflows.
 | :------------- | :------------ | :------------------------------------------------------------------------- |
 | `cep:health`   | `health.js`   | Health check of the Chrome Enterprise environment.                         |
 | `cep:optimize` | `optimize.js` | Rule-by-rule review with tuning, enforcement, and cleanup recommendations. |
-| `cep:expert`   | `expert.js`   | Loads the full expert persona from `system-prompt.md`.                     |
 
 ## Shared diagnostic rules (`definitions/shared.js`)
 
