@@ -57,7 +57,7 @@ describe('MCP Prompts', () => {
     const result = await client.listPrompts()
     const promptNames = result.prompts.map(p => p.name).sort()
 
-    assert.deepStrictEqual(promptNames, ['cep:health', 'cep:expert', 'cep:optimize', 'cep:auth'].sort())
+    assert.deepStrictEqual(promptNames, ['cep:health', 'cep:optimize'].sort())
   })
 
   test('When cep:health prompt is requested, then it returns its content', async () => {
@@ -86,21 +86,5 @@ describe('MCP Prompts', () => {
     assert.doesNotMatch(text, /Maturity Tier/)
     assert.doesNotMatch(text, /\bMECE\b/)
     assert.doesNotMatch(text, /Tier [0-3]/)
-  })
-
-  test('When cep:expert prompt is requested, then it returns its content', async () => {
-    const result = await client.getPrompt({ name: 'cep:expert' })
-
-    assert.ok(result.messages)
-    assert.ok(result.messages[0].content.text.includes('Chrome Enterprise Premium (CEP) Technical Agent'))
-  })
-
-  test('When cep:auth prompt is requested, then it points the agent at the cep_auth tool', async () => {
-    const result = await client.getPrompt({ name: 'cep:auth' })
-
-    assert.ok(result.messages)
-    const text = result.messages[0].content.text
-    assert.match(text, /cep_auth/)
-    assert.match(text, /paste-redirect-url/)
   })
 })
