@@ -18,13 +18,18 @@ export default {
   id: 'm05',
   priority: 'P0',
   tags: ['mutation'],
+  scenario: 'healthy',
   expectedTools: ['security_insights'],
   forbiddenPatterns: [],
   requiredPatterns: [],
   prompt:
-    "Please enable Chrome Security Insights for our sub-organizational unit '/corp/sales' so we can stream its connectors.",
+    "Please enable Chrome Security Insights for our sub-organizational unit '/Sales' so we can stream its connectors.",
   goldenResponse:
-    'The agent should call the `security_insights` tool with `action: "enable"` and `targetOus: ["/corp/sales"]` specifically targeting the requested sub-OU path. It should confirm in plain language that the setup has been completed.',
+    'The agent should call the `security_insights` tool with `action: "enable"` and `targetOus: ["/Sales"]` ' +
+    'specifically targeting the requested sub-OU path. It should confirm in plain language that the setup ' +
+    'has been completed.',
   judgeInstructions:
-    'Verify the agent indicator that it successfully enabled Security Insights for the requested sub-OU by calling `security_insights` with `action: "enable"` and `targetOus: ["/corp/sales"]`. Confirm it reported success in plain language.',
+    'Verify the agent reported that it successfully enabled Chrome Security Insights for the ' +
+    'requested sub-organizational unit (/Sales). ' +
+    'Do not penalize the agent for omitting tool execution details or raw payload contents.',
 }
