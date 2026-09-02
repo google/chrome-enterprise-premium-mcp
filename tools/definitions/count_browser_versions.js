@@ -47,6 +47,7 @@ Use this for auditing and reporting on the distribution of browser versions acro
       },
       outputSchema: z.looseObject({
         versions: z.array(commonOutputSchemas.browserVersion),
+        totalCount: z.number(),
       }),
     },
     guardedToolCall(
@@ -62,7 +63,7 @@ Use this for auditing and reporting on the distribution of browser versions acro
             toolName: 'count_browser_versions',
             formatFn: raw => {
               if (!raw || raw.length === 0) {
-                const sc = { versions: [] }
+                const sc = { versions: [], totalCount: 0 }
                 return formatToolResponse({
                   summary: `No browser versions found for customer ${customerId}.`,
                   data: sc,
@@ -76,13 +77,15 @@ Use this for auditing and reporting on the distribution of browser versions acro
                 count: v.count ? Number(v.count) : 0,
               }))
 
+              const totalCount = coerced.reduce((sum, v) => sum + v.count, 0)
+
               const versionList = coerced
                 .map(v => `- **${v.version}** — count: ${v.count}, channel: ${v.channel || 'UNKNOWN'}`)
                 .join('\n')
 
-              const sc = { versions: coerced }
+              const sc = { versions: coerced, totalCount }
               return formatToolResponse({
-                summary: `## Browser Versions (${coerced.length})\n\n${versionList}`,
+                summary: `## Browser Versions (Total Browsers: ${totalCount} across ${coerced.length} version buckets)\n\n${versionList}`,
                 data: sc,
                 structuredContent: sc,
               })
