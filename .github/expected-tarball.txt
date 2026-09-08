@@ -76,8 +76,6 @@ lib/util/mcp_pretty_errors.js
 mcp-server.js
 package.json
 prompts/README.md
-prompts/definitions/auth.js
-prompts/definitions/expert.js
 prompts/definitions/health.js
 prompts/definitions/optimize.js
 prompts/definitions/shared.js
