@@ -9,3 +9,4 @@ results_final.json
 *.patch
 .venv/
 .stryker-tmp/
+lib/knowledge/compiled_docs.js

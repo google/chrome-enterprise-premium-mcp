@@ -20,6 +20,7 @@ limitations under the License.
 
 import { guardedToolCall, formatToolResponse } from '../utils/wrapper.js'
 import { loadDynamicDocs } from '../utils/dynamic_docs.js'
+import { staticDocs, dynamicDocs } from '../../lib/knowledge/compiled_docs.js'
 import { z } from 'zod'
 import fs from 'fs'
 import { logger } from '../../lib/util/logger.js'
@@ -31,9 +32,17 @@ import axios from 'axios'
 import * as cheerio from 'cheerio'
 import { FLAGS } from '../../lib/util/feature_flags.js'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-const DB_DIR = path.resolve(__dirname, '../../lib/knowledge')
+/**
+ * Resolves the default Knowledge DB directory path.
+ * @returns {string|null} The absolute path to the default knowledge directory,
+ * or null if it cannot be resolved.
+ */
+function getDefaultDbDir() {
+  if (import.meta && import.meta.url) {
+    return fileURLToPath(new URL('../../lib/knowledge', import.meta.url))
+  }
+  return null
+}
 
 // Files in lib/knowledge that exist on disk but must not surface as
 // retrievable documents. README.md is project-internal documentation.
@@ -144,16 +153,20 @@ export function registerKnowledgeTools(server, options, sessionState) {
   const { featureFlags: flags } = options
   logger.debug(`${TAGS.MCP} Registering Knowledge tools...`)
 
-  const dirToRead = options.dbPath || DB_DIR
+  const dirToRead = options.dbPath || getDefaultDbDir()
   // When tests pass options.allDocs, they're bypassing on-disk loading
   // entirely; skip the scan so we don't read the real knowledge dir
   // during isolated tests.
   let scannedDocs = []
   if (!options.allDocs) {
-    try {
-      scannedDocs = scanKnowledgeDir(dirToRead)
-    } catch (e) {
-      logger.error(`${TAGS.MCP} Failed to scan knowledge directory:`, e)
+    if (options.dbPath) {
+      try {
+        scannedDocs = scanKnowledgeDir(dirToRead)
+      } catch (e) {
+        logger.error(`${TAGS.MCP} Failed to scan custom knowledge directory:`, e)
+      }
+    } else {
+      scannedDocs = staticDocs
     }
   }
 
@@ -200,7 +213,8 @@ ${indexTable}`
         const idToDoc = new Map()
         const allDocs = []
 
-        for (const entry of scannedDocs) {
+        const staticSource = options.dbPath ? scannedDocs : staticDocs
+        for (const entry of staticSource) {
           const doc = {
             id: String(entry.metadata.articleId || entry.file),
             filename: entry.filename,
@@ -215,9 +229,8 @@ ${indexTable}`
           idToDoc.set(String(doc.id), doc)
         }
 
-        // Load Dynamic Documents (*.doc.js)
-        const dynamicDocs = await loadDynamicDocs(dirToRead)
-        dynamicDocs.forEach(doc => {
+        const dynamicSource = options.dbPath ? await loadDynamicDocs(dirToRead) : dynamicDocs
+        dynamicSource.forEach(doc => {
           const processedDoc = {
             ...doc,
             id: String(doc.articleId || doc.filename),

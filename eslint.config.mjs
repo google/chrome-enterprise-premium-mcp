@@ -53,6 +53,7 @@ export default [
       '.claude/**',
       '.gemini/**',
       '.opencode/**',
+      '**/lib/knowledge/compiled_docs.js',
     ],
   },
   js.configs.recommended,

@@ -25,6 +25,7 @@ limitations under the License.
 /* eslint-disable n/no-process-exit */
 
 import { runServer } from '../mcp-server.js'
+import { runLoginCommand, runAuthStatusCommand } from '../lib/util/credential/cli_commands.js'
 
 const AUTH_HELP = [
   'Usage: mcp auth <verb>',
@@ -41,11 +42,9 @@ const AUTH_HELP = [
  */
 async function runAuth(verb) {
   if (verb === 'login') {
-    const { runLoginCommand } = await import('../lib/util/credential/cli_commands.js')
     return runLoginCommand()
   }
   if (verb === 'status') {
-    const { runAuthStatusCommand } = await import('../lib/util/credential/cli_commands.js')
     return runAuthStatusCommand()
   }
   if (!verb) {
