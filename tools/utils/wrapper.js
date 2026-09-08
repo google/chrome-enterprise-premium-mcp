@@ -24,8 +24,8 @@ import { logger } from '../../lib/util/logger.js'
 import { validateAndGetOrgUnitId } from './org-unit.js'
 import { isTokenLocallyValid } from '../../lib/util/credential/auth_login.js'
 import { cliInvocation } from '../../lib/util/cli_invocation.js'
+import { getAuthErrorMessage, resolveCredentialsSource } from '../../lib/util/auth-error.js'
 import { isBearerMode, isServiceAccountMode, isDynamicMode } from '../../lib/util/auth_mode.js'
-import { getAuthErrorMessage } from '../../lib/util/auth-error.js'
 
 /**
  * Builds an MCP tool response signalling that sign-in is needed before any tool can run.
@@ -106,61 +106,6 @@ const TOOL_PRIVILEGES_MAP = {
     privilege: 'Services > Cloud Identity > Security > View / Manage Data Loss Prevention (DLP) rules and detectors',
     roleUrl: 'https://admin.google.com/ac/roles',
   },
-}
-
-/**
- * Generates a proactive remediation message for authentication errors.
- * @param {number} status - HTTP status code (401 or 403) or resolved equivalent.
- * @param {Error|null} error - The original error thrown.
- * @param {boolean} bearerInbound - True if request used inbound Bearer auth
- * @param {string} [toolName] - Name of the tool being executed
- * @returns {string} Human-readable remediation instructions
- */
-function getAuthRemediationMessage(status, error, bearerInbound = false, toolName = '') {
-  if (status === 403 && toolName && TOOL_PRIVILEGES_MAP[toolName]) {
-    const info = TOOL_PRIVILEGES_MAP[toolName]
-    return `Permission denied (403 Forbidden) while calling \`${toolName}\`. Your account lacks the required Google Workspace Admin Console privilege:\n• **${info.privilege}**\n\n**To fix:** Open [Workspace Admin Roles](${info.roleUrl}) and assign any role (or custom role) granting this privilege to your account (e.g., *Delegated Admin* or *Super Admin*).`
-  }
-
-  if (bearerInbound) {
-    if (status === 401) {
-      return `Authentication required. The inbound Bearer token has expired or is invalid. Re-authenticate through your MCP client to refresh the token.`
-    }
-    return `Permission denied. The authenticated principal lacks the required permissions, or the necessary Google Cloud APIs are not enabled.
-
-1. **Re-authenticate:** Refresh the inbound Bearer token through your MCP client.
-2. **Verify APIs are enabled:** Run the \`check_and_enable_cep_api\` tool against your project, or enable the API set listed in \`lib/constants.js#SERVICE_NAMES\`.`
-  }
-
-  const isSaMode = !!process.env.GOOGLE_APPLICATION_CREDENTIALS
-  const errorMessage = error?.message || ''
-  const isCredentialFailure =
-    status === 401 ||
-    errorMessage.includes('invalid_grant') ||
-    errorMessage.includes('unauthorized_client') ||
-    errorMessage.includes('UNAUTHENTICATED')
-
-  if (isSaMode) {
-    if (isCredentialFailure) {
-      const detailedMessage = getAuthErrorMessage(error)
-      if (detailedMessage.startsWith('ERROR: Authentication failed')) {
-        return `Authentication required. The Service Account credentials configured in GOOGLE_APPLICATION_CREDENTIALS are invalid or domain-wide delegation failed. Ensure the Service Account JSON key is valid and domain-wide delegation (CEP_IMPERSONATE_SUBJECT) is configured in Google Workspace Admin Console.\n\nOriginal error: ${errorMessage}`
-      }
-      return detailedMessage
-    }
-    return `Permission denied. The Service Account lacks required Google Workspace / Chrome Enterprise permissions or domain-wide delegation OAuth scopes. Verify that the Service Account has required IAM roles and that Domain-Wide Delegation in Google Workspace Admin Console includes the necessary scopes.`
-  }
-
-  const manualLogin = cliInvocation('auth login')
-  if (isCredentialFailure) {
-    return `Authentication required. Run the \`cep_auth\` tool to sign in, or run \`${manualLogin}\` at the shell to authorize the server (it caches the access token at ~/.config/cep-mcp/tokens.json). To use a service account, set GOOGLE_APPLICATION_CREDENTIALS to a service-account key file.`
-  }
-
-  return `Permission denied. Your account lacks the required permissions or the necessary Google Cloud APIs are not enabled.
-
-1. **Re-authenticate with all required scopes:** Run the \`cep_auth\` tool, or run \`${manualLogin}\` at the shell, to re-consent. The required scope set is defined in lib/constants.js#SCOPES.
-2. **Verify APIs are enabled:** Run the \`check_and_enable_cep_api\` tool against your project, or enable the API set listed in lib/constants.js#SERVICE_NAMES.
-`
 }
 
 /**
@@ -413,8 +358,19 @@ export function guardedToolCall(
           errorMessage.includes('unauthorized_client')
             ? 401
             : 403)
-        const bearerInbound = !!context?.authToken || !!context?.requestInfo?.headers?.authorization
-        const remediationMessage = getAuthRemediationMessage(resolvedStatus, error, bearerInbound, context?.name)
+
+        if (resolvedStatus === 403 && context?.name && TOOL_PRIVILEGES_MAP[context.name]) {
+          const info = TOOL_PRIVILEGES_MAP[context.name]
+          const remediationMessage = `Permission denied (403 Forbidden) while calling \`${context.name}\`. Your account lacks the required Google Workspace Admin Console privilege:\n• **${info.privilege}**\n\n**To fix:** Open [Workspace Admin Roles](${info.roleUrl}) and assign any role (or custom role) granting this privilege to your account (e.g., *Delegated Admin* or *Super Admin*).`
+          return {
+            content: [{ type: 'text', text: remediationMessage }],
+            isError: true,
+          }
+        }
+
+        error.status = resolvedStatus
+        const source = options.apiOptions?.auth ? 'provided' : resolveCredentialsSource(authToken)
+        const remediationMessage = getAuthErrorMessage(error, source)
         return {
           content: [{ type: 'text', text: remediationMessage }],
           isError: true,
