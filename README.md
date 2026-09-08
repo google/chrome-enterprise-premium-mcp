@@ -1,5 +1,6 @@
 # Chrome Enterprise Premium MCP Server
 
+[![SafeSkill 83/100](https://img.shields.io/badge/SafeSkill-83%2F100_Passes%20with%20Notes-yellow)](https://safeskill.dev/scan/google-chrome-enterprise-premium-mcp)
 A [Model Context Protocol](https://modelcontextprotocol.io/) (MCP) server for
 [Chrome Enterprise Premium](https://docs.cloud.google.com/chrome-enterprise-premium/docs/overview)
 (CEP). CEP extends Chrome's built-in security with Data Loss Prevention (DLP),
