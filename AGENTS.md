@@ -70,8 +70,23 @@ Don't reinvent; follow the recipes that already exist:
   hook is wired to the same suite.
 - **Conventional Commits are enforced.** Commitlint is on the `commit-msg`
   hook. Allowed types: `feat`, `fix`, `chore`, `refactor`, `docs`, `test`,
-  `build`, `ci`, `perf`, `revert`, `style`. Anything else is rejected.
+  `build`, `ci`, \`perf\`, \`revert\`, \`style\`. Anything else is rejected.
 - **Lint-staged auto-fixes formatting on commit.** Don't run
-  `npm run format && git add -A` first; lint-staged will only touch what's
+  \`npm run format && git add -A\` first; lint-staged will only touch what's
   already staged.
-- **Don't bypass hooks** with `--no-verify`. If one fails, fix the cause.
+- **Don't bypass hooks** with \`--no-verify\`. If one fails, fix the cause.
+
+## Review constraints
+
+- **Structured Review Framework:** All PR reviews MUST follow the formal
+  protocol sequence: Describe → Assess Risk → Evaluate Design → Critique.
+- **Explicit Risk Assessment:** You MUST explicitly categorize and rate
+  operational and security risks (Low/Med/High). Pay special attention to
+  "Big Bang" refactors that carry systemic risk (CI breakage, merge
+  conflicts, production entry point changes).
+- **Design Evaluation:** Enumerate all non-trivial design decisions. For
+  each, explain the "Why", identify simpler alternatives, and assess the
+  impact on long-term maintainability.
+- **Prioritize Stability over Correctness:** A technically "correct" refactor
+  that breaks the repo's development flow is a failure. Always recommend
+  splitting massive structural changes into smaller, verifiable increments.

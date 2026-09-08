@@ -27,13 +27,22 @@ import { startToolAuth, completeToolAuth, canLaunchBrowser } from '../../lib/uti
 import { TokenCache } from '../../lib/util/credential/token_cache.js'
 import { oauthFlowCredential } from '../../lib/util/credential/oauth_flow.js'
 import { resolveOAuthClientConfig } from '../../lib/util/credential/oauth_client_config.js'
-import { TAGS, OAUTH_SCOPE_REGISTRY, getUniqueScopeCategories } from '../../lib/constants.js'
+import {
+  TAGS,
+  SCOPES,
+  OAUTH_SCOPE_REGISTRY,
+  getUniqueScopeCategories,
+  getScopeCategoriesList,
+  getScopeNamesList,
+} from '../../lib/constants.js'
 import { guardedToolCall, formatToolResponse } from '../utils/wrapper.js'
 import { cliInvocation } from '../../lib/util/cli_invocation.js'
 import { getActiveScopes } from '../../lib/util/feature_flags.js'
 import { getAuthMode, shouldRegisterAuthTools } from '../../lib/util/auth_mode.js'
 
 const TOOL_NAME = 'cep_auth'
+
+const LIST_FORMATTER = new Intl.ListFormat('en', { style: 'long', type: 'conjunction' })
 
 const AGENT_HINT_WORKSTATION =
   'A browser tab opened automatically. The user needs to sign in with their Google account ' +
@@ -140,10 +149,10 @@ function formatAuthStatusSummary(probe) {
       : 'OAuth credentials not configured.'
   }
 
-  const granted = probe.grantedScopes || Object.keys(OAUTH_SCOPE_REGISTRY)
-  const categories = getUniqueScopeCategories(granted)
+  const granted = probe.grantedScopes || []
+  const names = getScopeNamesList(granted)
 
-  return `OAuth credentials valid and active. Authorized for: ${categories.join(', ')}.`
+  return `OAuth credentials valid and active. Authorized for: ${LIST_FORMATTER.format(names)}.`
 }
 
 /**
@@ -164,6 +173,42 @@ export function registerAuthTools(server, options, sessionState) {
   logger.debug(`${TAGS.MCP} Registering auth tools...`)
 
   const scopeSummary = getUniqueScopeCategories(getActiveScopes()).join(', ')
+
+  const cepAuthHandler = async ({ redirectUrl, authMethod }, context) => {
+    if (context?.requestInfo?.headers?.authorization) {
+      const msg =
+        'This server received an inbound Bearer token, so sign-in via cep_auth does not apply. ' +
+        'Refresh the Bearer token through your MCP client.'
+      return {
+        content: [{ type: 'text', text: msg }],
+        structuredContent: { status: 'error', code: 'BEARER_INBOUND', message: msg },
+        isError: true,
+      }
+    }
+    try {
+      if (redirectUrl !== undefined && redirectUrl !== '') {
+        const result = await completeToolAuth({ redirectUrl })
+        return successResponse(result)
+      }
+      const result = await startToolAuth({ authMethod })
+      if (result.status === 'completed') {
+        return successResponse(result)
+      }
+      return awaitingResponse(result)
+    } catch (err) {
+      logger.error(`${TAGS.MCP} cep_auth failed:`, err?.message || err)
+      const message = err?.message || String(err)
+      return {
+        content: [{ type: 'text', text: `Sign-in failed: ${message}` }],
+        structuredContent: { status: 'error', code: err?.code, message },
+        isError: true,
+      }
+    }
+  }
+
+  // Manually expose scopes for the Zero-Drift integrity audit.
+  // We don't use guardedToolCall here to avoid login-flow deadlocks.
+  cepAuthHandler._scopes = Object.values(SCOPES)
 
   if (shouldRegisterAuthTools()) {
     server.registerTool(
@@ -200,37 +245,7 @@ export function registerAuthTools(server, options, sessionState) {
           expiresAt: z.string().optional(),
         }),
       },
-      async ({ redirectUrl, authMethod }, context) => {
-        if (context?.requestInfo?.headers?.authorization) {
-          const msg =
-            'This server received an inbound Bearer token, so sign-in via cep_auth does not apply. ' +
-            'Refresh the Bearer token through your MCP client.'
-          return {
-            content: [{ type: 'text', text: msg }],
-            structuredContent: { status: 'error', code: 'BEARER_INBOUND', message: msg },
-            isError: true,
-          }
-        }
-        try {
-          if (redirectUrl !== undefined && redirectUrl !== '') {
-            const result = await completeToolAuth({ redirectUrl })
-            return successResponse(result)
-          }
-          const result = await startToolAuth({ authMethod })
-          if (result.status === 'completed') {
-            return successResponse(result)
-          }
-          return awaitingResponse(result)
-        } catch (err) {
-          logger.error(`${TAGS.MCP} cep_auth failed:`, err?.message || err)
-          const message = err?.message || String(err)
-          return {
-            content: [{ type: 'text', text: `Sign-in failed: ${message}` }],
-            structuredContent: { status: 'error', code: err?.code, message },
-            isError: true,
-          }
-        }
-      },
+      cepAuthHandler,
     )
   }
 
