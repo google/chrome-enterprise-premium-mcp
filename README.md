@@ -132,6 +132,7 @@ For production environments, headless systems, or customized configurations, the
 For environment variables and stdio vs. HTTP transport, see
 [`docs/configuration.md`](docs/configuration.md).
 
+
 ## Available tools and prompts
 
 ### Prompts
