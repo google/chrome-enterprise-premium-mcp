@@ -810,8 +810,9 @@ async function fetchEnvironment(
   let proxySettings = null
   if (rootOUId && chromePolicyClient) {
     try {
+      const targetCustId = customerId && customerId !== 'unknown' ? customerId : 'my_customer'
       const proxyPolicies = await chromePolicyClient
-        .resolvePolicy(customerId, rootOUId, PROXY_SETTINGS_SCHEMA, authToken)
+        .resolvePolicy(targetCustId, rootOUId, PROXY_SETTINGS_SCHEMA, authToken)
         .catch(() => [])
       const proxyVal = proxyPolicies[0]?.value?.value || {}
       const proxyMode = proxyVal.simpleProxyMode || proxyVal.proxyMode
