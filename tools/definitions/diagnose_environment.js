@@ -164,7 +164,19 @@ function computeIssues(data) {
     const manualLink = page ? `https://admin.google.com/ac/chrome/settings/user/details/${page}` : null
     const actionSuffix = manualLink ? `. Update settings manually at ${manualLink}` : ''
 
-    if (!connector.configured) {
+    if (connector.error) {
+      issues.push({
+        severity: 'medium',
+        component: `connector.${key}`,
+        message: `${name} connector status could not be verified (lookup error).${actionSuffix}`,
+        ...(manualLink && {
+          remediation: {
+            actionLabel: `Check ${name} connector settings`,
+            url: manualLink,
+          },
+        }),
+      })
+    } else if (!connector.configured) {
       issues.push({
         severity: 'critical',
         component: `connector.${key}`,
@@ -641,6 +653,18 @@ async function fetchEnvironment(
 ) {
   const { beyondcorpClient, cloudResourceManagerClient, computeClient, projectId, flags } = options
 
+  const safeFetch = async (promise, fallback) => {
+    try {
+      return await promise
+    } catch (e) {
+      if (e?.status === 401 || e?.message?.includes('UNAUTHENTICATED') || e?.code === 'unauthenticated') {
+        throw e
+      }
+      logger.warn(`${TAGS.MCP} diagnose_environment: safeFetch failed: ${e.message || e}`)
+      return fallback
+    }
+  }
+
   const [
     customerData,
     orgUnitsData,
@@ -654,30 +678,21 @@ async function fetchEnvironment(
   ] = await Promise.all([
     adminSdkClient.getCustomerId(authToken),
     adminSdkClient.listOrgUnits({ customerId }, authToken),
-    adminSdkClient.checkCepSubscription(customerId, authToken).catch(err => {
-      logger.error(`${TAGS.API} Error checking CEP subscription in diagnosis:`, err)
-      return null
-    }),
+    safeFetch(adminSdkClient.checkCepSubscription(customerId, authToken), null),
     cloudIdentityClient.listDlpRules(authToken),
     cloudIdentityClient.listDetectors(authToken),
-    chromeManagementClient.countBrowserVersions(customerId, null, authToken),
-    chromeManagementClient.checkSecurityInsightsStatus(customerId, authToken).catch(err => {
-      logger.error(`${TAGS.API} Error fetching security insights status in diagnosis:`, err)
-      return { insightsState: 'INSIGHTS_ENABLEMENT_STATE_UNSPECIFIED', error: true }
+    safeFetch(chromeManagementClient.countBrowserVersions(customerId, null, authToken), []),
+    safeFetch(chromeManagementClient.checkSecurityInsightsStatus(customerId, authToken), {
+      insightsState: 'INSIGHTS_ENABLEMENT_STATE_UNSPECIFIED',
+      error: true,
     }),
-    chromeManagementClient.queryContentTransfers(customerId, {}, authToken).catch(err => {
-      logger.error(`${TAGS.API} Error fetching content transfers in diagnosis:`, err)
-      return { error: true, message: err.message }
-    }),
-    chromeManagementClient.queryUrlVisits(customerId, {}, authToken).catch(err => {
-      logger.error(`${TAGS.API} Error fetching URL visits in diagnosis:`, err)
-      return { error: true, message: err.message }
-    }),
+    safeFetch(chromeManagementClient.queryContentTransfers(customerId, {}, authToken), { error: true }),
+    safeFetch(chromeManagementClient.queryUrlVisits(customerId, {}, authToken), { error: true }),
   ])
 
   const orgUnits = orgUnitsData?.organizationUnits || []
   const rootOU = orgUnits.find(ou => ou.orgUnitPath === '/') || orgUnits[0]
-  const rootOUId = rootOU?.orgUnitId?.replace('id:', '') || null
+  const rootOUId = rootOU?.orgUnitId?.replace('id:', '') || 'my_customer'
 
   const customer = {
     customerId: customerData?.id || customerId || 'unknown',
@@ -729,7 +744,8 @@ async function fetchEnvironment(
         const uiLink = page ? `https://admin.google.com/ac/chrome/settings/user/details/${page}` : null
         try {
           const schema = ConnectorPolicyFilter[policyKey]
-          const policies = await chromePolicyClient.getConnectorPolicy(customerId, rootOUId, schema, authToken)
+          const targetCustId = customerId && customerId !== 'unknown' ? customerId : 'my_customer'
+          const policies = await chromePolicyClient.getConnectorPolicy(targetCustId, rootOUId, schema, authToken)
           const analysis = analyzeConnectorPolicy(policyKey, policies)
           return [
             key,
@@ -755,9 +771,10 @@ async function fetchEnvironment(
   let sebExtension = { isInstalled: false }
   if (rootOUId && chromePolicyClient) {
     try {
+      const targetCustId = customerId && customerId !== 'unknown' ? customerId : 'my_customer'
       const [sebPolicies, appPolicies] = await Promise.all([
-        chromePolicyClient.resolvePolicy(customerId, rootOUId, SEB_EXTENSION_SCHEMA, authToken),
-        chromePolicyClient.resolvePolicy(customerId, rootOUId, SEB_APP_POLICY_SCHEMA, authToken).catch(() => []),
+        chromePolicyClient.resolvePolicy(targetCustId, rootOUId, SEB_EXTENSION_SCHEMA, authToken),
+        chromePolicyClient.resolvePolicy(targetCustId, rootOUId, SEB_APP_POLICY_SCHEMA, authToken).catch(() => []),
       ])
       const sebEntry = sebPolicies.find(p => p.targetKey?.additionalTargetKeys?.app_id === SEB_EXTENSION_ID)
       const isInstalled = sebEntry?.value?.value?.appInstallType === 'FORCED'
@@ -793,8 +810,9 @@ async function fetchEnvironment(
   let proxySettings = null
   if (rootOUId && chromePolicyClient) {
     try {
+      const targetCustId = customerId && customerId !== 'unknown' ? customerId : 'my_customer'
       const proxyPolicies = await chromePolicyClient
-        .resolvePolicy(customerId, rootOUId, PROXY_SETTINGS_SCHEMA, authToken)
+        .resolvePolicy(targetCustId, rootOUId, PROXY_SETTINGS_SCHEMA, authToken)
         .catch(() => [])
       const proxyVal = proxyPolicies[0]?.value?.value || {}
       const proxyMode = proxyVal.simpleProxyMode || proxyVal.proxyMode
