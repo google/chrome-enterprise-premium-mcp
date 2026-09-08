@@ -19,7 +19,7 @@ import assert from 'node:assert'
 import { formatToolResponse, safeFormatResponse } from '../../tools/utils/wrapper.js'
 
 describe('formatToolResponse', () => {
-  test('When data is provided, then it returns two content blocks: summary and fenced JSON', () => {
+  test('When data is provided with summary, then it returns the explicit summary', () => {
     const result = formatToolResponse({
       summary: 'Test summary.',
       data: { key: 'value' },
@@ -30,6 +30,64 @@ describe('formatToolResponse', () => {
     assert.ok(result.content[1].text.startsWith('```json\n'))
     assert.ok(result.content[1].text.endsWith('\n```'))
     assert.deepStrictEqual(result.structuredContent, { key: 'value' })
+  })
+
+  test('When summary is omitted, then it auto-generates summary from data object', () => {
+    const result = formatToolResponse({
+      data: {
+        name: 'MyResource',
+        active: true,
+        nested: { id: 123 },
+      },
+    })
+    const summaryText = result.content[0].text
+    assert.ok(summaryText.includes('**name**: MyResource'))
+    assert.ok(summaryText.includes('**active**: true'))
+    assert.ok(summaryText.includes('**nested**:'))
+    assert.ok(summaryText.includes('**id**: 123'))
+  })
+
+  test('When summary is omitted and data has metadata keys, then it filters them out', () => {
+    const result = formatToolResponse({
+      data: {
+        id: '123',
+        etag: 'xyz789',
+        kind: 'admin#directory#orgunit',
+        selfLink: 'https://example.com/ou/123',
+      },
+    })
+    const summaryText = result.content[0].text
+    assert.ok(summaryText.includes('**id**: 123'))
+    assert.strictEqual(summaryText.includes('etag'), false)
+    assert.strictEqual(summaryText.includes('kind'), false)
+    assert.strictEqual(summaryText.includes('selfLink'), false)
+  })
+
+  test('When summary is omitted and data is an array under limit, then it lists all items', () => {
+    const result = formatToolResponse({
+      data: [{ name: 'item1' }, { name: 'item2' }],
+    })
+    const summaryText = result.content[0].text
+    assert.ok(summaryText.includes('- \n  **name**: item1'))
+    assert.ok(summaryText.includes('- \n  **name**: item2'))
+    assert.strictEqual(summaryText.includes('more items'), false)
+  })
+
+  test('When summary is omitted and data is an array over limit, then it truncates and adds count', () => {
+    const result = formatToolResponse({
+      data: [
+        { name: 'item1' },
+        { name: 'item2' },
+        { name: 'item3' },
+        { name: 'item4' },
+        { name: 'item5' },
+        { name: 'item6' },
+      ],
+    })
+    const summaryText = result.content[0].text
+    assert.ok(summaryText.includes('- \n  **name**: item5'))
+    assert.strictEqual(summaryText.includes('item6'), false)
+    assert.ok(summaryText.includes('... and 1 more items (inspect the JSON payload for full list)'))
   })
 })
 
