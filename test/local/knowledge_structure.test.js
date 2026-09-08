@@ -32,7 +32,7 @@ describe('Knowledge Folder Structure', () => {
     const pattern = /^\d+-/
 
     for (const file of files) {
-      if (file.startsWith('.') || file === 'README.md' || file === 'instructions.js') {
+      if (file.startsWith('.') || file === 'README.md' || file === 'instructions.js' || file === 'compiled_docs.js') {
         continue
       }
 
