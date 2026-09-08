@@ -61,6 +61,7 @@ If the user requests to UNINSTALL or REMOVE the Endpoint Verification extension,
     },
     guardedToolCall(
       {
+        isMutating: true,
         /**
          * Handler for force-installing the EV extension.
          * @param {object} params - The tool parameters.

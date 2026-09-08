@@ -59,7 +59,7 @@ describe('Tool Utils', () => {
         const mockGetCustomerId = mock.fn(async () => ({ id: 'C_AUTO' }))
         const apiClients = { adminSdk: { getCustomerId: mockGetCustomerId } }
         const sessionState = { customerId: null }
-        const tool = guardedToolCall({ handler }, { apiClients }, sessionState)
+        const tool = guardedToolCall({ isMutating: false, handler }, { apiClients }, sessionState)
 
         await tool({}, { requestInfo: { headers: { authorization: 'Bearer fake' } } })
         assert.strictEqual(mockGetCustomerId.mock.callCount(), 1)
@@ -71,7 +71,7 @@ describe('Tool Utils', () => {
       test('When params.customerId is provided, then it updates sessionState.customerId', async () => {
         const handler = mock.fn(async () => ({ content: [{ type: 'text', text: 'ok' }] }))
         const sessionState = { customerId: null }
-        const tool = guardedToolCall({ handler }, {}, sessionState)
+        const tool = guardedToolCall({ isMutating: false, handler }, {}, sessionState)
         await tool({ customerId: 'C_EXPLICIT' }, { requestInfo: { headers: { authorization: 'Bearer fake' } } })
         assert.strictEqual(sessionState.customerId, 'C_EXPLICIT')
       })
@@ -83,7 +83,7 @@ describe('Tool Utils', () => {
       const failHandler = mock.fn(async () => {
         throw err
       })
-      const tool = guardedToolCall({ handler: failHandler, skipAuthCheck: true })
+      const tool = guardedToolCall({ isMutating: false, handler: failHandler, skipAuthCheck: true })
       const result = await tool({}, {})
       assert.strictEqual(result.isError, true)
       assert.match(result.content[0].text, /cep_auth/)
@@ -96,7 +96,7 @@ describe('Tool Utils', () => {
       const failHandler = mock.fn(async () => {
         throw err
       })
-      const tool = guardedToolCall({ handler: failHandler, skipAuthCheck: true })
+      const tool = guardedToolCall({ isMutating: false, handler: failHandler, skipAuthCheck: true })
       const result = await tool({}, {})
       assert.strictEqual(result.isError, true)
       assert.match(result.content[0].text, /cep_auth/)
@@ -109,7 +109,7 @@ describe('Tool Utils', () => {
       const failHandler = mock.fn(async () => {
         throw err
       })
-      const tool = guardedToolCall({ handler: failHandler, skipAuthCheck: true })
+      const tool = guardedToolCall({ isMutating: false, handler: failHandler, skipAuthCheck: true })
       const result = await tool({}, {})
       assert.strictEqual(result.isError, true)
       assert.match(result.content[0].text, /auth login/)
@@ -121,7 +121,7 @@ describe('Tool Utils', () => {
       const failHandler = mock.fn(async () => {
         throw err
       })
-      const tool = guardedToolCall({ handler: failHandler })
+      const tool = guardedToolCall({ isMutating: false, handler: failHandler })
       const result = await tool({}, { requestInfo: { headers: { authorization: 'Bearer abc' } } })
       assert.strictEqual(result.isError, true)
       assert.match(result.content[0].text, /inbound Bearer token/)
@@ -133,7 +133,7 @@ describe('Tool Utils', () => {
       const failHandler = mock.fn(async () => {
         throw err
       })
-      const tool = guardedToolCall({ handler: failHandler })
+      const tool = guardedToolCall({ isMutating: false, handler: failHandler })
       const result = await tool({}, { requestInfo: { headers: { authorization: 'Bearer abc' } } })
       assert.strictEqual(result.isError, true)
       assert.match(result.content[0].text, /inbound Bearer token/)
@@ -145,7 +145,7 @@ describe('Tool Utils', () => {
         throw err
       })
       const onError = mock.fn(() => ({ content: [{ type: 'text', text: 'custom' }], isError: true }))
-      const tool = guardedToolCall({ handler: failHandler }, { onError })
+      const tool = guardedToolCall({ isMutating: false, handler: failHandler }, { onError })
       const result = await tool({}, { requestInfo: { headers: { authorization: 'Bearer fake' } } })
       assert.strictEqual(result.isError, true)
       assert.strictEqual(result.content[0].text, 'custom')
@@ -169,7 +169,7 @@ describe('Tool Utils', () => {
       process.env[homeKey] = emptyHome
 
       try {
-        const tool = guardedToolCall({ handler })
+        const tool = guardedToolCall({ isMutating: false, handler })
         const result = await tool({}, {})
         assert.strictEqual(result.isError, true)
         assert.match(result.content[0].text, /Sign-in is needed/)
@@ -211,7 +211,7 @@ describe('Tool Utils', () => {
       process.env[homeKey] = home
 
       try {
-        const tool = guardedToolCall({ handler })
+        const tool = guardedToolCall({ isMutating: false, handler })
         const result = await tool({}, {})
         assert.strictEqual(result.isError, true)
         assert.match(result.content[0].text, /expired/)
@@ -247,7 +247,7 @@ describe('Tool Utils', () => {
       process.env[homeKey] = emptyHome
 
       try {
-        const tool = guardedToolCall({ handler })
+        const tool = guardedToolCall({ isMutating: false, handler })
         const result = await tool({}, { requestInfo: { headers: { authorization: 'Bearer fake' } } })
         assert.strictEqual(result.content[0].text, 'ok')
         assert.strictEqual(handler.mock.callCount(), 1)
@@ -286,7 +286,7 @@ describe('Tool Utils', () => {
       process.env[homeKey] = home
 
       try {
-        const tool = guardedToolCall({ handler })
+        const tool = guardedToolCall({ isMutating: false, handler })
         const result = await tool({}, {})
         assert.strictEqual(result.content[0].text, 'ok')
         assert.strictEqual(handler.mock.callCount(), 1)
@@ -314,7 +314,7 @@ describe('Tool Utils', () => {
       process.env[homeKey] = emptyHome
 
       try {
-        const tool = guardedToolCall({ handler, skipAuthCheck: true })
+        const tool = guardedToolCall({ isMutating: false, handler, skipAuthCheck: true })
         const result = await tool({}, {})
         assert.strictEqual(result.content[0].text, 'ok')
         assert.strictEqual(handler.mock.callCount(), 1)

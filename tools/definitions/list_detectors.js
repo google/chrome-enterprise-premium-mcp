@@ -48,6 +48,7 @@ Detectors are used within DLP rules to identify sensitive content. Use this to f
     },
     guardedToolCall(
       {
+        isMutating: false,
         requiresDelegation: true,
         handler: async (_, { authToken }) => {
           logger.debug(`${TAGS.MCP} Calling 'list_detectors'`)

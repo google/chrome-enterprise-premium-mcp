@@ -97,6 +97,7 @@ Supports filtering by event time, user, domain, or content category depending on
     },
     guardedToolCall(
       {
+        isMutating: false,
         handler: async (
           { action, customerId = 'my_customer', filter, pageSize, pageToken, metric, breakdown, fixedTimeRange },
           { _requestInfo, authToken },

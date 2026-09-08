@@ -49,6 +49,7 @@ This ID (often starting with 'C') is required as a parameter for many other Chro
     },
     guardedToolCall(
       {
+        isMutating: false,
         requiresDelegation: true,
         /**
          * Handler for retrieving the customer ID.

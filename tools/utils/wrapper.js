@@ -235,6 +235,7 @@ export function safeFormatResponse({ rawData, formatFn, toolName }) {
  * @param {boolean} [toolDef.skipAuthCheck] - Whether to skip checking if tokens are valid.
  * @param {boolean} [toolDef.requiresDelegation] - Whether this tool requires domain-wide delegation in SA mode.
  * @param {string[]} [toolDef.scopes] - Scopes required for this tool. Defaults to all SCOPES.
+ * @param {boolean} toolDef.isMutating - Whether this tool mutates state (e.g. creates, updates, deletes resources).
  * @param {object} options - Configuration options for the wrapper
  * @param {object} [options.apiClients] - Collection of API clients
  * @param {object} [options.apiOptions] - Additional API options
@@ -251,10 +252,16 @@ export function guardedToolCall(
     skipAuthCheck = false,
     requiresDelegation = false,
     scopes = getActiveScopes(),
+    isMutating,
   },
   options = {},
   sessionState = { customerId: null, cachedRootOrgUnitId: null },
 ) {
+  if (isMutating === undefined) {
+    throw new Error(
+      "[guardedToolCall] Developer Error: 'isMutating' parameter is required to explicitly declare tool capability.",
+    )
+  }
   const wrapped = async (params, context) => {
     const authToken = params?.accessToken || getAuthToken(context?.requestInfo)
     if (!skipAuthCheck) {
@@ -422,5 +429,6 @@ export function guardedToolCall(
   }
 
   wrapped._scopes = scopes
+  wrapped.isMutating = isMutating
   return wrapped
 }

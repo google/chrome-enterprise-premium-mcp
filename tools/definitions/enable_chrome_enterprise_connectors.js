@@ -282,6 +282,7 @@ Use this tool to ACTIVATE security protections. It will ONLY apply changes to co
     },
     guardedToolCall(
       {
+        isMutating: true,
         /**
          * Handler for enabling Chrome Enterprise connectors.
          * @param {object} params - The tool parameters.

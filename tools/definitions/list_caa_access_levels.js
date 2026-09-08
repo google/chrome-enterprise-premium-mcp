@@ -113,6 +113,7 @@ Explicitly mention the required permissions as listed in the public API docs or 
     },
     guardedToolCall(
       {
+        isMutating: false,
         skipAutoResolve: true,
         handler: async (params, { _requestInfo, authToken }) => {
           const {

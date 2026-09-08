@@ -22,6 +22,7 @@ import { z } from 'zod'
 import { guardedToolCall, formatToolResponse } from '../utils/wrapper.js'
 import { TAGS, SERVICE_NAMES } from '../../lib/constants.js'
 import { logger } from '../../lib/util/logger.js'
+import { FLAGS } from '../../lib/util/feature_flags.js'
 
 /**
  * Registers the 'check_and_enable_cep_api' tool with the MCP server.
@@ -32,21 +33,29 @@ import { logger } from '../../lib/util/logger.js'
  * @returns {void}
  */
 export function registerCheckAndEnableCepApiTool(server, options, sessionState) {
-  const { serviceUsageClient } = options
+  const { serviceUsageClient, featureFlags: flags } = options
+  const isReadOnly = flags?.isEnabled(FLAGS.READ_ONLY)
   logger.debug(`${TAGS.MCP} Registering 'check_and_enable_cep_api' tool...`)
+
+  const toolDescription =
+    `Verify or enable Google Cloud APIs required for Chrome Enterprise Premium features.
+This is a PREREQUISITE tool. Many other tools will fail if necessary APIs are disabled. Always ask the user before enabling APIs unless they have explicitly authorized it in this turn.` +
+    (isReadOnly ? ' Note: Enabling APIs is disabled because the server was started with the READ_ONLY flag.' : '')
 
   server.registerTool(
     'check_and_enable_cep_api',
     {
-      description: `Verify or enable Google Cloud APIs required for Chrome Enterprise Premium features.
-This is a PREREQUISITE tool. Many other tools will fail if necessary APIs are disabled. Always ask the user before enabling APIs unless they have explicitly authorized it in this turn.`,
+      description: toolDescription,
       inputSchema: {
         projectId: z.string().describe('The Google Cloud project ID or number.'),
         apiName: z
           .enum(Object.values(SERVICE_NAMES))
           .optional()
           .describe('The API name to check/enable (e.g., admin.googleapis.com).'),
-        enable: z.boolean().optional().describe('Whether to enable the API if it is disabled.'),
+        enable: z
+          .boolean()
+          .optional()
+          .describe(isReadOnly ? 'DISABLED (read-only mode)' : 'Whether to enable the API if it is disabled.'),
         checkAll: z.boolean().optional().describe('Whether to check all required APIs and enable the missing ones.'),
       },
       outputSchema: z.looseObject({
@@ -63,7 +72,19 @@ This is a PREREQUISITE tool. Many other tools will fail if necessary APIs are di
     },
     guardedToolCall(
       {
+        isMutating: false,
         handler: async ({ projectId, apiName, enable = false, checkAll = true }, { _requestInfo, authToken }) => {
+          if (enable && isReadOnly) {
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: 'Error: Enabling APIs is disabled because the server was started with the READ_ONLY flag.',
+                },
+              ],
+              isError: true,
+            }
+          }
           const actualApiName = apiName || SERVICE_NAMES.ADMIN_SDK
           logger.debug(
             `${TAGS.MCP} Calling 'check_and_enable_cep_api' for project ${projectId} (enable: ${enable}, checkAll: ${checkAll}, apiName: ${actualApiName})`,

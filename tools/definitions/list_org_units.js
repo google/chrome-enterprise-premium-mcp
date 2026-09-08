@@ -50,6 +50,7 @@ Use this tool to find the 'orgUnitId' required by most other Chrome management a
     },
     guardedToolCall(
       {
+        isMutating: false,
         /**
          * Handler for listing organizational units.
          * @param {object} params - The tool parameters.

@@ -50,6 +50,7 @@ Use this to verify if an individual user (by email or unique ID) is licensed for
     },
     guardedToolCall(
       {
+        isMutating: false,
         requiresDelegation: true,
         handler: async ({ userId }, { _requestInfo, authToken }) => {
           logger.debug(`${TAGS.MCP} Calling 'check_user_cep_license' for user: ${userId}`)

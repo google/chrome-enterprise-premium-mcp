@@ -51,6 +51,7 @@ export function registerGetDlpRuleTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
+        isMutating: false,
         requiresDelegation: true,
         /**
          * Handler for getting a DLP rule.

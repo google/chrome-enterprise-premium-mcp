@@ -51,6 +51,7 @@ Use this for auditing and reporting on the distribution of browser versions acro
     },
     guardedToolCall(
       {
+        isMutating: false,
         handler: async ({ customerId, orgUnitId }, { _requestInfo, authToken }) => {
           logger.debug(
             `${TAGS.MCP} Calling 'count_browser_versions' with customerId: ${customerId}, orgUnitId: ${orgUnitId}`,

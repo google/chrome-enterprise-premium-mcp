@@ -109,6 +109,7 @@ Rules included:
 
     guardedToolCall(
       {
+        isMutating: true,
         requiresDelegation: true,
         handler: async (params, { authToken }) => {
           logger.debug(`${TAGS.MCP} Calling 'create_default_dlp_rules' with params: ${JSON.stringify(params)}`)

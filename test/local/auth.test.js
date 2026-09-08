@@ -300,6 +300,7 @@ describe('Auth', () => {
       delete process.env.CEP_IMPERSONATE_SUBJECT
       const wrapped = guardedToolCall(
         {
+          isMutating: false,
           requiresDelegation: true,
           skipAutoResolve: true,
           handler: async () => ({ content: [{ type: 'text', text: 'should not run' }] }),
@@ -319,6 +320,7 @@ describe('Auth', () => {
       let handlerRan = false
       const wrapped = guardedToolCall(
         {
+          isMutating: false,
           requiresDelegation: false,
           skipAutoResolve: true,
           handler: async () => {
@@ -363,6 +365,7 @@ describe('Auth', () => {
       process.env.CEP_IMPERSONATE_SUBJECT = 'admin@example.com'
       const wrapped = guardedToolCall(
         {
+          isMutating: false,
           requiresDelegation: true,
           skipAutoResolve: true,
           handler: async () => {
@@ -388,6 +391,7 @@ describe('Auth', () => {
       process.env.CEP_IMPERSONATE_SUBJECT = 'admin@example.com'
       const wrapped = guardedToolCall(
         {
+          isMutating: false,
           requiresDelegation: true,
           skipAutoResolve: true,
           handler: async () => {

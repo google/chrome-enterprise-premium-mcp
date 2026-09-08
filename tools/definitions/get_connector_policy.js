@@ -212,6 +212,7 @@ Note: The 'enable_chrome_enterprise_connectors' tool can only ACTIVATE connector
     },
     guardedToolCall(
       {
+        isMutating: false,
         /**
          * Handler for retrieving connector policies.
          * @param {object} params - The tool parameters.

@@ -279,6 +279,7 @@ Topics covered: product overview, pricing and licensing, browser deployment and 
       },
       guardedToolCall(
         {
+          isMutating: false,
           /**
            * Handler for searching knowledge base content.
            * @param {object} args - The tool arguments.
@@ -449,6 +450,7 @@ ${knowledgeIndex}`,
     },
     guardedToolCall(
       {
+        isMutating: false,
         handler: async args => {
           const db = await loadDb()
           const { docLookup, idToDoc } = db
@@ -587,6 +589,7 @@ ${knowledgeIndex}`,
       },
       guardedToolCall(
         {
+          isMutating: false,
           /**
            * Handler for listing available knowledge documents.
            * @param {object} args - The tool arguments.

@@ -231,7 +231,7 @@ export async function getServer(gcpInfo, sharedSessionState, principal = null) {
         prompts: {},
         resources: { listChanged: false },
       },
-      instructions: buildServerInstructions(),
+      instructions: buildServerInstructions(featureFlags),
     },
   )
 

@@ -90,8 +90,48 @@ export function registerTools(server, options = {}, sessionState) {
     accessContextManager: accessContextManagerClient,
   } = apiClients
 
+  const isReadOnly = flags.isEnabled(FLAGS.READ_ONLY)
+  server = new Proxy(server, {
+    get(target, prop, receiver) {
+      if (prop === 'registerTool') {
+        return (name, spec, handler) => {
+          // Safety Check: Enforce that all handlers (except auth bootstrapper) declare capability
+          if (name !== 'cep_auth' && (!handler || handler.isMutating === undefined)) {
+            throw new Error(
+              `[registerTool] Developer Error: Tool '${name}' must be registered with a guardedToolCall handler that explicitly declares 'isMutating'.`,
+            )
+          }
+
+          if (isReadOnly && handler?.isMutating) {
+            if (spec && typeof spec === 'object') {
+              spec.description = `[DISABLED (due to READ_ONLY startup flag)] ${spec.description || ''}`
+            }
+            const failingHandler = async () => {
+              return {
+                content: [
+                  {
+                    type: 'text',
+                    text: `Error: Tool '${name}' is disabled because the server was started with the READ_ONLY flag.`,
+                  },
+                ],
+                isError: true,
+              }
+            }
+            if (handler && handler._scopes) {
+              failingHandler._scopes = handler._scopes
+            }
+            failingHandler.isMutating = true
+            return target.registerTool(name, spec, failingHandler)
+          }
+          return target.registerTool(name, spec, handler)
+        }
+      }
+      return Reflect.get(target, prop, receiver)
+    },
+  })
+
   const apiOptions = options.apiOptions || {}
-  const commonOpts = { adminSdkClient: adminSdk, apiOptions, apiClients, server }
+  const commonOpts = { adminSdkClient: adminSdk, apiOptions, apiClients, server, featureFlags: flags }
 
   logger.debug(`${TAGS.MCP} Registering all tools...`)
 
