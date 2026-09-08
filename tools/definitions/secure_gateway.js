@@ -241,7 +241,7 @@ export function registerSecureGatewayTools(server, options, sessionState) {
     'create_secure_gateway_application',
     {
       description:
-        'Configures routing for an application (such as a private web application) on a BeyondCorp Secure Gateway.',
+        'Configures routing for an application (such as a SaaS or private web application) on a BeyondCorp Secure Gateway. Note: Browser-based Zero-Trust routing requires the Secure Enterprise Browser (SEB) extension to be force-installed on the target OU (`check_seb_extension_status`).',
       inputSchema: {
         projectId: z.string().describe('The Google Cloud project ID.'),
         gatewayId: z.string().describe('The secure gateway ID.'),

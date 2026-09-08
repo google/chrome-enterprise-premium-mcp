@@ -228,6 +228,9 @@ function getInitialState() {
           },
         },
       ],
+      'chrome.users.apps.ManagedConfiguration': [],
+      'chrome.users.apps.AppPolicy': [],
+      'chrome.users.SimpleProxySettings': [],
     },
     activities: [],
     browserVersions: [
@@ -597,7 +600,20 @@ export function createFakeApp() {
       const orgUnitId = targetResource.split('/').pop() || 'unknown'
       const schema = policyValue.policySchema
 
-      if (!isSafeKey(customerId) || !isSafeKey(orgUnitId) || !isSafeKey(schema)) {
+      if (
+        !isSafeKey(customerId) ||
+        !isSafeKey(orgUnitId) ||
+        !isSafeKey(schema) ||
+        customerId === '__proto__' ||
+        customerId === 'constructor' ||
+        customerId === 'prototype' ||
+        orgUnitId === '__proto__' ||
+        orgUnitId === 'constructor' ||
+        orgUnitId === 'prototype' ||
+        schema === '__proto__' ||
+        schema === 'constructor' ||
+        schema === 'prototype'
+      ) {
         // Skip batch entries whose keys would mutate Object.prototype.
         continue
       }
@@ -607,14 +623,29 @@ export function createFakeApp() {
       if (!state.connectorPolicies[customerId][orgUnitId]) {
         state.connectorPolicies[customerId][orgUnitId] = Object.create(null)
       }
-      state.connectorPolicies[customerId][orgUnitId][schema] = [
-        {
-          value: {
-            policySchema: schema,
-            value: policyValue.value,
-          },
+      const ouPolicies = state.connectorPolicies[customerId][orgUnitId]
+      if (!ouPolicies[schema]) {
+        ouPolicies[schema] = []
+      }
+      const entries = ouPolicies[schema]
+      const appId = policyTargetKey?.additionalTargetKeys?.app_id
+      const entry = {
+        targetKey: policyTargetKey,
+        value: {
+          policySchema: schema,
+          value: policyValue.value,
         },
-      ]
+      }
+      if (appId) {
+        const existingIdx = entries.findIndex(p => p.targetKey?.additionalTargetKeys?.app_id === appId)
+        if (existingIdx >= 0) {
+          entries[existingIdx] = entry
+        } else {
+          entries.push(entry)
+        }
+      } else {
+        ouPolicies[schema] = [entry]
+      }
     }
 
     res.json({})
