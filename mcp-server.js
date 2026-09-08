@@ -458,14 +458,16 @@ export async function runServer() {
       })
 
       const PORT = process.env.PORT || 0
-      const httpServer = app.listen(PORT, () => {
+      const HOST = process.env.HOST || '127.0.0.1'
+      const httpServer = app.listen(PORT, HOST, () => {
         const address = httpServer.address()
         if (address) {
           const assignedPort = address.port
+          const assignedHost = address.address
           printServerStatus(assignedPort)
           // Use console.log directly so smoke tests waiting for this line
           // are not silenced by CEP_LOG_LEVEL=SILENT.
-          console.log(`${TAGS.MCP} Chrome Enterprise Premium MCP server listening on port ${assignedPort}`)
+          console.log(`${TAGS.MCP} Chrome Enterprise Premium MCP server listening on ${assignedHost}:${assignedPort}`)
         }
       })
       httpServer.on('error', e => {
