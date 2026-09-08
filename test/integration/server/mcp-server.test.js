@@ -25,6 +25,7 @@ import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js'
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { sanitizeOauthClientEnv } from '../../run-utils.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -39,16 +40,17 @@ describe('MCP Server in stdio mode', () => {
     transport = new StdioClientTransport({
       command: 'node',
       args: ['mcp-server.js'],
-      env: {
+      env: sanitizeOauthClientEnv({
         ...process.env,
         GCP_STDIO: 'true',
         EXPERIMENT_KNOWLEDGE_SEARCH_ENABLED: 'true',
+        EXPERIMENT_SECURE_GATEWAY_ENABLED: 'true',
         // The integration runner sets EXPERIMENT_DELETE_TOOL_ENABLED=true, but
         // the listTools assertion below pins the exact tool set without the
         // delete_* tools; opt this child process out so the expected list
         // matches what the parent suite registers.
         EXPERIMENT_DELETE_TOOL_ENABLED: 'false',
-      },
+      }),
     })
     client = new Client({
       name: 'test-client',
@@ -79,6 +81,7 @@ describe('MCP Server in stdio mode', () => {
         'cep_auth_clear',
         'cep_auth_status',
         'check_cep_subscription',
+        'check_ev_extension_status',
         'check_seb_extension_status',
         'check_user_cep_license',
         'count_browser_versions',
@@ -93,6 +96,7 @@ describe('MCP Server in stdio mode', () => {
         'get_connector_policy',
         'get_customer_id',
         'get_dlp_rule',
+        'install_ev_extension',
         'install_seb_extension',
         'list_customer_profiles',
         'list_detectors',
@@ -102,6 +106,19 @@ describe('MCP Server in stdio mode', () => {
         'search_content',
         'list_documents',
         'get_document',
+        'create_secure_gateway_application',
+        'create_secure_gateway',
+        'enable_service_discovery',
+        'get_secure_gateway',
+        'get_secure_gateway_application',
+        'get_secure_gateway_application_iam_policy',
+        'get_secure_gateway_iam_policy',
+        'list_secure_gateway_applications',
+        'list_secure_gateways',
+        'set_secure_gateway_application_iam_policy',
+        'set_secure_gateway_iam_policy',
+        'update_secure_gateway',
+        'update_secure_gateway_application',
       ].sort(),
     )
   })
@@ -111,12 +128,20 @@ describe('MCP Server in stdio mode', () => {
     // path never makes a real Google call.
     const FAKE_API_ROOT = 'http://localhost:1'
 
-    test('When server starts with custom PORT, then it logs the correct port', () => {
+    test('When server starts with custom PORT, then it logs the correct port', async () => {
+      const net = await import('node:net')
+      const freePort = await new Promise(resolve => {
+        const s = net.createServer()
+        s.listen(0, () => {
+          const port = s.address().port
+          s.close(() => resolve(port))
+        })
+      })
       const serverPath = path.resolve(__dirname, '../../../mcp-server.js')
       const result = spawnSync(process.execPath, [serverPath], {
         env: {
           ...process.env,
-          PORT: '4000',
+          PORT: String(freePort),
           GCP_STDIO: 'false',
           CEP_LOG_LEVEL: 'info',
           GOOGLE_API_ROOT_URL: FAKE_API_ROOT,
@@ -126,13 +151,20 @@ describe('MCP Server in stdio mode', () => {
 
       const output = result.stderr.toString() + result.stdout.toString()
       const cleanOutput = output.replace(ANSI_RE, '')
-      assert.match(cleanOutput, /Port:\s+4000/)
+      assert.match(cleanOutput, new RegExp(`Port:\\s+${freePort}`))
     })
 
     test('When server starts without PORT, then it assigns a random port', () => {
       const serverPath = path.resolve(__dirname, '../../../mcp-server.js')
+      const env = {
+        ...process.env,
+        GCP_STDIO: 'false',
+        PORT: '0',
+        CEP_LOG_LEVEL: 'info',
+        GOOGLE_API_ROOT_URL: FAKE_API_ROOT,
+      }
       const result = spawnSync(process.execPath, [serverPath], {
-        env: { ...process.env, GCP_STDIO: 'false', CEP_LOG_LEVEL: 'info', GOOGLE_API_ROOT_URL: FAKE_API_ROOT },
+        env,
         timeout: 12000,
       })
 

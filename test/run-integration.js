@@ -34,7 +34,7 @@ limitations under the License.
 import { join, resolve, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { execFileSync } from 'node:child_process'
-import { findTestFiles } from './run-utils.js'
+import { findTestFiles, sanitizeOauthClientEnv } from './run-utils.js'
 import { setupSyntheticTokenCache } from './helpers/synthetic_token_cache.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -55,9 +55,20 @@ if (backend !== 'fake' && backend !== 'real') {
 }
 
 process.env.CEP_BACKEND = backend
+if (backend !== 'real') {
+  sanitizeOauthClientEnv()
+}
 
 const integrationDirs = [join(root, 'test', 'integration', 'tools'), join(root, 'test', 'integration', 'server')]
-const testFiles = integrationDirs.flatMap(dir => findTestFiles(dir)).sort()
+let testFiles = []
+
+// Support running specific files passed as arguments
+const args = process.argv.slice(3)
+if (args.length > 0) {
+  testFiles = args.map(arg => resolve(root, arg))
+} else {
+  testFiles = integrationDirs.flatMap(dir => findTestFiles(dir)).sort()
+}
 
 if (testFiles.length === 0) {
   console.error('No test files found under test/integration/tools/ or test/integration/server/')

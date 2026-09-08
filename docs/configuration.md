@@ -46,13 +46,14 @@ PORT=8080 GCP_STDIO=false npx -y @google/chrome-enterprise-premium-mcp@latest
 
 ## Key variables
 
-| Variable                   | Description                                                                                                                                                                                                                                        | Default |
-| :------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :------ |
-| `GCP_STDIO`                | `true` for stdio (local), `false` for HTTP (remote).                                                                                                                                                                                               | `true`  |
-| `PORT`                     | Network port when `GCP_STDIO=false`.                                                                                                                                                                                                               | `0`     |
-| `LOG_LEVEL`                | Verbosity. One of `error`, `warn`, `info`, `debug`.                                                                                                                                                                                                | `info`  |
-| `CEP_BEARER_AUDIENCE`      | When set in HTTP mode, every inbound request must carry an `Authorization: Bearer <id-token>` whose `aud` claim is in this value (comma-separated for multiple). When unset, ID-token verification is off and the server prints a startup warning. | -       |
-| `CEP_BEARER_PRINCIPAL_SUB` | When set, narrows access to a single Google account: requests whose token `sub` does not match return `403 Forbidden`. Has no effect unless `CEP_BEARER_AUDIENCE` is also set.                                                                     | -       |
+| Variable                   | Description                                                                                                                                                                                                                                        | Default   |
+| :------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------- |
+| `GCP_STDIO`                | `true` for stdio (local), `false` for HTTP (remote).                                                                                                                                                                                               | `true`    |
+| `PORT`                     | Network port when `GCP_STDIO=false`.                                                                                                                                                                                                               | `0`       |
+| `LOG_LEVEL`                | Verbosity. One of `error`, `warn`, `info`, `debug`.                                                                                                                                                                                                | `info`    |
+| `CEP_AUTH_MODE`            | Strict authentication regime: `dynamic` (default: accepts Bearer, Service Account, or CLI cache), `bearer-only` (enforces per-request Bearer header), or `service-account-only` (enforces server-side SA credentials).                             | `dynamic` |
+| `CEP_BEARER_AUDIENCE`      | When set in HTTP mode, every inbound request must carry an `Authorization: Bearer <id-token>` whose `aud` claim is in this value (comma-separated for multiple). When unset, ID-token verification is off and the server prints a startup warning. | -         |
+| `CEP_BEARER_PRINCIPAL_SUB` | When set, narrows access to a single Google account: requests whose token `sub` does not match return `403 Forbidden`. Has no effect unless `CEP_BEARER_AUDIENCE` is also set.                                                                     | -         |
 
 > [!NOTE]
 > When `GCP_STDIO=false` and `PORT` is unset or `0`, the server binds to a random available port. The actual port is logged at startup, for example: `Chrome Enterprise Premium MCP server listening on port X`.
@@ -71,11 +72,35 @@ Most workstation users want the OAuth flow. Most hosted deployments (Cloud Run, 
 
 If you're not sure which path applies to you, see the [Which auth path should I use?](faq.md#which-auth-path-should-i-use) FAQ entry for the common deployment shapes.
 
-| Setup                      | Transport | Credential source                           | Setup walkthrough                                                                               |
-| :------------------------- | :-------- | :------------------------------------------ | :---------------------------------------------------------------------------------------------- |
-| `auth login` (recommended) | stdio     | OAuth token cache                           | [`auth-bring-your-own-oauth-client.md`](auth-bring-your-own-oauth-client.md)                    |
-| Bearer pass-through        | HTTP      | per-request `Authorization: Bearer <token>` | The caller sets the header; the server forwards it to Google verbatim.                          |
-| Service account + DWD      | stdio     | Service account with domain-wide delegation | [FAQ entry on service accounts](faq.md#can-i-use-a-service-account-instead-of-user-credentials) |
+| Setup                      | Transport | Credential source                           | Setup walkthrough                                                                                  |
+| :------------------------- | :-------- | :------------------------------------------ | :------------------------------------------------------------------------------------------------- |
+| `auth login` (recommended) | stdio     | OAuth token cache                           | [`auth-bring-your-own-oauth-client.md`](auth-bring-your-own-oauth-client.md)                       |
+| Bearer pass-through        | HTTP      | per-request `Authorization: Bearer <token>` | The caller sets the header; the server forwards it to Google verbatim.                             |
+| Service account + DWD      | stdio     | Service account with domain-wide delegation | See [Service Account & Domain-Wide Delegation](#service-account--domain-wide-delegation-dwd) below |
+
+### Service Account & Domain-Wide Delegation (DWD)
+
+When running in Service Account mode without per-user OAuth, set `GOOGLE_APPLICATION_CREDENTIALS` to your Service Account JSON key path. For Workspace APIs (such as DLP rules, Organizational Units, and Customer ID retrieval), you must also set `CEP_IMPERSONATE_SUBJECT` to the email address of a Google Workspace administrator (e.g., `admin@example.com`). This is because Google Workspace APIs do not allow direct machine-identity access from Service Accounts; the Service Account must use Domain-Wide Delegation to impersonate a human administrator who has the necessary privileges to read or manage those resources.
+
+**Google Workspace Admin Console Authorization Steps:**
+
+1. Open the [Domain-Wide Delegation Page](https://admin.google.com/ac/owl/domainwidedelegation) in Google Workspace Admin Console.
+2. Click **Add new** and enter your Service Account's numeric **Client ID** (found in your JSON key file under `"client_id"`).
+3. Add the required API scopes (comma-separated):
+   <!-- START_DWD_SCOPES -->
+   ```
+   https://www.googleapis.com/auth/admin.directory.customer.readonly,
+   https://www.googleapis.com/auth/admin.directory.orgunit.readonly,
+   https://www.googleapis.com/auth/admin.reports.audit.readonly,
+   https://www.googleapis.com/auth/apps.licensing,
+   https://www.googleapis.com/auth/chrome.management.policy,
+   https://www.googleapis.com/auth/chrome.management.profiles.readonly,
+   https://www.googleapis.com/auth/chrome.management.reports.readonly,
+   https://www.googleapis.com/auth/chrome.management.securityinsights,
+   https://www.googleapis.com/auth/cloud-identity.policies
+   ```
+   <!-- END_DWD_SCOPES -->
+4. Click **Authorize**. Set `CEP_IMPERSONATE_SUBJECT=admin@example.com` in your environment.
 
 > [!IMPORTANT]
 > The HTTP-mode default has no network-layer authentication. Bind the listener to a trusted interface only, or set `CEP_BEARER_AUDIENCE` (HTTP mode only) for per-request ID-token verification.

@@ -21,7 +21,8 @@ limitations under the License.
  * the agent's behavior in a fully configured environment.
  */
 
-/** @param {object} state - Cloned base state (returned as-is). */
+/** @param {object} state - Cloned base state. */
 export function mutate(state) {
+  state.insightsState = 'INSIGHTS_ENABLED'
   return state
 }

@@ -51,6 +51,7 @@ export function registerGetDlpRuleTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
+        requiresDelegation: true,
         /**
          * Handler for getting a DLP rule.
          * @param {object} params - The tool parameters.

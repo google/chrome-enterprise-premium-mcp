@@ -18,7 +18,7 @@ export default {
   id: 'i04',
   priority: 'P0',
   tags: ['inspection'],
-  expectedTools: ['diagnose_environment'],
+  expectedTools: ['diagnose_environment|list_dlp_rules'],
   prompt:
     'Run a health check on my Chrome Enterprise Premium deployment. Check my subscription, org structure, browser versions, and DLP rules.',
   goldenResponse:

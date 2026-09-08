@@ -18,12 +18,14 @@ limitations under the License.
  * @file Wrapper utilities to guard and transform MCP tool calls.
  */
 
-import { TAGS, SCOPES } from '../../lib/constants.js'
+import { TAGS } from '../../lib/constants.js'
+import { getActiveScopes } from '../../lib/util/feature_flags.js'
 import { logger } from '../../lib/util/logger.js'
 import { validateAndGetOrgUnitId } from './org-unit.js'
 import { isTokenLocallyValid } from '../../lib/util/credential/auth_login.js'
 import { cliInvocation } from '../../lib/util/cli_invocation.js'
 import { getAuthErrorMessage, resolveCredentialsSource } from '../../lib/util/auth-error.js'
+import { isBearerMode, isServiceAccountMode, isDynamicMode } from '../../lib/util/auth_mode.js'
 
 /**
  * Builds an MCP tool response signalling that sign-in is needed before any tool can run.
@@ -53,6 +55,57 @@ function buildAuthRequiredResponse({ reason, expiresAt }) {
     // By using unstructured text, we keep data schemas strict while maintaining agent utility.
     isError: true,
   }
+}
+
+const TOOL_PRIVILEGES_MAP = {
+  list_org_units: {
+    privilege: 'Services > Google Workspace > Directory > Read organizational units',
+    roleUrl: 'https://admin.google.com/ac/roles',
+  },
+  security_insights: {
+    privilege: 'Services > Chrome Enterprise Security Insights (or Chrome Management)',
+    roleUrl: 'https://admin.google.com/ac/roles',
+  },
+  count_browser_versions: {
+    privilege: 'Services > Chrome Management > Manage ChromeOS Devices (Read-only)',
+    roleUrl: 'https://admin.google.com/ac/roles',
+  },
+  list_customer_profiles: {
+    privilege: 'Services > Chrome Management > Settings > Managed Browsers',
+    roleUrl: 'https://admin.google.com/ac/roles',
+  },
+  get_chrome_activity_log: {
+    privilege: 'Services > Chrome Management > Manage ChromeOS Devices (and Reports > Audit Reports)',
+    roleUrl: 'https://admin.google.com/ac/roles',
+  },
+  check_cep_subscription: {
+    privilege: 'Services > License Management > License Read',
+    roleUrl: 'https://admin.google.com/ac/roles',
+  },
+  check_user_cep_license: {
+    privilege: 'Services > License Management > License Read',
+    roleUrl: 'https://admin.google.com/ac/roles',
+  },
+  list_dlp_rules: {
+    privilege: 'Services > Cloud Identity > Security > View / Manage Data Loss Prevention (DLP) rules and detectors',
+    roleUrl: 'https://admin.google.com/ac/roles',
+  },
+  get_dlp_rule: {
+    privilege: 'Services > Cloud Identity > Security > View / Manage Data Loss Prevention (DLP) rules and detectors',
+    roleUrl: 'https://admin.google.com/ac/roles',
+  },
+  list_detectors: {
+    privilege: 'Services > Cloud Identity > Security > View / Manage Data Loss Prevention (DLP) rules and detectors',
+    roleUrl: 'https://admin.google.com/ac/roles',
+  },
+  create_chrome_dlp_rule: {
+    privilege: 'Services > Cloud Identity > Security > View / Manage Data Loss Prevention (DLP) rules and detectors',
+    roleUrl: 'https://admin.google.com/ac/roles',
+  },
+  create_regex_detector: {
+    privilege: 'Services > Cloud Identity > Security > View / Manage Data Loss Prevention (DLP) rules and detectors',
+    roleUrl: 'https://admin.google.com/ac/roles',
+  },
 }
 
 /**
@@ -125,6 +178,7 @@ export function safeFormatResponse({ rawData, formatFn, toolName }) {
  * @param {(...args: unknown[]) => unknown} toolDef.handler - The main tool handler function
  * @param {boolean} [toolDef.skipAutoResolve] - Whether to skip auto-resolving customerId
  * @param {boolean} [toolDef.skipAuthCheck] - Whether to skip checking if tokens are valid.
+ * @param {boolean} [toolDef.requiresDelegation] - Whether this tool requires domain-wide delegation in SA mode.
  * @param {string[]} [toolDef.scopes] - Scopes required for this tool. Defaults to all SCOPES.
  * @param {object} options - Configuration options for the wrapper
  * @param {object} [options.apiClients] - Collection of API clients
@@ -134,16 +188,60 @@ export function safeFormatResponse({ rawData, formatFn, toolName }) {
  * @returns {(...args: unknown[]) => unknown} The wrapped tool handler function
  */
 export function guardedToolCall(
-  { validate, transform, handler, skipAutoResolve = false, skipAuthCheck = false, scopes = Object.values(SCOPES) },
+  {
+    validate,
+    transform,
+    handler,
+    skipAutoResolve = false,
+    skipAuthCheck = false,
+    requiresDelegation = false,
+    scopes = getActiveScopes(),
+  },
   options = {},
   sessionState = { customerId: null, cachedRootOrgUnitId: null },
 ) {
   const wrapped = async (params, context) => {
-    const authToken = getAuthToken(context?.requestInfo)
-    if (!authToken && !skipAuthCheck) {
-      const validity = await isTokenLocallyValid({ scopes })
-      if (!validity.ok) {
-        return buildAuthRequiredResponse(validity)
+    const authToken = params?.accessToken || getAuthToken(context?.requestInfo)
+    if (!skipAuthCheck) {
+      if (authToken) {
+        // Inbound Bearer token present: skip local disk checks and forward directly to Google APIs
+      } else if (isBearerMode()) {
+        const msg =
+          'Authentication failed: Server is configured in strict "bearer-only" mode, ' +
+          'but no Authorization token was passed in the request.'
+        return {
+          content: [{ type: 'text', text: msg }],
+          structuredContent: { status: 'error', code: 'BEARER_ONLY_REQUIRED', message: msg },
+          isError: true,
+        }
+      } else if (isServiceAccountMode() || (isDynamicMode() && process.env.GOOGLE_APPLICATION_CREDENTIALS)) {
+        if (isServiceAccountMode() && !process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+          const msg =
+            'Authentication failed: Server is configured in strict "service-account-only" mode, ' +
+            'but GOOGLE_APPLICATION_CREDENTIALS is not set.'
+          return {
+            content: [{ type: 'text', text: msg }],
+            structuredContent: { status: 'error', code: 'SERVICE_ACCOUNT_REQUIRED', message: msg },
+            isError: true,
+          }
+        }
+        if (requiresDelegation && !process.env.CEP_IMPERSONATE_SUBJECT) {
+          const text =
+            'Error: Tool requires Domain-Wide Delegation (requiresDelegation: true) to access user-scoped directory or policy data. ' +
+            'You are authenticated in Service Account mode (GOOGLE_APPLICATION_CREDENTIALS is set), but CEP_IMPERSONATE_SUBJECT is not specified. ' +
+            'To use this tool, set CEP_IMPERSONATE_SUBJECT to the email address of a Google Workspace user account with delegated privileges (Option 1). ' +
+            'Alternatively, if you are using direct Admin Console role assignments without user impersonation (Option 2), ' +
+            'use Option 2 compatible tools such as list_org_units, security_insights, or count_browser_versions with an explicit customerId.'
+          return {
+            content: [{ type: 'text', text }],
+            isError: true,
+          }
+        }
+      } else {
+        const validity = await isTokenLocallyValid({ scopes })
+        if (!validity.ok) {
+          return buildAuthRequiredResponse(validity)
+        }
       }
     }
     try {
@@ -163,6 +261,7 @@ export function guardedToolCall(
       }
       const { apiClients } = options
       let currentParams = { ...params }
+      delete currentParams.accessToken
       if (sessionState && currentParams.customerId) {
         sessionState.customerId = currentParams.customerId
       }
@@ -240,16 +339,28 @@ export function guardedToolCall(
         errorMessage.includes('API Error 403') ||
         errorMessage.includes('UNAUTHENTICATED') ||
         errorMessage.includes('PERMISSION_DENIED') ||
-        errorMessage.includes('invalid_grant')
+        errorMessage.includes('invalid_grant') ||
+        errorMessage.includes('unauthorized_client')
 
       if (isAuthError) {
         const resolvedStatus =
           status ||
           (errorMessage.includes('401') ||
           errorMessage.includes('UNAUTHENTICATED') ||
-          errorMessage.includes('invalid_grant')
+          errorMessage.includes('invalid_grant') ||
+          errorMessage.includes('unauthorized_client')
             ? 401
             : 403)
+
+        if (resolvedStatus === 403 && context?.name && TOOL_PRIVILEGES_MAP[context.name]) {
+          const info = TOOL_PRIVILEGES_MAP[context.name]
+          const remediationMessage = `Permission denied (403 Forbidden) while calling \`${context.name}\`. Your account lacks the required Google Workspace Admin Console privilege:\n• **${info.privilege}**\n\n**To fix:** Open [Workspace Admin Roles](${info.roleUrl}) and assign any role (or custom role) granting this privilege to your account (e.g., *Delegated Admin* or *Super Admin*).`
+          return {
+            content: [{ type: 'text', text: remediationMessage }],
+            isError: true,
+          }
+        }
+
         error.status = resolvedStatus
         const source = options.apiOptions?.auth ? 'provided' : resolveCredentialsSource(authToken)
         const remediationMessage = getAuthErrorMessage(error, source)

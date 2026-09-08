@@ -112,4 +112,22 @@ describe('Knowledge Tools Real Database Integration', () => {
     const article = documents.find(d => d.title.includes('Evidence Locker'))
     assert.ok(article, 'Should find the Evidence Locker setup guide')
   })
+
+  test('When searched for secure gateway, then search_content finds all four secure gateway articles', async () => {
+    const searchHandler = handlers['search_content']
+    const result = await searchHandler({ query: 'secure gateway' }, { requestInfo: {} })
+    const documents = result.structuredContent.documents
+
+    const expectedTitles = [
+      'Secure Access to SaaS Applications',
+      'Secure Access to Private Web Applications',
+      'Troubleshoot Secure Gateway',
+      'Manage Secure Gateway',
+    ]
+
+    for (const title of expectedTitles) {
+      const found = documents.some(d => d.title === title)
+      assert.ok(found, `Should find secure gateway article with title: "${title}"`)
+    }
+  })
 })

@@ -22,7 +22,8 @@ export default {
   expectedTools: ['list_org_units', 'enable_chrome_enterprise_connectors'],
   forbiddenPatterns: [],
   requiredPatterns: [],
-  prompt: 'Enable the file-upload connector for the root organizational unit using sensible defaults.',
+  prompt:
+    'Enable the file-upload connector for the root organizational unit using sensible defaults. You have my permission to apply this change immediately.',
   goldenResponse:
     'The agent identified the root organizational unit, then called the connector enablement tool to configure the file-upload connector. It confirmed the connector is now active and briefly described what it does — scanning files users attempt to upload for policy violations — so the admin understands the change that was applied.',
   judgeInstructions: `Verify the agent actually performed the action (tool was called), not just

@@ -20,6 +20,7 @@ limitations under the License.
 
 import { TAGS } from '../lib/constants.js'
 import { logger } from '../lib/util/logger.js'
+import { isStdioMode } from '../lib/util/gcp.js'
 
 import { registerGetCustomerIdTool } from './definitions/get_customer_id.js'
 import { registerListOrgUnitsTool } from './definitions/list_org_units.js'
@@ -40,13 +41,20 @@ import { registerCreateUrlListDetectorTool } from './definitions/create_url_list
 import { registerCreateWordListDetectorTool } from './definitions/create_word_list_detector.js'
 import { registerCreateDefaultDlpRulesTool } from './definitions/create_default_dlp_rules.js'
 import { registerCheckSebExtensionStatusTool } from './definitions/check_seb_extension_status.js'
+import { registerCheckEvExtensionStatusTool } from './definitions/check_ev_extension_status.js'
 import { registerInstallSebExtensionTool } from './definitions/install_seb_extension.js'
+import { registerInstallEvExtensionTool } from './definitions/install_ev_extension.js'
 import { registerCheckAndEnableCepApiTool } from './definitions/check_and_enable_cep_api.js'
 import { registerEnableChromeEnterpriseConnectorsTool } from './definitions/enable_chrome_enterprise_connectors.js'
 import { registerDiagnoseEnvironmentTool } from './definitions/diagnose_environment.js'
 import { registerKnowledgeTools } from './definitions/knowledge.js'
 import { registerAuthTools } from './definitions/auth.js'
 import { registerSecurityInsightsTool } from './definitions/security_insights.js'
+import { registerSecurityInsightsDataTool } from './definitions/security_insights_data_tool.js'
+import { registerSearchOrganizationsTool } from './definitions/search_organizations.js'
+import { registerSecureGatewayTools } from './definitions/secure_gateway.js'
+import { registerListCaaAccessLevelsTool } from './definitions/list_caa_access_levels.js'
+import { registerCreateCaaAccessLevelTool } from './definitions/create_caa_access_level.js'
 import { featureFlags, FLAGS } from '../lib/util/feature_flags.js'
 
 /**
@@ -78,6 +86,8 @@ export function registerTools(server, options = {}, sessionState) {
     chromePolicy: chromePolicyClient,
     cloudIdentity: cloudIdentityClient,
     serviceUsage: serviceUsageClient,
+    cloudResourceManager: cloudResourceManagerClient,
+    accessContextManager: accessContextManagerClient,
   } = apiClients
 
   const apiOptions = options.apiOptions || {}
@@ -94,6 +104,12 @@ export function registerTools(server, options = {}, sessionState) {
   registerCountBrowserVersionsTool(server, { ...commonOpts, chromeManagementClient }, state)
   registerCustomerProfileTool(server, { ...commonOpts, chromeManagementClient }, state)
   registerSecurityInsightsTool(server, { ...commonOpts, chromeManagementClient }, state)
+  if (flags.isEnabled(FLAGS.SECURITY_INSIGHTS_DATA_TOOL_ENABLED)) {
+    logger.debug(
+      `${TAGS.MCP} Registering 'security_insights_data' tool (EXPERIMENT_SECURITY_INSIGHTS_DATA_TOOL_ENABLED is active)`,
+    )
+    registerSecurityInsightsDataTool(server, { ...commonOpts, chromeManagementClient }, state)
+  }
   registerGetConnectorPolicyTool(server, { chromePolicyClient }, state)
   registerGetChromeActivityLogTool(server, { ...commonOpts, chromeManagementClient }, state)
   registerListDlpRulesTool(server, { cloudIdentityClient }, state)
@@ -112,21 +128,44 @@ export function registerTools(server, options = {}, sessionState) {
   registerCreateWordListDetectorTool(server, { ...commonOpts, cloudIdentityClient }, state)
   registerCreateDefaultDlpRulesTool(server, { ...commonOpts, cloudIdentityClient }, state)
   registerCheckSebExtensionStatusTool(server, { ...commonOpts, chromePolicyClient }, state)
+  registerCheckEvExtensionStatusTool(server, { ...commonOpts, chromePolicyClient }, state)
   registerInstallSebExtensionTool(server, { ...commonOpts, chromePolicyClient }, state)
+  registerInstallEvExtensionTool(server, { ...commonOpts, chromePolicyClient }, state)
   if (registerEnableApi) {
     registerCheckAndEnableCepApiTool(server, { ...commonOpts, serviceUsageClient }, state)
   }
   registerEnableChromeEnterpriseConnectorsTool(server, { ...commonOpts, chromePolicyClient }, state)
+  if (flags.isEnabled(FLAGS.SEARCH_ORGANIZATIONS_TOOL_ENABLED)) {
+    logger.debug(
+      `${TAGS.MCP} Registering 'search_organizations' tool (EXPERIMENT_SEARCH_ORGANIZATIONS_TOOL_ENABLED is active)`,
+    )
+    registerSearchOrganizationsTool(server, { ...commonOpts, cloudResourceManagerClient }, state)
+  }
 
   if (flags.isEnabled(FLAGS.DIAGNOSE_TOOL_ENABLED)) {
     logger.debug(`${TAGS.MCP} Registering diagnose tool (EXPERIMENT_DIAGNOSE_TOOL_ENABLED is active)`)
     registerDiagnoseEnvironmentTool(
       server,
-      { ...commonOpts, chromeManagementClient, chromePolicyClient, cloudIdentityClient },
+      { ...commonOpts, chromeManagementClient, chromePolicyClient, cloudIdentityClient, featureFlags: flags },
       state,
     )
   }
 
+  if (flags.isEnabled(FLAGS.SECURE_GATEWAY_ENABLED)) {
+    logger.debug(`${TAGS.MCP} Registering secure gateway tools (EXPERIMENT_SECURE_GATEWAY_ENABLED is active)`)
+    registerSecureGatewayTools(server, options, state)
+  }
+
+  if (flags.isEnabled(FLAGS.ACM_TOOLS_ENABLED)) {
+    logger.debug(`${TAGS.MCP} Registering ACM tools (EXPERIMENT_ACM_TOOLS_ENABLED is active)`)
+    registerListCaaAccessLevelsTool(server, { ...commonOpts, accessContextManagerClient }, state)
+    registerCreateCaaAccessLevelTool(server, { ...commonOpts, accessContextManagerClient }, state)
+  }
+
   registerKnowledgeTools(server, { ...options, featureFlags: flags }, state)
-  registerAuthTools(server, commonOpts, state)
+  const isInteractiveOauthMode =
+    isStdioMode() && !process.env.GOOGLE_APPLICATION_CREDENTIALS && !process.env.CEP_ACCESS_TOKEN
+  if (isInteractiveOauthMode) {
+    registerAuthTools(server, commonOpts, state)
+  }
 }

@@ -1,0 +1,83 @@
+name: PR Eval Check
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'test/evals/cases/**/*.eval.js'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  pr-evals:
+    name: 🤖 PR Eval Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+
+      - name: Identify changed eval cases
+        id: changed
+        run: |
+          BASE_BRANCH="${{ github.base_ref }}"
+          if [ -z "$BASE_BRANCH" ]; then
+            BASE_BRANCH="main"
+          fi
+          git fetch origin "$BASE_BRANCH" --depth=1 || true
+          CHANGED_FILES=$(git diff --name-only origin/$BASE_BRANCH...HEAD -- "test/evals/cases/**/*.eval.js" || true)
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "No eval cases added or modified in this PR."
+            echo "ids=" >> "$GITHUB_OUTPUT"
+          else
+            EVAL_IDS=$(echo "$CHANGED_FILES" | sed -E 's/.*\/([a-zA-Z0-9_]+)-.*/\1/' | sort -u | paste -sd, -)
+            echo "Changed eval IDs: $EVAL_IDS"
+            echo "ids=$EVAL_IDS" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run changed evals (Dry-run / syntax check)
+        if: steps.changed.outputs.ids != '' && env.GEMINI_API_KEY == ''
+        env:
+          CEP_BACKEND: fake
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          echo "GEMINI_API_KEY is not set (likely an external fork PR)."
+          echo "Running deterministic dry-run check against golden responses..."
+          node test/evals/run.js --id "${{ steps.changed.outputs.ids }}" --dry-run
+
+      - name: Run changed evals (Full agent + judge)
+        if: steps.changed.outputs.ids != '' && env.GEMINI_API_KEY != ''
+        env:
+          CEP_BACKEND: fake
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          echo "Running 5 runs per changed eval case..."
+          node test/evals/run.js --id "${{ steps.changed.outputs.ids }}" --runs 5 --output pr-evals.json || true
+          node -e '
+            const fs = require("node:fs");
+            if (!fs.existsSync("pr-evals.json")) {
+              console.error("::error::pr-evals.json was not generated!");
+              process.exit(1);
+            }
+            const res = JSON.parse(fs.readFileSync("pr-evals.json", "utf8"));
+            let failed = false;
+            for (const e of res.evaluations) {
+              console.log(`Eval ${e.id} pass rate: ${e.passRate}% (${e.passed}/${e.total})`);
+              if (e.passRate < 80) {
+                console.error(`::error::Eval ${e.id} pass rate (${e.passRate}%) is below required 80% threshold!`);
+                failed = true;
+              }
+            }
+            if (failed) process.exit(1);
+          '

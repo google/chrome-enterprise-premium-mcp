@@ -27,5 +27,6 @@ export function mutate(state) {
       delete state.policies[key]
     }
   }
+  state.activities = []
   return state
 }

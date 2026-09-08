@@ -30,6 +30,7 @@ const CORE_TOOLS = [
   'cep_auth_status',
   'check_and_enable_cep_api',
   'check_cep_subscription',
+  'check_ev_extension_status',
   'check_seb_extension_status',
   'check_user_cep_license',
   'count_browser_versions',
@@ -44,6 +45,7 @@ const CORE_TOOLS = [
   'get_customer_id',
   'get_dlp_rule',
   'get_document',
+  'install_ev_extension',
   'install_seb_extension',
   'list_customer_profiles',
   'list_detectors',
@@ -57,6 +59,24 @@ const DELETE_EXPERIMENT_TOOLS = ['delete_agent_dlp_rule', 'delete_detector']
 const DIAGNOSE_EXPERIMENT_TOOLS = ['diagnose_environment']
 
 const KNOWLEDGE_SEARCH_EXPERIMENT_TOOLS = ['search_content', 'list_documents']
+
+const SEARCH_ORGANIZATIONS_EXPERIMENT_TOOLS = ['search_organizations']
+
+const SECURE_GATEWAY_EXPERIMENT_TOOLS = [
+  'create_secure_gateway_application',
+  'create_secure_gateway',
+  'enable_service_discovery',
+  'get_secure_gateway',
+  'get_secure_gateway_application',
+  'get_secure_gateway_application_iam_policy',
+  'get_secure_gateway_iam_policy',
+  'list_secure_gateway_applications',
+  'list_secure_gateways',
+  'set_secure_gateway_application_iam_policy',
+  'set_secure_gateway_iam_policy',
+  'update_secure_gateway',
+  'update_secure_gateway_application',
+]
 
 // Tests for SEB tool registration and individual tool handler logic.
 describe('SEB Tool Registration', () => {
@@ -112,6 +132,46 @@ describe('SEB Tool Registration', () => {
     assert.deepStrictEqual(registeredToolNames.sort(), expected)
   })
 
+  test('When registerTools is called with SECURE_GATEWAY_ENABLED, then it registers core + secure gateway tools', () => {
+    registerTools(server, {
+      featureFlags: {
+        isEnabled: flag => flag === FLAGS.SECURE_GATEWAY_ENABLED,
+      },
+    })
+
+    const registeredToolNames = server.registerTool.mock.calls.map(call => call.arguments[0])
+    const expected = [...CORE_TOOLS, ...SECURE_GATEWAY_EXPERIMENT_TOOLS].sort()
+    assert.deepStrictEqual(registeredToolNames.sort(), expected)
+  })
+
+  test('When registerTools is called with SEARCH_ORGANIZATIONS_TOOL_ENABLED, then it registers core + search org tools', () => {
+    registerTools(server, {
+      featureFlags: {
+        isEnabled: flag => flag === FLAGS.SEARCH_ORGANIZATIONS_TOOL_ENABLED,
+      },
+    })
+
+    const registeredToolNames = server.registerTool.mock.calls.map(call => call.arguments[0])
+    const expected = [...CORE_TOOLS, ...SEARCH_ORGANIZATIONS_EXPERIMENT_TOOLS].sort()
+    assert.deepStrictEqual(registeredToolNames.sort(), expected)
+  })
+
+  test('When SECURE_GATEWAY_ENABLED and DELETE_TOOL_ENABLED are active, then it registers delete_secure_gateway_application', () => {
+    registerTools(server, {
+      featureFlags: {
+        isEnabled: flag => flag === FLAGS.SECURE_GATEWAY_ENABLED || flag === FLAGS.DELETE_TOOL_ENABLED,
+      },
+    })
+
+    const registeredToolNames = server.registerTool.mock.calls.map(call => call.arguments[0])
+    const expected = [
+      ...CORE_TOOLS,
+      ...DELETE_EXPERIMENT_TOOLS,
+      ...SECURE_GATEWAY_EXPERIMENT_TOOLS,
+      'delete_secure_gateway_application',
+    ].sort()
+    assert.deepStrictEqual(registeredToolNames.sort(), expected)
+  })
   test('When registerEnableApi is false, then check_and_enable_cep_api is not registered', () => {
     registerTools(server, { featureFlags: { isEnabled: () => false }, registerEnableApi: false })
 

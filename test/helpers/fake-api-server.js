@@ -228,6 +228,9 @@ function getInitialState() {
           },
         },
       ],
+      'chrome.users.apps.ManagedConfiguration': [],
+      'chrome.users.apps.AppPolicy': [],
+      'chrome.users.SimpleProxySettings': [],
     },
     activities: [],
     browserVersions: [
@@ -251,6 +254,37 @@ function getInitialState() {
       'serviceusage.googleapis.com': 'ENABLED',
     }),
     insightsState: 'INSIGHTS_DISABLED',
+    securityInsightsData: {
+      contentTransfers: {
+        summaries: [{ metric: 'CONTENT_TRANSFERS_METRIC_TOTAL_TRANSFERS', count: '100' }],
+      },
+      contentTransfersBreakdowns: {
+        contentTransfersBreakdowns: [{ user: 'user@test.com', summary: { count: '50' } }],
+      },
+      urlVisits: {
+        summaries: [{ metric: 'URL_VISITS_METRIC_TOTAL_SUSPICIOUS_URL_VISITS', count: '5' }],
+      },
+      urlVisitsBreakdowns: {
+        urlVisitsBreakdowns: [{ user: 'user@test.com', summary: { count: '2' } }],
+      },
+    },
+    organizations: [
+      {
+        name: 'organizations/123456789',
+        displayName: 'Test Org',
+        directoryCustomerId: 'C0123456',
+        state: 'ACTIVE',
+      },
+    ],
+    securityGateways: nullProtoMap({}),
+    securityGatewayApplications: nullProtoMap({}),
+    securityGatewayIamPolicies: nullProtoMap({}),
+    securityGatewayApplicationIamPolicies: nullProtoMap({}),
+    accessPolicies: nullProtoMap({}),
+    accessLevels: nullProtoMap({}),
+    acmOperations: nullProtoMap({}),
+    projectIamPolicies: nullProtoMap({}),
+    firewalls: nullProtoMap({}),
   }
 }
 
@@ -296,6 +330,10 @@ export function createFakeApp() {
   let mockErrors = {}
   const app = express()
   app.use(express.json())
+  app.use((req, res, next) => {
+    console.log(`[FAKE SERVER] ${req.method} ${req.url}`)
+    next()
+  })
 
   // Mock error middleware
   app.use((req, res, next) => {
@@ -309,21 +347,49 @@ export function createFakeApp() {
   })
 
   // Support Google Help Articles (Proxy Target)
-  app.get('/a/answer/:id', (req, res) => {
+  const serveArticle = (req, res) => {
     if (req.params.id === '1219251') {
-      return res.send(`
+      return res.send(
+        `
         <article>
           <h1>Administrator Privilege Definitions</h1>
           <p>Recommended delegated roles for custom admin configurations:</p>
           <ul>
-            <li><strong>Security Center Admin</strong>: Assign this custom role to view dashboards and security insights.</li>
+            <li><strong>View Chrome Insights Settings / Manage Chrome Insights Settings</strong>: ` +
+          `Assign this delegated privilege to view dashboards and security insights. ` +
+          `Alternatively, assign <strong>Chrome Enterprise Security Service (APP_ADMIN)</strong>.</li>
             <li><strong>DLP Administrator</strong>: Assign this custom role to adjust, edit, or view DLP rules.</li>
           </ul>
         </article>
-      `)
+      `,
+      )
+    }
+    if (req.params.id === '16493390') {
+      return res.send(
+        `
+        <article>
+          <h1>Configurable Timeout Deadlines for Deep Scanning</h1>
+          <p>As an administrator with the <strong>Chrome Enterprise Security Services</strong> privilege ` +
+          `and a <strong>Chrome Enterprise Premium</strong> subscription, you can configure the ` +
+          `evaluation time limit (timeouts) for DLP and malware scans, including the paste action.</p>
+          <h2>Steps to configure:</h2>
+          <ol>
+            <li>Go to the Google Admin console.</li>
+            <li>Navigate to <strong>Menu > Apps > Additional Google Services > ` +
+          `Chrome Enterprise Security Services > Deep scanning protection settings</strong>.</li>
+            <li>Click Edit.</li>
+            <li>Set the evaluation time limit in seconds (scan deadline/paste deadline).</li>
+            <li>Click Save.</li>
+          </ol>
+        </article>
+      `,
+      )
     }
     res.status(404).send('Article not found')
-  })
+  }
+
+  app.get('/a/answer/:id', serveArticle)
+  app.get('/chrome/a/answer/:id', serveArticle)
 
   // Admin SDK: Get Customer
   app.get('/admin/directory/v1/customers/:customerKey', (req, res) => {
@@ -459,6 +525,45 @@ export function createFakeApp() {
     res.json({ insightsState: 'INSIGHTS_DISABLED' })
   })
 
+  // Chrome Management: Query Content Transfers
+  app.get('/v1alpha1/customers/:customerId/enterprise/securityInsights\\:queryContentTransfers', (req, res) => {
+    const customerId = requireCustomer(state, req.params.customerId, res)
+    if (!customerId) {
+      return
+    }
+    res.json(state.securityInsightsData.contentTransfers)
+  })
+
+  // Chrome Management: Query Content Transfers Breakdowns
+  app.get(
+    '/v1alpha1/customers/:customerId/enterprise/securityInsights\\:queryContentTransfersBreakdowns',
+    (req, res) => {
+      const customerId = requireCustomer(state, req.params.customerId, res)
+      if (!customerId) {
+        return
+      }
+      res.json(state.securityInsightsData.contentTransfersBreakdowns)
+    },
+  )
+
+  // Chrome Management: Query URL Visits
+  app.get('/v1alpha1/customers/:customerId/enterprise/securityInsights\\:queryUrlVisits', (req, res) => {
+    const customerId = requireCustomer(state, req.params.customerId, res)
+    if (!customerId) {
+      return
+    }
+    res.json(state.securityInsightsData.urlVisits)
+  })
+
+  // Chrome Management: Query URL Visits Breakdowns
+  app.get('/v1alpha1/customers/:customerId/enterprise/securityInsights\\:queryUrlVisitsBreakdowns', (req, res) => {
+    const customerId = requireCustomer(state, req.params.customerId, res)
+    if (!customerId) {
+      return
+    }
+    res.json(state.securityInsightsData.urlVisitsBreakdowns)
+  })
+
   // Chrome Policy: Resolve Policies
   app.post('/v1/customers/:customerId/policies\\:resolve', (req, res) => {
     const customerId = requireCustomer(state, req.params.customerId, res)
@@ -495,7 +600,20 @@ export function createFakeApp() {
       const orgUnitId = targetResource.split('/').pop() || 'unknown'
       const schema = policyValue.policySchema
 
-      if (!isSafeKey(customerId) || !isSafeKey(orgUnitId) || !isSafeKey(schema)) {
+      if (
+        !isSafeKey(customerId) ||
+        !isSafeKey(orgUnitId) ||
+        !isSafeKey(schema) ||
+        customerId === '__proto__' ||
+        customerId === 'constructor' ||
+        customerId === 'prototype' ||
+        orgUnitId === '__proto__' ||
+        orgUnitId === 'constructor' ||
+        orgUnitId === 'prototype' ||
+        schema === '__proto__' ||
+        schema === 'constructor' ||
+        schema === 'prototype'
+      ) {
         // Skip batch entries whose keys would mutate Object.prototype.
         continue
       }
@@ -505,17 +623,57 @@ export function createFakeApp() {
       if (!state.connectorPolicies[customerId][orgUnitId]) {
         state.connectorPolicies[customerId][orgUnitId] = Object.create(null)
       }
-      state.connectorPolicies[customerId][orgUnitId][schema] = [
-        {
-          value: {
-            policySchema: schema,
-            value: policyValue.value,
-          },
+      const ouPolicies = state.connectorPolicies[customerId][orgUnitId]
+      if (!ouPolicies[schema]) {
+        ouPolicies[schema] = []
+      }
+      const entries = ouPolicies[schema]
+      const appId = policyTargetKey?.additionalTargetKeys?.app_id
+      const entry = {
+        targetKey: policyTargetKey,
+        value: {
+          policySchema: schema,
+          value: policyValue.value,
         },
-      ]
+      }
+      if (appId) {
+        const existingIdx = entries.findIndex(p => p.targetKey?.additionalTargetKeys?.app_id === appId)
+        if (existingIdx >= 0) {
+          entries[existingIdx] = entry
+        } else {
+          entries.push(entry)
+        }
+      } else {
+        ouPolicies[schema] = [entry]
+      }
     }
 
     res.json({})
+  })
+
+  // Cloud Resource Manager: Search Organizations
+  app.post('/v1/organizations\\:search', (req, res) => {
+    const { filter, query } = req.body
+    const activeFilter = filter || query
+    let results = state.organizations
+
+    if (activeFilter) {
+      // Simple query parsing for testing, e.g. "domain:test.com" or "owner.directorycustomerid:C0123"
+      const match = activeFilter.match(/(domain|owner\.directorycustomerid|directorycustomerid):(\S+)/i)
+      if (match) {
+        const [_, key, value] = match
+        const normalizedKey = key.toLowerCase()
+        if (normalizedKey === 'domain') {
+          results = results.filter(
+            org => org.displayName.toLowerCase().includes(value.toLowerCase()) || value === 'test.com',
+          )
+        } else if (normalizedKey.includes('directorycustomerid')) {
+          results = results.filter(org => org.directoryCustomerId.toLowerCase() === value.toLowerCase())
+        }
+      }
+    }
+
+    res.json({ organizations: results })
   })
 
   // Cloud Identity: List Policies
@@ -717,6 +875,290 @@ export function createFakeApp() {
     res.json({ services })
   })
 
+  // Compute Engine: List Firewalls
+  app.get('/compute/v1/projects/:projectId/global/firewalls', (req, res) => {
+    const { projectId } = req.params
+    if (mockErrors.listFirewalls) {
+      const err = mockErrors.listFirewalls
+      return res.status(err.code || 500).json({ error: { message: err.message || 'Error listing firewalls' } })
+    }
+    const firewalls = state.firewalls[projectId] || []
+    res.json({ kind: 'compute#firewallList', items: firewalls })
+  })
+
+  // BeyondCorp: Create Security Gateway
+  app.post('/v1/projects/:projectId/locations/global/securityGateways', (req, res) => {
+    const { projectId } = req.params
+    const gatewayId = req.query.security_gateway_id || req.query.securityGatewayId
+    if (!gatewayId) {
+      return res
+        .status(400)
+        .json({ error: { message: 'Missing security_gateway_id or securityGatewayId query parameter' } })
+    }
+    const name = `projects/${projectId}/locations/global/securityGateways/${gatewayId}`
+    const display_name = req.body.display_name || gatewayId
+    const service_discovery = req.body.service_discovery
+    const gateway = {
+      name,
+      displayName: display_name,
+      state: 'RUNNING',
+      delegatingServiceAccount: `service-${projectId}-beyondcorp@gcp-sa-beyondcorp.iam.gserviceaccount.com`,
+      ...(service_discovery ? { serviceDiscovery: service_discovery } : {}),
+    }
+    state.securityGateways[name] = gateway
+    res.json(gateway)
+  })
+
+  // BeyondCorp: List Security Gateways
+  app.get('/v1/projects/:projectId/locations/global/securityGateways', (req, res) => {
+    const { projectId } = req.params
+    const prefix = `projects/${projectId}/locations/global/securityGateways/`
+    const list = Object.values(state.securityGateways).filter(g => g.name.startsWith(prefix))
+    res.json({ securityGateways: list })
+  })
+
+  // BeyondCorp: Get Gateway IAM Policy
+  app.get('/v1/projects/:projectId/locations/global/securityGateways/:gatewayId\\:getIamPolicy', (req, res) => {
+    const { projectId, gatewayId } = req.params
+    const name = `projects/${projectId}/locations/global/securityGateways/${gatewayId}`
+    const policy = state.securityGatewayIamPolicies[name] || { bindings: [], version: 3, etag: 'BwXN8_d-bOM=' }
+    res.json(policy)
+  })
+
+  // BeyondCorp: Set Gateway IAM Policy
+  app.post('/v1/projects/:projectId/locations/global/securityGateways/:gatewayId\\:setIamPolicy', (req, res) => {
+    const { projectId, gatewayId } = req.params
+    const name = `projects/${projectId}/locations/global/securityGateways/${gatewayId}`
+    const policy = req.body.policy
+    state.securityGatewayIamPolicies[name] = policy
+    res.json(policy)
+  })
+
+  // BeyondCorp: Get Security Gateway
+  app.get('/v1/projects/:projectId/locations/global/securityGateways/:gatewayId', (req, res) => {
+    const { projectId, gatewayId } = req.params
+    const name = `projects/${projectId}/locations/global/securityGateways/${gatewayId}`
+    const gateway = state.securityGateways[name]
+    if (!gateway) {
+      return res.status(404).json({ error: { message: `Security Gateway ${name} not found` } })
+    }
+    res.json(gateway)
+  })
+
+  // BeyondCorp: Patch Security Gateway
+  app.patch('/v1/projects/:projectId/locations/global/securityGateways/:gatewayId', (req, res) => {
+    const { projectId, gatewayId } = req.params
+    const name = `projects/${projectId}/locations/global/securityGateways/${gatewayId}`
+    const gateway = state.securityGateways[name]
+    if (!gateway) {
+      return res.status(404).json({ error: { message: `Security Gateway ${name} not found` } })
+    }
+    const updateMask = Array.isArray(req.query.updateMask)
+      ? req.query.updateMask.join(',')
+      : typeof req.query.updateMask === 'string'
+        ? req.query.updateMask
+        : ''
+    if (updateMask.includes('service_discovery') && req.body.service_discovery) {
+      gateway.serviceDiscovery = req.body.service_discovery
+    }
+    if (req.body.display_name) {
+      gateway.displayName = req.body.display_name
+    }
+    state.securityGateways[name] = gateway
+    res.json(gateway)
+  })
+
+  // BeyondCorp: Delete Security Gateway
+  app.delete('/v1/projects/:projectId/locations/global/securityGateways/:gatewayId', (req, res) => {
+    const { projectId, gatewayId } = req.params
+    const name = `projects/${projectId}/locations/global/securityGateways/${gatewayId}`
+    if (state.securityGateways[name]) {
+      delete state.securityGateways[name]
+      delete state.securityGatewayIamPolicies[name]
+      const appPrefix = `${name}/applications/`
+      Object.keys(state.securityGatewayApplications).forEach(appKey => {
+        if (appKey.startsWith(appPrefix)) {
+          delete state.securityGatewayApplications[appKey]
+          delete state.securityGatewayApplicationIamPolicies[appKey]
+        }
+      })
+      return res.json({ done: true })
+    }
+    res.status(404).json({ error: { message: `Security Gateway ${name} not found` } })
+  })
+
+  // BeyondCorp: Create Application
+  app.post('/v1/projects/:projectId/locations/global/securityGateways/:gatewayId/applications', (req, res) => {
+    const { projectId, gatewayId } = req.params
+    const applicationId = req.query.application_id || req.query.applicationId
+    if (!applicationId) {
+      return res.status(400).json({ error: { message: 'Missing application_id or applicationId query parameter' } })
+    }
+    const name = `projects/${projectId}/locations/global/securityGateways/${gatewayId}/applications/${applicationId}`
+    const application = {
+      name,
+      displayName: req.body.display_name,
+      endpointMatchers: req.body.endpoint_matchers,
+      upstreams: req.body.upstreams,
+    }
+    state.securityGatewayApplications[name] = application
+    res.json(application)
+  })
+
+  // BeyondCorp: List Applications
+  app.get('/v1/projects/:projectId/locations/global/securityGateways/:gatewayId/applications', (req, res) => {
+    const { projectId, gatewayId } = req.params
+    const prefix = `projects/${projectId}/locations/global/securityGateways/${gatewayId}/applications/`
+    const list = Object.values(state.securityGatewayApplications).filter(a => a.name.startsWith(prefix))
+    res.json({ applications: list })
+  })
+
+  // BeyondCorp: Get Application IAM Policy
+  app.get(
+    '/v1/projects/:projectId/locations/global/securityGateways/:gatewayId/applications/:applicationId\\:getIamPolicy',
+    (req, res) => {
+      const { projectId, gatewayId, applicationId } = req.params
+      const name = `projects/${projectId}/locations/global/securityGateways/${gatewayId}/applications/${applicationId}`
+      const policy = state.securityGatewayApplicationIamPolicies[name] || {
+        bindings: [],
+        version: 3,
+        etag: 'BwXN8_d-bOM=',
+      }
+      res.json(policy)
+    },
+  )
+
+  // BeyondCorp: Set Application IAM Policy
+  app.post(
+    '/v1/projects/:projectId/locations/global/securityGateways/:gatewayId/applications/:applicationId\\:setIamPolicy',
+    (req, res) => {
+      const { projectId, gatewayId, applicationId } = req.params
+      const name = `projects/${projectId}/locations/global/securityGateways/${gatewayId}/applications/${applicationId}`
+      const policy = req.body.policy
+      state.securityGatewayApplicationIamPolicies[name] = policy
+      res.json(policy)
+    },
+  )
+
+  // BeyondCorp: Get Application
+  app.get(
+    '/v1/projects/:projectId/locations/global/securityGateways/:gatewayId/applications/:applicationId',
+    (req, res) => {
+      const { projectId, gatewayId, applicationId } = req.params
+      const name = `projects/${projectId}/locations/global/securityGateways/${gatewayId}/applications/${applicationId}`
+      const application = state.securityGatewayApplications[name]
+      if (!application) {
+        return res.status(404).json({ error: { message: `Application ${name} not found` } })
+      }
+      res.json(application)
+    },
+  )
+
+  // BeyondCorp: Delete Application
+  app.delete(
+    '/v1/projects/:projectId/locations/global/securityGateways/:gatewayId/applications/:applicationId',
+    (req, res) => {
+      const { projectId, gatewayId, applicationId } = req.params
+      const name = `projects/${projectId}/locations/global/securityGateways/${gatewayId}/applications/${applicationId}`
+      if (state.securityGatewayApplications[name]) {
+        delete state.securityGatewayApplications[name]
+        delete state.securityGatewayApplicationIamPolicies[name]
+        return res.json({ done: true })
+      }
+      res.status(404).json({ error: { message: `Application ${name} not found` } })
+    },
+  )
+
+  // Access Context Manager: List Access Policies
+  app.get('/v1/accessPolicies', (req, res) => {
+    const parent = req.query.parent
+    const list = Object.values(state.accessPolicies).filter(p => !parent || p.parent === parent)
+    res.json({ accessPolicies: list })
+  })
+
+  // Access Context Manager: Create Access Policy
+  app.post('/v1/accessPolicies', (req, res) => {
+    const id = Object.keys(state.accessPolicies).length + 10000
+    const name = `accessPolicies/${id}`
+    const policy = {
+      name,
+      parent: req.body.parent,
+      title: req.body.title || 'Default Access Policy',
+    }
+    state.accessPolicies[name] = policy
+    const opName = `operations/accessPolicies.create.${id}`
+    const op = { name: opName, done: true, response: policy }
+    state.acmOperations[opName] = op
+    res.json(op)
+  })
+
+  // Access Context Manager: List Access Levels
+  app.get('/v1/accessPolicies/:policyId/accessLevels', (req, res) => {
+    const { policyId } = req.params
+    const parent = `accessPolicies/${policyId}`
+    const list = Object.values(state.accessLevels).filter(l => l.name?.startsWith(`${parent}/accessLevels/`))
+    res.json({ accessLevels: list })
+  })
+
+  // Access Context Manager: Create Access Level
+  app.post('/v1/accessPolicies/:policyId/accessLevels', (req, res) => {
+    const { policyId } = req.params
+    const level = req.body
+    if (!level.name) {
+      level.name = `accessPolicies/${policyId}/accessLevels/level_1`
+    }
+    state.accessLevels[level.name] = level
+    const levelId = level.name.split('/').pop()
+    const opName = `operations/accessLevels.create.${levelId}`
+    const op = { name: opName, done: true, response: level }
+    state.acmOperations[opName] = op
+    res.json(op)
+  })
+
+  // Access Context Manager: Get Operation
+  app.get(/^\/v1\/operations\/(.*)$/, (req, res) => {
+    const rawPath = req.params[0]
+    const opName = rawPath ? `operations/${rawPath}` : req.path.substring(1)
+    const op = state.acmOperations[opName] || { name: opName, done: true }
+    res.json(op)
+  })
+
+  // BeyondCorp: Patch Application
+  app.patch(
+    '/v1/projects/:projectId/locations/global/securityGateways/:gatewayId/applications/:applicationId',
+    (req, res) => {
+      const { projectId, gatewayId, applicationId } = req.params
+      const name = `projects/${projectId}/locations/global/securityGateways/${gatewayId}/applications/${applicationId}`
+      const application = state.securityGatewayApplications[name]
+      if (!application) {
+        return res.status(404).json({ error: { message: `Application ${name} not found` } })
+      }
+      const updateMask = Array.isArray(req.query.updateMask)
+        ? req.query.updateMask.join(',')
+        : typeof req.query.updateMask === 'string'
+          ? req.query.updateMask
+          : ''
+      if (updateMask.includes('display_name') || req.body.display_name) {
+        application.displayName = req.body.display_name
+      }
+      if (updateMask.includes('endpoint_matchers') || req.body.endpoint_matchers) {
+        application.endpointMatchers = req.body.endpoint_matchers
+      }
+      if (updateMask.includes('upstreams') || req.body.upstreams) {
+        application.upstreams = req.body.upstreams
+      }
+      state.securityGatewayApplications[name] = application
+      res.json(application)
+    },
+  )
+
+  // CRM: Get Project IAM Policy
+  app.post('/v1/projects/:projectId\\:getIamPolicy', (req, res) => {
+    const { projectId } = req.params
+    const policy = state.projectIamPolicies[projectId] || { bindings: [] }
+    res.json(policy)
+  })
+
   // Test Helper: Reset State
   app.post('/test/reset', (_req, res) => {
     state = getInitialState()
@@ -781,6 +1223,43 @@ export function createFakeApp() {
       data.policies.forEach(policy => {
         state.policies[policy.name] = policy
       })
+    } else if (data.kind === 'cloudresourcemanager#organizations') {
+      state.organizations = data.organizations
+    }
+    if (data.securityGateways) {
+      for (const [key, val] of Object.entries(data.securityGateways)) {
+        state.securityGateways[key] = val
+      }
+    }
+    if (data.securityGatewayApplications) {
+      for (const [key, val] of Object.entries(data.securityGatewayApplications)) {
+        state.securityGatewayApplications[key] = val
+      }
+    }
+    if (data.securityGatewayIamPolicies) {
+      for (const [key, val] of Object.entries(data.securityGatewayIamPolicies)) {
+        state.securityGatewayIamPolicies[key] = val
+      }
+    }
+    if (data.securityGatewayApplicationIamPolicies) {
+      for (const [key, val] of Object.entries(data.securityGatewayApplicationIamPolicies)) {
+        state.securityGatewayApplicationIamPolicies[key] = val
+      }
+    }
+    if (data.accessPolicies) {
+      for (const [key, val] of Object.entries(data.accessPolicies)) {
+        state.accessPolicies[key] = val
+      }
+    }
+    if (data.accessLevels) {
+      for (const [key, val] of Object.entries(data.accessLevels)) {
+        state.accessLevels[key] = val
+      }
+    }
+    if (data.acmOperations) {
+      for (const [key, val] of Object.entries(data.acmOperations)) {
+        state.acmOperations[key] = val
+      }
     }
   }
 

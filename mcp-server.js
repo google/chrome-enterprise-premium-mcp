@@ -40,7 +40,7 @@ import { buildServerInstructions } from './lib/knowledge/instructions.js'
 import { registerTools } from './tools/index.js'
 import { registerPrompts } from './prompts/index.js'
 import { checkGCP, isStdioMode } from './lib/util/gcp.js'
-import { featureFlags, FLAGS } from './lib/util/feature_flags.js'
+import { featureFlags, FLAGS, getActiveScopes } from './lib/util/feature_flags.js'
 import { logger } from './lib/util/logger.js'
 import { printBanner, dim } from './lib/util/banner.js'
 import { buildApiCredsField, buildScopesField, buildAuthRemediationLines } from './lib/util/auth_messages.js'
@@ -49,7 +49,7 @@ import { resolveOAuthClientConfig } from './lib/util/credential/oauth_client_con
 import { oauthFlowCredential } from './lib/util/credential/oauth_flow.js'
 import { verifyBearerToken } from './lib/util/credential/bearer_verifier.js'
 import { installPrettyValidationErrors } from './lib/util/mcp_pretty_errors.js'
-import { TAGS, SCOPES } from './lib/constants.js'
+import { TAGS } from './lib/constants.js'
 
 // Import Clients
 import { AdminSdkClient } from './lib/api/admin_sdk_client.js'
@@ -57,6 +57,10 @@ import { CloudIdentityClient } from './lib/api/cloud_identity_client.js'
 import { ChromePolicyClient } from './lib/api/chrome_policy_client.js'
 import { ChromeManagementClient } from './lib/api/chrome_management_client.js'
 import { ServiceUsageClient } from './lib/api/service_usage_client.js'
+import { CloudResourceManagerClient } from './lib/api/cloud_resource_manager_client.js'
+import { ComputeClient } from './lib/api/compute_client.js'
+import { BeyondCorpClient } from './lib/api/beyondcorp_client.js'
+import { AccessContextManagerClient } from './lib/api/access_context_manager_client.js'
 
 /**
  * Redirects console.log to console.error for compatibility with Stdio transport.
@@ -99,7 +103,14 @@ async function probeOAuthFlow(requiredScopes) {
  * @returns {{customerId: null, cachedRootOrgUnitId: null, pendingRule: null, history: Array}} A new session-state object with all fields zeroed.
  */
 export function createSessionState() {
-  return { customerId: null, cachedRootOrgUnitId: null, pendingRule: null, history: [] }
+  return {
+    customerId: null,
+    cachedRootOrgUnitId: null,
+    pendingRule: null,
+    organizationId: null,
+    organizationName: null,
+    history: [],
+  }
 }
 
 /**
@@ -191,6 +202,9 @@ export function createSseHandler(gcpInfo, sseTransports, getServerImpl = getServ
  */
 function shouldRegisterEnableApi() {
   try {
+    if (process.env.GOOGLE_APPLICATION_CREDENTIALS || !isStdioMode()) {
+      return true
+    }
     const config = resolveOAuthClientConfig()
     return config.source !== 'managed'
   } catch {
@@ -248,6 +262,10 @@ export async function getServer(gcpInfo, sharedSessionState, principal = null) {
     chromePolicy: new ChromePolicyClient(apiOptions),
     chromeManagement: new ChromeManagementClient(apiOptions),
     serviceUsage: new ServiceUsageClient(apiOptions),
+    cloudResourceManager: new CloudResourceManagerClient(apiOptions),
+    compute: new ComputeClient(apiOptions),
+    beyondcorp: new BeyondCorpClient(apiOptions),
+    accessContextManager: new AccessContextManagerClient(apiOptions),
   }
 
   const toolOptions = {
@@ -306,7 +324,7 @@ export async function runServer() {
         .filter(flag => featureFlags.isEnabled(flag))
         .join(', ') || 'None'
 
-    const requiredScopes = Object.values(SCOPES)
+    const requiredScopes = getActiveScopes()
     const probe = await probeOAuthFlow(requiredScopes)
     let oauthClientConfig = null
     try {

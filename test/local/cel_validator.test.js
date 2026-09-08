@@ -120,6 +120,15 @@ describe('CEL Validator', () => {
     assert.strictEqual(result.isValid, true)
   })
 
+  test('When a valid CAA access level condition is provided, then it passes validation', () => {
+    const result = validateCelCondition(
+      "access_levels.meets_access_requirements(['accessPolicies/12345/accessLevels/device_trust'])",
+      ['FILE_UPLOAD'],
+    )
+    assert.strictEqual(result.isValid, true)
+    assert.strictEqual(result.errors.length, 0)
+  })
+
   test('When an invalid data type detector is used, then it fails validation', () => {
     const result = validateCelCondition("all_content.matches_dlp_detector('INVALID_DETECTOR')", ['FILE_UPLOAD'])
     assert.strictEqual(result.isValid, false)

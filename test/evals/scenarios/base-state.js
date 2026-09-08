@@ -229,7 +229,7 @@ export function getBaseState() {
               onBulkTextEntryAnalysisConnectorConfiguration: {
                 bulkTextEntryConfiguration: {
                   serviceProvider: 'SERVICE_PROVIDER_CHROME_ENTERPRISE_PREMIUM',
-                  delayDeliveryUntilVerdict: false,
+                  delayDeliveryUntilVerdict: true,
                 },
               },
             },
@@ -280,6 +280,8 @@ export function getBaseState() {
                     'sensitiveDataEvent',
                     'urlFilteringInterstitialEvent',
                     'suspiciousUrlEvent',
+                    'unscannedFileEvent',
+                    'interstitialEvent',
                   ],
                 },
               },
@@ -388,6 +390,15 @@ export function getBaseState() {
         '': {},
       },
     },
+
+    organizations: [
+      {
+        name: 'organizations/123456789',
+        displayName: 'Test Org',
+        directoryCustomerId: defaultCustomerId,
+        state: 'ACTIVE',
+      },
+    ],
 
     serviceUsage: Object.fromEntries(Object.values(SERVICE_NAMES).map(name => [name, 'ENABLED'])),
   }

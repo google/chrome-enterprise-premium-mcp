@@ -83,7 +83,7 @@ describe('Tool Utils', () => {
       const failHandler = mock.fn(async () => {
         throw err
       })
-      const tool = guardedToolCall({ handler: failHandler })
+      const tool = guardedToolCall({ handler: failHandler, skipAuthCheck: true })
       const result = await tool({}, {})
       assert.strictEqual(result.isError, true)
       assert.match(result.content[0].text, /cep_auth/)
@@ -96,7 +96,7 @@ describe('Tool Utils', () => {
       const failHandler = mock.fn(async () => {
         throw err
       })
-      const tool = guardedToolCall({ handler: failHandler })
+      const tool = guardedToolCall({ handler: failHandler, skipAuthCheck: true })
       const result = await tool({}, {})
       assert.strictEqual(result.isError, true)
       assert.match(result.content[0].text, /cep_auth/)
@@ -109,7 +109,7 @@ describe('Tool Utils', () => {
       const failHandler = mock.fn(async () => {
         throw err
       })
-      const tool = guardedToolCall({ handler: failHandler })
+      const tool = guardedToolCall({ handler: failHandler, skipAuthCheck: true })
       const result = await tool({}, {})
       assert.strictEqual(result.isError, true)
       assert.match(result.content[0].text, /auth login/)
@@ -157,7 +157,9 @@ describe('Tool Utils', () => {
     test('When guardedToolCall runs with no inbound Bearer and no cached token, then it returns an authRequired response and does not invoke the handler', async () => {
       const handler = mock.fn(async () => ({ content: [{ type: 'text', text: 'ok' }] }))
       const homeKey = process.platform === 'win32' ? 'APPDATA' : 'HOME'
-      const saved = process.env[homeKey]
+      const savedHome = process.env[homeKey]
+      const savedGac = process.env.GOOGLE_APPLICATION_CREDENTIALS
+      delete process.env.GOOGLE_APPLICATION_CREDENTIALS
       const emptyHome = path.join(
         os.tmpdir(),
         `cep-mcp-empty-home-${process.pid}-${Math.random().toString(16).slice(2)}`,
@@ -176,10 +178,15 @@ describe('Tool Utils', () => {
         assert.ok(!result.structuredContent)
         assert.strictEqual(handler.mock.callCount(), 0)
       } finally {
-        if (saved === undefined) {
+        if (savedHome === undefined) {
           delete process.env[homeKey]
         } else {
-          process.env[homeKey] = saved
+          process.env[homeKey] = savedHome
+        }
+        if (savedGac !== undefined) {
+          process.env.GOOGLE_APPLICATION_CREDENTIALS = savedGac
+        } else {
+          delete process.env.GOOGLE_APPLICATION_CREDENTIALS
         }
 
         await fs.rm(emptyHome, { recursive: true, force: true })
@@ -189,7 +196,9 @@ describe('Tool Utils', () => {
     test('When guardedToolCall runs with no inbound Bearer and an expired cached token, then the authRequired response carries reason=expired and the expiry timestamp', async () => {
       const handler = mock.fn(async () => ({ content: [{ type: 'text', text: 'ok' }] }))
       const homeKey = process.platform === 'win32' ? 'APPDATA' : 'HOME'
-      const saved = process.env[homeKey]
+      const savedHome = process.env[homeKey]
+      const savedGac = process.env.GOOGLE_APPLICATION_CREDENTIALS
+      delete process.env.GOOGLE_APPLICATION_CREDENTIALS
       const home = path.join(os.tmpdir(), `cep-mcp-expired-home-${process.pid}-${Math.random().toString(16).slice(2)}`)
       const cacheDir = process.platform === 'win32' ? path.join(home, 'cep-mcp') : path.join(home, '.config', 'cep-mcp')
       const cachePath = path.join(cacheDir, 'tokens.json')
@@ -210,10 +219,15 @@ describe('Tool Utils', () => {
         assert.ok(!result.structuredContent)
         assert.strictEqual(handler.mock.callCount(), 0)
       } finally {
-        if (saved === undefined) {
+        if (savedHome === undefined) {
           delete process.env[homeKey]
         } else {
-          process.env[homeKey] = saved
+          process.env[homeKey] = savedHome
+        }
+        if (savedGac !== undefined) {
+          process.env.GOOGLE_APPLICATION_CREDENTIALS = savedGac
+        } else {
+          delete process.env.GOOGLE_APPLICATION_CREDENTIALS
         }
 
         await fs.rm(home, { recursive: true, force: true })

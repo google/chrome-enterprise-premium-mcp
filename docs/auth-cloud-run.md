@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# Cloud Run and Gemini Enterprise deployment
+# Cloud Run deployment
 
 For hosted deployments, OAuth is the recommended authentication path. A service account with domain-wide delegation is the alternative when OAuth is not viable; the service account setup is at the end of this page.
 
@@ -44,7 +44,7 @@ Register the OAuth client with Vertex AI Agent Engine through the Agent Engine c
 
 For the scope list, use the full scope set the server requests (defined in `lib/constants.js`).
 
-A reference walkthrough of an end-to-end ADK agent on Vertex AI Agent Engine with OAuth is the third-party blog post [Powering up your agent in production with ADK, OAuth, and Gemini Enterprise](https://fmind.medium.com/powering-up-your-agent-in-production-with-adk-oauth-and-gemini-enterprise-a52b0716fcba).
+A reference walkthrough of an end-to-end ADK agent on Vertex AI Agent Engine with OAuth is the third-party blog post [Powering up your agent in production with ADK and OAuth](https://fmind.medium.com/powering-up-your-agent-in-production-with-adk-oauth-and-gemini-enterprise-a52b0716fcba).
 
 ## Alternative: service account with domain-wide delegation
 

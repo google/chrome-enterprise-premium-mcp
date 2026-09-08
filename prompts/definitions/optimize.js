@@ -90,7 +90,7 @@ If no rule needs attention because volume is low and configurations are reasonab
 
 ### Suggested next actions
 
-Offer specific follow-ups the agent can execute on request, such as:
+Identify actionable next steps and explicitly ask if the administrator wants you to implement them when appropriate. Describe these capabilities clearly in plain English without mentioning internal tool names. Offer specific follow-ups the agent can execute on request, such as:
 * Deploying the patches listed above.
 * Transitioning specific rules from AUDIT to WARN.
 * Deleting specific inactive or orphaned rules.

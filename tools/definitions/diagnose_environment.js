@@ -31,6 +31,7 @@ import { logger } from '../../lib/util/logger.js'
 import { ConnectorPolicyFilter } from '../../lib/api/chrome_policy_client.js'
 import { CHROME_ACTION_TYPES } from '../../lib/util/chrome_dlp_constants.js'
 import { analyzeConnectorPolicy } from '../../lib/util/connector_policy_helper.js'
+import { FLAGS, featureFlags as defaultFeatureFlags } from '../../lib/util/feature_flags.js'
 
 const CONNECTOR_TYPES = {
   uploadAnalysis: 'ON_FILE_ATTACHED',
@@ -41,9 +42,55 @@ const CONNECTOR_TYPES = {
   securityEventReporting: 'ON_SECURITY_EVENT',
 }
 
+const CONNECTOR_LINK_MAPPING = {
+  uploadAnalysis: 'file_attached',
+  downloadAnalysis: 'file_downloaded',
+  pasteAnalysis: 'bulk_text_entry',
+  printAnalysis: 'print_analysis_connector',
+  realtimeUrlCheck: 'realtime_url_check',
+  securityEventReporting: 'on_security_event',
+}
+
 const SEB_EXTENSION_SCHEMA = 'chrome.users.apps.InstallType'
+const SEB_APP_POLICY_SCHEMA = 'chrome.users.apps.ManagedConfiguration'
+const PROXY_SETTINGS_SCHEMA = 'chrome.users.SimpleProxySettings'
 const SEB_EXTENSION_ID = 'chrome:ekajlcmdfcigmdbphhifahdfjbkciflj'
 const DEFAULT_PAGE_SIZE = 50
+
+/**
+ * Helper to check if an upstream destination is a private network or internal IP.
+ * @param {object} u - Upstream definition object
+ * @returns {boolean} True if the upstream is in a private network or IP block
+ */
+function isPrivateUpstream(u) {
+  if (u.network) {
+    return true
+  }
+  if (u.upstreamUri) {
+    const uri = String(u.upstreamUri).toLowerCase()
+    return /\b(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})\b|\.internal\b/.test(
+      uri,
+    )
+  }
+  return false
+}
+
+/**
+ * Checks if a target port is matched by a GCP firewall port spec (e.g. "443" or "80-443").
+ * @param {string|number} spec - Port specification string or number
+ * @param {number} targetPort - Target port number to check
+ * @returns {boolean} True if targetPort falls within spec
+ */
+function matchesPortSpec(spec, targetPort) {
+  const strSpec = String(spec)
+  if (strSpec.includes('-')) {
+    const [startStr, endStr] = strSpec.split('-')
+    const start = Number(startStr)
+    const end = Number(endStr)
+    return !isNaN(start) && !isNaN(end) && targetPort >= start && targetPort <= end
+  }
+  return String(spec) === String(targetPort)
+}
 
 /**
  * Computes deterministic issues from the environment summary.
@@ -59,9 +106,16 @@ function computeIssues(data) {
     issues.push({
       severity: 'critical',
       component: 'subscription',
-      message: 'No active Chrome Enterprise Premium subscription found.',
+      message: 'No active Chrome Enterprise Premium subscription found on this domain.',
     })
-  } else if (data.subscription?.assignmentCount <= 1) {
+  } else if (data.subscription?.assignmentCount === 0) {
+    issues.push({
+      severity: 'high',
+      component: 'subscription',
+      message:
+        'Chrome Enterprise Premium subscription is active, but 0 users have licenses assigned. You must assign licenses to users.',
+    })
+  } else if (data.subscription?.assignmentCount === 1) {
     issues.push({
       severity: 'medium',
       component: 'subscription',
@@ -69,19 +123,70 @@ function computeIssues(data) {
     })
   }
 
+  if (data.securityInsights?.insightsState === 'INSIGHTS_DISABLED') {
+    issues.push({
+      severity: 'critical',
+      component: 'securityInsights',
+      message:
+        'Chrome Security Insights is disabled. Threat events, file scanning, and security telemetry reporting are inactive.',
+    })
+  } else if (data.securityInsights?.insightsState === 'INSIGHTS_ENABLEMENT_STATE_UNSPECIFIED') {
+    issues.push({
+      severity: 'medium',
+      component: 'securityInsights',
+      message: 'Chrome Security Insights status is unspecified or could not be retrieved.',
+    })
+  }
+
+  if (data.securityInsights?.insightsState === 'INSIGHTS_ENABLED') {
+    if (data.contentTransfers?.error) {
+      issues.push({
+        severity: 'medium',
+        component: 'securityInsightsData',
+        message: `Failed to query Content Transfers data: ${data.contentTransfers.message}`,
+      })
+    }
+    if (data.urlVisits?.error) {
+      issues.push({
+        severity: 'medium',
+        component: 'securityInsightsData',
+        message: `Failed to query URL Visits data: ${data.urlVisits.message}`,
+      })
+    }
+  }
+
   for (const [key, connector] of Object.entries(data.connectors || {})) {
-    const name = CONNECTOR_DISPLAY_NAMES[key] || key
+    if (!Object.prototype.hasOwnProperty.call(CONNECTOR_DISPLAY_NAMES, key)) {
+      continue
+    }
+    const name = CONNECTOR_DISPLAY_NAMES[key]
+    const page = CONNECTOR_LINK_MAPPING[key]
+    const manualLink = page ? `https://admin.google.com/ac/chrome/settings/user/details/${page}` : null
+    const actionSuffix = manualLink ? `. Update settings manually at ${manualLink}` : ''
+
     if (!connector.configured) {
       issues.push({
         severity: 'critical',
         component: `connector.${key}`,
-        message: `${name} connector is not configured.`,
+        message: `${name} connector is not configured.${actionSuffix}`,
+        ...(manualLink && {
+          remediation: {
+            actionLabel: `Configure ${name} connector`,
+            url: manualLink,
+          },
+        }),
       })
     } else if (!connector.isEnabled) {
       issues.push({
         severity: 'critical',
         component: `connector.${key}`,
-        message: `${name} connector is present but explicitly disabled.`,
+        message: `${name} connector is present but explicitly disabled.${actionSuffix}`,
+        ...(manualLink && {
+          remediation: {
+            actionLabel: `Enable ${name} connector`,
+            url: manualLink,
+          },
+        }),
       })
     }
 
@@ -90,7 +195,13 @@ function computeIssues(data) {
         issues.push({
           severity: 'high',
           component: `connector.${key}`,
-          message: `${name}: ${finding.message}`,
+          message: `${name}: ${finding.message}${actionSuffix}`,
+          ...(manualLink && {
+            remediation: {
+              actionLabel: `Configure ${name} settings`,
+              url: manualLink,
+            },
+          }),
         })
       }
     }
@@ -101,27 +212,44 @@ function computeIssues(data) {
     issues.push({
       severity: 'high',
       component: 'dlpRules',
-      message: 'No DLP rules configured.',
+      message: 'No DLP rules configured. Create rules at: https://admin.google.com/ac/dp/rules',
+      remediation: {
+        actionLabel: 'Create DLP rules',
+        url: 'https://admin.google.com/ac/dp/rules',
+      },
     })
   } else {
     if (dlpRules.active === 0) {
       issues.push({
         severity: 'high',
         component: 'dlpRules',
-        message: 'All DLP rules are inactive.',
+        message: 'All DLP rules are inactive. Manage rules at: https://admin.google.com/ac/dp/rules',
+        remediation: {
+          actionLabel: 'Activate DLP rules',
+          url: 'https://admin.google.com/ac/dp/rules',
+        },
       })
     } else if (dlpRules.inactive > 0) {
       issues.push({
         severity: 'medium',
         component: 'dlpRules',
-        message: `${dlpRules.inactive} DLP rule(s) are inactive.`,
+        message: `${dlpRules.inactive} DLP rule(s) are inactive. Manage rules at: https://admin.google.com/ac/dp/rules`,
+        remediation: {
+          actionLabel: 'Manage DLP rules',
+          url: 'https://admin.google.com/ac/dp/rules',
+        },
       })
     }
     if (dlpRules.active > 0 && !dlpRules.hasEnforcement) {
       issues.push({
         severity: 'medium',
         component: 'dlpRules',
-        message: 'All active DLP rules are audit-only. No blocking or warning enforcement.',
+        message:
+          'All active DLP rules are audit-only. No blocking or warning enforcement. Manage rules at: https://admin.google.com/ac/dp/rules',
+        remediation: {
+          actionLabel: 'Configure blocking rules',
+          url: 'https://admin.google.com/ac/dp/rules',
+        },
       })
     }
   }
@@ -130,7 +258,12 @@ function computeIssues(data) {
     issues.push({
       severity: 'high',
       component: 'sebExtension',
-      message: 'Secure Enterprise Browser (SEB) extension is not force-installed.',
+      message:
+        'Secure Enterprise Browser (SEB) extension is not force-installed. Configure it manually at https://admin.google.com/ac/chrome/apps/user',
+      remediation: {
+        actionLabel: 'Configure SEB force-installation',
+        url: 'https://admin.google.com/ac/chrome/apps/user',
+      },
     })
   }
 
@@ -142,7 +275,331 @@ function computeIssues(data) {
     })
   }
 
-  return issues
+  if (data.secureGateway) {
+    if (data.secureGateway.skipped) {
+      issues.push({
+        severity: 'info',
+        component: 'secureGateway',
+        message:
+          'Secure Gateway health check was skipped because no GCP projectId was provided. Pass a `projectId` parameter to diagnose Secure Gateways, application routing, and IAM permissions.',
+      })
+    } else if (data.secureGateway.error) {
+      issues.push({
+        severity: 'medium',
+        component: 'secureGateway',
+        message: `Failed to query Secure Gateways for project ${data.secureGateway.projectId}: ${data.secureGateway.error}`,
+      })
+    } else {
+      if (data.secureGateway.gateways.length === 0) {
+        issues.push({
+          severity: 'medium',
+          component: 'secureGateway',
+          message: `No Secure Gateways found in project ${data.secureGateway.projectId}.`,
+        })
+      } else {
+        for (const gateway of data.secureGateway.gateways) {
+          const state = gateway.state || 'STATE_UNSPECIFIED'
+          if (state !== 'RUNNING') {
+            const isCritical = state === 'ERROR'
+            const isHigh = state === 'DOWN'
+            const isMedium = ['CREATING', 'UPDATING', 'DELETING'].includes(state)
+            const severity = isCritical ? 'critical' : isHigh ? 'high' : isMedium ? 'medium' : 'high'
+
+            issues.push({
+              severity,
+              component: 'secureGateway',
+              message: `Secure Gateway ${gateway.displayName || gateway.name} is in ${state} state.`,
+            })
+          }
+          if (!gateway.serviceDiscovery) {
+            issues.push({
+              severity: 'medium',
+              component: 'secureGateway',
+              message: `Secure Gateway ${gateway.displayName || gateway.name} does not have Service Discovery enabled.`,
+            })
+          }
+          if (gateway.applications && gateway.applications.length === 0) {
+            issues.push({
+              severity: 'medium',
+              component: 'secureGateway',
+              message: `Secure Gateway ${gateway.displayName || gateway.name} has no application routing configured.`,
+            })
+          }
+          if (gateway.applications && gateway.applications.length > 0) {
+            for (const app of gateway.applications) {
+              const matchers = app.endpointMatchers || app.endpoint_matchers || []
+              const appPorts = matchers.flatMap(m => m.ports || [])
+              if (appPorts.includes(80)) {
+                issues.push({
+                  severity: 'medium',
+                  component: 'secureGateway.application',
+                  message: `Application ${app.displayName || app.name} on gateway ${gateway.displayName || gateway.name} routes port 80. If accessed over unencrypted HTTP (http://), Chrome and SEB extension send direct GET requests instead of establishing a CONNECT tunnel, resulting in 401 Unauthorized errors. Ensure traffic is served over HTTPS.`,
+                })
+              }
+            }
+
+            const hasPrivateWebApps = gateway.applications.some(app => {
+              const upstreams = app.upstreams || []
+              return upstreams.some(isPrivateUpstream)
+            })
+
+            const saEmail = gateway.delegatingServiceAccount || gateway.delegating_service_account
+            if (hasPrivateWebApps) {
+              if (!saEmail) {
+                issues.push({
+                  severity: 'high',
+                  component: 'secureGateway.iam',
+                  message: `Secure Gateway ${gateway.displayName || gateway.name} has private web applications configured, but no delegating service account is specified on the gateway. Private application routing into VPC upstreams will fail.`,
+                })
+              } else if (data.secureGateway.projectIamPolicy) {
+                const bindings = data.secureGateway.projectIamPolicy.bindings || []
+                const formattedMember = saEmail.startsWith('serviceAccount:') ? saEmail : `serviceAccount:${saEmail}`
+
+                const hasUpstreamRole = bindings.some(b => {
+                  if (b.role !== 'roles/beyondcorp.upstreamAccess' && b.role !== 'roles/beyondcorp.serviceAgent') {
+                    return false
+                  }
+                  const members = b.members || []
+                  return members.includes(formattedMember) || members.includes(saEmail)
+                })
+
+                if (!hasUpstreamRole) {
+                  issues.push({
+                    severity: 'high',
+                    component: 'secureGateway.iam',
+                    message: `Delegating service account (${saEmail}) on gateway ${gateway.displayName || gateway.name} is not directly granted 'roles/beyondcorp.upstreamAccess' on project ${data.secureGateway.projectId}. If permission is not inherited from a parent Folder or Organization, private web application routing into VPC upstreams will fail.`,
+                    remediation: {
+                      actionLabel: 'Verify or Grant GCP IAM Roles',
+                      url: `https://console.cloud.google.com/iam-admin/iam?project=${data.secureGateway.projectId}`,
+                    },
+                  })
+                }
+              }
+            }
+
+            if (gateway.applicationsError) {
+              issues.push({
+                severity: 'medium',
+                component: 'secureGateway',
+                message: `Failed to list applications for Secure Gateway ${gateway.displayName || gateway.name}: ${gateway.applicationsError}`,
+              })
+            }
+          }
+        }
+
+        if (data.secureGateway.firewalls) {
+          const networkRequirements = new Map()
+
+          for (const gateway of data.secureGateway.gateways) {
+            if (!gateway.applications) {
+              continue
+            }
+
+            for (const app of gateway.applications) {
+              const matchers = app.endpointMatchers || app.endpoint_matchers || []
+              const appPorts = matchers.flatMap(m => m.ports || [])
+              const portsToUse = appPorts.length > 0 ? appPorts : [443]
+
+              const upstreams = app.upstreams || []
+              const privateUpstreams = upstreams.filter(isPrivateUpstream)
+
+              for (const u of privateUpstreams) {
+                const network = u.network
+                const rawName = typeof network === 'string' ? network : network?.name || 'default'
+                const networkName = rawName.split('/').pop() || 'default'
+
+                if (!networkRequirements.has(networkName)) {
+                  networkRequirements.set(networkName, new Set())
+                }
+                const portSet = networkRequirements.get(networkName)
+                for (const p of portsToUse) {
+                  portSet.add(p)
+                }
+              }
+            }
+          }
+
+          const firewalls = data.secureGateway.firewalls
+          for (const [networkName, portSet] of networkRequirements.entries()) {
+            const firewallPorts = [...portSet]
+
+            const hasAllowRule = firewalls.some(fw => {
+              if (fw.disabled) {
+                return false
+              }
+              if (fw.direction && fw.direction !== 'INGRESS') {
+                return false
+              }
+              if (fw.action && fw.action !== 'ALLOW') {
+                return false
+              }
+
+              const hasTargetTags =
+                (fw.targetTags && fw.targetTags.length > 0) || (fw.target_tags && fw.target_tags.length > 0)
+              const hasTargetSAs =
+                (fw.targetServiceAccounts && fw.targetServiceAccounts.length > 0) ||
+                (fw.target_service_accounts && fw.target_service_accounts.length > 0)
+              if (hasTargetTags || hasTargetSAs) {
+                return false
+              }
+
+              if (fw.network && !fw.network.endsWith(`/${networkName}`)) {
+                return false
+              }
+
+              const sources = fw.sourceRanges || fw.source_ranges || []
+              const matchesSource = sources.includes('136.124.16.0/20') || sources.includes('0.0.0.0/0')
+              if (!matchesSource) {
+                return false
+              }
+
+              const allowedList = fw.allowed || []
+              if (allowedList.length === 0) {
+                return true
+              }
+              return allowedList.some(allow => {
+                const proto = (allow.IPProtocol || allow.ipProtocol || '').toLowerCase()
+                if (proto !== 'tcp' && proto !== 'all') {
+                  return false
+                }
+                const ports = allow.ports || []
+                if (ports.length === 0) {
+                  return true
+                }
+                return firewallPorts.some(p => ports.some(spec => matchesPortSpec(spec, p)))
+              })
+            })
+
+            if (!hasAllowRule) {
+              const displayRange = '136.124.16.0/20'
+              issues.push({
+                severity: 'high',
+                component: 'secureGateway.firewall',
+                message: `Ingress firewall rule allowing TCP traffic from secure gateway range (${displayRange}) on port(s) ${firewallPorts.join(', ')} is missing on VPC network '${networkName}' in project ${data.secureGateway.projectId}. Private application routing will fail with gateway timeout errors.`,
+                remediation: {
+                  actionLabel: 'Create Ingress Firewall Rule',
+                  command: `gcloud compute firewall-rules create allow-secure-gateway-${networkName} --project=${data.secureGateway.projectId} --network=${networkName} --allow=tcp:${firewallPorts.join(',')} --source-ranges=${displayRange}`,
+                },
+              })
+            }
+          }
+        }
+
+        if (data.secureGateway.firewallsError) {
+          issues.push({
+            severity: 'medium',
+            component: 'secureGateway.firewall',
+            message: `Unable to automatically verify VPC ingress firewall rules on project ${data.secureGateway.projectId} (${data.secureGateway.firewallsError}). Ensure an ingress firewall rule allows TCP traffic from gateway proxy ranges.`,
+            remediation: {
+              actionLabel: 'Verify Firewall Rules Manually',
+              url: `https://console.cloud.google.com/net-security/firewall-manager/firewall-policies/list?project=${data.secureGateway.projectId}`,
+            },
+          })
+        }
+
+        if (data.secureGateway.projectIamPolicyError) {
+          issues.push({
+            severity: 'medium',
+            component: 'secureGateway.iam',
+            message: `Unable to automatically verify delegating service account permissions on project ${data.secureGateway.projectId} (${data.secureGateway.projectIamPolicyError}). Please manually verify that the delegating service account has 'roles/beyondcorp.upstreamAccess'.`,
+            remediation: {
+              actionLabel: 'Verify GCP IAM Roles Manually',
+              url: `https://console.cloud.google.com/iam-admin/iam?project=${data.secureGateway.projectId}`,
+            },
+          })
+        }
+
+        if (data.sebExtension?.isInstalled) {
+          const sgPolicy = data.sebExtension.securityGatewayPolicy
+          if (!sgPolicy?.configured) {
+            issues.push({
+              severity: 'high',
+              component: 'secureGateway.clientPolicy',
+              message:
+                'Secure Enterprise Browser (SEB) extension is force-installed, but no securityGateway routing policy is configured on the root OU. Chrome will not route traffic to secure gateways. Use `install_seb_extension` with projectId and gatewayId to configure it.',
+              remediation: {
+                actionLabel: 'Configure SEB Extension Policy',
+                url: 'https://admin.google.com/ac/chrome/apps/user',
+              },
+            })
+          } else {
+            const configuredResource = sgPolicy.gatewayResource
+            const matchesGateway = data.secureGateway.gateways.some(
+              gw =>
+                gw.name === configuredResource ||
+                (configuredResource && gw.name?.endsWith(`/${configuredResource.split('/').pop()}`)),
+            )
+            if (configuredResource && !matchesGateway) {
+              issues.push({
+                severity: 'medium',
+                component: 'secureGateway.clientPolicy',
+                message: `SEB extension routing policy points to gateway resource '${configuredResource}', which does not match any Secure Gateway found in project ${data.secureGateway.projectId}.`,
+              })
+            }
+
+            const targetGateway = data.secureGateway.gateways.find(
+              gw =>
+                gw.name === configuredResource ||
+                (configuredResource && gw.name?.endsWith(`/${configuredResource.split('/').pop()}`)),
+            )
+            if (targetGateway?.serviceDiscovery && !sgPolicy.serviceDiscoveryEnabled) {
+              issues.push({
+                severity: 'high',
+                component: 'secureGateway.clientPolicy',
+                message: `Secure Gateway '${targetGateway.displayName || targetGateway.name}' has Service Discovery enabled, but the SEB extension policy on the root OU is missing the 'serviceDiscovery' block. Browser automatic service discovery will not function.`,
+              })
+            }
+          }
+        }
+
+        const mode = (data.proxySettings?.proxyMode || '').toLowerCase()
+        const isPac = Boolean(data.proxySettings && (mode.includes('pac') || Boolean(data.proxySettings.proxyPacUrl)))
+        const pacUrl = data.proxySettings?.proxyPacUrl
+        const hasServiceDiscoveryGateway = data.secureGateway.gateways.some(gw => Boolean(gw.serviceDiscovery))
+        const allLegacyGateways =
+          data.secureGateway.gateways.length > 0 && data.secureGateway.gateways.every(gw => !gw.serviceDiscovery)
+
+        if (isPac && hasServiceDiscoveryGateway) {
+          issues.push({
+            severity: 'medium',
+            component: 'secureGateway.proxySettings',
+            message: `A legacy PAC file proxy policy (${pacUrl || 'pac_script'}) is configured on this OU while Secure Gateway uses Service Discovery. The PAC file may conflict with or override SEB extension dynamic routing.`,
+            remediation: {
+              actionLabel: 'Review Chrome Proxy Settings',
+              url: 'https://admin.google.com/ac/chrome/settings/user',
+            },
+          })
+        } else if (isPac && allLegacyGateways) {
+          issues.push({
+            severity: 'info',
+            component: 'secureGateway.proxySettings',
+            message: `Legacy PAC proxy setup detected (${pacUrl || 'pac_script'}). Secure Gateways without Service Discovery rely on this PAC file for browser routing.`,
+          })
+        } else if (!isPac && allLegacyGateways) {
+          issues.push({
+            severity: 'high',
+            component: 'secureGateway.proxySettings',
+            message: `Secure Gateways in project ${data.secureGateway.projectId} do not have Service Discovery enabled (legacy setup), but no PAC script proxy policy is configured on this OU. Client browser routing will fail without either enabling Service Discovery on the gateway or configuring a PAC file.`,
+            remediation: {
+              actionLabel: 'Configure Proxy PAC script or enable Service Discovery',
+              url: 'https://admin.google.com/ac/chrome/settings/user',
+            },
+          })
+        }
+      }
+    }
+  }
+
+  const SEVERITY_ORDER = {
+    critical: 0,
+    high: 1,
+    medium: 2,
+    info: 3,
+  }
+
+  return issues.sort((a, b) => {
+    return (SEVERITY_ORDER[a.severity] ?? 99) - (SEVERITY_ORDER[b.severity] ?? 99)
+  })
 }
 
 /**
@@ -170,6 +627,7 @@ function classifyAction(action) {
  * @param {import('../../lib/api/cloud_identity_client.js').CloudIdentityClient} cloudIdentityClient - Client for listing DLP rules and detectors
  * @param {string} customerId - The Chrome customer ID used for scoping requests
  * @param {string} authToken - The Bearer token for authorized API access
+ * @param {object} [options] - Additional options including beyondcorpClient, projectId, and flags
  * @returns {Promise<object>} A consolidated object containing raw data from all services
  */
 async function fetchEnvironment(
@@ -179,16 +637,43 @@ async function fetchEnvironment(
   cloudIdentityClient,
   customerId,
   authToken,
+  options = {},
 ) {
-  const [customerData, orgUnitsData, subscriptionData, dlpPolicies, detectorPolicies, browserVersions] =
-    await Promise.all([
-      adminSdkClient.getCustomerId(authToken),
-      adminSdkClient.listOrgUnits({ customerId }, authToken),
-      adminSdkClient.checkCepSubscription(customerId, authToken),
-      cloudIdentityClient.listDlpRules(authToken),
-      cloudIdentityClient.listDetectors(authToken),
-      chromeManagementClient.countBrowserVersions(customerId, null, authToken),
-    ])
+  const { beyondcorpClient, cloudResourceManagerClient, computeClient, projectId, flags } = options
+
+  const [
+    customerData,
+    orgUnitsData,
+    subscriptionData,
+    dlpPolicies,
+    detectorPolicies,
+    browserVersions,
+    securityInsights,
+    contentTransfers,
+    urlVisits,
+  ] = await Promise.all([
+    adminSdkClient.getCustomerId(authToken),
+    adminSdkClient.listOrgUnits({ customerId }, authToken),
+    adminSdkClient.checkCepSubscription(customerId, authToken).catch(err => {
+      logger.error(`${TAGS.API} Error checking CEP subscription in diagnosis:`, err)
+      return null
+    }),
+    cloudIdentityClient.listDlpRules(authToken),
+    cloudIdentityClient.listDetectors(authToken),
+    chromeManagementClient.countBrowserVersions(customerId, null, authToken),
+    chromeManagementClient.checkSecurityInsightsStatus(customerId, authToken).catch(err => {
+      logger.error(`${TAGS.API} Error fetching security insights status in diagnosis:`, err)
+      return { insightsState: 'INSIGHTS_ENABLEMENT_STATE_UNSPECIFIED', error: true }
+    }),
+    chromeManagementClient.queryContentTransfers(customerId, {}, authToken).catch(err => {
+      logger.error(`${TAGS.API} Error fetching content transfers in diagnosis:`, err)
+      return { error: true, message: err.message }
+    }),
+    chromeManagementClient.queryUrlVisits(customerId, {}, authToken).catch(err => {
+      logger.error(`${TAGS.API} Error fetching URL visits in diagnosis:`, err)
+      return { error: true, message: err.message }
+    }),
+  ])
 
   const orgUnits = orgUnitsData?.organizationUnits || []
   const rootOU = orgUnits.find(ou => ou.orgUnitPath === '/') || orgUnits[0]
@@ -200,7 +685,11 @@ async function fetchEnvironment(
   }
 
   const subItems = subscriptionData?.items || []
-  const subscription = { isActive: subItems.length > 0, assignmentCount: subItems.length }
+  // Fix: The subscription is active if the API call succeeded, even if 0 users are assigned
+  const subscription = {
+    isActive: !!subscriptionData,
+    assignmentCount: subItems.length,
+  }
 
   const versions = (Array.isArray(browserVersions) ? browserVersions : []).map(v => ({
     version: v.version,
@@ -236,6 +725,8 @@ async function fetchEnvironment(
   if (rootOUId && chromePolicyClient) {
     const connectorResults = await Promise.all(
       Object.entries(CONNECTOR_TYPES).map(async ([key, policyKey]) => {
+        const page = CONNECTOR_LINK_MAPPING[key]
+        const uiLink = page ? `https://admin.google.com/ac/chrome/settings/user/details/${page}` : null
         try {
           const schema = ConnectorPolicyFilter[policyKey]
           const policies = await chromePolicyClient.getConnectorPolicy(customerId, rootOUId, schema, authToken)
@@ -245,12 +736,13 @@ async function fetchEnvironment(
             {
               configured: analysis.isConfigured,
               isEnabled: analysis.isEnabled,
+              uiLink,
               policyCount: policies.length,
               findings: analysis.findings,
             },
           ]
         } catch {
-          return [key, { configured: false, isEnabled: false, policyCount: 0, error: true }]
+          return [key, { configured: false, isEnabled: false, uiLink, policyCount: 0, error: true }]
         }
       }),
     )
@@ -263,15 +755,141 @@ async function fetchEnvironment(
   let sebExtension = { isInstalled: false }
   if (rootOUId && chromePolicyClient) {
     try {
-      const sebPolicies = await chromePolicyClient.resolvePolicy(customerId, rootOUId, SEB_EXTENSION_SCHEMA, authToken)
+      const [sebPolicies, appPolicies] = await Promise.all([
+        chromePolicyClient.resolvePolicy(customerId, rootOUId, SEB_EXTENSION_SCHEMA, authToken),
+        chromePolicyClient.resolvePolicy(customerId, rootOUId, SEB_APP_POLICY_SCHEMA, authToken).catch(() => []),
+      ])
       const sebEntry = sebPolicies.find(p => p.targetKey?.additionalTargetKeys?.app_id === SEB_EXTENSION_ID)
-      sebExtension = { isInstalled: sebEntry?.value?.value?.appInstallType === 'FORCED' }
+      const isInstalled = sebEntry?.value?.value?.appInstallType === 'FORCED'
+
+      let securityGatewayPolicy = { configured: false }
+      const appPolicyEntry = appPolicies?.find(p => p.targetKey?.additionalTargetKeys?.app_id === SEB_EXTENSION_ID)
+      let rawConfig = appPolicyEntry?.value?.value?.managedConfiguration || appPolicyEntry?.value?.value?.appPolicy
+      if (typeof rawConfig === 'string') {
+        try {
+          rawConfig = JSON.parse(rawConfig)
+        } catch {
+          // ignore parsing error
+        }
+      }
+      const sgValue =
+        rawConfig?.securityGateway?.Value || rawConfig?.securityGateway?.value || rawConfig?.securityGateway
+      if (sgValue) {
+        securityGatewayPolicy = {
+          configured: true,
+          gatewayResource: sgValue?.context?.resource,
+          serviceDiscoveryEnabled: sgValue?.serviceDiscovery !== undefined,
+          policy: rawConfig,
+        }
+      }
+
+      sebExtension = { isInstalled, securityGatewayPolicy }
     } catch {
       sebExtension = { isInstalled: false, error: true }
     }
   }
 
-  return { customer, orgUnits, subscription, versions, allDlpRules, allDetectors, connectors, sebExtension }
+  // Proxy settings on root OU
+  let proxySettings = null
+  if (rootOUId && chromePolicyClient) {
+    try {
+      const proxyPolicies = await chromePolicyClient
+        .resolvePolicy(customerId, rootOUId, PROXY_SETTINGS_SCHEMA, authToken)
+        .catch(() => [])
+      const proxyVal = proxyPolicies[0]?.value?.value || {}
+      const proxyMode = proxyVal.simpleProxyMode || proxyVal.proxyMode
+      const proxyPacUrl = proxyVal.simpleProxyPacUrl || proxyVal.proxyPacUrl
+      const proxyServer = proxyVal.simpleProxyServerUrl || proxyVal.proxyServer
+      if (proxyMode || proxyPacUrl || proxyServer) {
+        proxySettings = {
+          proxyMode,
+          proxyPacUrl,
+          proxyServer,
+        }
+      }
+    } catch (err) {
+      logger.debug(`${TAGS.API} Failed to resolve ${PROXY_SETTINGS_SCHEMA}: ${err.message}`)
+    }
+  }
+
+  let normalizedContentTransfers = contentTransfers
+  let normalizedUrlVisits = urlVisits
+  if (securityInsights?.insightsState !== 'INSIGHTS_ENABLED') {
+    normalizedContentTransfers = null
+    normalizedUrlVisits = null
+  }
+
+  let secureGateway = null
+  if (flags?.isEnabled(FLAGS.SECURE_GATEWAY_ENABLED)) {
+    if (!projectId) {
+      secureGateway = { projectId: null, gateways: [], skipped: true }
+    } else if (beyondcorpClient) {
+      try {
+        const rawGateways = await beyondcorpClient.listGateways(projectId, authToken)
+        let projectIamPolicy = null
+        let projectIamPolicyError = null
+        if (cloudResourceManagerClient) {
+          try {
+            projectIamPolicy = await cloudResourceManagerClient.getProjectIamPolicy(projectId, authToken)
+          } catch (err) {
+            logger.error(`${TAGS.API} Error fetching project IAM policy for ${projectId} in diagnosis:`, err)
+            projectIamPolicyError = err.message
+          }
+        }
+        let firewalls = null
+        let firewallsError = null
+        if (computeClient) {
+          try {
+            const firewallData = await computeClient.listFirewalls(projectId, {}, authToken)
+            firewalls = firewallData.items || []
+          } catch (err) {
+            logger.error(`${TAGS.API} Error fetching firewall rules for ${projectId} in diagnosis:`, err)
+            firewallsError = err.message
+          }
+        }
+        const gateways = await Promise.all(
+          (rawGateways || []).map(async gw => {
+            const gatewayId = gw.name ? gw.name.split('/').pop() : gw.displayName
+            try {
+              const apps = await beyondcorpClient.listApplications(projectId, gatewayId, authToken)
+              return { ...gw, applications: apps || [] }
+            } catch (err) {
+              logger.error(`${TAGS.API} Error fetching applications for gateway ${gatewayId} in diagnosis:`, err)
+              return { ...gw, applications: [], applicationsError: err.message }
+            }
+          }),
+        )
+        secureGateway = {
+          projectId,
+          gateways,
+          projectIamPolicy,
+          projectIamPolicyError,
+          firewalls,
+          firewallsError,
+          error: null,
+        }
+      } catch (err) {
+        logger.error(`${TAGS.API} Error fetching secure gateways in diagnosis:`, err)
+        secureGateway = { projectId, gateways: [], error: err.message }
+      }
+    }
+  }
+
+  return {
+    customer,
+    orgUnits,
+    subscription,
+    versions,
+    allDlpRules,
+    allDetectors,
+    connectors,
+    sebExtension,
+    proxySettings,
+    securityInsights,
+    contentTransfers: normalizedContentTransfers,
+    urlVisits: normalizedUrlVisits,
+    secureGateway,
+  }
 }
 
 /**
@@ -281,7 +899,18 @@ async function fetchEnvironment(
  * @param {object} sessionState - State object for the current session
  */
 export function registerDiagnoseEnvironmentTool(server, options, sessionState) {
-  const { adminSdkClient, chromeManagementClient, chromePolicyClient, cloudIdentityClient } = options
+  const {
+    adminSdkClient,
+    chromeManagementClient,
+    chromePolicyClient,
+    cloudIdentityClient,
+    featureFlags: flags = defaultFeatureFlags,
+  } = options
+  const beyondcorpClient = options.beyondcorpClient || options.apiClients?.beyondcorp
+  const cloudResourceManagerClient = options.cloudResourceManagerClient || options.apiClients?.cloudResourceManager
+  const computeClient = options.computeClient || options.apiClients?.compute
+
+  const isSecureGatewayEnabled = flags.isEnabled(FLAGS.SECURE_GATEWAY_ENABLED)
 
   server.registerTool(
     'diagnose_environment',
@@ -294,13 +923,17 @@ To drill into detail, pass a 'section' parameter:
 - "orgUnits" — paginated list of organizational units
 - "dlpRules" — paginated list of DLP rules with action types
 - "detectors" — paginated list of content detectors
-- "browserVersions" — all browser version counts
+- "browserVersions" — all browser version counts${isSecureGatewayEnabled ? '\n- "secureGateways" — paginated list of secure gateways' : ''}
 
 Use 'limit' and 'offset' for pagination on large datasets.`,
       inputSchema: z.object({
         customerId: z.string().optional().describe('The Chrome customer ID. Auto-resolved if omitted.'),
+        projectId: z
+          .string()
+          .optional()
+          .describe('The Google Cloud project ID (required to diagnose Secure Gateways).'),
         section: z
-          .enum(['orgUnits', 'dlpRules', 'detectors', 'browserVersions'])
+          .enum(['orgUnits', 'dlpRules', 'detectors', 'browserVersions', 'secureGateways'])
           .optional()
           .describe('Drill into a specific section with paginated results. Omit for summary.'),
         limit: z.number().int().min(1).max(200).optional().describe('Page size for detail sections (default 50).'),
@@ -310,7 +943,7 @@ Use 'limit' and 'offset' for pagination on large datasets.`,
     },
     guardedToolCall(
       {
-        handler: async ({ customerId, section, limit, offset }, { _requestInfo, authToken }) => {
+        handler: async ({ customerId, projectId, section, limit, offset }, { _requestInfo, authToken }) => {
           logger.info(`${TAGS.MCP} diagnose_environment: starting (section=${section || 'summary'})`)
 
           const env = await fetchEnvironment(
@@ -320,6 +953,7 @@ Use 'limit' and 'offset' for pagination on large datasets.`,
             cloudIdentityClient,
             customerId,
             authToken,
+            { beyondcorpClient, cloudResourceManagerClient, computeClient, projectId, flags },
           )
 
           // Detail mode: return paginated section data
@@ -347,7 +981,20 @@ Use 'limit' and 'offset' for pagination on large datasets.`,
  * @returns {object} The formatted tool response for the agent to present to the user
  */
 function buildSummaryResponse(env) {
-  const { customer, orgUnits, subscription, versions, allDlpRules, allDetectors, connectors, sebExtension } = env
+  const {
+    customer,
+    orgUnits,
+    subscription,
+    versions,
+    allDlpRules,
+    allDetectors,
+    connectors,
+    sebExtension,
+    securityInsights,
+    contentTransfers,
+    urlVisits,
+    secureGateway,
+  } = env
 
   const activeRules = allDlpRules.filter(r => r.state === 'ACTIVE')
   const inactiveRules = allDlpRules.filter(r => r.state !== 'ACTIVE')
@@ -375,6 +1022,11 @@ function buildSummaryResponse(env) {
     detectors: { total: allDetectors.length },
     connectors,
     sebExtension,
+    proxySettings: env.proxySettings,
+    securityInsights,
+    contentTransfers,
+    urlVisits,
+    secureGateway,
     browserVersions: { total: versions.length, deviceCount: totalDevices },
     issues: [],
   }
@@ -384,28 +1036,109 @@ function buildSummaryResponse(env) {
   const critical = sc.issues.filter(i => i.severity === 'critical').length
   const high = sc.issues.filter(i => i.severity === 'high').length
   const medium = sc.issues.filter(i => i.severity === 'medium').length
+  const info = sc.issues.filter(i => i.severity === 'info').length
 
   let summary = `## Environment Health Check\n\n`
   summary += `> **Scope:** Health check is scoped to the Root Organizational Unit (/). Sub-OU overrides are not included in this summary.\n\n`
   summary += `**Customer:** ${customer.customerId} (${customer.domain || 'unknown domain'})\n`
   summary += `**Org Units:** ${orgUnits.length}\n`
   summary += `**CEP Subscription:** ${subscription.isActive ? `Active (${subscription.assignmentCount} licenses)` : 'Not active'}\n`
+  summary += `**Security Insights:** ${
+    securityInsights?.insightsState === 'INSIGHTS_ENABLED'
+      ? 'Enabled'
+      : securityInsights?.insightsState === 'INSIGHTS_DISABLED'
+        ? 'Disabled'
+        : 'Unknown/Unspecified'
+  }\n`
+
+  const totalTransfers =
+    contentTransfers?.summaries?.find(s => s.metric === 'CONTENT_TRANSFERS_METRIC_TOTAL_TRANSFERS')?.count || '0'
+  const sensitiveTransfers =
+    contentTransfers?.summaries?.find(s => s.metric === 'CONTENT_TRANSFERS_METRIC_SENSITIVE_DATA_TRANSFERS')?.count ||
+    '0'
+  const suspiciousVisits =
+    urlVisits?.summaries?.find(s => s.metric === 'URL_VISITS_METRIC_TOTAL_SUSPICIOUS_URL_VISITS')?.count || '0'
+
+  summary += `**Security Insights Data:**\n`
+  if (!contentTransfers || !urlVisits) {
+    summary += `  - Status: N/A (Security Insights is disabled or unspecified)\n`
+  } else if (contentTransfers.error || urlVisits.error) {
+    summary += `  - Status: ⚠️ Query failed (see issues below)\n`
+  } else {
+    summary += `  - Content Transfers (Total/Sensitive): ${totalTransfers} / ${sensitiveTransfers}\n`
+    summary += `  - Suspicious URL Visits: ${suspiciousVisits}\n`
+  }
+
   summary += `**DLP Rules:** ${allDlpRules.length} total (${activeRules.length} active: ${dlpRuleSummary.byAction.block} block, ${dlpRuleSummary.byAction.warn} warn, ${dlpRuleSummary.byAction.audit} audit, ${dlpRuleSummary.byAction.watermark} watermark)\n`
   summary += `**Detectors:** ${allDetectors.length}\n`
   summary += `**Browser Versions:** ${versions.length} versions across ${totalDevices} devices\n`
-  summary += `**SEB Extension:** ${sebExtension.isInstalled ? 'Force-installed' : 'Not installed'}\n\n`
+  let sebSummary = `**SEB Extension:** ${sebExtension.isInstalled ? 'Force-installed' : 'Not installed'}`
+  if (sebExtension.isInstalled && sebExtension.securityGatewayPolicy?.configured) {
+    sebSummary += ' (Secure Gateway: configured)'
+  }
+  summary += `${sebSummary}\n`
+
+  if (env.proxySettings) {
+    const rawMode = env.proxySettings.proxyMode || 'unspecified'
+    const mode = rawMode.replace(/^PROXY_MODE_ENUM_/, '').toLowerCase()
+    const pacUrl = env.proxySettings.proxyPacUrl
+    summary += `**Chrome Proxy:** ${mode}${pacUrl ? ` (${pacUrl})` : ''}\n`
+  }
+
+  if (secureGateway) {
+    if (secureGateway.skipped) {
+      summary += `**Secure Gateways:** Not checked (provide 'projectId' parameter to diagnose Secure Gateways)\n`
+    } else if (secureGateway.error) {
+      summary += `**Secure Gateways (project: ${secureGateway.projectId}):** ⚠️ Query failed (see issues below)\n`
+    } else {
+      const gateways = secureGateway.gateways || []
+      const activeCount = gateways.filter(g => g.state === 'RUNNING').length
+      const sdCount = gateways.filter(g => Boolean(g.serviceDiscovery)).length
+      const appCount = gateways.reduce((sum, g) => sum + (g.applications ? g.applications.length : 0), 0)
+      summary += `**Secure Gateways (project: ${secureGateway.projectId}):** ${gateways.length} total (${activeCount} active, ${sdCount} with Service Discovery, ${appCount} app(s))\n`
+    }
+  }
+
+  summary += `\n`
 
   if (issueCount === 0) {
     summary += `**Result: No issues found.** The environment appears healthy.\n`
   } else {
-    summary += `**Result: ${issueCount} issue(s) found** (${critical} critical, ${high} high, ${medium} medium)\n\n`
+    let countsStr = `${critical} critical, ${high} high, ${medium} medium`
+    if (info > 0) {
+      countsStr += `, ${info} info`
+    }
+    summary += `**Result: ${issueCount} issue(s) found** (${countsStr})\n\n`
     for (const issue of sc.issues) {
-      const icon = issue.severity === 'critical' ? '🔴' : issue.severity === 'high' ? '🟠' : '🟡'
-      summary += `${icon} **${issue.severity.toUpperCase()}** (${issue.component}): ${issue.message}\n`
+      const icon =
+        issue.severity === 'critical'
+          ? '🔴'
+          : issue.severity === 'high'
+            ? '🟠'
+            : issue.severity === 'medium'
+              ? '🟡'
+              : 'ℹ️'
+      let remediation = ''
+      if (issue.remediation?.command) {
+        remediation = `\n  ↳ **Remediation:** Run \`${issue.remediation.command}\``
+      } else if (issue.remediation?.url) {
+        remediation = `\n  ↳ **Remediation:** ${issue.remediation.actionLabel ? issue.remediation.actionLabel + ': ' : ''}${issue.remediation.url}`
+      } else if (issue.component === 'securityInsights' && issue.severity === 'critical') {
+        remediation =
+          ' -> Action: Use the `security_insights` tool to enable this feature (e.g. `security_insights enable`).'
+      } else if (issue.component === 'securityInsightsData' && issue.severity === 'medium') {
+        remediation =
+          ' -> Action: Verify that the API client has the required scopes: `chrome.management.reports.readonly`.'
+      }
+      summary += `${icon} **${issue.severity.toUpperCase()}** (${issue.component}): ${issue.message}${remediation}\n`
     }
   }
 
-  summary += `\nTo drill into details, call diagnose_environment again with section="orgUnits", "dlpRules", "detectors", or "browserVersions".`
+  const sectionsList = ['"orgUnits"', '"dlpRules"', '"detectors"', '"browserVersions"']
+  if (secureGateway) {
+    sectionsList.push('"secureGateways"')
+  }
+  summary += `\nTo drill into details, call diagnose_environment again with section=${sectionsList.join(', ')}.`
 
   logger.info(`${TAGS.MCP} diagnose_environment: summary complete (${issueCount} issues)`)
 
@@ -438,6 +1171,15 @@ function buildDetailResponse(env, section, limit, offset) {
     case 'browserVersions':
       allItems = env.versions
       break
+    case 'secureGateways':
+      allItems = (env.secureGateway?.gateways || []).map(gw => ({
+        name: gw.name,
+        displayName: gw.displayName,
+        state: gw.state,
+        serviceDiscovery: Boolean(gw.serviceDiscovery),
+        applicationCount: gw.applications ? gw.applications.length : 0,
+      }))
+      break
     default:
       allItems = []
   }
@@ -468,6 +1210,14 @@ function buildDetailResponse(env, section, limit, offset) {
         break
       case 'browserVersions':
         summary += items.map(v => `- **${v.version}** (${v.channel || 'UNKNOWN'}): ${v.count} devices`).join('\n')
+        break
+      case 'secureGateways':
+        summary += items
+          .map(
+            (gw, i) =>
+              `${offset + i + 1}. **${gw.displayName || gw.name}** — ${gw.state}, Service Discovery: ${gw.serviceDiscovery ? 'enabled' : 'disabled'}, Applications: ${gw.applicationCount}`,
+          )
+          .join('\n')
         break
     }
   }

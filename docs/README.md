@@ -23,6 +23,6 @@ Reference documentation for operating and extending the Chrome Enterprise Premiu
 - [`architecture.md`](./architecture.md): Code layout, the client abstraction, retry behavior, and CEL validation.
 - [`faq.md`](./faq.md): License requirements, service accounts, experimental features, and other recurring questions.
 - [`auth-bring-your-own-oauth-client.md`](./auth-bring-your-own-oauth-client.md): How to create a Desktop OAuth client and run the CLI's `auth login` subcommand.
-- [`auth-cloud-run-and-gemini-enterprise.md`](./auth-cloud-run-and-gemini-enterprise.md): How to deploy the server behind Cloud Run with Gemini Enterprise.
+- [`auth-cloud-run.md`](./auth-cloud-run.md): How to deploy the server behind Cloud Run.
 
 For contributing changes, see [`CONTRIBUTING.md`](../CONTRIBUTING.md). For the test infrastructure, see [`test/README.md`](../test/README.md).

@@ -24,6 +24,7 @@ limitations under the License.
 import { test, describe, mock } from 'node:test'
 import assert from 'node:assert/strict'
 import { registerDiagnoseEnvironmentTool } from '../../tools/definitions/diagnose_environment.js'
+import { FeatureFlags } from '../../lib/util/feature_flags.js'
 
 /**
  * Creates mock API clients that return configurable test data.
@@ -42,6 +43,18 @@ function createMockClients(overrides = {}) {
     browserVersions: [{ version: '134.0.0', count: '10', channel: 'STABLE' }],
     connectorPolicy: [],
     resolvePolicy: [],
+    securityInsights: { insightsState: 'INSIGHTS_ENABLED' },
+    contentTransfers: {
+      summaries: [
+        { metric: 'CONTENT_TRANSFERS_METRIC_TOTAL_TRANSFERS', count: '100' },
+        { metric: 'CONTENT_TRANSFERS_METRIC_SENSITIVE_DATA_TRANSFERS', count: '10' },
+      ],
+    },
+    urlVisits: {
+      summaries: [{ metric: 'URL_VISITS_METRIC_TOTAL_SUSPICIOUS_URL_VISITS', count: '5' }],
+    },
+    gateways: [],
+    applications: [],
   }
 
   const cfg = { ...defaults, ...overrides }
@@ -54,6 +67,9 @@ function createMockClients(overrides = {}) {
     },
     chromeManagementClient: {
       countBrowserVersions: mock.fn(async () => cfg.browserVersions),
+      checkSecurityInsightsStatus: mock.fn(async () => cfg.securityInsights),
+      queryContentTransfers: mock.fn(async () => cfg.contentTransfers),
+      queryUrlVisits: mock.fn(async () => cfg.urlVisits),
     },
     chromePolicyClient: {
       getConnectorPolicy: mock.fn(async () => cfg.connectorPolicy),
@@ -63,21 +79,47 @@ function createMockClients(overrides = {}) {
       listDlpRules: mock.fn(async () => cfg.dlpRules),
       listDetectors: mock.fn(async () => cfg.detectors),
     },
+    beyondcorpClient: {
+      listGateways: mock.fn(async () => cfg.gateways),
+      listApplications: mock.fn(async () => cfg.applications),
+    },
+    cloudResourceManagerClient: {
+      getProjectIamPolicy: mock.fn(async () => {
+        if (cfg.projectIamPolicyError) {
+          throw new Error(cfg.projectIamPolicyError)
+        }
+        return cfg.projectIamPolicy || { bindings: [] }
+      }),
+    },
     apiClients: {
       adminSdk: { getCustomerId: mock.fn(async () => cfg.customer) },
     },
   }
 }
 
-function registerAndGetHandler(clientOverrides = {}) {
-  const handlers = {}
-  const server = {
+function createMockServer(handlers) {
+  return {
     registerTool: mock.fn((name, _desc, handler) => {
-      handlers[name] = handler
+      handlers[name] = (params, context = {}) => {
+        const requestInfo = context.requestInfo || {}
+        const headers = requestInfo.headers || {}
+        if (!headers.authorization) {
+          headers.authorization = 'Bearer mock-token'
+        }
+        requestInfo.headers = headers
+        context.requestInfo = requestInfo
+        return handler(params, context)
+      }
     }),
   }
+}
+
+function registerAndGetHandler(clientOverrides = {}, options = {}) {
+  const handlers = {}
+  const server = createMockServer(handlers)
   const clients = createMockClients(clientOverrides)
-  registerDiagnoseEnvironmentTool(server, clients, { customerId: null, cachedRootOrgUnitId: null })
+  const fullOptions = { ...clients, ...options }
+  registerDiagnoseEnvironmentTool(server, fullOptions, { customerId: null, cachedRootOrgUnitId: null })
   return { handler: handlers['diagnose_environment'], clients }
 }
 
@@ -139,10 +181,22 @@ describe('diagnose_environment', () => {
     })
 
     test('When no subscription exists, then it produces a critical issue', async () => {
-      const { handler } = registerAndGetHandler({ subscription: { items: [] } })
+      const { handler } = registerAndGetHandler({ subscription: null })
       const result = await handler({ customerId: 'C0123' }, { requestInfo: {} })
       const critical = result.structuredContent.issues.filter(i => i.severity === 'critical')
       assert.ok(critical.some(i => i.component === 'subscription'))
+      assert.strictEqual(critical[0].message, 'No active Chrome Enterprise Premium subscription found on this domain.')
+    })
+
+    test('When subscription exists but has 0 users assigned, then it produces a high issue', async () => {
+      const { handler } = registerAndGetHandler({ subscription: { items: [] } })
+      const result = await handler({ customerId: 'C0123' }, { requestInfo: {} })
+      const high = result.structuredContent.issues.filter(i => i.severity === 'high')
+      assert.ok(high.some(i => i.component === 'subscription'))
+      assert.strictEqual(
+        high[0].message,
+        'Chrome Enterprise Premium subscription is active, but 0 users have licenses assigned. You must assign licenses to users.',
+      )
     })
 
     test('When only a single license is found, then it produces a medium issue', async () => {
@@ -167,6 +221,58 @@ describe('diagnose_environment', () => {
       assert.ok(high.some(i => i.component === 'dlpRules'))
     })
 
+    test('When gaps are found in environment, then the generated issues contain structured remediation metadata and deep-links', async () => {
+      const { handler } = registerAndGetHandler({
+        connectorPolicy: [],
+        dlpRules: [],
+        securityInsights: { insightsState: 'INSIGHTS_DISABLED' },
+        resolvePolicy: [],
+      })
+      const result = await handler({ customerId: 'C0123' }, { requestInfo: {} })
+      const issues = result.structuredContent.issues
+      const connectors = result.structuredContent.connectors
+
+      // Verify connector issues have structured remediation
+      const uploadIssue = issues.find(i => i.component === 'connector.uploadAnalysis')
+      assert.ok(uploadIssue.message.includes('https://admin.google.com/ac/chrome/settings/user/details/file_attached'))
+      assert.deepStrictEqual(uploadIssue.remediation, {
+        actionLabel: 'Configure Upload content analysis connector',
+        url: 'https://admin.google.com/ac/chrome/settings/user/details/file_attached',
+      })
+
+      // Verify DLP rules issue has structured remediation
+      const dlpIssue = issues.find(i => i.component === 'dlpRules')
+      assert.ok(dlpIssue.message.includes('https://admin.google.com/ac/dp/rules'))
+      assert.deepStrictEqual(dlpIssue.remediation, {
+        actionLabel: 'Create DLP rules',
+        url: 'https://admin.google.com/ac/dp/rules',
+      })
+
+      // Verify SEB extension issue has structured remediation
+      const sebIssue = issues.find(i => i.component === 'sebExtension')
+      assert.ok(sebIssue.message.includes('https://admin.google.com/ac/chrome/apps/user'))
+      assert.deepStrictEqual(sebIssue.remediation, {
+        actionLabel: 'Configure SEB force-installation',
+        url: 'https://admin.google.com/ac/chrome/apps/user',
+      })
+
+      // Verify Security Insights issue has no manual remediation link
+      const insightsIssue = issues.find(i => i.component === 'securityInsights')
+      assert.strictEqual(insightsIssue.severity, 'critical')
+      assert.ok(!insightsIssue.remediation)
+      assert.ok(!insightsIssue.message.includes('https://admin.google.com/ac/dp'))
+
+      // Verify connectors object contains individual deep-links even when unconfigured
+      assert.strictEqual(
+        connectors.uploadAnalysis.uiLink,
+        'https://admin.google.com/ac/chrome/settings/user/details/file_attached',
+      )
+      assert.strictEqual(
+        connectors.securityEventReporting.uiLink,
+        'https://admin.google.com/ac/chrome/settings/user/details/on_security_event',
+      )
+    })
+
     test('When rules are audit-only, then it produces a medium issue', async () => {
       const { handler } = registerAndGetHandler({
         connectorPolicy: [{ value: {} }],
@@ -184,12 +290,38 @@ describe('diagnose_environment', () => {
       assert.ok(medium.length > 0)
     })
 
-    test('When SEB is not installed, then it produces a high issue', async () => {
-      const { handler } = registerAndGetHandler({ resolvePolicy: [] })
+    test('When Security Insights is disabled, then it produces a critical issue with remediation action in summary', async () => {
+      const { handler } = registerAndGetHandler({ securityInsights: { insightsState: 'INSIGHTS_DISABLED' } })
       const result = await handler({ customerId: 'C0123' }, { requestInfo: {} })
-      const seb = result.structuredContent.issues.filter(i => i.component === 'sebExtension')
-      assert.ok(seb.length === 1)
-      assert.ok(seb[0].severity === 'high')
+      const issues = result.structuredContent.issues.filter(i => i.component === 'securityInsights')
+      assert.strictEqual(issues.length, 1)
+      assert.strictEqual(issues[0].severity, 'critical')
+      assert.ok(result.content[0].text.includes('security_insights enable'), 'Summary should suggest enabling the tool')
+    })
+
+    test('When Security Insights is unspecified, then it produces a medium issue', async () => {
+      const { handler } = registerAndGetHandler({
+        securityInsights: { insightsState: 'INSIGHTS_ENABLEMENT_STATE_UNSPECIFIED' },
+      })
+      const result = await handler({ customerId: 'C0123' }, { requestInfo: {} })
+      const issues = result.structuredContent.issues.filter(i => i.component === 'securityInsights')
+      assert.strictEqual(issues.length, 1)
+      assert.strictEqual(issues[0].severity, 'medium')
+    })
+
+    test('When Security Insights check fails, then it handles the error gracefully and lists it as medium issue', async () => {
+      const clients = createMockClients()
+      clients.chromeManagementClient.checkSecurityInsightsStatus = mock.fn(async () => {
+        throw new Error('API failure')
+      })
+      const handlers = {}
+      const server = createMockServer(handlers)
+      registerDiagnoseEnvironmentTool(server, clients, { customerId: null, cachedRootOrgUnitId: null })
+      const result = await handlers['diagnose_environment']({ customerId: 'C0123' }, { requestInfo: {} })
+      assert.strictEqual(result.isError, undefined) // Should not fail the diagnostic run
+      const issues = result.structuredContent.issues.filter(i => i.component === 'securityInsights')
+      assert.strictEqual(issues.length, 1)
+      assert.strictEqual(issues[0].severity, 'medium')
     })
 
     test('When diagnosis is run, then it returns summary counts rather than raw arrays', async () => {
@@ -227,6 +359,66 @@ describe('diagnose_environment', () => {
       const { handler } = registerAndGetHandler({ connectorPolicy: [{ value: {} }] })
       const result = await handler({}, { requestInfo: {} })
       assert.ok(result.structuredContent.customer.customerId, 'Customer ID resolved')
+    })
+
+    test('When Security Insights Data queries fail, then it produces medium issues with remediation', async () => {
+      const clients = createMockClients()
+      clients.chromeManagementClient.queryContentTransfers = mock.fn(async () => {
+        throw new Error('Quota exceeded')
+      })
+      clients.chromeManagementClient.queryUrlVisits = mock.fn(async () => {
+        throw new Error('Permission denied')
+      })
+      const handlers = {}
+      const server = createMockServer(handlers)
+      registerDiagnoseEnvironmentTool(server, clients, { customerId: null, cachedRootOrgUnitId: null })
+      const result = await handlers['diagnose_environment']({ customerId: 'C0123' }, { requestInfo: {} })
+
+      const issues = result.structuredContent.issues.filter(i => i.component === 'securityInsightsData')
+      assert.strictEqual(issues.length, 2)
+      assert.strictEqual(issues[0].severity, 'medium')
+      assert.strictEqual(issues[1].severity, 'medium')
+      assert.ok(
+        result.content[0].text.includes('chrome.management.reports.readonly'),
+        'Summary should suggest checking scopes',
+      )
+    })
+
+    test('When Security Insights is disabled and queries fail, then it does not produce issues and reports N/A', async () => {
+      const clients = createMockClients({
+        securityInsights: { insightsState: 'INSIGHTS_DISABLED' },
+      })
+      clients.chromeManagementClient.queryContentTransfers = mock.fn(async () => {
+        throw new Error('Quota exceeded')
+      })
+      clients.chromeManagementClient.queryUrlVisits = mock.fn(async () => {
+        throw new Error('Permission denied')
+      })
+      const handlers = {}
+      const server = createMockServer(handlers)
+      registerDiagnoseEnvironmentTool(server, clients, { customerId: null, cachedRootOrgUnitId: null })
+      const result = await handlers['diagnose_environment']({ customerId: 'C0123' }, { requestInfo: {} })
+
+      const siIssues = result.structuredContent.issues.filter(i => i.component === 'securityInsights')
+      assert.strictEqual(siIssues.length, 1)
+      assert.strictEqual(siIssues[0].severity, 'critical')
+
+      const dataIssues = result.structuredContent.issues.filter(i => i.component === 'securityInsightsData')
+      assert.strictEqual(dataIssues.length, 0)
+
+      assert.ok(
+        result.content[0].text.includes('Status: N/A (Security Insights is disabled or unspecified)'),
+        'Summary should report N/A for telemetry',
+      )
+      assert.ok(!result.content[0].text.includes('⚠️ Query failed'), 'Summary should not report query failure')
+    })
+
+    test('When Security Insights Data is healthy, then it reports stats in the summary', async () => {
+      const { handler } = registerAndGetHandler({ connectorPolicy: [{ value: {} }] })
+      const result = await handler({ customerId: 'C0123' }, { requestInfo: {} })
+
+      assert.ok(result.content[0].text.includes('Content Transfers (Total/Sensitive): 100 / 10'))
+      assert.ok(result.content[0].text.includes('Suspicious URL Visits: 5'))
     })
   })
 
@@ -309,11 +501,7 @@ describe('diagnose_environment', () => {
       })
 
       const handlers = {}
-      const server = {
-        registerTool: mock.fn((name, _desc, handler) => {
-          handlers[name] = handler
-        }),
-      }
+      const server = createMockServer(handlers)
       registerDiagnoseEnvironmentTool(server, clients, { customerId: null, cachedRootOrgUnitId: null })
 
       const result = await handlers['diagnose_environment']({ customerId: 'C0123' }, { requestInfo: {} })
@@ -330,11 +518,7 @@ describe('diagnose_environment', () => {
       })
 
       const handlers = {}
-      const server = {
-        registerTool: mock.fn((name, _desc, handler) => {
-          handlers[name] = handler
-        }),
-      }
+      const server = createMockServer(handlers)
       registerDiagnoseEnvironmentTool(server, clients, { customerId: null, cachedRootOrgUnitId: null })
 
       const result = await handlers['diagnose_environment']({ customerId: 'C0123' }, { requestInfo: {} })
@@ -346,6 +530,1049 @@ describe('diagnose_environment', () => {
       const { handler } = registerAndGetHandler({ orgUnits: { organizationUnits: [] } })
       const result = await handler({ customerId: 'C0123' }, { requestInfo: {} })
       assert.strictEqual(result.structuredContent.orgUnitCount, 0)
+    })
+  })
+
+  describe('Secure Gateway Diagnostics', () => {
+    const enabledFlags = new FeatureFlags({ EXPERIMENT_SECURE_GATEWAY_ENABLED: 'true' })
+    const disabledFlags = new FeatureFlags({ EXPERIMENT_SECURE_GATEWAY_ENABLED: 'false' })
+
+    test('When experiment flag is disabled, then secureGateway section and checks are omitted', async () => {
+      const { handler, clients } = registerAndGetHandler(
+        { gateways: [{ name: 'projects/p1/locations/global/securityGateways/gw1', state: 'RUNNING' }] },
+        { featureFlags: disabledFlags },
+      )
+      const result = await handler({ customerId: 'C0123', projectId: 'p1' }, { requestInfo: {} })
+      assert.strictEqual(result.structuredContent.secureGateway, null)
+      assert.strictEqual(clients.beyondcorpClient.listGateways.mock.callCount(), 0)
+      assert.ok(!result.content[0].text.includes('Secure Gateways'))
+    })
+
+    test('When experiment flag is enabled but no projectId is provided, then secureGateway is reported as skipped', async () => {
+      const { handler, clients } = registerAndGetHandler({}, { featureFlags: enabledFlags })
+      const result = await handler({ customerId: 'C0123' }, { requestInfo: {} })
+      assert.deepStrictEqual(result.structuredContent.secureGateway, { projectId: null, gateways: [], skipped: true })
+      assert.strictEqual(clients.beyondcorpClient.listGateways.mock.callCount(), 0)
+      assert.ok(result.content[0].text.includes("**Secure Gateways:** Not checked (provide 'projectId'"))
+    })
+
+    test('When experiment flag is enabled and healthy gateway exists, then zero issues are produced', async () => {
+      const { handler } = registerAndGetHandler(
+        {
+          connectorPolicy: [{ value: {} }],
+          gateways: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1',
+              displayName: 'Gateway 1',
+              state: 'RUNNING',
+              serviceDiscovery: {},
+            },
+          ],
+          applications: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1/applications/app1',
+              displayName: 'App 1',
+            },
+          ],
+        },
+        { featureFlags: enabledFlags },
+      )
+
+      const result = await handler({ customerId: 'C0123', projectId: 'p1' }, { requestInfo: {} })
+      const sg = result.structuredContent.secureGateway
+      assert.ok(sg)
+      assert.strictEqual(sg.gateways.length, 1)
+      assert.strictEqual(sg.gateways[0].applications.length, 1)
+
+      const sgIssues = result.structuredContent.issues.filter(i => i.component.startsWith('secureGateway'))
+      assert.strictEqual(sgIssues.length, 0)
+      assert.ok(
+        result.content[0].text.includes(
+          '**Secure Gateways (project: p1):** 1 total (1 active, 1 with Service Discovery, 1 app(s))',
+        ),
+      )
+    })
+
+    test('When gateway has non-ACTIVE state, missing service discovery, and zero apps, then corresponding issues are produced', async () => {
+      const { handler } = registerAndGetHandler(
+        {
+          gateways: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1',
+              displayName: 'Bad Gateway',
+              state: 'ERROR',
+            },
+          ],
+          applications: [],
+        },
+        { featureFlags: enabledFlags },
+      )
+
+      const result = await handler({ customerId: 'C0123', projectId: 'p1' }, { requestInfo: {} })
+      const sgIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway')
+
+      assert.ok(sgIssues.some(i => i.severity === 'critical' && i.message.includes('ERROR state')))
+      assert.ok(sgIssues.some(i => i.severity === 'medium' && i.message.includes('Service Discovery')))
+      assert.ok(sgIssues.some(i => i.severity === 'medium' && i.message.includes('no application routing')))
+    })
+
+    test('When gateway is in RUNNING state, then it is treated as healthy', async () => {
+      const { handler } = registerAndGetHandler(
+        {
+          connectorPolicy: [{ value: {} }],
+          gateways: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1',
+              displayName: 'Running Gateway',
+              state: 'RUNNING',
+              serviceDiscovery: {},
+            },
+          ],
+          applications: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1/applications/app1',
+              displayName: 'App 1',
+            },
+          ],
+        },
+        { featureFlags: enabledFlags },
+      )
+
+      const result = await handler({ customerId: 'C0123', projectId: 'p1' }, { requestInfo: {} })
+      const sgIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway')
+      assert.strictEqual(sgIssues.length, 0)
+    })
+
+    test('When gateway is in ERROR, DOWN, or CREATING state, then appropriate severity issues are reported', async () => {
+      const { handler } = registerAndGetHandler(
+        {
+          gateways: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1',
+              displayName: 'Err Gateway',
+              state: 'ERROR',
+              serviceDiscovery: {},
+            },
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw2',
+              displayName: 'Down Gateway',
+              state: 'DOWN',
+              serviceDiscovery: {},
+            },
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw3',
+              displayName: 'Creating Gateway',
+              state: 'CREATING',
+              serviceDiscovery: {},
+            },
+          ],
+          applications: [],
+        },
+        { featureFlags: enabledFlags },
+      )
+
+      const result = await handler({ customerId: 'C0123', projectId: 'p1' }, { requestInfo: {} })
+      const sgIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway')
+
+      assert.ok(sgIssues.some(i => i.severity === 'critical' && i.message.includes('ERROR state')))
+      assert.ok(sgIssues.some(i => i.severity === 'high' && i.message.includes('DOWN state')))
+      assert.ok(sgIssues.some(i => i.severity === 'medium' && i.message.includes('CREATING state')))
+    })
+
+    test('When application routes non-HTTPS ports (e.g. 80 without 443), then an issue is produced according to Knowledge Addendum #8', async () => {
+      const { handler } = registerAndGetHandler(
+        {
+          gateways: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1',
+              displayName: 'Gateway 1',
+              state: 'RUNNING',
+              serviceDiscovery: {},
+            },
+          ],
+          applications: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1/applications/app1',
+              displayName: 'HTTP App',
+              endpointMatchers: [{ hostname: 'app.local', ports: [80] }],
+            },
+          ],
+        },
+        { featureFlags: enabledFlags },
+      )
+
+      const result = await handler({ customerId: 'C0123', projectId: 'p1' }, { requestInfo: {} })
+      const appIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.application')
+      assert.strictEqual(appIssues.length, 1)
+      assert.strictEqual(appIssues[0].severity, 'medium')
+      assert.ok(appIssues[0].message.includes('routes port 80'))
+    })
+
+    test('When listGateways API fails, then it produces a medium issue and reports query failure', async () => {
+      const clients = createMockClients()
+      clients.beyondcorpClient.listGateways = mock.fn(async () => {
+        throw new Error('API unavailable')
+      })
+
+      const handlers = {}
+      const server = createMockServer(handlers)
+      registerDiagnoseEnvironmentTool(
+        server,
+        { ...clients, featureFlags: enabledFlags },
+        { customerId: null, cachedRootOrgUnitId: null },
+      )
+
+      const result = await handlers['diagnose_environment'](
+        { customerId: 'C0123', projectId: 'p1' },
+        { requestInfo: {} },
+      )
+      const sgIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway')
+      assert.strictEqual(sgIssues.length, 1)
+      assert.strictEqual(sgIssues[0].severity, 'medium')
+      assert.ok(sgIssues[0].message.includes('API unavailable'))
+      assert.ok(result.content[0].text.includes('**Secure Gateways (project: p1):** ⚠️ Query failed'))
+    })
+
+    test('When detail section secureGateways is requested, then paginated gateways are returned', async () => {
+      const { handler } = registerAndGetHandler(
+        {
+          gateways: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1',
+              displayName: 'Gateway 1',
+              state: 'RUNNING',
+              serviceDiscovery: {},
+            },
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw2',
+              displayName: 'Gateway 2',
+              state: 'RUNNING',
+            },
+          ],
+          applications: [],
+        },
+        { featureFlags: enabledFlags },
+      )
+
+      const result = await handler(
+        { customerId: 'C0123', projectId: 'p1', section: 'secureGateways', limit: 1, offset: 0 },
+        { requestInfo: {} },
+      )
+      const sc = result.structuredContent
+      assert.strictEqual(sc.section, 'secureGateways')
+      assert.strictEqual(sc.items.length, 1)
+      assert.strictEqual(sc.total, 2)
+      assert.strictEqual(sc.hasMore, true)
+      assert.strictEqual(sc.items[0].displayName, 'Gateway 1')
+      assert.strictEqual(sc.items[0].serviceDiscovery, true)
+    })
+
+    test('When private web app is configured and delegating SA is missing roles/beyondcorp.upstreamAccess, then it produces a high issue', async () => {
+      const { handler } = registerAndGetHandler(
+        {
+          gateways: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1',
+              displayName: 'Gateway 1',
+              state: 'ACTIVE',
+              serviceDiscovery: {},
+              delegatingServiceAccount: 'sa-123@gcp-sa-beyondcorp.iam.gserviceaccount.com',
+            },
+          ],
+          applications: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1/applications/app1',
+              displayName: 'Private Web App',
+              upstreams: [{ network: { name: 'projects/p1/global/networks/prod-vpc' } }],
+            },
+          ],
+          projectIamPolicy: {
+            bindings: [{ role: 'roles/viewer', members: ['user:alice@company.com'] }],
+          },
+        },
+        { featureFlags: enabledFlags },
+      )
+
+      const result = await handler({ customerId: 'C0123', projectId: 'p1' }, { requestInfo: {} })
+      const iamIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.iam')
+      assert.strictEqual(iamIssues.length, 1)
+      assert.strictEqual(iamIssues[0].severity, 'high')
+      assert.ok(iamIssues[0].message.includes("is not directly granted 'roles/beyondcorp.upstreamAccess'"))
+      assert.deepStrictEqual(iamIssues[0].remediation, {
+        actionLabel: 'Verify or Grant GCP IAM Roles',
+        url: 'https://console.cloud.google.com/iam-admin/iam?project=p1',
+      })
+    })
+
+    test('When private web app is configured but delegating SA is missing on gateway resource, then it produces a high issue', async () => {
+      const { handler } = registerAndGetHandler(
+        {
+          gateways: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1',
+              displayName: 'Gateway 1',
+              state: 'ACTIVE',
+              serviceDiscovery: {},
+            },
+          ],
+          applications: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1/applications/app1',
+              displayName: 'Private Web App',
+              upstreams: [{ network: { name: 'projects/p1/global/networks/prod-vpc' } }],
+            },
+          ],
+          projectIamPolicy: {
+            bindings: [{ role: 'roles/viewer', members: ['user:alice@company.com'] }],
+          },
+        },
+        { featureFlags: enabledFlags },
+      )
+
+      const result = await handler({ customerId: 'C0123', projectId: 'p1' }, { requestInfo: {} })
+      const iamIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.iam')
+      assert.strictEqual(iamIssues.length, 1)
+      assert.strictEqual(iamIssues[0].severity, 'high')
+      assert.ok(iamIssues[0].message.includes('no delegating service account is specified'))
+    })
+
+    test('When private web app is configured and delegating SA HAS roles/beyondcorp.upstreamAccess, then no IAM issue is raised', async () => {
+      const { handler } = registerAndGetHandler(
+        {
+          gateways: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1',
+              displayName: 'Gateway 1',
+              state: 'ACTIVE',
+              serviceDiscovery: {},
+              delegatingServiceAccount: 'sa-123@gcp-sa-beyondcorp.iam.gserviceaccount.com',
+            },
+          ],
+          applications: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1/applications/app1',
+              displayName: 'Private Web App',
+              upstreams: [{ network: { name: 'projects/p1/global/networks/prod-vpc' } }],
+            },
+          ],
+          projectIamPolicy: {
+            bindings: [
+              {
+                role: 'roles/beyondcorp.upstreamAccess',
+                members: ['serviceAccount:sa-123@gcp-sa-beyondcorp.iam.gserviceaccount.com'],
+              },
+            ],
+          },
+        },
+        { featureFlags: enabledFlags },
+      )
+
+      const result = await handler({ customerId: 'C0123', projectId: 'p1' }, { requestInfo: {} })
+      const iamIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.iam')
+      assert.strictEqual(iamIssues.length, 0)
+    })
+
+    test('When project IAM policy query fails with 403, then it produces a medium issue with manual remediation link', async () => {
+      const { handler } = registerAndGetHandler(
+        {
+          gateways: [
+            {
+              name: 'projects/p1/locations/global/securityGateways/gw1',
+              displayName: 'Gateway 1',
+              state: 'ACTIVE',
+            },
+          ],
+          projectIamPolicyError: '403 Forbidden',
+        },
+        { featureFlags: enabledFlags },
+      )
+
+      const result = await handler({ customerId: 'C0123', projectId: 'p1' }, { requestInfo: {} })
+      const iamIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.iam')
+      assert.strictEqual(iamIssues.length, 1)
+      assert.strictEqual(iamIssues[0].severity, 'medium')
+      assert.ok(iamIssues[0].message.includes('Unable to automatically verify delegating service account permissions'))
+      assert.deepStrictEqual(iamIssues[0].remediation, {
+        actionLabel: 'Verify GCP IAM Roles Manually',
+        url: 'https://console.cloud.google.com/iam-admin/iam?project=p1',
+      })
+    })
+
+    test('When Private Web App is present and ingress firewall rule for secure gateway is missing, then it produces a high severity firewall issue', async () => {
+      const mockComputeClient = {
+        listFirewalls: mock.fn(async () => ({ items: [] })),
+      }
+      const handlers = {}
+      const server = createMockServer(handlers)
+      const mockClients = createMockClients()
+      mockClients.beyondcorpClient.listGateways = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1',
+          displayName: 'Gateway 1',
+          state: 'RUNNING',
+          delegatingServiceAccount: 'sa@gcp.iam.gserviceaccount.com',
+          serviceDiscovery: {},
+        },
+      ])
+      mockClients.beyondcorpClient.listApplications = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1/applications/app1',
+          displayName: 'App 1',
+          endpointMatchers: [{ ports: [443] }],
+          upstreams: [{ network: 'projects/p1/global/networks/vpc1' }],
+        },
+      ])
+
+      registerDiagnoseEnvironmentTool(
+        server,
+        { ...mockClients, computeClient: mockComputeClient, featureFlags: enabledFlags },
+        { customerId: null, cachedRootOrgUnitId: null },
+      )
+
+      const result = await handlers['diagnose_environment'](
+        { customerId: 'C0123', projectId: 'p1' },
+        { requestInfo: {} },
+      )
+
+      const fwIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.firewall')
+      assert.strictEqual(fwIssues.length, 1)
+      assert.strictEqual(fwIssues[0].severity, 'high')
+      assert.ok(fwIssues[0].message.includes('Ingress firewall rule allowing TCP traffic from secure gateway range'))
+      assert.ok(fwIssues[0].remediation.command.includes('gcloud compute firewall-rules create'))
+    })
+
+    test('When App has multiple upstreams on the same VPC network, then it produces exactly 1 firewall issue per network', async () => {
+      const mockComputeClient = {
+        listFirewalls: mock.fn(async () => ({ items: [] })),
+      }
+      const handlers = {}
+      const server = createMockServer(handlers)
+      const mockClients = createMockClients()
+      mockClients.beyondcorpClient.listGateways = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1',
+          displayName: 'Gateway 1',
+          state: 'RUNNING',
+          delegatingServiceAccount: 'sa@gcp.iam.gserviceaccount.com',
+          serviceDiscovery: {},
+        },
+      ])
+      mockClients.beyondcorpClient.listApplications = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1/applications/app1',
+          displayName: 'App 1',
+          endpointMatchers: [{ ports: [443] }],
+          upstreams: [
+            { network: 'projects/p1/global/networks/vpc1', upstreamUri: '10.0.0.5:443' },
+            { network: 'projects/p1/global/networks/vpc1', upstreamUri: '10.0.0.6:443' },
+          ],
+        },
+      ])
+
+      registerDiagnoseEnvironmentTool(
+        server,
+        { ...mockClients, computeClient: mockComputeClient, featureFlags: enabledFlags },
+        { customerId: null, cachedRootOrgUnitId: null },
+      )
+
+      const result = await handlers['diagnose_environment'](
+        { customerId: 'C0123', projectId: 'p1' },
+        { requestInfo: {} },
+      )
+
+      const fwIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.firewall')
+      assert.strictEqual(fwIssues.length, 1, 'Should deduplicate missing firewall rules per unique network')
+      assert.ok(fwIssues[0].message.includes('vpc1'))
+    })
+
+    test('When matching allow firewall rule is disabled, then it ignores it and produces missing firewall issue', async () => {
+      const mockComputeClient = {
+        listFirewalls: mock.fn(async () => ({
+          items: [
+            {
+              direction: 'INGRESS',
+              action: 'ALLOW',
+              disabled: true,
+              network: 'projects/p1/global/networks/vpc1',
+              sourceRanges: ['136.124.16.0/20'],
+              allowed: [{ IPProtocol: 'tcp', ports: ['443'] }],
+            },
+          ],
+        })),
+      }
+      const handlers = {}
+      const server = createMockServer(handlers)
+      const mockClients = createMockClients()
+      mockClients.beyondcorpClient.listGateways = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1',
+          displayName: 'Gateway 1',
+          state: 'RUNNING',
+          delegatingServiceAccount: 'sa@gcp.iam.gserviceaccount.com',
+          serviceDiscovery: {},
+        },
+      ])
+      mockClients.beyondcorpClient.listApplications = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1/applications/app1',
+          displayName: 'App 1',
+          endpointMatchers: [{ ports: [443] }],
+          upstreams: [{ network: 'projects/p1/global/networks/vpc1' }],
+        },
+      ])
+
+      registerDiagnoseEnvironmentTool(
+        server,
+        { ...mockClients, computeClient: mockComputeClient, featureFlags: enabledFlags },
+        { customerId: null, cachedRootOrgUnitId: null },
+      )
+
+      const result = await handlers['diagnose_environment'](
+        { customerId: 'C0123', projectId: 'p1' },
+        { requestInfo: {} },
+      )
+
+      const fwIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.firewall')
+      assert.strictEqual(fwIssues.length, 1, 'Disabled rule should be ignored')
+    })
+
+    test('When firewall rule specifies port ranges like 80-443, then it recognizes port 443 as allowed', async () => {
+      const mockComputeClient = {
+        listFirewalls: mock.fn(async () => ({
+          items: [
+            {
+              direction: 'INGRESS',
+              action: 'ALLOW',
+              disabled: false,
+              network: 'projects/p1/global/networks/vpc1',
+              sourceRanges: ['136.124.16.0/20'],
+              allowed: [{ IPProtocol: 'tcp', ports: ['80-443'] }],
+            },
+          ],
+        })),
+      }
+      const handlers = {}
+      const server = createMockServer(handlers)
+      const mockClients = createMockClients()
+      mockClients.beyondcorpClient.listGateways = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1',
+          displayName: 'Gateway 1',
+          state: 'RUNNING',
+          delegatingServiceAccount: 'sa@gcp.iam.gserviceaccount.com',
+          serviceDiscovery: {},
+        },
+      ])
+      mockClients.beyondcorpClient.listApplications = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1/applications/app1',
+          displayName: 'App 1',
+          endpointMatchers: [{ ports: [443] }],
+          upstreams: [{ network: 'projects/p1/global/networks/vpc1' }],
+        },
+      ])
+
+      registerDiagnoseEnvironmentTool(
+        server,
+        { ...mockClients, computeClient: mockComputeClient, featureFlags: enabledFlags },
+        { customerId: null, cachedRootOrgUnitId: null },
+      )
+
+      const result = await handlers['diagnose_environment'](
+        { customerId: 'C0123', projectId: 'p1' },
+        { requestInfo: {} },
+      )
+
+      const fwIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.firewall')
+      assert.strictEqual(fwIssues.length, 0, 'Port 443 within 80-443 range should be recognized as allowed')
+    })
+
+    test('When u.network is an object with full URI containing project number, then it matches compute firewall rule with project ID', async () => {
+      const mockComputeClient = {
+        listFirewalls: mock.fn(async () => ({
+          items: [
+            {
+              direction: 'INGRESS',
+              action: 'ALLOW',
+              disabled: false,
+              network: 'projects/brett-public-preview/global/networks/default',
+              sourceRanges: ['136.124.16.0/20'],
+              allowed: [{ IPProtocol: 'tcp', ports: ['443'] }],
+            },
+          ],
+        })),
+      }
+      const handlers = {}
+      const server = createMockServer(handlers)
+      const mockClients = createMockClients()
+      mockClients.beyondcorpClient.listGateways = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1',
+          displayName: 'Gateway 1',
+          state: 'RUNNING',
+          delegatingServiceAccount: 'sa@gcp.iam.gserviceaccount.com',
+          serviceDiscovery: {},
+        },
+      ])
+      mockClients.beyondcorpClient.listApplications = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1/applications/app1',
+          displayName: 'App 1',
+          endpointMatchers: [{ ports: [443] }],
+          upstreams: [
+            {
+              network: {
+                name: 'projects/498461174898/global/networks/default',
+              },
+            },
+          ],
+        },
+      ])
+
+      registerDiagnoseEnvironmentTool(
+        server,
+        { ...mockClients, computeClient: mockComputeClient, featureFlags: enabledFlags },
+        { customerId: null, cachedRootOrgUnitId: null },
+      )
+
+      const result = await handlers['diagnose_environment'](
+        { customerId: 'C0123', projectId: 'brett-public-preview' },
+        { requestInfo: {} },
+      )
+
+      const fwIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.firewall')
+      assert.strictEqual(
+        fwIssues.length,
+        0,
+        'Project number in u.network.name object should correctly resolve basename default',
+      )
+    })
+
+    test('When matching allow firewall rule has targetTags, then it ignores it and reports missing network-wide firewall rule', async () => {
+      const mockComputeClient = {
+        listFirewalls: mock.fn(async () => ({
+          items: [
+            {
+              direction: 'INGRESS',
+              action: 'ALLOW',
+              disabled: false,
+              network: 'projects/p1/global/networks/vpc1',
+              targetTags: ['http-server'],
+              sourceRanges: ['136.124.16.0/20'],
+              allowed: [{ IPProtocol: 'tcp', ports: ['443'] }],
+            },
+          ],
+        })),
+      }
+      const handlers = {}
+      const server = createMockServer(handlers)
+      const mockClients = createMockClients()
+      mockClients.beyondcorpClient.listGateways = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1',
+          displayName: 'Gateway 1',
+          state: 'RUNNING',
+          delegatingServiceAccount: 'sa@gcp.iam.gserviceaccount.com',
+          serviceDiscovery: {},
+        },
+      ])
+      mockClients.beyondcorpClient.listApplications = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1/applications/app1',
+          displayName: 'App 1',
+          endpointMatchers: [{ ports: [443] }],
+          upstreams: [{ network: 'projects/p1/global/networks/vpc1' }],
+        },
+      ])
+
+      registerDiagnoseEnvironmentTool(
+        server,
+        { ...mockClients, computeClient: mockComputeClient, featureFlags: enabledFlags },
+        { customerId: null, cachedRootOrgUnitId: null },
+      )
+
+      const result = await handlers['diagnose_environment'](
+        { customerId: 'C0123', projectId: 'p1' },
+        { requestInfo: {} },
+      )
+
+      const fwIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.firewall')
+      assert.strictEqual(fwIssues.length, 1, 'Rule with targetTags should be skipped to require a network-wide rule')
+    })
+
+    test('When compute listFirewalls throws error, then it produces a medium severity firewall issue with manual remediation link', async () => {
+      const mockComputeClient = {
+        listFirewalls: mock.fn(async () => {
+          throw new Error('403 Forbidden: Missing compute.firewalls.list')
+        }),
+      }
+      const handlers = {}
+      const server = createMockServer(handlers)
+      const mockClients = createMockClients()
+      mockClients.beyondcorpClient.listGateways = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1',
+          displayName: 'Gateway 1',
+          state: 'RUNNING',
+          delegatingServiceAccount: 'sa@gcp.iam.gserviceaccount.com',
+          serviceDiscovery: {},
+        },
+      ])
+      mockClients.beyondcorpClient.listApplications = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1/applications/app1',
+          displayName: 'App 1',
+          endpointMatchers: [{ ports: [443] }],
+          upstreams: [{ network: 'projects/p1/global/networks/vpc1' }],
+        },
+      ])
+
+      registerDiagnoseEnvironmentTool(
+        server,
+        { ...mockClients, computeClient: mockComputeClient, featureFlags: enabledFlags },
+        { customerId: null, cachedRootOrgUnitId: null },
+      )
+
+      const result = await handlers['diagnose_environment'](
+        { customerId: 'C0123', projectId: 'p1' },
+        { requestInfo: {} },
+      )
+
+      const fwIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.firewall')
+      assert.strictEqual(fwIssues.length, 1)
+      assert.strictEqual(fwIssues[0].severity, 'medium')
+      assert.ok(fwIssues[0].message.includes('Unable to automatically verify VPC ingress firewall rules'))
+      assert.ok(fwIssues[0].remediation.url.includes('console.cloud.google.com/net-security/firewall-manager'))
+    })
+
+    test('When upstream URI is CGNAT IP (100.10.1.1) without network, then it is excluded from private VPC firewall checks', async () => {
+      const mockComputeClient = {
+        listFirewalls: mock.fn(async () => ({ items: [] })),
+      }
+      const handlers = {}
+      const server = createMockServer(handlers)
+      const mockClients = createMockClients()
+      mockClients.beyondcorpClient.listGateways = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1',
+          displayName: 'Gateway 1',
+          state: 'RUNNING',
+          delegatingServiceAccount: 'sa@gcp.iam.gserviceaccount.com',
+          serviceDiscovery: {},
+        },
+      ])
+      mockClients.beyondcorpClient.listApplications = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1/applications/app1',
+          displayName: 'App 1',
+          endpointMatchers: [{ ports: [8080] }],
+          upstreams: [{ upstreamUri: '100.10.1.1:8080' }],
+        },
+      ])
+
+      registerDiagnoseEnvironmentTool(
+        server,
+        { ...mockClients, computeClient: mockComputeClient, featureFlags: enabledFlags },
+        { customerId: null, cachedRootOrgUnitId: null },
+      )
+
+      const result = await handlers['diagnose_environment'](
+        { customerId: 'C0123', projectId: 'p1' },
+        { requestInfo: {} },
+      )
+
+      const fwIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.firewall')
+      assert.strictEqual(
+        fwIssues.length,
+        0,
+        'CGNAT IP without network should be treated as non-private and excluded from firewall checks',
+      )
+    })
+
+    test('When SEB extension is installed but missing securityGateway routing policy, then it produces a high issue', async () => {
+      const handlers = {}
+      const server = createMockServer(handlers)
+      const mockClients = createMockClients()
+      mockClients.chromePolicyClient.resolvePolicy = mock.fn(async (c, ou, schema) => {
+        if (schema === 'chrome.users.apps.InstallType') {
+          return [
+            {
+              targetKey: { additionalTargetKeys: { app_id: 'chrome:ekajlcmdfcigmdbphhifahdfjbkciflj' } },
+              value: { value: { appInstallType: 'FORCED' } },
+            },
+          ]
+        }
+        return []
+      })
+      mockClients.beyondcorpClient.listGateways = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1',
+          displayName: 'Gateway 1',
+          state: 'RUNNING',
+          serviceDiscovery: {},
+        },
+      ])
+
+      registerDiagnoseEnvironmentTool(
+        server,
+        { ...mockClients, featureFlags: enabledFlags },
+        { customerId: null, cachedRootOrgUnitId: null },
+      )
+
+      const result = await handlers['diagnose_environment'](
+        { customerId: 'C0123', projectId: 'p1' },
+        { requestInfo: {} },
+      )
+
+      const clientPolicyIssues = result.structuredContent.issues.filter(
+        i => i.component === 'secureGateway.clientPolicy',
+      )
+      assert.strictEqual(clientPolicyIssues.length, 1)
+      assert.strictEqual(clientPolicyIssues[0].severity, 'high')
+      assert.ok(clientPolicyIssues[0].message.includes('no securityGateway routing policy is configured'))
+    })
+
+    test('When SEB extension policy points to an unknown gateway resource, then it produces a medium issue', async () => {
+      const handlers = {}
+      const server = createMockServer(handlers)
+      const mockClients = createMockClients()
+      mockClients.chromePolicyClient.resolvePolicy = mock.fn(async (c, ou, schema) => {
+        if (schema === 'chrome.users.apps.InstallType') {
+          return [
+            {
+              targetKey: { additionalTargetKeys: { app_id: 'chrome:ekajlcmdfcigmdbphhifahdfjbkciflj' } },
+              value: { value: { appInstallType: 'FORCED' } },
+            },
+          ]
+        }
+        if (schema === 'chrome.users.apps.ManagedConfiguration') {
+          return [
+            {
+              targetKey: { additionalTargetKeys: { app_id: 'chrome:ekajlcmdfcigmdbphhifahdfjbkciflj' } },
+              value: {
+                value: {
+                  managedConfiguration: JSON.stringify({
+                    securityGateway: {
+                      Value: {
+                        context: { resource: 'projects/p1/locations/global/securityGateways/gw-unknown' },
+                        serviceDiscovery: { routes: {} },
+                      },
+                    },
+                  }),
+                },
+              },
+            },
+          ]
+        }
+        return []
+      })
+      mockClients.beyondcorpClient.listGateways = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1',
+          displayName: 'Gateway 1',
+          state: 'RUNNING',
+          serviceDiscovery: {},
+        },
+      ])
+
+      registerDiagnoseEnvironmentTool(
+        server,
+        { ...mockClients, featureFlags: enabledFlags },
+        { customerId: null, cachedRootOrgUnitId: null },
+      )
+
+      const result = await handlers['diagnose_environment'](
+        { customerId: 'C0123', projectId: 'p1' },
+        { requestInfo: {} },
+      )
+
+      const clientPolicyIssues = result.structuredContent.issues.filter(
+        i => i.component === 'secureGateway.clientPolicy',
+      )
+      assert.strictEqual(clientPolicyIssues.length, 1)
+      assert.strictEqual(clientPolicyIssues[0].severity, 'medium')
+      assert.ok(clientPolicyIssues[0].message.includes('gw-unknown'))
+    })
+
+    test('When SEB extension is missing serviceDiscovery block while gateway has Service Discovery, then it produces a high issue', async () => {
+      const handlers = {}
+      const server = createMockServer(handlers)
+      const mockClients = createMockClients()
+      mockClients.chromePolicyClient.resolvePolicy = mock.fn(async (c, ou, schema) => {
+        if (schema === 'chrome.users.apps.InstallType') {
+          return [
+            {
+              targetKey: { additionalTargetKeys: { app_id: 'chrome:ekajlcmdfcigmdbphhifahdfjbkciflj' } },
+              value: { value: { appInstallType: 'FORCED' } },
+            },
+          ]
+        }
+        if (schema === 'chrome.users.apps.ManagedConfiguration') {
+          return [
+            {
+              targetKey: { additionalTargetKeys: { app_id: 'chrome:ekajlcmdfcigmdbphhifahdfjbkciflj' } },
+              value: {
+                value: {
+                  managedConfiguration: JSON.stringify({
+                    securityGateway: {
+                      Value: {
+                        context: { resource: 'projects/p1/locations/global/securityGateways/gw1' },
+                      },
+                    },
+                  }),
+                },
+              },
+            },
+          ]
+        }
+        return []
+      })
+      mockClients.beyondcorpClient.listGateways = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1',
+          displayName: 'Gateway 1',
+          state: 'RUNNING',
+          serviceDiscovery: {},
+        },
+      ])
+
+      registerDiagnoseEnvironmentTool(
+        server,
+        { ...mockClients, featureFlags: enabledFlags },
+        { customerId: null, cachedRootOrgUnitId: null },
+      )
+
+      const result = await handlers['diagnose_environment'](
+        { customerId: 'C0123', projectId: 'p1' },
+        { requestInfo: {} },
+      )
+
+      const clientPolicyIssues = result.structuredContent.issues.filter(
+        i => i.component === 'secureGateway.clientPolicy',
+      )
+      assert.strictEqual(clientPolicyIssues.length, 1)
+      assert.strictEqual(clientPolicyIssues[0].severity, 'high')
+      assert.ok(clientPolicyIssues[0].message.includes("missing the 'serviceDiscovery' block"))
+    })
+
+    test('When legacy PAC proxy is configured alongside a Service Discovery gateway, then it flags a medium conflict issue', async () => {
+      const handlers = {}
+      const server = createMockServer(handlers)
+      const mockClients = createMockClients()
+      mockClients.chromePolicyClient.resolvePolicy = mock.fn(async (c, ou, schema) => {
+        if (schema === 'chrome.users.SimpleProxySettings') {
+          return [
+            {
+              value: {
+                value: {
+                  simpleProxyMode: 'PROXY_MODE_ENUM_PAC_SCRIPT',
+                  simpleProxyPacUrl: 'https://storage.googleapis.com/pac/wpad.dat',
+                },
+              },
+            },
+          ]
+        }
+        return []
+      })
+      mockClients.beyondcorpClient.listGateways = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw1',
+          displayName: 'Gateway 1',
+          state: 'RUNNING',
+          serviceDiscovery: {},
+        },
+      ])
+
+      registerDiagnoseEnvironmentTool(
+        server,
+        { ...mockClients, featureFlags: enabledFlags },
+        { customerId: null, cachedRootOrgUnitId: null },
+      )
+
+      const result = await handlers['diagnose_environment'](
+        { customerId: 'C0123', projectId: 'p1' },
+        { requestInfo: {} },
+      )
+
+      const proxyIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.proxySettings')
+      assert.strictEqual(proxyIssues.length, 1)
+      assert.strictEqual(proxyIssues[0].severity, 'medium')
+      assert.ok(
+        proxyIssues[0].message.includes('The PAC file may conflict with or override SEB extension dynamic routing'),
+      )
+    })
+
+    test('When all gateways are legacy (no Service Discovery) and no PAC file is configured, then it produces a high issue', async () => {
+      const handlers = {}
+      const server = createMockServer(handlers)
+      const mockClients = createMockClients()
+      mockClients.beyondcorpClient.listGateways = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw-legacy',
+          displayName: 'Legacy Gateway',
+          state: 'RUNNING',
+        },
+      ])
+
+      registerDiagnoseEnvironmentTool(
+        server,
+        { ...mockClients, featureFlags: enabledFlags },
+        { customerId: null, cachedRootOrgUnitId: null },
+      )
+
+      const result = await handlers['diagnose_environment'](
+        { customerId: 'C0123', projectId: 'p1' },
+        { requestInfo: {} },
+      )
+
+      const proxyIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.proxySettings')
+      assert.strictEqual(proxyIssues.length, 1)
+      assert.strictEqual(proxyIssues[0].severity, 'high')
+      assert.ok(proxyIssues[0].message.includes('no PAC script proxy policy is configured'))
+    })
+
+    test('When all gateways are legacy (no Service Discovery) and PAC file is configured, then it produces an info notice', async () => {
+      const handlers = {}
+      const server = createMockServer(handlers)
+      const mockClients = createMockClients()
+      mockClients.chromePolicyClient.resolvePolicy = mock.fn(async (c, ou, schema) => {
+        if (schema === 'chrome.users.SimpleProxySettings') {
+          return [
+            {
+              value: {
+                value: {
+                  simpleProxyMode: 'PROXY_MODE_ENUM_PAC_SCRIPT',
+                  simpleProxyPacUrl: 'https://storage.googleapis.com/pac/wpad.dat',
+                },
+              },
+            },
+          ]
+        }
+        return []
+      })
+      mockClients.beyondcorpClient.listGateways = mock.fn(async () => [
+        {
+          name: 'projects/p1/locations/global/securityGateways/gw-legacy',
+          displayName: 'Legacy Gateway',
+          state: 'RUNNING',
+        },
+      ])
+
+      registerDiagnoseEnvironmentTool(
+        server,
+        { ...mockClients, featureFlags: enabledFlags },
+        { customerId: null, cachedRootOrgUnitId: null },
+      )
+
+      const result = await handlers['diagnose_environment'](
+        { customerId: 'C0123', projectId: 'p1' },
+        { requestInfo: {} },
+      )
+
+      const proxyIssues = result.structuredContent.issues.filter(i => i.component === 'secureGateway.proxySettings')
+      assert.strictEqual(proxyIssues.length, 1)
+      assert.strictEqual(proxyIssues[0].severity, 'info')
+      assert.ok(proxyIssues[0].message.includes('Legacy PAC proxy setup detected'))
     })
   })
 })

@@ -49,6 +49,7 @@ export function registerListDlpRulesTool(server, options, sessionState) {
     },
     guardedToolCall(
       {
+        requiresDelegation: true,
         /**
          * Handler for listing DLP rules.
          * @param {object} _ - The tool parameters (unused).

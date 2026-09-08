@@ -32,6 +32,14 @@ describe('get_dlp_rule tool handler', () => {
     return registeredHandler
   }
 
+  const mockContext = {
+    requestInfo: {
+      headers: {
+        authorization: 'Bearer token',
+      },
+    },
+  }
+
   test('When a rule has complete data, then it formats rule details and includes a UI link', async () => {
     const mockRule = {
       name: 'policies/rule123',
@@ -58,7 +66,7 @@ describe('get_dlp_rule tool handler', () => {
 
     const handler = getHandler(mockCloudIdentityClient)
 
-    const result = await handler({ resourceName: 'policies/rule123' }, { authToken: 'token' })
+    const result = await handler({ resourceName: 'policies/rule123' }, mockContext)
     const text = result.content[0].text
 
     assert.match(text, /## DLP Rule: Block Secret Uploads/)
@@ -84,7 +92,7 @@ describe('get_dlp_rule tool handler', () => {
 
     const handler = getHandler(mockCloudIdentityClient)
 
-    const result = await handler({ resourceName: 'policies/empty' }, { authToken: 'token' })
+    const result = await handler({ resourceName: 'policies/empty' }, mockContext)
     const text = result.content[0].text
 
     assert.match(text, /DLP Rule: Unnamed Rule/)
