@@ -164,7 +164,19 @@ function computeIssues(data) {
     const manualLink = page ? `https://admin.google.com/ac/chrome/settings/user/details/${page}` : null
     const actionSuffix = manualLink ? `. Update settings manually at ${manualLink}` : ''
 
-    if (!connector.configured) {
+    if (connector.error) {
+      issues.push({
+        severity: 'medium',
+        component: `connector.${key}`,
+        message: `${name} connector status could not be verified (lookup error).${actionSuffix}`,
+        ...(manualLink && {
+          remediation: {
+            actionLabel: `Check ${name} connector settings`,
+            url: manualLink,
+          },
+        }),
+      })
+    } else if (!connector.configured) {
       issues.push({
         severity: 'critical',
         component: `connector.${key}`,
@@ -677,7 +689,7 @@ async function fetchEnvironment(
 
   const orgUnits = orgUnitsData?.organizationUnits || []
   const rootOU = orgUnits.find(ou => ou.orgUnitPath === '/') || orgUnits[0]
-  const rootOUId = rootOU?.orgUnitId?.replace('id:', '') || null
+  const rootOUId = rootOU?.orgUnitId?.replace('id:', '') || 'my_customer'
 
   const customer = {
     customerId: customerData?.id || customerId || 'unknown',
