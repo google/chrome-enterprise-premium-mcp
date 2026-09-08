@@ -217,10 +217,10 @@ describe('Chrome Management API', () => {
       client.getClient = async authToken => {
         observedAuth = authToken
         return {
-          context: {
-            _options: {
-              auth: {
-                request: async () => ({ data: { insightsState: 'INSIGHTS_DISABLED' } }),
+          customers: {
+            enterprise: {
+              securityInsights: {
+                checkEnablementStatus: async () => ({ data: { insightsState: 'INSIGHTS_DISABLED' } }),
               },
             },
           },
@@ -242,11 +242,11 @@ describe('Chrome Management API', () => {
       client.getClient = async authToken => {
         observedAuth = authToken
         return {
-          context: {
-            _options: {
-              auth: {
-                request: async req => {
-                  observedData = req.data
+          customers: {
+            enterprise: {
+              securityInsights: {
+                enable: async req => {
+                  observedData = req.requestBody
                   return { data: { insightsState: 'INSIGHTS_ENABLED' } }
                 },
               },
@@ -270,10 +270,10 @@ describe('Chrome Management API', () => {
       client.getClient = async authToken => {
         observedAuth = authToken
         return {
-          context: {
-            _options: {
-              auth: {
-                request: async () => ({ data: { insightsState: 'INSIGHTS_DISABLED' } }),
+          customers: {
+            enterprise: {
+              securityInsights: {
+                disable: async () => ({ data: { insightsState: 'INSIGHTS_DISABLED' } }),
               },
             },
           },
