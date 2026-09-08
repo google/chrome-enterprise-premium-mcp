@@ -46,6 +46,7 @@ lib/knowledge/37-creating-a-basic-access-level.md
 lib/knowledge/38-access-level-examples.md
 lib/knowledge/98-agent-knowledge-addendum.md
 lib/knowledge/README.md
+lib/knowledge/compiled_docs.js
 lib/knowledge/instructions.js
 lib/util/README.md
 lib/util/api-client.js

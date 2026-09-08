@@ -99,7 +99,7 @@ async function loadDynamicDocs(dir) {
  * @returns {Promise<void>}
  */
 async function main() {
-  console.log('Compiling documents...')
+  console.error('Compiling documents...')
 
   const systemPrompt = fs.readFileSync(SYSTEM_PROMPT_PATH, 'utf8')
   const capabilities = fs.readFileSync(CAPABILITIES_PATH, 'utf8')
@@ -142,7 +142,7 @@ export const dynamicDocs = ${JSON.stringify(dynamicDocs, null, 2)}
 `
 
   fs.writeFileSync(OUTPUT_PATH, content, 'utf8')
-  console.log(`Compiled documents written to ${OUTPUT_PATH}`)
+  console.error(`Compiled documents written to ${OUTPUT_PATH}`)
 }
 
 main().catch(err => {
