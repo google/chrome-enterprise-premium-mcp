@@ -361,6 +361,28 @@ describe('diagnose_environment', () => {
       assert.ok(result.structuredContent.customer.customerId, 'Customer ID resolved')
     })
 
+    test('When customerId is unknown, then resolvePolicy uses my_customer fallback for all policy calls', async () => {
+      const clients = createMockClients({
+        customer: { id: 'unknown' },
+        connectorPolicy: [{ value: {} }],
+        orgUnits: { organizationUnits: [{ orgUnitId: 'id:123', orgUnitPath: '/' }] },
+      })
+      const handlers = {}
+      const server = createMockServer(handlers)
+      registerDiagnoseEnvironmentTool(server, clients, { customerId: null, cachedRootOrgUnitId: null })
+      await handlers['diagnose_environment']({ customerId: 'unknown' }, { requestInfo: {} })
+
+      const resolveCalls = clients.chromePolicyClient.resolvePolicy.mock.calls
+      assert.ok(resolveCalls.length > 0, 'resolvePolicy should be called')
+      for (const call of resolveCalls) {
+        assert.strictEqual(
+          call.arguments[0],
+          'my_customer',
+          'chromePolicyClient.resolvePolicy should use my_customer fallback when customerId is unknown',
+        )
+      }
+    })
+
     test('When Security Insights Data queries fail, then it produces medium issues with remediation', async () => {
       const clients = createMockClients()
       clients.chromeManagementClient.queryContentTransfers = mock.fn(async () => {
