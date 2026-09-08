@@ -41,6 +41,40 @@ function makeRecorder() {
   return { fn, captured }
 }
 
+function createFakeResponse() {
+  const listeners = {}
+  const fakeRes = {
+    on: (evt, cb) => {
+      listeners[evt] = cb
+      return fakeRes
+    },
+    once: (evt, cb) => {
+      listeners[evt] = cb
+      return fakeRes
+    },
+    emit: (evt, ...args) => {
+      if (listeners[evt]) {
+        listeners[evt](...args)
+      }
+      return true
+    },
+    removeListener: () => fakeRes,
+    headersSent: false,
+    status: () => fakeRes,
+    json: () => {},
+    send: () => {},
+    writeHead: () => fakeRes,
+    write: () => true,
+    end: () => {
+      if (listeners['close']) {
+        listeners['close']()
+      }
+    },
+    setHeader: () => fakeRes,
+  }
+  return fakeRes
+}
+
 describe('HTTP per-request session state isolation', () => {
   test('createSessionState returns a fresh, distinct object on every call', () => {
     const a = createSessionState()
@@ -62,7 +96,7 @@ describe('HTTP per-request session state isolation', () => {
     const { fn: recorder, captured } = makeRecorder()
     const handler = createMcpPostHandler({}, recorder)
     const fakeReq = { body: {}, on: () => {} }
-    const fakeRes = { on: () => {}, headersSent: false, status: () => fakeRes, json: () => {} }
+    const fakeRes = createFakeResponse()
 
     await handler(fakeReq, fakeRes)
     await handler(fakeReq, fakeRes)
@@ -82,7 +116,7 @@ describe('HTTP per-request session state isolation', () => {
     const handler = createMcpPostHandler({}, recorder)
     const principal = { email: 'admin@example.com', sub: '12345', aud: 'a', iss: 'https://accounts.google.com' }
     const fakeReq = { body: {}, on: () => {}, verifiedPrincipal: principal }
-    const fakeRes = { on: () => {}, headersSent: false, status: () => fakeRes, json: () => {} }
+    const fakeRes = createFakeResponse()
 
     await handler(fakeReq, fakeRes)
 
@@ -93,7 +127,7 @@ describe('HTTP per-request session state isolation', () => {
     const { fn: recorder, captured } = makeRecorder()
     const handler = createMcpPostHandler({}, recorder)
     const fakeReq = { body: {}, on: () => {} }
-    const fakeRes = { on: () => {}, headersSent: false, status: () => fakeRes, json: () => {} }
+    const fakeRes = createFakeResponse()
 
     await handler(fakeReq, fakeRes)
 
@@ -105,7 +139,7 @@ describe('HTTP per-request session state isolation', () => {
     const sseTransports = {}
     const handler = createSseHandler({}, sseTransports, recorder)
     const fakeReq = { on: () => {} }
-    const fakeRes = { on: () => {}, headersSent: false }
+    const fakeRes = createFakeResponse()
 
     await handler(fakeReq, fakeRes)
     await handler(fakeReq, fakeRes)
@@ -122,7 +156,7 @@ describe('HTTP per-request session state isolation', () => {
     const handler = createSseHandler({}, sseTransports, recorder)
     const principal = { email: 'admin@example.com', sub: '12345', aud: 'a', iss: 'https://accounts.google.com' }
     const fakeReq = { on: () => {}, verifiedPrincipal: principal }
-    const fakeRes = { on: () => {}, headersSent: false }
+    const fakeRes = createFakeResponse()
 
     await handler(fakeReq, fakeRes)
 
@@ -134,7 +168,7 @@ describe('HTTP per-request session state isolation', () => {
     const sseTransports = {}
     const handler = createSseHandler({}, sseTransports, recorder)
     const fakeReq = { on: () => {} }
-    const fakeRes = { on: () => {}, headersSent: false }
+    const fakeRes = createFakeResponse()
 
     await handler(fakeReq, fakeRes)
 
