@@ -66,7 +66,7 @@ allow-listed.
 The cause is almost always one of three things.
 
 1. **An API is not enabled.** Run the `gcloud services enable` command from the [Quick Start](../README.md#2-enable-required-apis). This is the most common cause on first setup.
-2. **A Workspace admin role is missing.** Chrome Management and Admin SDK APIs require a Google Workspace admin role (Super Admin or delegated) configured in the [Admin Console](https://admin.google.com/) under **Account > Admin roles**. Google Cloud IAM roles alone are not sufficient for Workspace APIs.
+2. **A Workspace admin role is missing or insufficient.** Chrome Management and Admin SDK APIs require a Google Workspace admin role configured in the Admin Console under **Account > Admin roles**. Note that DLP-related tools and the full `diagnose_environment` tool strictly require a **Super Admin** role. See [Administrator Role Requirements](configuration.md#administrator-role-requirements) for details on required privileges. Google Cloud IAM roles alone are not sufficient.
 3. **A Google Cloud IAM role is missing.** The user needs roles on the Google Cloud project itself, such as `roles/browser.admin` or `roles/serviceusage.serviceUsageAdmin`.
 
 ### "PERMISSION_DENIED" followed by retries

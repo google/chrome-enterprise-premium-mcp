@@ -80,7 +80,7 @@ If you're not sure which path applies to you, see the [Which auth path should I 
 
 ### Service Account & Domain-Wide Delegation (DWD)
 
-When running in Service Account mode without per-user OAuth, set `GOOGLE_APPLICATION_CREDENTIALS` to your Service Account JSON key path. For Workspace APIs (such as DLP rules, Organizational Units, and Customer ID retrieval), you must also set `CEP_IMPERSONATE_SUBJECT` to the email address of a Google Workspace administrator (e.g., `admin@example.com`). This is because Google Workspace APIs do not allow direct machine-identity access from Service Accounts; the Service Account must use Domain-Wide Delegation to impersonate a human administrator who has the necessary privileges to read or manage those resources.
+When running in Service Account mode without per-user OAuth, set `GOOGLE_APPLICATION_CREDENTIALS` to your Service Account JSON key path. For Workspace APIs (such as DLP rules, Organizational Units, and Customer ID retrieval), you must also set `CEP_IMPERSONATE_SUBJECT` to the email address of a Google Workspace administrator (e.g., `admin@example.com`). This is because Google Workspace APIs do not allow direct machine-identity access from Service Accounts; the Service Account must use Domain-Wide Delegation to impersonate a human administrator (see [Administrator Role Requirements](#administrator-role-requirements) for required privileges).
 
 **Google Workspace Admin Console Authorization Steps:**
 
@@ -126,3 +126,20 @@ For HTTP-mode deployments behind an OAuth-bearing caller (such as Vertex AI Agen
 **Finding the right `sub` value.**
 
 Start the server with `CEP_BEARER_AUDIENCE` set and `LOG_LEVEL=debug`, then have the desired principal send one request. The server logs `Request authenticated as <email> (sub=<sub>)`. Copy the `sub` value into `CEP_BEARER_PRINCIPAL_SUB` and restart.
+
+## Administrator Role Requirements
+
+The CEP MCP server calls various Google Workspace APIs. The Google Workspace user account used for authentication (or impersonated via Service Account) must have appropriate administrative privileges.
+
+Depending on the tools you want to use, different roles are required:
+
+| Features / Tools                                                                | Required Privilege / Role                                   | API Called                                 |
+| :------------------------------------------------------------------------------ | :---------------------------------------------------------- | :----------------------------------------- |
+| **DLP Rules & Detectors**<br>(e.g., `list_dlp_rules`, `create_chrome_dlp_rule`) | **Super Administrator**                                     | Cloud Identity Policies API                |
+| **Diagnostics**<br>(`diagnose_environment`)                                     | **Super Administrator**                                     | Cloud Identity Policies API (among others) |
+| **Chrome Policy**<br>(e.g., connectors, extensions)                             | **Delegated Admin** with **Chrome Management** permissions  | Chrome Policy API                          |
+| **Chrome Telemetry**<br>(e.g., browser counts, security insights)               | **Delegated Admin** with **Chrome Management** permissions  | Chrome Management API                      |
+| **Activity Logs**<br>(`get_chrome_activity_log`)                                | **Delegated Admin** with **Reports** permissions            | Admin SDK Reports API                      |
+| **Subscription Checks**                                                         | **Delegated Admin** with **License Management** permissions | Licensing API                              |
+
+Because the underlying Cloud Identity Policies API strictly enforces a Super Admin check, **you cannot use a custom/delegated role to manage DLP features**, even if you grant it "all privileges" in the Admin Console.
